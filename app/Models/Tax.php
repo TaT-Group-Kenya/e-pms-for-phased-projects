@@ -4,22 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Company extends Model
+class Tax extends Model
 {
-    protected $table = 'companies';
+    protected $table = 'taxes';
+
+    public $timestamps = false;
 
     protected $fillable = [
+        'code',
         'name',
         'description',
-        'email',
-        'phone',
-        'contact_person_name',
-        'logo',
-        'address',
-        'city',
-        'state',
-        'country',
-        'kra_pin',
         'updated_at',
         'updated_by',
         'created_at',

@@ -4,22 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Company extends Model
+class Project extends Model
 {
-    protected $table = 'companies';
+    protected $table = 'projects';
 
     protected $fillable = [
         'name',
         'description',
-        'email',
-        'phone',
-        'contact_person_name',
-        'logo',
-        'address',
-        'city',
-        'state',
-        'country',
-        'kra_pin',
+        'company_id',
+        'customer_id',
+        'project_category_id',
+        'start_date',
+        'end_date',
+        'status',
+        'budget',
         'updated_at',
         'updated_by',
         'created_at',

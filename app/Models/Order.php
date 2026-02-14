@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Order extends Model
+{
+    protected $table = 'orders';
+
+    protected $fillable = [
+        'order_number',
+        'quotation_id',
+        'project_id',
+        'customer_id',
+        'title',
+        'description',
+        'status',
+        'subtotal_amount',
+        'tax_percentage',
+        'tax_amount',
+        'discount_percentage',
+        'discount_amount',
+        'total_amount',
+        'currency',
+        'payment_terms',
+        'notes_to_customer',
+        'updated_at',
+        'updated_by',
+        'created_at',
+        'created_by',
+    ];
+
+    public function quotation()
+    {
+        return $this->belongsTo(Quotation::class, 'quotation_id');
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class, 'project_id');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class, 'order_id');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(OrderDocument::class, 'order_id');
+    }
+
+    public function taxitems()
+    {
+        return $this->hasMany(OrderTaxItem::class, 'order_id');
+    }
+}

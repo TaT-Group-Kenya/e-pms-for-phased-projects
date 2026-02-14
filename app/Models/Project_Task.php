@@ -4,22 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Company extends Model
+class ProjectTask extends Model
 {
-    protected $table = 'companies';
+    protected $table = 'project_tasks';
 
     protected $fillable = [
+        'project_id',
+        'project_phase_id',
         'name',
         'description',
-        'email',
-        'phone',
-        'contact_person_name',
-        'logo',
-        'address',
-        'city',
-        'state',
-        'country',
-        'kra_pin',
+        'start_date',
+        'end_date',
+        'status',
+        'budget',
         'updated_at',
         'updated_by',
         'created_at',

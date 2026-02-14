@@ -5,28 +5,28 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class UserGroup extends Model
+class GroupRole extends Model
 {
     use HasFactory;
 
-    protected $table = 'user_groups';
+    protected $table = 'group_roles';
 
     protected $fillable = [
-        'user_id',
-        'sys_group_id',
+        'group_id',
+        'role_id',
         'updated_at',
         'updated_by',
         'created_at',
         'created_by',
     ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
     public function group()
     {
-        return $this->belongsTo(SysGroup::class, 'sys_group_id');
+        return $this->belongsTo(SysGroup::class, 'group_id');
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(SysRole::class, 'role_id');
     }
 }
