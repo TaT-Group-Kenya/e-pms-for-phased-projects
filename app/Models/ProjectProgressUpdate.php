@@ -12,14 +12,21 @@ class ProjectProgressUpdate extends Model
 
     protected $fillable = [
         'project_id',
-        'update_title',
-        'update_description',
-        'progress_percentage',
-        'update_date',
-        'attachment',
+        'project_phase_id',
+        'percentage_complete',
         'updated_at',
         'updated_by',
         'created_at',
         'created_by',
     ];
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class, 'project_id');
+    }
+
+    public function projectPhase()
+    {
+        return $this->belongsTo(ProjectPhase::class, 'project_phase_id');
+    }
 }

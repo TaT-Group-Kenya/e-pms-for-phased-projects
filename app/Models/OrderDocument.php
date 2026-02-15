@@ -17,4 +17,14 @@ class OrderDocument extends Model
         'created_at',
         'created_by',
     ];
+    
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function getDocumentUrlAttribute()
+    {
+        return asset('storage/' . $this->document_path);
+    }
 }

@@ -17,4 +17,33 @@ class OrderTaxItems extends Model
         'created_at',
         'created_by',
     ];
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function getItemTypeNameAttribute()
+    {
+        $types = [
+            'vat' => 'VAT',
+            'service_tax' => 'Service Tax',
+            'sales_tax' => 'Sales Tax',
+            'wht' => 'Withholding Tax',
+        ];
+
+        return $types[$this->item_type] ?? 'Unknown';
+    }
+
+    
+    public function getItemTypes()
+    {
+        return [
+            'vat' => 'VAT',
+            'service_tax' => 'Service Tax',
+            'sales_tax' => 'Sales Tax',
+            'wht' => 'Withholding Tax',
+        ];
+
+    }
 }

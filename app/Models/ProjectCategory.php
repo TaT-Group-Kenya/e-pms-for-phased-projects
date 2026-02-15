@@ -16,4 +16,9 @@ class ProjectCategory extends Model
         'created_at',
         'created_by',
     ];
+
+    public function projects()
+    {
+        return $this->hasMany(Project::class, 'category_id');
+    }
 }

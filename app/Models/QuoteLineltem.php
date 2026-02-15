@@ -14,7 +14,7 @@ class QuoteLineItem extends Model
         'phase_name',
         'phase_description',
         'quoted_amount',
-        'estimated_hours',
+        'estimated_hours_nullable',
         'custom_note',
         'is_taxable',
         'updated_at',
@@ -22,4 +22,14 @@ class QuoteLineItem extends Model
         'created_at',
         'created_by',
     ];
+
+    public function quotation()
+    {
+        return $this->belongsTo(Quotation::class, 'quotation_id');
+    }
+
+    public function projectPhase()
+    {
+        return $this->belongsTo(ProjectPhase::class, 'project_phase_id');
+    }
 }

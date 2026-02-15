@@ -21,4 +21,14 @@ class OrderItem extends Model
         'created_at',
         'created_by',
     ];
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function projectPhase()
+    {
+        return $this->belongsTo(ProjectPhase::class);
+    }
 }

@@ -60,4 +60,14 @@ class User extends Authenticatable
             'sys_group_id'
         );
     }
+
+    public function hasPermission($permissionName)
+    {
+        foreach ($this->groups as $group) {
+            if ($group->permissions()->where('name', $permissionName)->exists()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

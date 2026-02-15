@@ -31,4 +31,34 @@ class Quotation extends Model
         'created_at',
         'created_by',
     ];
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class, 'project_id');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+    
+    public function quoteItems()
+    {
+        return $this->hasMany(QuotationItem::class, 'quotation_id');
+    }
+    
+    public function documents()
+    {
+        return $this->hasMany(Document::class, 'quotation_id');
+    }
+
+    public function approvals()
+    {
+        return $this->hasMany(Approval::class, 'quotation_id');
+    }
+
+    public function order()
+    {
+        return $this->hasOne(Order::class, 'quotation_id');
+    }
 }

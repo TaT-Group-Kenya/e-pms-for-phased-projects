@@ -42,4 +42,29 @@ class Transaction extends Model
         'created_at',
         'created_by',
     ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class, 'company_id');
+    }
+
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethod::class, 'payment_method');
+    }
+
+    public function costCenter()
+    {
+        return $this->belongsTo(CostCenter::class, 'cost_center_id');
+    }
+
+    public function relatedTransaction()
+    {
+        return $this->belongsTo(Transaction::class, 'related_transaction_id');
+    }
 }

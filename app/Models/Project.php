@@ -9,18 +9,48 @@ class Project extends Model
     protected $table = 'projects';
 
     protected $fillable = [
+        'code',
         'name',
         'description',
-        'company_id',
         'customer_id',
         'project_category_id',
+        'no_of_phases',
         'start_date',
         'end_date',
+        'budget_estimate',
         'status',
-        'budget',
+        'priority',
+        'progress',
+        'tags',
+        'currency',
         'updated_at',
         'updated_by',
         'created_at',
         'created_by',
     ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(ProjectCategory::class, 'project_category_id');
+    }
+
+    public function phases()
+    {
+        return $this->hasMany(Phase::class);
+    }
+
+    public function order()
+    {
+        return $this->hasOne(Order::class);
+    }
+
+    public function quotation()
+    {
+        return $this->hasOne(Quotation::class);
+    }
 }
