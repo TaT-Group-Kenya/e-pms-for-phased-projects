@@ -9,19 +9,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('company_banks', function (Blueprint $table) {
-
             $table->id();
             $table->timestamps();
-
             $table->unsignedBigInteger('company_id');
             $table->enum('type', ['Bank', 'MPESA']);
             $table->string('account_no');
             $table->string('swiftcode');
             $table->string('branch');
             $table->string('account_holder_name');
-
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
+            
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
         });
     }
 

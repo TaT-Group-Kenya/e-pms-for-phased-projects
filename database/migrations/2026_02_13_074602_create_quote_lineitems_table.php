@@ -8,7 +8,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('quote_line_items', function (Blueprint $table) {
-
             $table->id();
             $table->unsignedBigInteger('quotation_id');
             $table->unsignedBigInteger('project_phase_id');
@@ -21,6 +20,9 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
+
+            $table->foreign('quotation_id')->references('id')->on('quotations')->onDelete('cascade');
+            $table->foreign('project_phase_id')->references('id')->on('project_phases')->onDelete('cascade');
         });
     }
 

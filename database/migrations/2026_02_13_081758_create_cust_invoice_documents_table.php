@@ -9,7 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cust_invoice_documents', function (Blueprint $table) {
-
             $table->id();
             $table->unsignedBigInteger('invoice_id');
             $table->string('document_path');
@@ -17,6 +16,8 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
+
+            $table->foreign('invoice_id')->references('id')->on('cust_invoices')->onDelete('cascade');
         });
     }
 

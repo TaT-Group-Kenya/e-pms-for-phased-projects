@@ -40,6 +40,11 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
+
+            $table->foreign('customer_id')->references('id')->on('customers')->onDelete('set null');
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('set null');
+            $table->foreign('related_transaction_id')->references('id')->on('transactions')->onDelete('set null');
+            $table->foreign('cost_center_id')->references('id')->on('cost_centers')->onDelete('set null');
         });
     }
 

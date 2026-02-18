@@ -8,7 +8,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cust_payment_allocations', function (Blueprint $table) {
-
             $table->id();
             $table->unsignedBigInteger('payment_id');
             $table->unsignedBigInteger('invoice_id');
@@ -20,6 +19,9 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
+
+            $table->foreign('payment_id')->references('id')->on('cust_payments')->onDelete('cascade');
+            $table->foreign('invoice_id')->references('id')->on('cust_invoices')->onDelete('cascade');
         });
     }
 

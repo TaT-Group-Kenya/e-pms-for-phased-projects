@@ -8,10 +8,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('projects', function (Blueprint $table) {
-
             $table->id();
             $table->timestamps();
-
             $table->string('code');
             $table->string('name');
             $table->text('description')->nullable();
@@ -27,9 +25,12 @@ return new class extends Migration
             $table->string('currency');
             $table->date('start_date');
             $table->date('end_date');
-
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
+
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('set null');
+            $table->foreign('customer_id')->references('id')->on('customers')->onDelete('set null');
+            $table->foreign('project_category_id')->references('id')->on('project_categories')->onDelete('cascade');
         });
     }
 

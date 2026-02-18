@@ -19,6 +19,9 @@ return new class extends Migration
             $table->unsignedBigInteger('created_by')->nullable();
             
             $table->unique(['project_id', 'phase_id', 'company_id']);
+            $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
+            $table->foreign('phase_id')->references('id')->on('project_phases')->onDelete('cascade');
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
         });
     }
 

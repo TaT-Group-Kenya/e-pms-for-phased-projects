@@ -8,7 +8,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('company_invoice_documents', function (Blueprint $table) {
-
             $table->id();
             $table->unsignedBigInteger('invoice_id');
             $table->string('document_path');

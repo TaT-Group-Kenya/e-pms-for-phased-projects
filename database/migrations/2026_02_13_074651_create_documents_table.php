@@ -8,7 +8,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('quote_documents', function (Blueprint $table) {
-
             $table->id();
             $table->unsignedBigInteger('quotation_id');
             $table->string('document_path');
@@ -17,6 +16,8 @@ return new class extends Migration
             $table->string('attachments')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
+
+            $table->foreign('quotation_id')->references('id')->on('quotations')->onDelete('cascade');
         });
     }
 

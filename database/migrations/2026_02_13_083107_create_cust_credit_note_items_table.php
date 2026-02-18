@@ -8,7 +8,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cust_credit_note_items', function (Blueprint $table) {
-
             $table->id();
             $table->unsignedBigInteger('credit_note_id');
             $table->string('item_name');
@@ -18,6 +17,8 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
+            
+            $table->foreign('credit_note_id')->references('id')->on('cust_credit_notes')->onDelete('cascade');
         });
     }
 

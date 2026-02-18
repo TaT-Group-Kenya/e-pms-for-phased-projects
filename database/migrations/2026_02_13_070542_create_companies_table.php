@@ -10,10 +10,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('companies', function (Blueprint $table) {
-
             $table->id();
             $table->timestamps();
-
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('email');
@@ -25,7 +23,6 @@ return new class extends Migration
             $table->string('state')->nullable();
             $table->string('country');
             $table->string('kra_pin')->nullable();
-
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
         });

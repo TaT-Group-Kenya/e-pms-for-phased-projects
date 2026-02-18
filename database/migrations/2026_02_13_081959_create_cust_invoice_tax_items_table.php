@@ -8,7 +8,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cust_invoice_tax_items', function (Blueprint $table) {
-
             $table->id();
             $table->unsignedBigInteger('invoice_id');
             $table->string('item_name');
@@ -16,6 +15,8 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
+
+            $table->foreign('invoice_id')->references('id')->on('cust_invoices')->onDelete('cascade');
         });
     }
 
