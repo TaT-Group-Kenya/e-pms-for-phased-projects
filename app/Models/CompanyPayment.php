@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class CompanyPayment extends Model
+{
+    protected $table = 'company_payments';
+
+    public $timestamps = false;
+
+    protected $fillable = [
+        'transaction_id',
+        'invoice_id',
+        'amount_paid',
+        'payment_date',
+        'payment_method',
+        'payment_status',
+        'currency',
+        'exchange_rate',
+        'bank_name',
+        'check_number',
+        'transaction_reference',
+        'receipt_number',
+        'reconciled',
+        'reconciliation_date',
+        'updated_at',
+        'updated_by',
+        'created_at',
+        'created_by',
+    ];
+
+    public function invoice()
+    {
+        return $this->belongsTo(CompanyInvoice::class, 'invoice_id');
+    }
+
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class, 'transaction_id');
+    }
+}

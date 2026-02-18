@@ -2,26 +2,33 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
-use App\Models\SysGroup;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
+    protected $table = 'users';
+
     protected $fillable = [
+        'email',
         'first_name',
         'middle_name',
         'last_name',
-        'email',
         'password',
+        'email_verified_at',
+        'updated_at',
+        'updated_by',
+        'created_at',
+        'created_by',
+        'remember_token',
+        'avatar_pic',
         'category',
+        'is_active',
         'company_id',
         'customer_id',
-        'is_active',
-        'avatar_pic',
     ];
 
     protected $hidden = [
@@ -29,31 +36,38 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'is_active' => 'boolean',
+    ];
+
+    public function company()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->belongsTo(Company::class);
     }
 
-    /**
-     * User ↔ Groups relationship
-     */
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
     public function groups()
     {
-        return $this->belongsToMany(SysGroup::class, 'user_groups');
+        return $this->belongsToMany(
+            SysGroup::class,
+            'user_groups',
+            'user_id',
+            'sys_group_id'
+        );
     }
 
-    /**
-     * Check if user has a specific role
-     */
-    public function hasRole(string $roleName): bool
+    public function hasPermission($permissionName)
     {
-        return $this->groups()
-            ->whereHas('roles', function ($q) use ($roleName) {
-                $q->where('name', $roleName);
-            })
-            ->exists();
+        foreach ($this->groups as $group) {
+            if ($group->permissions()->where('name', $permissionName)->exists()) {
+                return true;
+            }
+        }
+        return false;
     }
 }

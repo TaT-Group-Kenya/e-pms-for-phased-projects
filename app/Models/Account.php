@@ -4,22 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Company extends Model
+class Account extends Model
 {
-    protected $table = 'companies';
+    protected $table = 'accounts';
+
+    public $timestamps = false;
 
     protected $fillable = [
+        'code',
         'name',
         'description',
-        'email',
-        'phone',
-        'contact_person_name',
-        'logo',
-        'address',
-        'city',
-        'state',
-        'country',
-        'kra_pin',
+        'type',
+        'group',
+        'balance',
+        'overdraft_allowed',
         'updated_at',
         'updated_by',
         'created_at',
