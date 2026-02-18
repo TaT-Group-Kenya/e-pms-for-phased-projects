@@ -12,8 +12,15 @@ class DatabaseSeeder extends Seeder
             SysRoleSeeder::class,
             SysGroupSeeder::class,
             GroupRoleSeeder::class,
+            AccountGroupSeeder::class,
+            AccountTypeSeeder::class,
             UserSeeder::class,
             UserGroupSeeder::class,
+            PaymentMethodSeeder::class,
+            TaxSeeder::class,
+            LanguageSeeder::class,
+            CountrySeeder::class,
+            CurrencySeeder::class,
         ]);
     }
 }

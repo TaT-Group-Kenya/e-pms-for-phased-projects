@@ -10,7 +10,8 @@ class UserController extends Controller
     // List all users
     public function index()
     {
-        $users = User::all(); // fetch all users
+        $this->authorize('viewAny', \App\Models\User::class);
+        $users = $this->service->index([], 15);
         return view('users.index', compact('users'));
     }
 
