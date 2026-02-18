@@ -1,59 +1,86 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+## Project Overview
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This application manages client projects, assigns companies to work on those projects, and handles payments to companies. It provides entities for users, companies, customers, projects, quotations, orders, invoices, credit notes, roles, and groups.
 
-## About Laravel
+## Local Development — Quick Start
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Prerequisites:
+- PHP 8.2+ (or the version required by your local environment)
+- Composer
+- MySQL or PostgreSQL (or another supported database)
+- Node.js 18+ and npm (or pnpm/yarn)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+1. Clone the repo:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```bash
+git clone <repo-url>
+cd e-pms-for-phased-projects
+```
 
-## Learning Laravel
+2. Install PHP dependencies:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+```bash
+composer install
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+3. Copy and configure environment:
 
-## Laravel Sponsors
+```bash
+cp .env.example .env
+# Edit .env and set DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD
+php artisan key:generate
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+4. Create database and run migrations + seeders:
 
-### Premium Partners
+```bash
+php artisan migrate --seed
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Notes:
+- The main Database seeder calls these seeders (in safe order): `SysRoleSeeder`, `SysGroupSeeder`, `GroupRoleSeeder`, `UserSeeder`, `UserGroupSeeder`.
+- The seeded admin user email is `admin@example.com` with password `password123` (change after first login).
 
-## Contributing
+If you want to run individual seeders:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php artisan db:seed --class=Database\\Seeders\\SysRoleSeeder
+php artisan db:seed --class=Database\\Seeders\\SysGroupSeeder
+php artisan db:seed --class=Database\\Seeders\\GroupRoleSeeder
+php artisan db:seed --class=Database\\Seeders\\UserSeeder
+php artisan db:seed --class=Database\\Seeders\\UserGroupSeeder
+```
 
-## Code of Conduct
+5. Frontend (Vite):
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+# install node deps
+npm install
 
-## Security Vulnerabilities
+# start Vite dev server
+npm run dev
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# or build for production
+npm run build
+```
 
-## License
+6. Serve the application (development):
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan serve
+```
+
+7. Useful commands:
+
+```bash
+# create the storage symlink
+php artisan storage:link
+
+# run tests
+php artisan test
+```
+
+Troubleshooting:
+- If migrations fail, check your database credentials in `.env` and ensure the DB exists.
+- If you run into permission errors, ensure `storage/` and `bootstrap/cache` are writable by your web user.
+- If Composer runs out of memory on macOS, try: `php -d memory_limit=-1 $(which composer) install`.
