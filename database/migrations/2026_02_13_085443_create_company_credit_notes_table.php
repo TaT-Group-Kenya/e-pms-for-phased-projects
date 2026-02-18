@@ -8,30 +8,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('company_credit_notes', function (Blueprint $table) {
-
             $table->id();
-
-            $table->string('credit_note_number');
-
             $table->unsignedBigInteger('invoice_id');
-
-            $table->date('credit_note_date');
-
-            $table->text('reason');
-
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->enum('status', ['draft','raised','refunded'])->default('draft');
             $table->decimal('subtotal_amount', 15, 2);
+            $table->decimal('tax_percentage', 8, 2);
             $table->decimal('tax_amount', 15, 2);
             $table->decimal('total_amount', 15, 2);
-
             $table->string('currency');
-            $table->decimal('exchange_rate', 15, 6);
-
-            $table->enum('status', ['draft','issued','applied','cancelled']);
-
-            $table->timestamp('updated_at')->nullable();
+            $table->text('notes_to_customer')->nullable();
+            $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
-
-            $table->timestamp('created_at')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
         });
     }

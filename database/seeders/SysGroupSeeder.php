@@ -16,28 +16,12 @@ class SysGroupSeeder extends Seeder
 
         SysGroup::insert([
             [
-                'name' => 'Admin',
+                'name' => 'Administrators',
                 'description' => 'System administrators',
                 'created_at' => now(),
                 'updated_at' => now(),
-            ],
-            [
-                'name' => 'Manager',
-                'description' => 'Department managers',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => 'Staff',
-                'description' => 'Internal staff',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => 'Viewer',
-                'description' => 'Read-only users',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'created_by' => 1,
+                'updated_by' => 1,
             ],
         ]);
     }

@@ -8,25 +8,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('customers', function (Blueprint $table) {
-
             $table->id();
-
             $table->string('name');
-            $table->text('description');
+            $table->text('description')->nullable();
             $table->string('email');
             $table->string('phone');
-            $table->string('contact_person_name');
-            $table->string('logo');
+            $table->string('contact_person_name')->nullable();
+            $table->string('logo')->nullable();
             $table->string('address');
             $table->string('city');
-            $table->string('state');
+            $table->string('state')->nullable();
             $table->string('country');
-            $table->string('kra_pin');
-
-            $table->timestamp('updated_at')->nullable();
+            $table->string('kra_pin')->nullable();
+            $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
-
-            $table->timestamp('created_at')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
         });
     }

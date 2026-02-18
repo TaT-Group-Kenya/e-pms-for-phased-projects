@@ -8,17 +8,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('languages', function (Blueprint $table) {
-
             $table->id();
-
             $table->string('code');
             $table->string('name');
             $table->text('description')->nullable();
-
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
-
-            $table->timestamp('created_at')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
         });
     }

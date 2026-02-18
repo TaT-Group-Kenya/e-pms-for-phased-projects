@@ -8,18 +8,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('company_invoice_documents', function (Blueprint $table) {
-
             $table->id();
-
             $table->unsignedBigInteger('invoice_id');
-
-            $table->string('document_name');
             $table->string('document_path');
-
-            $table->timestamp('updated_at')->nullable();
+            $table->enum('document_type', ['proposal','terms','attachments'])->default('attachments');
+            $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
-
-            $table->timestamp('created_at')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
         });
     }

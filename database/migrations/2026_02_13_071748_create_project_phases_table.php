@@ -9,24 +9,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('project_phases', function (Blueprint $table) {
-
             $table->id();
-
+            $table->timestamps();
             $table->unsignedBigInteger('project_id');
-
             $table->string('name');
-            $table->text('description');
-
+            $table->text('description')->nullable();
             $table->date('start_date');
             $table->date('end_date');
-
             $table->string('status');
-            $table->decimal('budget', 15, 2);
-
-            $table->timestamp('updated_at')->nullable();
+            $table->string('code');
+            $table->string('phase_order')->nullable();
+            $table->decimal('progress_percentage', 5, 2);
+            $table->unsignedBigInteger('quote_item_id');
             $table->unsignedBigInteger('updated_by')->nullable();
-
-            $table->timestamp('created_at')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
         });
     }
