@@ -19,24 +19,4 @@ class UserGroup extends Model
         'created_at',
         'created_by',
     ];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
-    public function group()
-    {
-        return $this->belongsTo(SysGroup::class, 'sys_group_id');
-    }
-
-    public function permissions()
-    {
-        return $this->belongsToMany(
-            SysPermission::class,
-            'group_permissions',
-            'sys_group_id',
-            'sys_permission_id'
-        );
-    }
 }

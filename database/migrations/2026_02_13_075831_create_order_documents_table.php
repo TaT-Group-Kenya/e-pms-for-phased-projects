@@ -10,17 +10,11 @@ return new class extends Migration
         Schema::create('order_documents', function (Blueprint $table) {
 
             $table->id();
-
             $table->unsignedBigInteger('order_id');
-
             $table->string('document_path');
-
             $table->enum('document_type', ['proposal','terms','attachments']);
-
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
-
-            $table->timestamp('created_at')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
         });
     }

@@ -10,17 +10,11 @@ return new class extends Migration
         Schema::create('cust_invoice_tax_items', function (Blueprint $table) {
 
             $table->id();
-
             $table->unsignedBigInteger('invoice_id');
-
             $table->string('item_name');
-
             $table->enum('item_type', ['fixed','percent']);
-
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
-
-            $table->timestamp('created_at')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
         });
     }

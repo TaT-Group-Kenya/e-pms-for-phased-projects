@@ -7,10 +7,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('sys_configs', function (Blueprint $table) {
+        Schema::create('sys_roles', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->text('value');
+            $table->text('description')->nullable();
             $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
@@ -19,6 +19,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('sys_configs');
+        Schema::dropIfExists('sys_roles');
     }
 };

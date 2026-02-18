@@ -10,14 +10,10 @@ return new class extends Migration
         Schema::create('group_roles', function (Blueprint $table) {
 
             $table->id();
-
             $table->unsignedBigInteger('group_id');
             $table->unsignedBigInteger('role_id');
-
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
-
-            $table->timestamp('created_at')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
         });
     }
