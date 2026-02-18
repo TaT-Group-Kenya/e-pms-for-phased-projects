@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Transaction;
+
+class TransactionService
+{
+    public function index(
+        array $filters = [],
+        int $perPage = 15,
+        array $with = []
+    ) {
+        // optimized query: apply eager loading and simple filters
+        $query = Transaction::query();
+        if (!empty($with)) {
+            $query->with($with);
+        }
+        foreach ($filters as $key => $value) {
+            $query->where($key, $value);
+        }
+        return $query->paginate($perPage);
+    }
+
+    public function find(int $id, array $with = [])
+    {
+        $query = Transaction::query();
+        if (!empty($with)) $query->with($with);
+        return $query->findOrFail($id);
+    }
+
+    public function create(array $data)
+    {
+        return Transaction::create($data);
+    }
+
+    public function update(int $id, array $data)
+    {
+        $model = Transaction::findOrFail($id);
+        $model->update($data);
+        return $model;
+    }
+
+    public function delete(int $id)
+    {
+        return Transaction::destroy($id);
+    }
+}

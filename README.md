@@ -1,10 +1,6 @@
 ## Project Overview
 
 This application manages client projects, assigns companies to work on those projects, and handles payments to companies. It provides entities for users, companies, customers, projects, quotations, orders, invoices, credit notes, roles, and groups.
-
-## Local Development — Quick Start
-
-Prerequisites:
 - PHP 8.2+ (or the version required by your local environment)
 - Composer
 - MySQL or PostgreSQL (or another supported database)
@@ -32,10 +28,28 @@ php artisan key:generate
 ```
 
 4. Create database and run migrations + seeders:
+ 
+CRUD Generator
+--------------
+
+There is a simple scaffolder script to generate API controllers, service classes, FormRequests and API Resources for models in `app/Models`:
 
 ```bash
-php artisan migrate --seed
+# generate scaffolds for all models
+php tools/generate_crud.php
 ```
+
+The script will create files under:
+- `app/Http/Controllers/Api` (controllers)
+- `app/Services` (service classes)
+- `app/Http/Requests` (store/update requests)
+- `app/Http/Resources` (API resources)
+
+Notes:
+- Generated requests and resources contain TODOs for model-specific validation and serialization; edit them to match your domain rules.
+- Controller methods use the generated service class; customize eager-loading (`with`) and filters in the service for optimized queries.
+
+```bash
 
 Notes:
 - The main Database seeder calls these seeders (in safe order): `SysRoleSeeder`, `SysGroupSeeder`, `GroupRoleSeeder`, `UserSeeder`, `UserGroupSeeder`.
@@ -77,9 +91,6 @@ php artisan serve
 php artisan storage:link
 
 # run tests
-php artisan test
-```
-
 Troubleshooting:
 - If migrations fail, check your database credentials in `.env` and ensure the DB exists.
 - If you run into permission errors, ensure `storage/` and `bootstrap/cache` are writable by your web user.
