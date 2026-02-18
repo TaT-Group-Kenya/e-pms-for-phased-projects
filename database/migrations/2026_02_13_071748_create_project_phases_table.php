@@ -23,8 +23,6 @@ return new class extends Migration
             $table->unsignedBigInteger('quote_item_id');
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
-
-            $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
         });
     }
 

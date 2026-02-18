@@ -15,8 +15,6 @@ return new class extends Migration
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('sys_group_id')->references('id')->on('sys_groups')->onDelete('cascade');
         });
     }
 

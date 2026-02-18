@@ -19,8 +19,6 @@ return new class extends Migration
             $table->string('account_holder_name');
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
-            
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
         });
     }
 

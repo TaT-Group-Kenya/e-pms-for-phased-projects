@@ -26,9 +26,6 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
-
-            $table->foreign('transaction_id')->references('id')->on('transactions')->onDelete('set null');
-            $table->foreign('invoice_id')->references('id')->on('company_invoices')->onDelete('set null');
         });
     }
 

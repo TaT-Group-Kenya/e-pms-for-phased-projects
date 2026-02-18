@@ -24,9 +24,6 @@ return new class extends Migration
             $table->boolean('is_active');
             $table->unsignedBigInteger('company_id')->nullable();
             $table->unsignedBigInteger('customer_id')->nullable();
-
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('set null');
-            $table->foreign('customer_id')->references('id')->on('customers')->onDelete('set null');
         });
     }
 

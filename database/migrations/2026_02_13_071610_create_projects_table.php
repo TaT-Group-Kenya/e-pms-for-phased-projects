@@ -27,10 +27,6 @@ return new class extends Migration
             $table->date('end_date');
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
-
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('set null');
-            $table->foreign('customer_id')->references('id')->on('customers')->onDelete('set null');
-            $table->foreign('project_category_id')->references('id')->on('project_categories')->onDelete('cascade');
         });
     }
 

@@ -19,9 +19,6 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
-            
-            $table->foreign('invoice_id')->references('id')->on('cust_invoices')->onDelete('cascade');
-            $table->foreign('project_phase_id')->references('id')->on('project_phases')->onDelete('cascade');
         });
     }
 

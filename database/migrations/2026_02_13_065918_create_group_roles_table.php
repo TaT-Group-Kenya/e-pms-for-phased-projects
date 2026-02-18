@@ -14,9 +14,6 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
-
-            $table->foreign('group_id')->references('id')->on('sys_groups')->onDelete('cascade');
-            $table->foreign('role_id')->references('id')->on('sys_roles')->onDelete('cascade');
         });
     }
 

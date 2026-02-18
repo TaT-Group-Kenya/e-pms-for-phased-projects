@@ -17,8 +17,6 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
-            
-            $table->foreign('credit_note_id')->references('id')->on('cust_credit_notes')->onDelete('cascade');
         });
     }
 
