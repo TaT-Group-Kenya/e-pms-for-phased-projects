@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class CompanyCreditNoteItemUpdateRequest extends FormRequest
+class QuoteLineItemUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,11 +15,14 @@ class CompanyCreditNoteItemUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'credit_note_id' => ['nullable', 'exists:credit_notes,id'],
-            'item_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'item_description' => ['sometimes', 'required', 'string', 'max:255'],
-            'item_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'quotation_id' => ['nullable', 'exists:quotations,id'],
+            'project_phase_id' => ['nullable', 'exists:project_phases,id'],
+            'phase_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'phase_description' => ['sometimes', 'required', 'string', 'max:255'],
+            'quoted_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'estimated_hours_nullable' => ['sometimes', 'required', 'string', 'max:255'],
             'custom_note' => ['sometimes', 'required', 'string', 'max:255'],
+            'is_taxable' => ['sometimes', 'required', 'boolean'],
             'updated_at' => ['sometimes', 'required', 'date'],
             'updated_by' => ['nullable', 'exists:users,id'],
             'created_at' => ['sometimes', 'required', 'date'],

@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class GroupRoleStoreRequest extends FormRequest
+class CompanyInvoiceDocumentUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,11 +15,12 @@ class GroupRoleStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'group_id' => ['nullable', 'exists:groups,id'],
-            'role_id' => ['nullable', 'exists:roles,id'],
-            'updated_at' => ['required', 'date'],
+            'invoice_id' => ['nullable', 'exists:invoices,id'],
+            'document_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'document_path' => ['sometimes', 'required', 'string', 'max:255'],
+            'updated_at' => ['sometimes', 'required', 'date'],
             'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
+            'created_at' => ['sometimes', 'required', 'date'],
             'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
