@@ -29,26 +29,6 @@ php artisan key:generate
 
 4. Create database and run migrations + seeders:
  
-CRUD Generator
---------------
-
-There is a simple scaffolder script to generate API controllers, service classes, FormRequests and API Resources for models in `app/Models`:
-
-```bash
-# generate scaffolds for all models
-php tools/generate_crud.php
-```
-
-The script will create files under:
-- `app/Http/Controllers/Api` (controllers)
-- `app/Services` (service classes)
-- `app/Http/Requests` (store/update requests)
-- `app/Http/Resources` (API resources)
-
-Notes:
-- Generated requests and resources contain TODOs for model-specific validation and serialization; edit them to match your domain rules.
-- Controller methods use the generated service class; customize eager-loading (`with`) and filters in the service for optimized queries.
-
 ```bash
 
 Notes:
