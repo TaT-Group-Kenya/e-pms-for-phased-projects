@@ -1,0 +1,57 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS color variables for light and dark themes. Keep hex values here only. */
+:root {
+  --bg-from: #f3f7ff;
+  --bg-to: #eef6ff;
+  --card: #ffffff;
+  --muted: #8a96a3;
+  --primary: #615dff;
+  --secondary: #fe7a36;
+  --primary-dark: #0b1427;
+}
+
+/* Dark theme overrides when `.dark` is present on <html> or <body> */
+:root.dark {
+  --bg-from: #0b1220;
+  --bg-to: #061026;
+  --card: #0b1427;
+  --muted: #94a3b8;
+  --primary: #615dff;
+  --secondary: #fe7a36;
+  --primary-dark: #0b1427;
+}
+
+* { box-sizing: border-box }
+html, body, #__next { height: 100% }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  -webkit-font-smoothing: antialiased;
+  color: var(--muted);
+}
+
+.bg-card {
+  background-color: var(--card) !important;
+}
+
+.text-primary {
+  color: var(--primary) !important;
+}
+
+.text-secondary {
+  color: var(--secondary) !important;
+}
+
+.bg-primary-dark {
+  background-color: var(--primary-dark) !important;
+}
+
+.text-muted {
+  color: var(--muted) !important;
+}
+
+
