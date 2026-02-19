@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CustInvoiceTaxItemUpdateRequest extends FormRequest
 {
@@ -14,6 +15,20 @@ class CustInvoiceTaxItemUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'invoice_id' => ['nullable', 'exists:invoices,id'],
+            'item_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'item_type' => ['sometimes', 'required', Rule::in(['fixed','percent'])],
+            'updated_at' => ['sometimes', 'required', 'date'],
+            'updated_by' => ['nullable', 'exists:users,id'],
+            'created_at' => ['sometimes', 'required', 'date'],
+            'created_by' => ['nullable', 'exists:users,id'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            // Add custom messages here if needed
         ];
     }
 }
