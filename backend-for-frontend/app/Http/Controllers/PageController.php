@@ -11,8 +11,3 @@ class PageController extends Controller
         return 'Hello Laravel, I made this!';
     }
 }
-
-public function hello()
-{
-    return view('hello'); // corresponds to hello.blade.php
-}
