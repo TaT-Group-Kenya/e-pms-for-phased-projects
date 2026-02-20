@@ -20,8 +20,8 @@ export default function Seo({
   author,
   robots,
 }: SeoProps) {
-  const titleText = title || 'Trezo'
-  const desc = description || 'Trezo — project and invoice management'
+  const titleText = title || 'e-PMS'
+  const desc = description || 'e-PMS — project and invoice management'
 
   return (
     <Head>
@@ -38,7 +38,7 @@ export default function Seo({
       {url && <link rel="canonical" href={url} />}
 
       {/* Open Graph */}
-      <meta property="og:site_name" content="Trezo" />
+      <meta property="og:site_name" content="e-PMS" />
       <meta property="og:title" content={titleText} />
       <meta property="og:description" content={desc} />
       <meta property="og:type" content="website" />

@@ -9,7 +9,7 @@
   --bg-to: #eef6ff;
   --card: #ffffff;
   --muted: #8a96a3;
-  --primary: #615dff;
+  --primary: #2a3383;
   --secondary: #fe7a36;
   --primary-dark: #0b1427;
 }
@@ -20,7 +20,7 @@
   --bg-to: #061026;
   --card: #0b1427;
   --muted: #94a3b8;
-  --primary: #615dff;
+  --primary: #2a3383;
   --secondary: #fe7a36;
   --primary-dark: #0b1427;
 }
@@ -48,6 +48,10 @@ body {
 
 .bg-primary-dark {
   background-color: var(--primary-dark) !important;
+}
+
+.bg-primary {
+  background-color: var(--primary) !important;
 }
 
 .text-muted {

@@ -4,7 +4,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('/')->group(function () {
-	Route::post('login', [App\Http\Controllers\Api\AuthController::class, 'login']);
+		Route::post('login', [App\Http\Controllers\Api\AuthController::class, 'login']);
+		Route::post('forgot-password', [App\Http\Controllers\Api\AuthController::class, 'forgot']);
+		Route::post('reset-password', [App\Http\Controllers\Api\AuthController::class, 'resetPassword']);
 
 	Route::middleware('auth:sanctum')->group(function () {
 		Route::post('logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
