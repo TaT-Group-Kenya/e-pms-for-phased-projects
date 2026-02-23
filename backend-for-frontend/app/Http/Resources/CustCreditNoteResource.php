@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class CustCreditNoteResource extends JsonResource
+class CustCreditNoteResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -20,15 +18,13 @@ class CustCreditNoteResource extends JsonResource
             'total_amount' => (float) $this->total_amount,
             'currency' => $this->currency,
             'notes_to_customer' => $this->notes_to_customer,
-            'updated_at' => $this->updated_at?->toISOString(),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
             'invoice' => new InvoiceResource($this->whenLoaded('invoice')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

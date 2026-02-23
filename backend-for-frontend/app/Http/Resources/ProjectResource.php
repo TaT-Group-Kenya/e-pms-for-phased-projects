@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class ProjectResource extends JsonResource
+class ProjectResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -16,17 +14,17 @@ class ProjectResource extends JsonResource
             'customer_id' => $this->customer_id,
             'project_category_id' => $this->project_category_id,
             'no_of_phases' => $this->no_of_phases,
-            'start_date' => $this->start_date?->toISOString(),
-            'end_date' => $this->end_date?->toISOString(),
+            'start_date' => $this->formatTimestamp($this->start_date),
+            'end_date' => $this->formatTimestamp($this->end_date),
             'budget_estimate' => $this->budget_estimate,
             'status' => $this->status,
             'priority' => $this->priority,
             'progress' => $this->progress,
             'tags' => $this->tags,
             'currency' => $this->currency,
-            'updated_at' => $this->updated_at?->toISOString(),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
             'customer' => new CustomerResource($this->whenLoaded('customer')),
@@ -39,8 +37,6 @@ class ProjectResource extends JsonResource
 
             'quotation' => new QuotationResource($this->whenLoaded('quotation')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

@@ -41,24 +41,27 @@ class BaseModelPolicy
 
     public function viewAny(User $user, $model = null)
     {
-        if ($model) {
-            return $this->check($user, 'VIEW', $model);
+        // If no model provided, derive from policy class name (e.g., CountryPolicy -> Country)
+        if (!$model) {
+            $policyClass = class_basename(get_class($this));
+            $model = str_replace('Policy', '', $policyClass);
         }
-
-        return false;
+        return $this->check($user, 'VIEW', $model);
     }
     
     public function view(User $user, $model)
     {
         return $this->check($user, 'VIEW', $model);
     }
+    
     public function create(User $user, $model = null)
     {
-        if ($model) {
-            return $this->check($user, 'ADD', $model);
+        // If no model provided, derive from policy class name (e.g., CountryPolicy -> Country)
+        if (!$model) {
+            $policyClass = class_basename(get_class($this));
+            $model = str_replace('Policy', '', $policyClass);
         }
-
-        return false;
+        return $this->check($user, 'ADD', $model);
     }
 
     public function update(User $user, $model)
@@ -80,53 +83,50 @@ class BaseModelPolicy
 
     protected function userHasRole(User $user, string $roleName): bool
     {
-        if (method_exists($user, 'roles')) {
+        \Log::info("Policy: Checking role {$roleName} for user {$user->id}");
+        
+        // First, try to load groups with roles if not already loaded
+        if (!$user->relationLoaded('groups')) {
+            \Log::info("Policy: Groups not loaded, loading...");
             try {
-                if ($user->roles()->pluck('name')->contains($roleName)) {
-                    return true;
-                }
+                $user->load('groups.roles');
             } catch (\Throwable $e) {
-                // continue
+                \Log::error("Policy: Error loading groups: " . $e->getMessage());
+                return false;
             }
         }
-
-        if (isset($user->roles) && $user->roles instanceof \Illuminate\Support\Collection) {
-            if ($user->roles->pluck('name')->contains($roleName)) {
+        
+        $groups = $user->groups;
+        \Log::info("Policy: User has " . count($groups) . " groups");
+        
+        if (count($groups) === 0) {
+            \Log::warning("Policy: User {$user->id} has no groups assigned");
+            return false;
+        }
+        
+        // Check each group for the required role
+        foreach ($groups as $group) {
+            // Ensure roles are loaded
+            if (!$group->relationLoaded('roles')) {
+                try {
+                    $group->load('roles');
+                } catch (\Throwable $e) {
+                    \Log::warning("Policy: Error loading roles for group {$group->id}: " . $e->getMessage());
+                    continue;
+                }
+            }
+            
+            $roles = $group->roles;
+            $roleNames = $roles->pluck('name')->toArray();
+            \Log::info("Policy: Group {$group->id} has roles: " . json_encode($roleNames));
+            
+            if (in_array($roleName, $roleNames)) {
+                \Log::info("Policy: [ROLE_FOUND] {$roleName}");
                 return true;
             }
         }
-
-        if (method_exists($user, 'groups')) {
-            try {
-                $groups = $user->groups()->with('roles')->get();
-                foreach ($groups as $group) {
-                    if (method_exists($group, 'roles') && $group->roles()->pluck('name')->contains($roleName)) {
-                        return true;
-                    }
-                    if (isset($group->roles) && $group->roles instanceof \Illuminate\Support\Collection) {
-                        if ($group->roles->pluck('name')->contains($roleName)) {
-                            return true;
-                        }
-                    }
-                }
-            } catch (\Throwable $e) {
-                // continue
-            }
-        }
-
-        if (method_exists($user, 'userGroups')) {
-            try {
-                $groups = $user->userGroups()->with('roles')->get();
-                foreach ($groups as $group) {
-                    if (method_exists($group, 'roles') && $group->roles()->pluck('name')->contains($roleName)) {
-                        return true;
-                    }
-                }
-            } catch (\Throwable $e) {
-                // continue
-            }
-        }
-
+        
+        \Log::warning("Policy: [ROLE_NOT_FOUND] {$roleName} not in user's groups");
         return false;
     }
 }

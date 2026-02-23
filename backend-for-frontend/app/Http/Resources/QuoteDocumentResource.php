@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class QuoteDocumentResource extends JsonResource
+class QuoteDocumentResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -14,15 +12,13 @@ class QuoteDocumentResource extends JsonResource
             'document_path' => $this->document_path,
             'document_type' => $this->document_type,
             'attachments' => $this->attachments,
-            'updated_at' => $this->updated_at?->toISOString(),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
             'quotation' => new QuotationResource($this->whenLoaded('quotation')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

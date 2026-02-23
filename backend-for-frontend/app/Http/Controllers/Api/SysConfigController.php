@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\SysConfig;
 use App\Services\SysConfigService;
 use App\Http\Resources\SysConfigResource;
@@ -21,13 +22,17 @@ class SysConfigController extends Controller
     {
         $this->authorize('viewAny', \App\Models\SysConfig::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return SysConfigResource::collection($data);
     }
 
     public function store(SysConfigStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new SysConfigResource($model);
     }
 
@@ -42,7 +47,9 @@ class SysConfigController extends Controller
     {
         $this->authorize('update', $sysConfig);
 
-        $updated = $this->service->update($sysConfig->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($sysConfig->id, $validated);
         return new SysConfigResource($updated);
     }
 

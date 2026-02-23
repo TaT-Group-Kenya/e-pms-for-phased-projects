@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('/')->group(function () {
+		Route::get('images/logos/{filename}', [App\Http\Controllers\Api\ImageController::class, 'serveLogo'])->name('images.logos');
 		Route::post('login', [App\Http\Controllers\Api\AuthController::class, 'login']);
 		Route::post('forgot-password', [App\Http\Controllers\Api\AuthController::class, 'forgot']);
 		Route::post('reset-password', [App\Http\Controllers\Api\AuthController::class, 'resetPassword']);
@@ -14,7 +15,7 @@ Route::prefix('/')->group(function () {
 
 		Route::apiResource('accounts', App\Http\Controllers\Api\AccountController::class);
 		Route::apiResource('account-types', App\Http\Controllers\Api\AccountTypeController::class);
-			Route::apiResource('account-groups', App\Http\Controllers\Api\AccountGroupController::class);
+		Route::apiResource('account-groups', App\Http\Controllers\Api\AccountGroupController::class);
 		Route::apiResource('companies', App\Http\Controllers\Api\CompanyController::class);
 		Route::apiResource('company-banks', App\Http\Controllers\Api\CompanyBankController::class);
 		Route::apiResource('company-credit-notes', App\Http\Controllers\Api\CompanyCreditNoteController::class);
@@ -26,8 +27,8 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('company-invoice-tax-items', App\Http\Controllers\Api\CompanyInvoiceTaxItemController::class);
 		Route::apiResource('company-payments', App\Http\Controllers\Api\CompanyPaymentController::class);
 		Route::apiResource('company-projects', App\Http\Controllers\Api\CompanyProjectController::class);
-		Route::apiResource('countrys', App\Http\Controllers\Api\CountryController::class);
-		Route::apiResource('currencys', App\Http\Controllers\Api\CurrencyController::class);
+		Route::apiResource('countries', App\Http\Controllers\Api\CountryController::class);
+		Route::apiResource('currencies', App\Http\Controllers\Api\CurrencyController::class);
 		Route::apiResource('cust-credit-notes', App\Http\Controllers\Api\CustCreditNoteController::class);
 		Route::apiResource('cust-credit-note-items', App\Http\Controllers\Api\CustCreditNoteItemController::class);
 		Route::apiResource('cust-credit-note-tax-items', App\Http\Controllers\Api\CustCreditNoteTaxItemController::class);
@@ -44,10 +45,10 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('orders', App\Http\Controllers\Api\OrderController::class);
 		Route::apiResource('order-documents', App\Http\Controllers\Api\OrderDocumentController::class);
 		Route::apiResource('order-items', App\Http\Controllers\Api\OrderItemController::class);
-		Route::apiResource('order-tax-itemss', App\Http\Controllers\Api\OrderTaxItemsController::class);
+		Route::apiResource('order-tax-items', App\Http\Controllers\Api\OrderTaxItemController::class);
 		Route::apiResource('payment-methods', App\Http\Controllers\Api\PaymentMethodController::class);
 		Route::apiResource('projects', App\Http\Controllers\Api\ProjectController::class);
-		Route::apiResource('project-categorys', App\Http\Controllers\Api\ProjectCategoryController::class);
+		Route::apiResource('project-categories', App\Http\Controllers\Api\ProjectCategoryController::class);
 		Route::apiResource('project-phases', App\Http\Controllers\Api\ProjectPhaseController::class);
 		Route::apiResource('project-progress-updates', App\Http\Controllers\Api\ProjectProgressUpdateController::class);
 		Route::apiResource('quotations', App\Http\Controllers\Api\QuotationController::class);
@@ -56,7 +57,7 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('sys-configs', App\Http\Controllers\Api\SysConfigController::class);
 		Route::apiResource('sys-groups', App\Http\Controllers\Api\SysGroupController::class);
 		Route::apiResource('sys-roles', App\Http\Controllers\Api\SysRoleController::class);
-		Route::apiResource('taxs', App\Http\Controllers\Api\TaxController::class);
+		Route::apiResource('taxes', App\Http\Controllers\Api\TaxController::class);
 		Route::apiResource('transactions', App\Http\Controllers\Api\TransactionController::class);
 		Route::apiResource('users', App\Http\Controllers\Api\UserController::class);
 		Route::apiResource('user-groups', App\Http\Controllers\Api\UserGroupController::class);

@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class AccountResource extends JsonResource
+class AccountResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -17,13 +15,11 @@ class AccountResource extends JsonResource
             'group' => $this->group,
             'balance' => $this->balance,
             'overdraft_allowed' => $this->overdraft_allowed,
-            'updated_at' => $this->updated_at?->toISOString(),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

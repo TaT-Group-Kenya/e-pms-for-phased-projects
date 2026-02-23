@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\CustCreditNoteItem;
 use App\Services\CustCreditNoteItemService;
 use App\Http\Resources\CustCreditNoteItemResource;
@@ -21,13 +22,17 @@ class CustCreditNoteItemController extends Controller
     {
         $this->authorize('viewAny', \App\Models\CustCreditNoteItem::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return CustCreditNoteItemResource::collection($data);
     }
 
     public function store(CustCreditNoteItemStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new CustCreditNoteItemResource($model);
     }
 
@@ -42,7 +47,9 @@ class CustCreditNoteItemController extends Controller
     {
         $this->authorize('update', $custCreditNoteItem);
 
-        $updated = $this->service->update($custCreditNoteItem->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($custCreditNoteItem->id, $validated);
         return new CustCreditNoteItemResource($updated);
     }
 

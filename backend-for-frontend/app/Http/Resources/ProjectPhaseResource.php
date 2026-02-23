@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class ProjectPhaseResource extends JsonResource
+class ProjectPhaseResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -16,13 +14,13 @@ class ProjectPhaseResource extends JsonResource
             'description' => $this->description,
             'phase_order' => $this->phase_order,
             'status' => $this->status,
-            'start_date' => $this->start_date?->toISOString(),
-            'end_date' => $this->end_date?->toISOString(),
+            'start_date' => $this->formatTimestamp($this->start_date),
+            'end_date' => $this->formatTimestamp($this->end_date),
             'progress_percentage' => $this->progress_percentage,
             'quote_item_id' => $this->quote_item_id,
-            'updated_at' => $this->updated_at?->toISOString(),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
             'project' => new ProjectResource($this->whenLoaded('project')),
@@ -31,8 +29,6 @@ class ProjectPhaseResource extends JsonResource
 
             'orderItem' => new OrderItemResource($this->whenLoaded('orderItem')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

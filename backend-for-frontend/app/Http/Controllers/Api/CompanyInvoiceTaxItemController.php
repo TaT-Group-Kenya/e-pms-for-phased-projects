@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\CompanyInvoiceTaxItem;
 use App\Services\CompanyInvoiceTaxItemService;
 use App\Http\Resources\CompanyInvoiceTaxItemResource;
@@ -21,13 +22,17 @@ class CompanyInvoiceTaxItemController extends Controller
     {
         $this->authorize('viewAny', \App\Models\CompanyInvoiceTaxItem::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return CompanyInvoiceTaxItemResource::collection($data);
     }
 
     public function store(CompanyInvoiceTaxItemStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new CompanyInvoiceTaxItemResource($model);
     }
 
@@ -42,7 +47,9 @@ class CompanyInvoiceTaxItemController extends Controller
     {
         $this->authorize('update', $companyInvoiceTaxItem);
 
-        $updated = $this->service->update($companyInvoiceTaxItem->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($companyInvoiceTaxItem->id, $validated);
         return new CompanyInvoiceTaxItemResource($updated);
     }
 

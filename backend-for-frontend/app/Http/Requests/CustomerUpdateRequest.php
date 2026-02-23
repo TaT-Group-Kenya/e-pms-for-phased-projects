@@ -20,7 +20,7 @@ class CustomerUpdateRequest extends FormRequest
             'email' => ['sometimes', 'required', 'email', 'max:255'],
             'phone' => ['sometimes', 'required', 'string', 'max:255'],
             'contact_person_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'logo' => ['sometimes', 'required', 'string', 'max:255'],
+            'logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
             'address' => ['sometimes', 'required', 'string', 'max:255'],
             'city' => ['sometimes', 'required', 'string', 'max:255'],
             'state' => ['sometimes', 'required', 'string', 'max:255'],
@@ -36,7 +36,9 @@ class CustomerUpdateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            // Add custom messages here if needed
+            'logo.image' => 'The logo must be a valid image file.',
+            'logo.mimes' => 'The logo must be one of: jpeg, jpg, png, gif, webp.',
+            'logo.max' => 'The logo must not exceed 5MB.',
         ];
     }
 }

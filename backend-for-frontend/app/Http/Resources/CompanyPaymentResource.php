@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class CompanyPaymentResource extends JsonResource
+class CompanyPaymentResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -13,7 +11,7 @@ class CompanyPaymentResource extends JsonResource
             'transaction_id' => $this->transaction_id,
             'invoice_id' => $this->invoice_id,
             'amount_paid' => (float) $this->amount_paid,
-            'payment_date' => $this->payment_date?->toISOString(),
+            'payment_date' => $this->formatTimestamp($this->payment_date),
             'payment_method' => $this->payment_method,
             'payment_status' => $this->payment_status,
             'currency' => $this->currency,
@@ -23,18 +21,16 @@ class CompanyPaymentResource extends JsonResource
             'transaction_reference' => $this->transaction_reference,
             'receipt_number' => $this->receipt_number,
             'reconciled' => $this->reconciled,
-            'reconciliation_date' => $this->reconciliation_date?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
+            'reconciliation_date' => $this->formatTimestamp($this->reconciliation_date),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
             'invoice' => new InvoiceResource($this->whenLoaded('invoice')),
 
             'transaction' => new TransactionResource($this->whenLoaded('transaction')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

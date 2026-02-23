@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Language;
 use App\Services\LanguageService;
 use App\Http\Resources\LanguageResource;
@@ -21,13 +22,17 @@ class LanguageController extends Controller
     {
         $this->authorize('viewAny', \App\Models\Language::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return LanguageResource::collection($data);
     }
 
     public function store(LanguageStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new LanguageResource($model);
     }
 
@@ -42,7 +47,9 @@ class LanguageController extends Controller
     {
         $this->authorize('update', $language);
 
-        $updated = $this->service->update($language->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($language->id, $validated);
         return new LanguageResource($updated);
     }
 

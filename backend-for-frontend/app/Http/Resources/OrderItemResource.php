@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class OrderItemResource extends JsonResource
+class OrderItemResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -17,17 +15,15 @@ class OrderItemResource extends JsonResource
             'order_amount' => (float) $this->order_amount,
             'custom_note' => $this->custom_note,
             'is_taxable' => (bool) $this->is_taxable,
-            'updated_at' => $this->updated_at?->toISOString(),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
             'order' => new OrderResource($this->whenLoaded('order')),
 
             'projectPhase' => new ProjectPhaseResource($this->whenLoaded('projectPhase')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class CustCreditNoteTaxItemResource extends JsonResource
+class CustCreditNoteTaxItemResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -13,15 +11,13 @@ class CustCreditNoteTaxItemResource extends JsonResource
             'credit_note_id' => $this->credit_note_id,
             'item_name' => $this->item_name,
             'item_type' => $this->item_type,
-            'updated_at' => $this->updated_at?->toISOString(),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
             'creditNote' => new CreditNoteResource($this->whenLoaded('creditNote')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

@@ -25,7 +25,7 @@ class AuthController extends Controller
             'device_name' => ['nullable','string']
         ]);
 
-        $user = User::where('email', $data['email'])->first();
+        $user = User::where('email', $data['email'])->with('groups.roles')->first();
 
         if (! $user || ! Hash::check($data['password'], $user->password)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
@@ -53,7 +53,8 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json($request->user());
+        $user = $request->user()->load('groups.roles');
+        return response()->json($user);
     }
 
     /**
@@ -148,6 +149,7 @@ class AuthController extends Controller
         DB::table($table)->where('email', $email)->delete();
 
         $token = $user->createToken('api-client')->plainTextToken;
+        $user->load('groups.roles');
         return response()->json([
             'message' => 'Password has been reset',
             'access_token' => $token,

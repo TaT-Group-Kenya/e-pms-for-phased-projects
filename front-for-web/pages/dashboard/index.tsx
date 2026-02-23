@@ -1,8 +1,18 @@
 import React, { useEffect } from 'react'
 import type { NextPage } from 'next'
-import AuthenticatedLayout from '../../components/authenticated/AuthenticatedLayout'
 import { useRouter } from 'next/router'
 import { useAppSelector } from '../../store/hooks'
+import AuthenticatedLayout from '../../components/authenticated/AuthenticatedLayout'
+import ProjectsOverview from '../../components/dashboard/ProjectsOverview'
+import ProjectsRoadmap from '../../components/dashboard/ProjectsRoadmap'
+import ProjectsProgress from '../../components/dashboard/ProjectsProgress'
+import MyTasks from '../../components/dashboard/MyTasks'
+import AllProjects from '../../components/dashboard/AllProjects'
+import ProjectsAnalysis from '../../components/dashboard/ProjectsAnalysis'
+import TeamMembers from '../../components/dashboard/TeamMembers'
+import WorkingSchedule from '../../components/dashboard/WorkingSchedule'
+import ToDoList from '../../components/dashboard/ToDoList'
+import TasksOverview from '../../components/dashboard/TasksOverview'
 
 const Dashboard: NextPage = () => {
   const router = useRouter()
@@ -16,21 +26,53 @@ const Dashboard: NextPage = () => {
 
   return (
     <AuthenticatedLayout>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="col-span-2 bg-card dark:bg-primary-dark p-6 rounded-lg shadow"> 
-          <h3 className="text-xl font-semibold mb-4">Overview</h3>
-          <div className="h-60 bg-gray-100 dark:bg-gray-800 rounded">{/* mock chart area */}</div>
+      <>
+        <div className="2xl:grid 2xl:grid-cols-2 gap-[25px]">
+          <div>
+            <ProjectsOverview />
+          </div>
+
+          <div>
+            <ProjectsRoadmap />
+          </div>
         </div>
 
-        <div className="bg-card dark:bg-primary-dark p-6 rounded-lg shadow">
-          <h3 className="text-xl font-semibold mb-4">Quick stats</h3>
-          <ul className="space-y-3">
-            <li className="flex justify-between"><span>Active projects</span><strong>12</strong></li>
-            <li className="flex justify-between"><span>Open invoices</span><strong>8</strong></li>
-            <li className="flex justify-between"><span>Overdue</span><strong>1</strong></li>
-          </ul>
+        <div className="lg:grid lg:grid-cols-5 gap-[25px]">
+          <div className="lg:col-span-3">
+            <ProjectsProgress />
+          </div>
+
+          <div className="lg:col-span-2">
+            <MyTasks />
+          </div>
         </div>
-      </div>
+
+        <AllProjects />
+
+        <div className="lg:grid lg:grid-cols-3 gap-[25px]">
+          <div>
+            <ProjectsAnalysis />
+          </div>
+
+          <div>
+            <TeamMembers />
+          </div>
+
+          <div>
+            <WorkingSchedule />
+          </div>
+        </div>
+
+        <div className="lg:grid lg:grid-cols-3 gap-[25px]">
+          <div className="lg:col-span-2">
+            <ToDoList />
+          </div>
+
+          <div className="lg:col-span-1">
+            <TasksOverview />
+          </div>
+        </div>
+      </>
     </AuthenticatedLayout>
   )
 }

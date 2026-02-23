@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\CustInvoice;
 use App\Services\CustInvoiceService;
 use App\Http\Resources\CustInvoiceResource;
@@ -21,13 +22,17 @@ class CustInvoiceController extends Controller
     {
         $this->authorize('viewAny', \App\Models\CustInvoice::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return CustInvoiceResource::collection($data);
     }
 
     public function store(CustInvoiceStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new CustInvoiceResource($model);
     }
 
@@ -42,7 +47,9 @@ class CustInvoiceController extends Controller
     {
         $this->authorize('update', $custInvoice);
 
-        $updated = $this->service->update($custInvoice->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($custInvoice->id, $validated);
         return new CustInvoiceResource($updated);
     }
 

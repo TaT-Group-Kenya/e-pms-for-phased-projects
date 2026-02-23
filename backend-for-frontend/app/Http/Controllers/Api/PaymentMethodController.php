@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\PaymentMethod;
 use App\Services\PaymentMethodService;
 use App\Http\Resources\PaymentMethodResource;
@@ -21,13 +22,17 @@ class PaymentMethodController extends Controller
     {
         $this->authorize('viewAny', \App\Models\PaymentMethod::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return PaymentMethodResource::collection($data);
     }
 
     public function store(PaymentMethodStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new PaymentMethodResource($model);
     }
 
@@ -42,7 +47,9 @@ class PaymentMethodController extends Controller
     {
         $this->authorize('update', $paymentMethod);
 
-        $updated = $this->service->update($paymentMethod->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($paymentMethod->id, $validated);
         return new PaymentMethodResource($updated);
     }
 

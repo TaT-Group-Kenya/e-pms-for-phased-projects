@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class OrderResource extends JsonResource
+class OrderResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -26,9 +24,9 @@ class OrderResource extends JsonResource
             'currency' => $this->currency,
             'payment_terms' => $this->payment_terms,
             'notes_to_customer' => $this->notes_to_customer,
-            'updated_at' => $this->updated_at?->toISOString(),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
             'quotation' => new QuotationResource($this->whenLoaded('quotation')),
@@ -43,8 +41,6 @@ class OrderResource extends JsonResource
 
             'taxitems' => new TaxitemsResource($this->whenLoaded('taxitems')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

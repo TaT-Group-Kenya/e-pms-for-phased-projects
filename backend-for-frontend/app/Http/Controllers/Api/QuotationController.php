@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Quotation;
 use App\Services\QuotationService;
 use App\Http\Resources\QuotationResource;
@@ -21,13 +22,17 @@ class QuotationController extends Controller
     {
         $this->authorize('viewAny', \App\Models\Quotation::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return QuotationResource::collection($data);
     }
 
     public function store(QuotationStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new QuotationResource($model);
     }
 
@@ -42,7 +47,9 @@ class QuotationController extends Controller
     {
         $this->authorize('update', $quotation);
 
-        $updated = $this->service->update($quotation->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($quotation->id, $validated);
         return new QuotationResource($updated);
     }
 

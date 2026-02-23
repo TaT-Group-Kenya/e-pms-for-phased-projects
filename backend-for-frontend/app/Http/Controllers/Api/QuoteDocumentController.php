@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\QuoteDocument;
 use App\Services\QuoteDocumentService;
 use App\Http\Resources\QuoteDocumentResource;
@@ -21,13 +22,17 @@ class QuoteDocumentController extends Controller
     {
         $this->authorize('viewAny', \App\Models\QuoteDocument::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return QuoteDocumentResource::collection($data);
     }
 
     public function store(QuoteDocumentStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new QuoteDocumentResource($model);
     }
 
@@ -42,7 +47,9 @@ class QuoteDocumentController extends Controller
     {
         $this->authorize('update', $quoteDocument);
 
-        $updated = $this->service->update($quoteDocument->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($quoteDocument->id, $validated);
         return new QuoteDocumentResource($updated);
     }
 

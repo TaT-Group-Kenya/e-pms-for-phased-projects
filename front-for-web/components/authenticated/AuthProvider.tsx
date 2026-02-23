@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { clearAuth } from '../../store/auth/slice'
-import { selectAccessToken, selectExpiry, selectUser } from '../../store/auth/selectors'
+import { selectExpiry } from '../../store/auth/selectors'
 
 const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useAppDispatch()
-  const accessToken = useAppSelector(selectAccessToken)
   const expiry = useAppSelector(selectExpiry)
-  const user = useAppSelector(selectUser)
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
