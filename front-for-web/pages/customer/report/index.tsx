@@ -1,37 +1,37 @@
 import Link from "next/link";
-import CustomersList from "../../../components/customer/CustomerList/CustomersList";
+import CustomerSearchableReportingTable from "../../../components/customer/CustomerSearch/CustomerSearchableReportingTable";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 
 export default function Page() {
   return (
     <AuthenticatedLayout>
-      <>
-        <div className="mb-[25px] md:flex items-center justify-between">
-          <h5 className="!mb-0">Customer Reports</h5>
+      <div className="mb-[25px] md:flex items-center justify-between">
+        <h5 className="!mb-0">Customers</h5>
 
-          <ol className="breadcrumb mt-[12px] md:mt-0">
-            <li className="breadcrumb-item inline-block relative text-sm mx-[11px] ltr:first:ml-0 rtl:first:mr-0 ltr:last:mr-0 rtl:last:ml-0">
-              <Link
-                href="/dashboard"
-                className="inline-block relative ltr:pl-[22px] rtl:pr-[22px] transition-all hover:text-primary-500"
-              >
-                <i className="material-symbols-outlined absolute ltr:left-0 rtl:right-0 !text-lg -mt-px text-primary-500 top-1/2 -translate-y-1/2">
-                  home
-                </i>
-                Dashboard
-              </Link>
-            </li>
+        <ol className="breadcrumb mt-[12px] md:mt-0">
+          <li className="breadcrumb-item inline-block relative text-sm mx-[11px] ltr:first:ml-0 rtl:first:mr-0 ltr:last:mr-0 rtl:last:ml-0">
+            <Link
+              href="/dashboard/ecommerce/"
+              className="inline-block relative ltr:pl-[22px] rtl:pr-[22px] transition-all hover:text-primary-500"
+            >
+              <i className="material-symbols-outlined absolute ltr:left-0 rtl:right-0 !text-lg -mt-px text-primary-500 top-1/2 -translate-y-1/2">
+                home
+              </i>
+              Dashboard
+            </Link>
+          </li>
 
-            <li className="breadcrumb-item inline-block relative text-sm mx-[11px] ltr:first:ml-0 rtl:first:mr-0 ltr:last:mr-0 rtl:last:ml-0">
-              Customer
-            </li>
+          <li className="breadcrumb-item inline-block relative text-sm mx-[11px] ltr:first:ml-0 rtl:first:mr-0 ltr:last:mr-0 rtl:last:ml-0">
+            Customer Management
+          </li>
 
-            <li className="breadcrumb-item inline-block relative text-sm mx-[11px] ltr:first:ml-0 rtl:first:mr-0 ltr:last:mr-0 rtl:last:ml-0">
-              Reports
-            </li>
-          </ol>
-        </div>
-      </>
+          <li className="breadcrumb-item inline-block relative text-sm mx-[11px] ltr:first:ml-0 rtl:first:mr-0 ltr:last:mr-0 rtl:last:ml-0">
+            Customers Report
+          </li>
+        </ol>
+      </div>
+
+      <CustomerSearchableReportingTable />
     </AuthenticatedLayout>
   );
 }

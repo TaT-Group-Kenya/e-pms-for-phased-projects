@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,12 +16,25 @@ const categorySchema = z.object({
 
 type CategoryFormData = z.infer<typeof categorySchema>;
 
-interface AddCategoryModalProps {
+interface Category {
+  id: number;
+  name: string;
+  description?: string;
+}
+
+interface EditCategoryModalProps {
+  categoryId: number;
+  category: Category;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onSuccess }) => {
+const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
+  categoryId,
+  category,
+  onClose,
+  onSuccess,
+}) => {
   const accessToken = useSelector(selectAccessToken);
   const { addToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,18 +44,30 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onSuccess 
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     mode: "onBlur",
+    defaultValues: {
+      name: category.name,
+      description: category.description || "",
+    },
   });
+
+  useEffect(() => {
+    reset({
+      name: category.name,
+      description: category.description || "",
+    });
+  }, [category, reset]);
 
   const onSubmit = async (data: CategoryFormData) => {
     setIsSubmitting(true);
     setError("");
 
     try {
-      const response = await fetch("/api/projects/categories/create", {
-        method: "POST",
+      const response = await fetch(`/api/projects/categories/${categoryId}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
@@ -57,15 +82,15 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onSuccess 
 
       if (!response.ok) {
         const formattedError = formatApiError(responseData);
-        setError(`Failed to create category: ${formattedError}`);
+        setError(`Failed to update category: ${formattedError}`);
         return;
       }
 
-      addToast("Project category created successfully", "success");
+      addToast("Project category updated successfully", "success");
       onSuccess();
     } catch (err) {
-      console.error("Error creating category:", err);
-      setError("Failed to create the category. Please check your connection and try again.");
+      console.error("Error updating category:", err);
+      setError("Failed to update the category. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -75,7 +100,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onSuccess 
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-[20px]">
       <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-full max-w-[500px]">
         <div className="mb-[20px]">
-          <h6 className="!mb-0">Add Project Category</h6>
+          <h6 className="!mb-0">Edit Project Category</h6>
         </div>
 
         {error && (
@@ -98,6 +123,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onSuccess 
                 errors.name ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
               } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
               placeholder="E.g. Web Development"
+              disabled={isSubmitting}
             />
             {errors.name && (
               <p className="text-danger-500 text-sm mt-1">{errors.name.message}</p>
@@ -110,9 +136,10 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onSuccess 
             </label>
             <textarea
               {...register("description")}
-              className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+              className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="Enter description (optional)"
               rows={3}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -120,7 +147,8 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onSuccess 
             <button
               type="button"
               onClick={onClose}
-              className="px-[25px] py-[10px] rounded-md bg-danger-500 text-white hover:bg-danger-600 transition-all font-medium"
+              disabled={isSubmitting}
+              className="px-[25px] py-[10px] rounded-md bg-danger-500 text-white hover:bg-danger-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
@@ -129,7 +157,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onSuccess 
               disabled={isSubmitting}
               className="px-[25px] py-[10px] rounded-md bg-primary-500 text-white hover:bg-primary-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? "Creating..." : "Create Category"}
+              {isSubmitting ? "Updating..." : "Update Category"}
             </button>
           </div>
         </form>
@@ -138,4 +166,4 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onSuccess 
   );
 };
 
-export default AddCategoryModal;
+export default EditCategoryModal;

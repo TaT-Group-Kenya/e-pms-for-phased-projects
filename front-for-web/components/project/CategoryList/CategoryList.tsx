@@ -8,6 +8,7 @@ import { ToastContainer } from "../../common/Toast";
 import { formatApiError } from "../../../utils/errorHandler";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal/DeleteConfirmationModal";
 import AddCategoryModal from "./AddCategoryModal";
+import EditCategoryModal from "./EditCategoryModal";
 
 interface Category {
   id: number;
@@ -25,6 +26,8 @@ const CategoryList: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   // Fetch categories
   useEffect(() => {
@@ -65,6 +68,11 @@ const CategoryList: React.FC = () => {
     setShowDeleteModal(true);
   };
 
+  const handleEdit = (category: Category) => {
+    setEditingCategory(category);
+    setShowEditModal(true);
+  };
+
   const handleConfirmDelete = async () => {
     if (!deleteTargetId) return;
 
@@ -98,6 +106,12 @@ const CategoryList: React.FC = () => {
   const handleCategoryAdded = () => {
     setRefreshTrigger((prev) => prev + 1);
     setShowModal(false);
+  };
+
+  const handleCategoryUpdated = () => {
+    setRefreshTrigger((prev) => prev + 1);
+    setShowEditModal(false);
+    setEditingCategory(null);
   };
 
   return (
@@ -162,14 +176,24 @@ const CategoryList: React.FC = () => {
                       {category.description || "-"}
                     </td>
                     <td className="py-[12px] px-[15px] text-right">
-                      <button
-                        onClick={() => handleDelete(category.id)}
-                        disabled={deleting === category.id}
-                        className="hover:text-danger-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
-                        title="Delete category"
-                      >
-                        <i className="material-symbols-outlined !text-[20px] text-danger-500">delete</i>
-                      </button>
+                      <div className="flex items-center justify-end gap-[10px]">
+                        <button
+                          onClick={() => handleEdit(category)}
+                          disabled={deleting === category.id}
+                          className="hover:text-primary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
+                          title="Edit category"
+                        >
+                          <i className="material-symbols-outlined !text-[20px] text-primary-500">edit</i>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(category.id)}
+                          disabled={deleting === category.id}
+                          className="hover:text-danger-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
+                          title="Delete category"
+                        >
+                          <i className="material-symbols-outlined !text-[20px] text-danger-500">delete</i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -183,6 +207,18 @@ const CategoryList: React.FC = () => {
         <AddCategoryModal
           onClose={() => setShowModal(false)}
           onSuccess={handleCategoryAdded}
+        />
+      )}
+
+      {showEditModal && editingCategory && (
+        <EditCategoryModal
+          categoryId={editingCategory.id}
+          category={editingCategory}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingCategory(null);
+          }}
+          onSuccess={handleCategoryUpdated}
         />
       )}
 

@@ -4,7 +4,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== "DELETE" && req.method !== "GET") {
+  if (req.method !== "DELETE" && req.method !== "GET" && req.method !== "PUT") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
@@ -20,18 +20,21 @@ export default async function handler(
   }
 
   try {
+    const requestBody = req.method === "PUT" ? JSON.stringify(req.body) : undefined;
+
     const response = await fetch(`${base}/project-categories/${id}`, {
       method: req.method,
       headers: {
         ...JSON_HEADERS,
         Authorization: `Bearer ${req.headers.authorization?.replace("Bearer ", "")}`,
       },
+      ...(requestBody && { body: requestBody }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({ message: "Failed to process request"});
+      return res.status(response.status).json({ message: "Failed to process request" });
     }
 
     return res.status(200).json({ message: "Request processed successfully" });

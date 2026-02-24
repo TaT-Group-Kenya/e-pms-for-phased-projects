@@ -3,6 +3,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #e5e7eb;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #d1d5db;
+}
+
+/* Firefox scrollbar styling */
+* {
+  scrollbar-color: #e5e7eb transparent;
+  scrollbar-width: thin;
+}
+
 
 /* CSS color variables for light and dark themes. Keep hex values here only. */
 :root {

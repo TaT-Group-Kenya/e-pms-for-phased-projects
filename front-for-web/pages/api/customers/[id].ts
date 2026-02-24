@@ -70,7 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const rawBody = await getRawBody(req)
         body = rawBody
         // Keep the content-type header so backend knows it's multipart
-        headers['content-type'] = contentType
+        headers['content-type'] = contentType as string
       } else {
         // For JSON requests, parse the body
         Object.assign(headers, JSON_HEADERS)

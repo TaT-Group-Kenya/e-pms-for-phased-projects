@@ -27,14 +27,14 @@ const getAccordionIndexFromPathname = (pathname: string | null): number | null =
   return null;
 };
 
-const isCustomerPage = (pathname: string | null): boolean => {
+const isSameEntityPage = (target: string, pathname: string | null): boolean => {
   if (!pathname) return false;
   
   // Check for exact match
-  if (pathname === "/customer/customer-list") return true;
+  if (target === pathname) return true;
   
-  // Check for /customer/{id} pattern where id is numeric
-  const match = pathname.match(/^\/customer\/(\d+)$/);
+  // Check for /{string}/{id} pattern where id is numeric
+  const match = pathname.match(/^\/[^/]+\/(\d+)$/);
   return !!match;
 };
 
@@ -115,7 +115,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                       <Link
                         href="/project/project-list"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/project/project-list"
+                          isSameEntityPage("/project/project-list", pathname)
                             ? "active"
                             : ""
                         }`}
@@ -193,7 +193,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                       <Link
                         href="/customer/customer-list"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          isCustomerPage(pathname) ? "active" : ""
+                          isSameEntityPage('/customer/customer-list', pathname) ? "active" : ""
                         }`}
                       >
                         Customers
@@ -213,7 +213,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                       </Link>
                     </li>
 
-                     <li className="sidemenu-item mb-[4px] last:mb-0">
+                    <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
                         href="/customer/report"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${

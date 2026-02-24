@@ -206,6 +206,8 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [selectedLogo, setSelectedLogo] = useState<File | null>(null);
   const [updateMessage, setUpdateMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
 
   // Auto-dismiss update message after 5 seconds
   useEffect(() => {
@@ -217,80 +219,36 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
     }
   }, [updateMessage]);
 
-  // Sample data for tables
-  const sampleProjects: Project[] = [
-    {
-      id: "1",
-      name: "Website Redesign",
-      status: "In Progress",
-      budget: "$50,000",
-      startDate: "2024-01-15",
-      endDate: "2024-03-30",
-    },
-    {
-      id: "2",
-      name: "Mobile App Development",
-      status: "Completed",
-      budget: "$75,000",
-      startDate: "2023-06-01",
-      endDate: "2023-12-15",
-    },
-  ];
+  // Fetch projects for this customer
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setLoadingProjects(true);
+      try {
+        const response = await fetch(`/api/projects/list?customer_id=${customerId}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
 
-  const sampleQuotations: Quotation[] = [
-    {
-      id: "1",
-      quotationNo: "QT-001",
-      amount: "$25,000",
-      status: "Approved",
-      date: "2024-01-10",
-      validUntil: "2024-02-10",
-    },
-    {
-      id: "2",
-      quotationNo: "QT-002",
-      amount: "$15,500",
-      status: "Pending",
-      date: "2024-02-01",
-      validUntil: "2024-03-01",
-    },
-  ];
+        if (!response.ok) {
+          throw new Error("Failed to load projects");
+        }
 
-  const sampleOrders: Order[] = [
-    {
-      id: "1",
-      orderNo: "ORD-001",
-      amount: "$25,000",
-      status: "Shipped",
-      date: "2024-01-20",
-    },
-    {
-      id: "2",
-      orderNo: "ORD-002",
-      amount: "$15,500",
-      status: "Processing",
-      date: "2024-02-05",
-    },
-  ];
+        const data = await response.json();
+        const projectsList = data.data || data;
+        setProjects(Array.isArray(projectsList) ? projectsList : []);
+      } catch (err) {
+        console.error("Error fetching projects:", err);
+        setProjects([]);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
 
-  const sampleInvoices: Invoice[] = [
-    {
-      id: "1",
-      invoiceNo: "INV-001",
-      amount: "$25,000",
-      status: "Paid",
-      date: "2024-01-20",
-      dueDate: "2024-02-20",
-    },
-    {
-      id: "2",
-      invoiceNo: "INV-002",
-      amount: "$15,500",
-      status: "Pending",
-      date: "2024-02-10",
-      dueDate: "2024-03-10",
-    },
-  ];
+    if (accessToken && customerId) {
+      fetchProjects();
+    }
+  }, [customerId, accessToken]);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -938,69 +896,53 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
             <h6 className="font-semibold text-black dark:text-white mb-[15px]">
               Projects
             </h6>
-            <TableSearchable
-              data={sampleProjects}
-              columns={[
-                { key: "name", label: "Project Name" },
-                { key: "status", label: "Status" },
-                { key: "budget", label: "Budget" },
-                { key: "startDate", label: "Start Date" },
-                { key: "endDate", label: "End Date" },
-              ]}
-            />
+            {loadingProjects ? (
+              <div className="text-center py-[40px]">
+                <p className="text-gray-600 dark:text-gray-400">Loading projects...</p>
+              </div>
+            ) : projects.length > 0 ? (
+              <TableSearchable
+                data={projects}
+                columns={[
+                  { key: "name", label: "Project Name" },
+                  { key: "status", label: "Status" },
+                  { key: "budget", label: "Budget" },
+                  { key: "start_date", label: "Start Date" },
+                  { key: "end_date", label: "End Date" },
+                ]}
+              />
+            ) : (
+              <div className="text-center py-[40px]">
+                <p className="text-gray-600 dark:text-gray-400">No projects found for this customer</p>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === 2 && (
-          <div>
-            <h6 className="font-semibold text-black dark:text-white mb-[15px]">
-              Quotations
-            </h6>
-            <TableSearchable
-              data={sampleQuotations}
-              columns={[
-                { key: "quotationNo", label: "Quotation No" },
-                { key: "amount", label: "Amount" },
-                { key: "status", label: "Status" },
-                { key: "date", label: "Date" },
-                { key: "validUntil", label: "Valid Until" },
-              ]}
-            />
+          <div className="text-center py-[60px]">
+            <i className="material-symbols-outlined !text-[48px] text-gray-400 dark:text-gray-500 block mb-[15px]">description</i>
+            <p className="text-gray-600 dark:text-gray-400 text-base">
+              There are no quotations yet, when there are, they will show up here
+            </p>
           </div>
         )}
 
         {activeTab === 3 && (
-          <div>
-            <h6 className="font-semibold text-black dark:text-white mb-[15px]">
-              Orders
-            </h6>
-            <TableSearchable
-              data={sampleOrders}
-              columns={[
-                { key: "orderNo", label: "Order No" },
-                { key: "amount", label: "Amount" },
-                { key: "status", label: "Status" },
-                { key: "date", label: "Date" },
-              ]}
-            />
+          <div className="text-center py-[60px]">
+            <i className="material-symbols-outlined !text-[48px] text-gray-400 dark:text-gray-500 block mb-[15px]">shopping_cart</i>
+            <p className="text-gray-600 dark:text-gray-400 text-base">
+              There are no orders yet, when there are, they will show up here
+            </p>
           </div>
         )}
 
         {activeTab === 4 && (
-          <div>
-            <h6 className="font-semibold text-black dark:text-white mb-[15px]">
-              Invoices
-            </h6>
-            <TableSearchable
-              data={sampleInvoices}
-              columns={[
-                { key: "invoiceNo", label: "Invoice No" },
-                { key: "amount", label: "Amount" },
-                { key: "status", label: "Status" },
-                { key: "date", label: "Date" },
-                { key: "dueDate", label: "Due Date" },
-              ]}
-            />
+          <div className="text-center py-[60px]">
+            <i className="material-symbols-outlined !text-[48px] text-gray-400 dark:text-gray-500 block mb-[15px]">receipt</i>
+            <p className="text-gray-600 dark:text-gray-400 text-base">
+              There are no invoices yet, when there are, they will show up here
+            </p>
           </div>
         )}
       </div>
