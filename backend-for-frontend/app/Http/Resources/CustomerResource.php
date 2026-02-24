@@ -24,6 +24,16 @@ class CustomerResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
+            'users' => UserResource::collection($this->whenLoaded('users')),
+            
+            'projects' => ProjectResource::collection($this->whenLoaded('projects')),
+            
+            'quotations' => QuotationResource::collection($this->whenLoaded('quotations')),
+            
+            'orders' => OrderResource::collection($this->whenLoaded('orders')),
+            
+            'invoices' => CustInvoiceResource::collection($this->whenLoaded('invoices')),
+
         ];
     }
 }

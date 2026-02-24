@@ -23,6 +23,8 @@ class ProjectPhaseResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
+            'assignment' => new CompanyProjectResource($this->whenLoaded('assignment')),
+
             'project' => new ProjectResource($this->whenLoaded('project')),
 
             'quoteItem' => new QuoteLineItemResource($this->whenLoaded('quoteItem')),

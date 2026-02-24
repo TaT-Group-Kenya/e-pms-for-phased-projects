@@ -23,6 +23,11 @@ class CompanyResource extends BaseResource
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,
+
+            'users' => UserResource::collection($this->whenLoaded('users')),
+            'assignments' => CompanyProjectResource::collection($this->whenLoaded('assignments')),
+            'bank_accounts' => CompanyBankResource::collection($this->whenLoaded('bankAccounts')),
+            'invoices' => CompanyInvoiceResource::collection($this->whenLoaded('invoices')),
         ];
     }
 }

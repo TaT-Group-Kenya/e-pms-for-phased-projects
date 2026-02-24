@@ -17,7 +17,7 @@ class CompanyInvoiceStoreRequest extends FormRequest
         return [
             'invoice_number' => ['required', 'string', 'max:255'],
             'project_id' => ['nullable', 'exists:projects,id'],
-            'company_id' => ['nullable', 'exists:companys,id'],
+            'company_id' => ['nullable', 'exists:companies,id'],
             'project_phase_id' => ['nullable', 'exists:project_phases,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:255'],

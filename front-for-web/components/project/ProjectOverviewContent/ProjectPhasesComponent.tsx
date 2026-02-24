@@ -5,8 +5,27 @@ import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 
+interface Company {
+  id: number;
+  name: string;
+  email?: string;
+  phone?: string;
+}
+
+interface CompanyProject {
+  id: number;
+  project_id: number;
+  phase_id: number;
+  company_id: number;
+  is_complete: boolean;
+  company?: Company;
+  created_at?: string;
+  updated_at?: string;
+}
+
 interface ProjectPhase {
   id: number;
+  code?: string;
   project_id: number;
   name: string;
   description?: string;
@@ -18,6 +37,20 @@ interface ProjectPhase {
   quote_item_id?: number;
   created_at?: string;
   updated_at?: string;
+  created_by?: number;
+  updated_by?: number;
+  assignment?: {
+    id: number;
+    project_id: number;
+    phase_id: number;
+    company_id: number;
+    is_complete: boolean;
+    created_at?: string;
+    updated_at?: string;
+    created_by?: number;
+    updated_by?: number;
+    company?: Company;
+  } | null;
 }
 
 interface ProjectPhasesComponentProps {
@@ -30,17 +63,47 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
   const { addToast } = useToast();
 
   const [phases, setPhases] = useState<ProjectPhase[]>(initialPhases || []);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
   const [isAddPhaseModalOpen, setIsAddPhaseModalOpen] = useState(false);
   const [isEditPhaseModalOpen, setIsEditPhaseModalOpen] = useState(false);
+  const [isAssignCompanyModalOpen, setIsAssignCompanyModalOpen] = useState(false);
   const [editingPhaseId, setEditingPhaseId] = useState<number | null>(null);
+  const [assigningPhaseId, setAssigningPhaseId] = useState<number | null>(null);
   const [deletePhaseId, setDeletePhaseId] = useState<number | null>(null);
   const [isPhaseSubmitting, setIsPhaseSubmitting] = useState(false);
   const [phaseError, setPhaseError] = useState<string>("");
   const [editPhaseError, setEditPhaseError] = useState<string>("");
+  const [assignmentError, setAssignmentError] = useState<string>("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [phaseFormData, setPhaseFormData] = useState<Partial<ProjectPhase>>({
     status: 'new',
     progress_percentage: 0,
   });
+
+  const fetchPhases = async () => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        const project = data.data || data;
+        const phasesList = project.phases || project.project_phases || [];
+        setPhases(Array.isArray(phasesList) ? phasesList : []);
+      } else {
+        console.error("Failed to load project:", data);
+      }
+    } catch (err) {
+      console.error("Error loading project:", err);
+    }
+  };
 
   useEffect(() => {
     if (initialPhases && initialPhases.length > 0) {
@@ -49,8 +112,99 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
     }
   }, [initialPhases]);
 
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      setIsLoadingCompanies(true);
+      try {
+        const response = await fetch(`/api/companies/list?per_page=100`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          const companiesList = data.data || data;
+          setCompanies(Array.isArray(companiesList) ? companiesList : []);
+        } else {
+          console.error("Failed to load companies:", data);
+        }
+      } catch (err) {
+        console.error("Error loading companies:", err);
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
+
+    if (accessToken) {
+      fetchCompanies();
+    }
+  }, [accessToken]);
+
   const handlePhaseFormChange = (field: keyof ProjectPhase, value: any) => {
     setPhaseFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAssignCompanyToPhase = async () => {
+    setAssignmentError("");
+
+    if (!selectedCompanyId || !assigningPhaseId) {
+      setAssignmentError("Please select a company");
+      addToast("Please select a company", "error");
+      return;
+    }
+
+    setIsPhaseSubmitting(true);
+    try {
+      const response = await fetch(`/api/projects/company-projects`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          project_id: parseInt(projectId),
+          phase_id: assigningPhaseId,
+          company_id: selectedCompanyId,
+          is_complete: false,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorMsg = data.error || data.message || "Failed to assign company to phase";
+        setAssignmentError(errorMsg);
+        addToast(errorMsg, "error");
+        return;
+      }
+
+      // Reload phases to get the updated assignment data
+      await fetchPhases();
+
+      setIsAssignCompanyModalOpen(false);
+      setAssigningPhaseId(null);
+      setSelectedCompanyId(null);
+      setAssignmentError("");
+      addToast("Company assigned to phase successfully", "success");
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Error assigning company to phase";
+      setAssignmentError(errorMsg);
+      console.error("Error assigning company:", err);
+      addToast(errorMsg, "error");
+    } finally {
+      setIsPhaseSubmitting(false);
+    }
+  };
+
+  const handleOpenAssignCompanyModal = (phase: ProjectPhase) => {
+    setAssigningPhaseId(phase.id);
+    setSelectedCompanyId(phase.assignment?.company_id || null);
+    setAssignmentError("");
+    setIsAssignCompanyModalOpen(true);
   };
 
   const handleAddPhase = async () => {
@@ -223,6 +377,7 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
               <tr className="border-b border-gray-200 dark:border-[#172036]">
                 <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm"></th>
                 <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm">Phase Name</th>
+                <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm">Company</th>
                 <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm">Status</th>
                 <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm">Progress</th>
                 <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm">Start Date</th>
@@ -232,7 +387,7 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
             <tbody>
               {phases.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-[15px] py-[20px] text-center text-gray-600 dark:text-gray-400">
+                  <td colSpan={7} className="px-[15px] py-[20px] text-center text-gray-600 dark:text-gray-400">
                     No phases added yet
                   </td>
                 </tr>
@@ -258,6 +413,34 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
                       </div>
                     </td>
                     <td className="px-[15px] py-[15px] text-black dark:text-white font-medium">{phase.name}</td>
+                    <td className="px-[15px] py-[15px]">
+                      {phase.assignment?.company ? (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-[8px]">
+                            <div className="flex items-center justify-center w-[28px] h-[28px] rounded-full bg-primary-100 dark:bg-[#172036]">
+                              <i className="material-symbols-outlined text-primary-500 !text-[14px]">business</i>
+                            </div>
+                            <span className="text-sm text-black dark:text-white font-medium">{phase.assignment.company.name}</span>
+                          </div>
+                          <button
+                            onClick={() => handleOpenAssignCompanyModal(phase)}
+                            className="inline-flex items-center justify-center px-[8px] py-[4px] rounded text-xs font-medium border border-primary-200 dark:border-primary-900 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-[#172036] transition-all"
+                            title="Change assigned company"
+                          >
+                            Change
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleOpenAssignCompanyModal(phase)}
+                          className="inline-flex items-center gap-[6px] px-[12px] py-[6px] rounded-md border border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-primary-500 hover:text-primary-500 dark:hover:border-primary-500 dark:hover:text-primary-400 transition-all font-medium text-sm"
+                          title="Assign a company to this phase"
+                        >
+                          <i className="material-symbols-outlined !text-[16px]">add</i>
+                          Assign Company
+                        </button>
+                      )}
+                    </td>
                     <td className="px-[15px] py-[15px]">
                       <span className={`inline-flex items-center px-[8px] py-[4px] rounded-full text-xs font-medium capitalize ${
                         phase.status === 'complete' ? 'bg-success-100 dark:bg-success-900 text-success-700 dark:text-success-300' :
@@ -636,6 +819,106 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
                   disabled={isPhaseSubmitting}
                 >
                   {isPhaseSubmitting ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Assign Company to Phase Modal */}
+        {isAssignCompanyModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[500px] max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-[20px]">
+                <h6 className="font-semibold text-black dark:text-white">Assign Company to Phase</h6>
+                {isPhaseSubmitting && (
+                  <div className="flex items-center gap-[8px]">
+                    <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Processing...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Error Message */}
+              {assignmentError && (
+                <div className="mb-[20px] p-[12px] rounded-md bg-danger-50 dark:bg-[#2a1a1a] border border-danger-200 dark:border-danger-900">
+                  <div className="flex gap-[10px]">
+                    <i className="material-symbols-outlined text-danger-500 !text-[20px]">error</i>
+                    <div>
+                      <p className="text-sm font-medium text-danger-700 dark:text-danger-300">{assignmentError}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-[15px]">
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Select Company <span className="text-danger-500">*</span>
+                  </label>
+                  {isLoadingCompanies ? (
+                    <div className="flex items-center justify-center h-[44px]">
+                      <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : companies.length === 0 ? (
+                    <div className="h-[44px] rounded-md border border-gray-200 dark:border-[#172036] bg-gray-50 dark:bg-[#0f1621] flex items-center px-[17px]">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">No companies available</p>
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedCompanyId || ""}
+                      onChange={(e) => setSelectedCompanyId(e.target.value ? parseInt(e.target.value) : null)}
+                      disabled={isPhaseSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">-- Select a company --</option>
+                      {companies.map((company) => (
+                        <option key={company.id} value={company.id}>
+                          {company.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900 rounded-md p-[12px]">
+                  <div className="flex gap-[10px]">
+                    <i className="material-symbols-outlined text-blue-600 dark:text-blue-400 !text-[18px] flex-shrink-0 mt-[2px]">info</i>
+                    <div>
+                      <p className="text-sm text-blue-800 dark:text-blue-300">
+                        A phase can only be assigned to one company. Assigning a new company will replace the previous assignment.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-[10px] justify-end mt-[25px] pt-[20px] border-t border-gray-200 dark:border-[#172036]">
+                <button
+                  onClick={() => {
+                    setIsAssignCompanyModalOpen(false);
+                    setAssigningPhaseId(null);
+                    setSelectedCompanyId(null);
+                    setAssignmentError("");
+                  }}
+                  className="px-[20px] py-[10px] rounded-md border border-gray-200 dark:border-[#172036] text-black dark:text-white hover:bg-gray-50 dark:hover:bg-[#172036] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isPhaseSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAssignCompanyToPhase}
+                  className="px-[20px] py-[10px] rounded-md bg-primary-500 text-white hover:bg-primary-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-[8px]"
+                  disabled={isPhaseSubmitting}
+                >
+                  {isPhaseSubmitting ? (
+                    <>
+                      <div className="w-[14px] h-[14px] border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Assigning...
+                    </>
+                  ) : (
+                    "Assign Company"
+                  )}
                 </button>
               </div>
             </div>

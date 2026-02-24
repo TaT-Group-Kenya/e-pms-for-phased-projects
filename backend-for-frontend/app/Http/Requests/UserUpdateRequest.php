@@ -15,18 +15,18 @@ class UserUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['sometimes', 'required', 'email', 'max:255'],
-            'first_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'middle_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'last_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'password' => ['sometimes', 'required', 'string', 'max:255'],
-            'email_verified_at' => ['sometimes', 'required', 'date'],
-            'remember_token' => ['sometimes', 'required', 'string', 'max:255'],
-            'avatar_pic' => ['sometimes', 'required', 'string', 'max:255'],
-            'category' => ['sometimes', 'required', Rule::in(['internal','company','customer'])],
-            'is_active' => ['sometimes', 'required', 'boolean'],
-            'company_id' => ['nullable', 'exists:companys,id'],
-            'customer_id' => ['nullable', 'exists:customers,id'],
+            'email' => ['sometimes', 'email', 'max:255', 'unique:users,email,' . $this->route('user')],
+            'first_name' => ['sometimes', 'string', 'max:255'],
+            'middle_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'last_name' => ['sometimes', 'string', 'max:255'],
+            'password' => ['sometimes', 'nullable', 'string', 'min:6', 'max:255'],
+            'email_verified_at' => ['sometimes', 'nullable', 'date'],
+            'remember_token' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'avatar_pic' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'category' => ['sometimes', Rule::in(['internal','company','customer'])],
+            'is_active' => ['sometimes', 'boolean'],
+            'company_id' => ['sometimes', 'nullable', 'exists:companies,id'],
+            'customer_id' => ['sometimes', 'nullable', 'exists:customers,id'],
         ];
     }
 

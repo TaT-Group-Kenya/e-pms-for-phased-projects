@@ -37,7 +37,18 @@ class CompanyProjectService
 
     public function create(array $data)
     {
-        return CompanyProject::create($data);
+        try {
+            return CompanyProject::create($data);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() === '23505' || str_contains($e->getMessage(), 'UNIQUE constraint failed')) {
+                // PostgreSQL and SQLite unique constraint violation
+                throw new \Exception('This company has already been assigned to this project phase.', 409);
+            } elseif (str_contains($e->getMessage(), 'Duplicate entry')) {
+                // MySQL duplicate entry
+                throw new \Exception('This company has already been assigned to this project phase.', 409);
+            }
+            throw $e;
+        }
     }
 
     public function update(int $id, array $data)

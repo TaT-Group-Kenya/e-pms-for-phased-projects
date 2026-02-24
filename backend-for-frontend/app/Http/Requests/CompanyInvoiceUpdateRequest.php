@@ -19,7 +19,7 @@ class CompanyInvoiceUpdateRequest extends FormRequest
                     $this->route('company_invoice')
                 )],
             'project_id' => ['nullable', 'exists:projects,id'],
-            'company_id' => ['nullable', 'exists:companys,id'],
+            'company_id' => ['nullable', 'exists:companies,id'],
             'project_phase_id' => ['nullable', 'exists:project_phases,id'],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],

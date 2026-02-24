@@ -29,7 +29,7 @@ class UserResource extends BaseResource
 
             'customer' => new CustomerResource($this->whenLoaded('customer')),
 
-            'groups' => new GroupsResource($this->whenLoaded('groups')),
+            'groups' => new UserGroupResource($this->whenLoaded('groups')),
 
         ];
     }

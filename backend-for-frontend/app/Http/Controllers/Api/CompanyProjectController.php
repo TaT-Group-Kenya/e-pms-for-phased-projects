@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\CompanyProject;
+use App\Models\Company;
 use App\Services\CompanyProjectService;
 use App\Http\Resources\CompanyProjectResource;
 use App\Http\Requests\CompanyProjectStoreRequest;
 use App\Http\Requests\CompanyProjectUpdateRequest;
+
+use Illuminate\Support\Facades\Auth;
 
 class CompanyProjectController extends Controller
 {
@@ -29,8 +32,22 @@ class CompanyProjectController extends Controller
 
     public function store(CompanyProjectStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
-        return new CompanyProjectResource($model);
+        $this->authorize('create', Company::class);
+
+        try {
+            $validated = $request->validated();
+            $validated['created_by'] = Auth::id();
+            $validated['created_at'] = now();
+            $validated['updated_at'] = now();
+
+            $model = $this->service->create($validated);
+            return new CompanyProjectResource($model);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'code' => $e->getCode()
+            ], $e->getCode() ?: 400);
+        }
     }
 
     public function show(CompanyProject $companyProject)
@@ -44,7 +61,12 @@ class CompanyProjectController extends Controller
     {
         $this->authorize('update', $companyProject);
 
-        $updated = $this->service->update($companyProject->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $validated['updated_at'] = now();
+
+
+        $updated = $this->service->update($companyProject->id, $validated);
         return new CompanyProjectResource($updated);
     }
 

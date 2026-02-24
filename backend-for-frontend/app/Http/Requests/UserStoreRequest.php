@@ -17,15 +17,15 @@ class UserStoreRequest extends FormRequest
         return [
             'email' => ['required', 'email', 'max:255'],
             'first_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string', 'max:255'],
-            'email_verified_at' => ['required', 'date'],
-            'remember_token' => ['required', 'string', 'max:255'],
-            'avatar_pic' => ['required', 'string', 'max:255'],
+            'password' => ['nullable', 'string', 'max:255'],
+            'email_verified_at' => ['nullable', 'date'],
+            'remember_token' => ['nullable', 'string', 'max:255'],
+            'avatar_pic' => ['nullable', 'string', 'max:255'],
             'category' => ['required', Rule::in(['internal','company','customer'])],
             'is_active' => ['required', 'boolean'],
-            'company_id' => ['nullable', 'exists:companys,id'],
+            'company_id' => ['nullable', 'exists:companies,id'],
             'customer_id' => ['nullable', 'exists:customers,id'],
         ];
     }

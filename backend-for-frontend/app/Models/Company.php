@@ -25,4 +25,24 @@ class Company extends Model
         'created_at',
         'created_by',
     ];
+
+    public function users()
+    {
+        return $this->hasMany(User::class, 'company_id');
+    }
+
+    public function assignments()
+    {
+        return $this->hasMany(CompanyProject::class, 'company_id');
+    }
+
+    public function bankAccounts()
+    {
+        return $this->hasMany(CompanyBank::class, 'company_id');
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(CompanyInvoice::class, 'company_id');
+    }
 }

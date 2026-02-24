@@ -48,6 +48,15 @@ class CustomerController extends Controller
     {
         $this->authorize('view', $customer);
 
+        // Eager load all relationships
+        $customer->load([
+            'users',
+            'projects',
+            'quotations',
+            'orders',
+            'invoices'
+        ]);
+
         return new CustomerResource($customer);
     }
 

@@ -15,8 +15,8 @@ class CompanyBankStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => ['nullable', 'exists:companys,id'],
-            'type' => ['required', Rule::in(['Bank','MPESA'])],
+            'company_id' => ['nullable', 'exists:companies,id'],
+            'type' => ['required', Rule::in(['Bank','MPESA', 'CASH'])],
             'account_no' => ['required', 'string', 'max:255'],
             'swiftcode' => ['required', 'string', 'max:255'],
             'branch' => ['required', 'string', 'max:255'],

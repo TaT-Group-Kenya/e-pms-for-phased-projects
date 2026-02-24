@@ -16,14 +16,15 @@ const getAccordionIndexFromPathname = (pathname: string | null): number | null =
   // Map routes to accordion indices based on the path prefix
   if (pathname.startsWith("/project")) return 0;
   if (pathname.startsWith("/customer")) return 1;
-  if (pathname.startsWith("/helpdesk")) return 2;
-  if (pathname.startsWith("/nft")) return 3;
-  if (pathname.startsWith("/real-estate")) return 4;
-  if (pathname.startsWith("/invoices")) return 5;
-  if (pathname.startsWith("/finance")) return 6;
-  if (pathname.startsWith("/users")) return 7;
-  if (pathname.startsWith("/doctor")) return 8;
-  if (pathname.startsWith("/settings")) return 9;
+  if (pathname.startsWith("/company")) return 2;
+  if (pathname.startsWith("/helpdesk")) return 3;
+  if (pathname.startsWith("/nft")) return 4;
+  if (pathname.startsWith("/real-estate")) return 5;
+  if (pathname.startsWith("/invoices")) return 6;
+  if (pathname.startsWith("/finance")) return 7;
+  if (pathname.startsWith("/users")) return 8;
+  if (pathname.startsWith("/doctor")) return 9;
+  if (pathname.startsWith("/settings")) return 10;
   return null;
 };
 
@@ -253,44 +254,35 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                   <ul className="sidebar-sub-menu">
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/helpdesk/tickets/"
+                        href="/company/company-list"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/helpdesk/tickets/" ? "active" : ""
+                          isSameEntityPage('/company/company-list', pathname) ? "active" : ""
                         }`}
                       >
-                        Tickets
+                        Companies
                       </Link>
                     </li>
 
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/helpdesk/ticket-details/"
+                        href="/company/create-company"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/helpdesk/ticket-details/"
+                          pathname === "/company/create-company"
                             ? "active"
                             : ""
                         }`}
                       >
-                        Ticket Details
+                        Add Company
                       </Link>
                     </li>
 
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/helpdesk/agents/"
+                        href="/company/report"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/helpdesk/agents/" ? "active" : ""
-                        }`}
-                      >
-                        Agents
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/helpdesk/reports/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/helpdesk/reports/" ? "active" : ""
+                          pathname === "/company/report"
+                            ? "active"
+                            : ""
                         }`}
                       >
                         Reports
@@ -304,10 +296,10 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
             <div className="accordion-item rounded-md text-black dark:text-white mb-[5px] whitespace-nowrap">
               <button
                 className={`accordion-button toggle flex items-center transition-all py-[9px] ltr:pl-[14px] ltr:pr-[30px] rtl:pr-[14px] rtl:pl-[30px] rounded-md font-medium w-full relative hover:bg-gray-50 text-left dark:hover:bg-[#15203c] ${
-                  openIndex === 3 ? "open" : ""
+                  openIndex === 4 ? "open" : ""
                 }`}
                 type="button"
-                onClick={() => toggleAccordion(3)}
+                onClick={() => toggleAccordion(4)}
               >
                 <i className="material-symbols-outlined transition-all text-gray-500 dark:text-gray-400 ltr:mr-[7px] rtl:ml-[7px] !text-[22px] leading-none relative -top-px">
                   request_quote
@@ -317,7 +309,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
               <div
                 className={`accordion-collapse ${
-                  openIndex === 3 ? "open" : "hidden"
+                  openIndex === 4 ? "open" : "hidden"
                 }`}
               >
                 <div className="pt-[4px]">
@@ -417,10 +409,10 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
             <div className="accordion-item rounded-md text-black dark:text-white mb-[5px] whitespace-nowrap">
               <button
                 className={`accordion-button toggle flex items-center transition-all py-[9px] ltr:pl-[14px] ltr:pr-[30px] rtl:pr-[14px] rtl:pl-[30px] rounded-md font-medium w-full relative hover:bg-gray-50 text-left dark:hover:bg-[#15203c] ${
-                  openIndex === 4 ? "open" : ""
+                  openIndex === 5 ? "open" : ""
                 }`}
                 type="button"
-                onClick={() => toggleAccordion(4)}
+                onClick={() => toggleAccordion(5)}
               >
                 <i className="material-symbols-outlined transition-all text-gray-500 dark:text-gray-400 ltr:mr-[7px] rtl:ml-[7px] !text-[22px] leading-none relative -top-px">
                   receipt_long
@@ -430,7 +422,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
               <div
                 className={`accordion-collapse ${
-                  openIndex === 4 ? "open" : "hidden"
+                  openIndex === 5 ? "open" : "hidden"
                 }`}
               >
                 <div className="pt-[4px]">
@@ -527,10 +519,10 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
             <div className="accordion-item rounded-md text-black dark:text-white mb-[5px] whitespace-nowrap">
               <button
                 className={`accordion-button toggle flex items-center transition-all py-[9px] ltr:pl-[14px] ltr:pr-[30px] rtl:pr-[14px] rtl:pl-[30px] rounded-md font-medium w-full relative hover:bg-gray-50 text-left dark:hover:bg-[#15203c] ${
-                  openIndex === 5 ? "open" : ""
+                  openIndex === 6 ? "open" : ""
                 }`}
                 type="button"
-                onClick={() => toggleAccordion(5)}
+                onClick={() => toggleAccordion(6)}
               >
                 <i className="material-symbols-outlined transition-all text-gray-500 dark:text-gray-400 ltr:mr-[7px] rtl:ml-[7px] !text-[22px] leading-none relative -top-px">
                   content_paste
@@ -540,7 +532,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
               <div
                 className={`accordion-collapse ${
-                  openIndex === 5 ? "open" : "hidden"
+                  openIndex === 6 ? "open" : "hidden"
                 }`}
               >
                 <div className="pt-[4px]">
@@ -600,10 +592,10 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
             <div className="accordion-item rounded-md text-black dark:text-white mb-[5px] whitespace-nowrap">
               <button
                 className={`accordion-button toggle flex items-center transition-all py-[9px] ltr:pl-[14px] ltr:pr-[30px] rtl:pr-[14px] rtl:pl-[30px] rounded-md font-medium w-full relative hover:bg-gray-50 text-left dark:hover:bg-[#15203c] ${
-                  openIndex === 6 ? "open" : ""
+                  openIndex === 7 ? "open" : ""
                 }`}
                 type="button"
-                onClick={() => toggleAccordion(6)}
+                onClick={() => toggleAccordion(7)}
               >
                 <i className="material-symbols-outlined transition-all text-gray-500 dark:text-gray-400 ltr:mr-[7px] rtl:ml-[7px] !text-[22px] leading-none relative -top-px">
                   calculate
@@ -613,7 +605,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
               <div
                 className={`accordion-collapse ${
-                  openIndex === 6 ? "open" : "hidden"
+                  openIndex === 7 ? "open" : "hidden"
                 }`}
               >
                 <div className="pt-[4px]">
@@ -659,10 +651,10 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
             <div className="accordion-item rounded-md text-black dark:text-white mb-[5px] whitespace-nowrap">
               <button
                 className={`accordion-button toggle flex items-center transition-all py-[9px] ltr:pl-[14px] ltr:pr-[30px] rtl:pr-[14px] rtl:pl-[30px] rounded-md font-medium w-full relative hover:bg-gray-50 text-left dark:hover:bg-[#15203c] ${
-                  openIndex === 7 ? "open" : ""
+                  openIndex === 8 ? "open" : ""
                 }`}
                 type="button"
-                onClick={() => toggleAccordion(7)}
+                onClick={() => toggleAccordion(8)}
               >
                 <i className="material-symbols-outlined transition-all text-gray-500 dark:text-gray-400 ltr:mr-[7px] rtl:ml-[7px] !text-[22px] leading-none relative -top-px">
                   person
@@ -672,7 +664,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
               <div
                 className={`accordion-collapse ${
-                  openIndex === 7 ? "open" : "hidden"
+                  openIndex === 8 ? "open" : "hidden"
                 }`}
               >
                 <div className="pt-[4px]">
@@ -718,10 +710,10 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
             <div className="accordion-item rounded-md text-black dark:text-white mb-[5px] whitespace-nowrap">
               <button
                 className={`accordion-button toggle flex items-center transition-all py-[9px] ltr:pl-[14px] ltr:pr-[30px] rtl:pr-[14px] rtl:pl-[30px] rounded-md font-medium w-full relative hover:bg-gray-50 text-left dark:hover:bg-[#15203c] ${
-                  openIndex === 8 ? "open" : ""
+                  openIndex === 9 ? "open" : ""
                 }`}
                 type="button"
-                onClick={() => toggleAccordion(8)}
+                onClick={() => toggleAccordion(9)}
               >
                 <i className="material-symbols-outlined transition-all text-gray-500 dark:text-gray-400 ltr:mr-[7px] rtl:ml-[7px] !text-[22px] leading-none relative -top-px">
                   dashboard_customize
@@ -731,7 +723,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
               <div
                 className={`accordion-collapse ${
-                  openIndex === 8 ? "open" : "hidden"
+                  openIndex === 9 ? "open" : "hidden"
                 }`}
               >
                 <div className="pt-[4px]">

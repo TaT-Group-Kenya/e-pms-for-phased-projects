@@ -39,4 +39,9 @@ class ProjectPhase extends Model
     {
         return $this->hasOne(OrderItem::class, 'project_phase_id');
     }
+
+    public function assignment()
+    {
+        return $this->hasOne(CompanyProject::class, 'phase_id');
+    }
 }

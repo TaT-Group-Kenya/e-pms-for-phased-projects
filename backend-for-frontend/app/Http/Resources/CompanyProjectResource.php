@@ -19,7 +19,7 @@ class CompanyProjectResource extends BaseResource
 
             'project' => new ProjectResource($this->whenLoaded('project')),
 
-            'phase' => new PhaseResource($this->whenLoaded('phase')),
+            'phase' => new ProjectPhaseResource($this->whenLoaded('phase')),
 
             'company' => new CompanyResource($this->whenLoaded('company')),
 

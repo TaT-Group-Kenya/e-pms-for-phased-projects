@@ -43,7 +43,17 @@ class UserService
     public function update(int $id, array $data)
     {
         $model = User::findOrFail($id);
-        $model->update($data);
+        
+        // Perform the update
+        $result = $model->update($data);
+        
+        if (!$result) {
+            throw new \Exception('Failed to update user in database');
+        }
+        
+        // Refresh the model to get the latest data from database
+        $model->refresh();
+        
         return $model;
     }
 
