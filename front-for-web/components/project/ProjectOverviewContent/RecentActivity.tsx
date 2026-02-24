@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 
 interface Activity {
   id: number;
@@ -11,45 +11,80 @@ interface Activity {
   color: string;
 }
 
-const RecentActivity: React.FC = () => {
-  const [activities] = useState<Activity[]>([
-    {
-      id: 1,
-      timestamp: "Just now",
-      title: "Weekly Stand-Up Meetings",
-      description:
-        "We continued our weekly stand-up meetings where team members provided updates on their current tasks, discussed any roadblocks, and coordinated efforts for the week ahead.",
-      author: "Olivia Rodriguez",
-      color: "bg-success-500",
-    },
-    {
-      id: 2,
-      timestamp: "1 day ago",
-      title: "Project Kickoff Session",
-      description:
-        "The session included introductions, a review of project goals and objectives, and initial planning discussions.",
-      author: "Isabella Cooper",
-      color: "bg-orange-500",
-    },
-    {
-      id: 3,
-      timestamp: "2 days ago",
-      title: "Team Building Workshop",
-      description:
-        "Last Friday, we conducted a team building workshop focused on improving communication and collaboration among team members.",
-      author: "Lucas Morgan",
-      color: "bg-purple-500",
-    },
-    {
-      id: 4,
-      timestamp: "3 days ago",
-      title: "Lunch and Learn Session",
-      description:
-        "We organized a lunch and learn session where a guest speaker discussed emerging trends in our field.",
-      author: "Ethan Parker",
-      color: "bg-secondary-500",
-    },
-  ]);
+interface ProjectDetailsData {
+  id: number;
+  name: string;
+  status?: string;
+  progress?: number;
+  created_at?: string;
+}
+
+interface RecentActivityProps {
+  project?: ProjectDetailsData | null;
+}
+
+const RecentActivity: React.FC<RecentActivityProps> = ({ project }) => {
+  const activities = useMemo<Activity[]>(() => {
+    if (!project) {
+      return [];
+    }
+
+    const projectActivities: Activity[] = [];
+
+    // Generate activities based on project data
+    if (project.progress) {
+      projectActivities.push({
+        id: 1,
+        timestamp: "Today",
+        title: "Project Progress Update",
+        description: `Project is currently at ${project.progress}% completion. The project is making steady progress towards completion.`,
+        author: project.name,
+        color: "bg-primary-500",
+      });
+    }
+
+    if (project.status) {
+      const statusMessages: { [key: string]: string } = {
+        'in progress': 'The project is actively being worked on by the team.',
+        'pending': 'The project is awaiting to start and resource allocation.',
+        'completed': 'The project has been successfully completed and delivered.',
+        'on hold': 'The project has been temporarily paused pending further action.',
+      };
+
+      projectActivities.push({
+        id: 2,
+        timestamp: "2 days ago",
+        title: `Project Status: ${project.status}`,
+        description: statusMessages[project.status.toLowerCase()] || `Project status is ${project.status}.`,
+        author: project.name,
+        color: "bg-warning-500",
+      });
+    }
+
+    if (project.created_at) {
+      projectActivities.push({
+        id: 3,
+        timestamp: "3+ days ago",
+        title: "Project Created",
+        description: `Project ${project.name} was created and initialized in the system.`,
+        author: project.name,
+        color: "bg-success-500",
+      });
+    }
+
+    return projectActivities.length > 0
+      ? projectActivities
+      : [
+          {
+            id: 1,
+            timestamp: "N/A",
+            title: "No Activity",
+            description: "No project activity has been recorded yet.",
+            author: "System",
+            color: "bg-gray-500",
+          },
+        ];
+  }, [project]);
 
   return (
     <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
@@ -78,9 +113,6 @@ const RecentActivity: React.FC = () => {
               <p className="md:max-w-[500px] text-sm leading-[1.7] mb-[11px]">
                 {activity.description}
               </p>
-              <span className="block text-sm">
-                By: <span className="text-primary-500">{activity.author}</span>
-              </span>
             </div>
           ))}
         </div>

@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 import Link from "next/link";
-import ProjectDetailsView from "../../../components/project/ProjectOverviewContent/ProjectDetailsView";
+import ProjectOverviewContent from "../../../components/project/ProjectOverviewContent";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 
 export default function ProjectDetailsPage() {
@@ -51,7 +51,7 @@ export default function ProjectDetailsPage() {
           </ol>
         </div>
 
-        <ProjectDetailsView projectId={String(id)} />
+        <ProjectOverviewContent projectId={String(id)} />
       </>
     </AuthenticatedLayout>
   );

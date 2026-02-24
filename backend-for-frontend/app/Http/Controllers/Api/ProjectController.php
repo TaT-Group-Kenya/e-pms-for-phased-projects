@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Services\ProjectService;
 use App\Http\Resources\ProjectResource;
+use App\Services\CommonService;
 use App\Http\Requests\ProjectStoreRequest;
 use App\Http\Requests\ProjectUpdateRequest;
 use Illuminate\Support\Facades\Auth;
@@ -36,7 +37,8 @@ class ProjectController extends Controller
         $validated = $request->validated();
         
         do {
-            $code = $this->service->generateUniquePhaseCode('PRJ-');
+            $commonService = new CommonService();
+            $code = $commonService->generateUniqueCode('PRJ-');
         } while (Project::where('code', $code)->exists());
         
         $validated['code'] = $code;
@@ -53,6 +55,37 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
+        // Eager load all relationships
+        $project->load([
+            'customer',
+            'category',
+            'phases',
+            'order',
+            'quotation',
+            'customer_invoices',
+            'company_invoices'
+        ]);
+
+        // Fetch incoming payments from customer invoices
+        $incomingPayments = [];
+        if ($project->customer_invoices && count($project->customer_invoices) > 0) {
+            $invoiceIds = $project->customer_invoices->pluck('id')->toArray();
+            $incomingPayments = \App\Models\CustPayment::whereHas('allocations', function ($query) use ($invoiceIds) {
+                $query->whereIn('invoice_id', $invoiceIds);
+            })->with('allocations')->get();
+        }
+
+        // Fetch outgoing payments from company invoices
+        $outgoingPayments = [];
+        if ($project->company_invoices && count($project->company_invoices) > 0) {
+            $invoiceIds = $project->company_invoices->pluck('id')->toArray();
+            $outgoingPayments = \App\Models\CompanyPayment::whereIn('invoice_id', $invoiceIds)->get();
+        }
+
+        // Attach payments to project
+        $project->in_coming_payments = $incomingPayments;
+        $project->out_going_payments = $outgoingPayments;
+
         return new ProjectResource($project);
     }
 
@@ -64,6 +97,16 @@ class ProjectController extends Controller
         $validated['updated_by'] = Auth::id();
         
         $updated = $this->service->update($project->id, $validated);
+        
+        // If project status is being changed, update all project phases status
+        if (isset($validated['status']) && $validated['status'] !== $project->status) {
+            $updated->phases()->update([
+                'status' => $validated['status'],
+                'updated_by' => Auth::id(),
+                'updated_at' => now()
+            ]);
+        }
+        
         return new ProjectResource($updated);
     }
 

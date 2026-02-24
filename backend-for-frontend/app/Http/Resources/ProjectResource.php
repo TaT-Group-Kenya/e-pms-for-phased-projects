@@ -37,6 +37,14 @@ class ProjectResource extends BaseResource
 
             'quotation' => new QuotationResource($this->whenLoaded('quotation')),
 
+            'customer_invoices' => CustInvoiceResource::collection($this->whenLoaded('customer_invoices')),
+            
+            'company_invoices' => CompanyInvoiceResource::collection($this->whenLoaded('company_invoices')),
+            
+            'in_coming_payments' => CustPaymentResource::collection(collect($this->in_coming_payments ?? [])),
+
+            'out_going_payments' => CompanyPaymentResource::collection(collect($this->out_going_payments ?? [])),
+
         ];
     }
 }

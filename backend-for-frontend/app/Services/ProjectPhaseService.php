@@ -51,4 +51,16 @@ class ProjectPhaseService
     {
         return ProjectPhase::destroy($id);
     }
+
+    /**
+     * Generate unique project phase code with format PRP-XXXX-XXXX (numeric)
+    */
+    public function generateUniquePhaseCode($prefix = 'PRP-'): string
+    {
+        do {
+            $code = $prefix . str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT) . '-' . str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+        } while (ProjectPhase::where('code', $code)->exists());
+        
+        return $code;
+    }
 }

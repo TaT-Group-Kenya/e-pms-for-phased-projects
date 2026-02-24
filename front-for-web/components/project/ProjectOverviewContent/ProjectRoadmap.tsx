@@ -7,18 +7,70 @@ import dynamic from "next/dynamic";
 // Dynamically import react-apexcharts with Next.js dynamic import
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
-const ProjectRoadmap: React.FC = () => {
+interface ProjectPhase {
+  id: number;
+  name: string;
+  progress_percentage?: number;
+  status?: string;
+}
+
+interface ProjectDetailsData {
+  id: number;
+  name: string;
+  no_of_phases?: number;
+  progress?: number;
+  phases?: ProjectPhase[];
+}
+
+interface ProjectRoadmapProps {
+  project?: ProjectDetailsData | null;
+}
+
+const ProjectRoadmap: React.FC<ProjectRoadmapProps> = ({ project }) => {
   // Chart
   const [isChartLoaded, setChartLoaded] = useState(false);
+  const [seriesData, setSeriesData] = useState<number[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
     setChartLoaded(true);
-  }, []);
+
+    if (!project) {
+      setCategories([]);
+      setSeriesData([]);
+      return;
+    }
+
+    // Use actual phases from API if available
+    if (project.phases && project.phases.length > 0) {
+      const phaseNames = project.phases.map(phase => phase.name);
+      const progressData = project.phases.map(phase => phase.progress_percentage || 0);
+      
+      setCategories(phaseNames);
+      setSeriesData(progressData);
+    } else {
+      // Fallback: generate based on no_of_phases count
+      const phases = project.no_of_phases || 5;
+      const phaseNames = [];
+      const progressData = [];
+      const overallProgress = project.progress || 0;
+      const progressPerPhase = Math.floor(overallProgress / phases);
+
+      for (let i = 1; i <= phases; i++) {
+        phaseNames.push(`Phase ${i}`);
+        // Distribute progress across phases
+        progressData.push(Math.min(progressPerPhase * i, 100));
+      }
+
+      setCategories(phaseNames);
+      setSeriesData(progressData);
+    }
+  }, [project]);
 
   const series = [
     {
-      name: "Projects",
-      data: [400, 550, 600, 700, 1000, 1100, 1200],
+      name: "Progress %",
+      data: seriesData.length > 0 ? seriesData : [0],
     },
   ];
 
@@ -42,15 +94,7 @@ const ProjectRoadmap: React.FC = () => {
       enabled: false,
     },
     xaxis: {
-      categories: [
-        "Project Planning",
-        "Research",
-        "Design",
-        "Front-end",
-        "Development",
-        "Review & QA",
-        "Launch",
-      ],
+      categories: categories.length > 0 ? categories : ["Phase 1"],
       axisTicks: {
         show: true,
         color: "#ECEEF2",

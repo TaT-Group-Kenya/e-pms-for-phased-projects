@@ -25,7 +25,7 @@ class ProjectPhaseResource extends BaseResource
 
             'project' => new ProjectResource($this->whenLoaded('project')),
 
-            'quoteItem' => new QuoteItemResource($this->whenLoaded('quoteItem')),
+            'quoteItem' => new QuoteLineItemResource($this->whenLoaded('quoteItem')),
 
             'orderItem' => new OrderItemResource($this->whenLoaded('orderItem')),
 
