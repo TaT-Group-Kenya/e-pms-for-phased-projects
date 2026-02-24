@@ -26,8 +26,6 @@ class CustomerStoreRequest extends FormRequest
             'state' => ['nullable', 'string', 'max:255'],
             'country' => ['required', 'string', 'max:255'],
             'kra_pin' => ['nullable', 'string', 'max:255'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

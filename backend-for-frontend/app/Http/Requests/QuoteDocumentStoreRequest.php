@@ -19,10 +19,6 @@ class QuoteDocumentStoreRequest extends FormRequest
             'document_path' => ['required', 'string', 'max:255'],
             'document_type' => ['required', Rule::in(['proposal','terms','attachments'])],
             'attachments' => ['required', 'string', 'max:255'],
-            'updated_at' => ['required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

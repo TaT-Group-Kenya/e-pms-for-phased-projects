@@ -13,19 +13,18 @@ import { formatApiError } from "../../../utils/errorHandler";
 
 // Zod schema for form validation - based on ProjectStoreRequest
 const projectSchema = z.object({
-  code: z.string().min(1, "Project code is required").max(255, "Project code must not exceed 255 characters"),
   name: z.string().min(1, "Project name is required").max(255, "Project name must not exceed 255 characters"),
   description: z.string().min(1, "Description is required").max(255, "Description must not exceed 255 characters"),
-  customer_id: z.string().optional().nullable(),
+  customer_id: z.string().min(1, "Customer is required"),
   project_category_id: z.string().min(1, "Project category is required"),
   no_of_phases: z.string().min(1, "Number of phases is required"),
-  start_date: z.string().min(1, "Start date is required"),
-  end_date: z.string().min(1, "End date is required"),
-  budget_estimate: z.string().min(1, "Budget estimate is required"),
-  status: z.string().min(1, "Status is required"),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+  budget_estimate: z.string().optional(),
+  status: z.enum(["new", "progress", "draft", "complete"]).optional(),
   priority: z.string().min(1, "Priority is required"),
   progress: z.string().min(1, "Progress is required"),
-  tags: z.string().min(1, "Tags are required"),
+  tags: z.string().optional(),
   currency: z.string().min(1, "Currency is required"),
   updated_by: z.string().optional().nullable(),
   created_by: z.string().optional().nullable(),
@@ -43,6 +42,13 @@ interface ProjectCategory {
   name: string;
 }
 
+interface Currency {
+  id: number;
+  code: string;
+  symbol: string;
+  name: string;
+}
+
 const CreateProjectForm: React.FC = () => {
   const router = useRouter();
   const accessToken = useSelector(selectAccessToken);
@@ -52,6 +58,8 @@ const CreateProjectForm: React.FC = () => {
   const [formError, setFormError] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [projectCategories, setProjectCategories] = useState<ProjectCategory[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   const {
@@ -70,7 +78,7 @@ const CreateProjectForm: React.FC = () => {
 
     const fetchData = async () => {
       try {
-        const [customersRes, categoriesRes] = await Promise.all([
+        const [customersRes, categoriesRes, currenciesRes] = await Promise.all([
           fetch("/api/customers/list?per_page=1000", {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -83,18 +91,27 @@ const CreateProjectForm: React.FC = () => {
             },
             signal: controller.signal,
           }),
+          fetch("/api/currencies/list?per_page=100", {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
+          }),
         ]);
 
         if (controller.signal.aborted) return;
 
         const customersData = await customersRes.json();
         const categoriesData = await categoriesRes.json();
+        const currenciesData = await currenciesRes.json();
 
         const customerList = customersData.data || customersData;
         const categoriesList = categoriesData.data || categoriesData;
+        const currenciesList = currenciesData.data || currenciesData;
         
         setCustomers(Array.isArray(customerList) ? customerList : []);
         setProjectCategories(Array.isArray(categoriesList) ? categoriesList : []);
+        setCurrencies(Array.isArray(currenciesList) ? currenciesList : []);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           return;
@@ -122,7 +139,6 @@ const CreateProjectForm: React.FC = () => {
 
     try {
       const bodyData = {
-        code: data.code,
         name: data.name,
         description: data.description,
         customer_id: data.customer_id ? parseInt(data.customer_id) : null,
@@ -134,7 +150,7 @@ const CreateProjectForm: React.FC = () => {
         status: data.status,
         priority: data.priority,
         progress: data.progress,
-        tags: data.tags,
+        tags: tags.join(","),
         currency: data.currency,
       };
 
@@ -156,6 +172,7 @@ const CreateProjectForm: React.FC = () => {
 
       setSuccessMessage("Project created successfully!");
       reset();
+      setTags([]);
 
       setTimeout(() => {
         router.push("/project/project-list");
@@ -203,22 +220,6 @@ const CreateProjectForm: React.FC = () => {
             )}
 
             <div className="sm:grid sm:grid-cols-2 sm:gap-[25px]">
-              {/* Code - Required */}
-              <div className="mb-[20px] sm:mb-0">
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Code <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  {...register("code")}
-                  className={`h-[44px] rounded-md text-black dark:text-white border ${
-                    errors.code ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
-                  } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                  placeholder="E.g. PRJ-001"
-                />
-                {renderFieldError("code")}
-              </div>
-
               {/* Name - Required */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
@@ -251,10 +252,10 @@ const CreateProjectForm: React.FC = () => {
                 {renderFieldError("description")}
               </div>
 
-              {/* Customer - Optional */}
+              {/* Customer - Required */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Customer
+                  Customer <span className="text-danger-500">*</span>
                 </label>
                 <select
                   {...register("customer_id")}
@@ -263,7 +264,7 @@ const CreateProjectForm: React.FC = () => {
                     errors.customer_id ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
                   } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 cursor-pointer disabled:opacity-50`}
                 >
-                  <option value="">{loadingData ? "Loading customers..." : "Select a customer (optional)"}</option>
+                  <option value="">{loadingData ? "Loading customers..." : "Select a customer (required)"}</option>
                   {customers.map((customer) => (
                     <option key={customer.id} value={customer.id.toString()}>
                       {customer.name}
@@ -311,10 +312,10 @@ const CreateProjectForm: React.FC = () => {
                 {renderFieldError("no_of_phases")}
               </div>
 
-              {/* Start Date - Required */}
+              {/* Start Date - Optional */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Start Date <span className="text-danger-500">*</span>
+                  Start Date
                 </label>
                 <input
                   type="date"
@@ -326,10 +327,10 @@ const CreateProjectForm: React.FC = () => {
                 {renderFieldError("start_date")}
               </div>
 
-              {/* End Date - Required */}
+              {/* End Date - Optional */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  End Date <span className="text-danger-500">*</span>
+                  End Date
                 </label>
                 <input
                   type="date"
@@ -341,10 +342,10 @@ const CreateProjectForm: React.FC = () => {
                 {renderFieldError("end_date")}
               </div>
 
-              {/* Budget Estimate - Required */}
+              {/* Budget Estimate - Optional */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Budget Estimate <span className="text-danger-500">*</span>
+                  Budget Estimate
                 </label>
                 <input
                   type="text"
@@ -364,24 +365,25 @@ const CreateProjectForm: React.FC = () => {
                 </label>
                 <select
                   {...register("currency")}
+                  disabled={loadingData}
                   className={`h-[44px] rounded-md text-black dark:text-white border ${
                     errors.currency ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
-                  } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer`}
+                  } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50`}
                 >
-                  <option value="">Select a currency</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                  <option value="KES">KES (Ksh)</option>
-                  <option value="INR">INR (₹)</option>
+                  <option value="">{loadingData ? "Loading currencies..." : "Select a currency"}</option>
+                  {currencies.map((currency) => (
+                    <option key={currency.id} value={currency.code}>
+                      {currency.name} ({currency.code})
+                    </option>
+                  ))}
                 </select>
                 {renderFieldError("currency")}
               </div>
 
-              {/* Status - Required */}
+              {/* Status - Optional */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Status <span className="text-danger-500">*</span>
+                  Status
                 </label>
                 <select
                   {...register("status")}
@@ -389,11 +391,11 @@ const CreateProjectForm: React.FC = () => {
                     errors.status ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
                   } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer`}
                 >
-                  <option value="">Select a status</option>
-                  <option value="Not Started">Not Started</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Completed">Completed</option>
+                  <option value="">Select a status (optional)</option>
+                  <option value="draft">Draft</option>
+                  <option value="new">New</option>
+                  <option value="progress">Progress</option>
+                  <option value="complete">Complete</option>
                 </select>
                 {renderFieldError("status")}
               </div>
@@ -435,19 +437,48 @@ const CreateProjectForm: React.FC = () => {
                 {renderFieldError("progress")}
               </div>
 
-              {/* Tags - Required */}
+              {/* Tags - Optional */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Tags <span className="text-danger-500">*</span>
+                  Tags
                 </label>
-                <input
-                  type="text"
-                  {...register("tags")}
-                  className={`h-[44px] rounded-md text-black dark:text-white border ${
-                    errors.tags ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
-                  } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                  placeholder="E.g. web,frontend,api"
-                />
+                <div className={`rounded-md border ${
+                  tags.length === 0 && !errors.tags ? "border-gray-200 dark:border-[#172036]" : 
+                  tags.length === 0 ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                } bg-white dark:bg-[#0c1427] px-[12px] py-[8px] block w-full outline-0 transition-all focus:border-primary-500`}>
+                  <div className="flex flex-wrap gap-[8px] mb-[8px]">
+                    {tags.map((tag, index) => (
+                      <div
+                        key={index}
+                        className="inline-flex items-center gap-[6px] px-[10px] py-[4px] bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => setTags(tags.filter((_, i) => i !== index))}
+                          className="hover:text-primary-900 dark:hover:text-primary-100 cursor-pointer font-bold"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const value = (e.target as HTMLInputElement).value.trim();
+                        if (value && !tags.includes(value)) {
+                          setTags([...tags, value]);
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }
+                    }}
+                    className="w-full outline-0 bg-transparent text-black dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                    placeholder={tags.length === 0 ? "E.g. web, frontend, api (Press Enter to add)" : "Press Enter to add"}
+                  />
+                </div>
                 {renderFieldError("tags")}
               </div>
             </div>

@@ -18,10 +18,6 @@ class OrderTaxItemsUpdateRequest extends FormRequest
             'order_id' => ['nullable', 'exists:orders,id'],
             'item_name' => ['sometimes', 'required', 'string', 'max:255'],
             'item_type' => ['sometimes', 'required', 'string', 'max:255'],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

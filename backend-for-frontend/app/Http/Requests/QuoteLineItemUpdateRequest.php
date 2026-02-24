@@ -23,10 +23,6 @@ class QuoteLineItemUpdateRequest extends FormRequest
             'estimated_hours_nullable' => ['sometimes', 'required', 'string', 'max:255'],
             'custom_note' => ['sometimes', 'required', 'string', 'max:255'],
             'is_taxable' => ['sometimes', 'required', 'boolean'],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

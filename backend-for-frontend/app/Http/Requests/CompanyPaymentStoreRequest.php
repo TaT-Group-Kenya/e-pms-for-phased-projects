@@ -29,10 +29,6 @@ class CompanyPaymentStoreRequest extends FormRequest
             'receipt_number' => ['required', 'string', 'max:255'],
             'reconciled' => ['required', 'string', 'max:255'],
             'reconciliation_date' => ['required', 'date'],
-            'updated_at' => ['required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

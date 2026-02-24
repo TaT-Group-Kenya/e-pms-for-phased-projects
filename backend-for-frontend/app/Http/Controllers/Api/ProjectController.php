@@ -8,6 +8,8 @@ use App\Services\ProjectService;
 use App\Http\Resources\ProjectResource;
 use App\Http\Requests\ProjectStoreRequest;
 use App\Http\Requests\ProjectUpdateRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
@@ -29,7 +31,21 @@ class ProjectController extends Controller
 
     public function store(ProjectStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $this->authorize('create', Project::class);
+        
+        $validated = $request->validated();
+        
+        do {
+            $code = $this->service->generateUniquePhaseCode('PRJ-');
+        } while (Project::where('code', $code)->exists());
+        
+        $validated['code'] = $code;
+        $validated['created_by'] = Auth::id();
+        $validated['quote_item_id'] = null;
+        $validated['start_date'] = is_null($validated['start_date']) ? new \DateTime() : $validated['start_date'];
+        $validated['end_date'] = is_null($validated['end_date']) ? new \DateTime() : $validated['end_date'];
+        
+        $model = $this->service->create($validated);
         return new ProjectResource($model);
     }
 
@@ -44,7 +60,10 @@ class ProjectController extends Controller
     {
         $this->authorize('update', $project);
 
-        $updated = $this->service->update($project->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        
+        $updated = $this->service->update($project->id, $validated);
         return new ProjectResource($updated);
     }
 

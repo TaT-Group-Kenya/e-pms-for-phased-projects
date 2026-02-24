@@ -27,10 +27,6 @@ class CompanyCreditNoteUpdateRequest extends FormRequest
             'currency' => ['sometimes', 'required', 'string', 'max:255'],
             'exchange_rate' => ['sometimes', 'required', 'numeric', 'min:0'],
             'status' => ['sometimes', 'required', Rule::in(['draft','raised','refunded'])],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

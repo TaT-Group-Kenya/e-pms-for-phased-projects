@@ -22,10 +22,6 @@ class OrderItemStoreRequest extends FormRequest
             'order_amount' => ['required', 'numeric', 'min:0'],
             'custom_note' => ['required', 'string', 'max:255'],
             'is_taxable' => ['required', 'boolean'],
-            'updated_at' => ['required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

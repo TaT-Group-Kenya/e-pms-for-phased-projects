@@ -23,10 +23,6 @@ class CompanyBankUpdateRequest extends FormRequest
                 )],
             'branch' => ['sometimes', 'required', 'string', 'max:255'],
             'account_holder_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

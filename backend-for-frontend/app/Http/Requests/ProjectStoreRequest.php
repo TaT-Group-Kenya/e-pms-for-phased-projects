@@ -15,22 +15,19 @@ class ProjectStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'max:255'],
-            'customer_id' => ['nullable', 'exists:customers,id'],
-            'project_category_id' => ['required', 'exists:project_categorys,id'],
+            'description' => ['string', 'max:255'],
+            'customer_id' => ['required', 'exists:customers,id'],
+            'project_category_id' => ['required', 'exists:project_categories,id'],
             'no_of_phases' => ['required', 'string', 'max:255'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date'],
-            'budget_estimate' => ['required', 'string', 'max:255'],
-            'status' => ['required', 'string', 'max:255'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
+            'budget_estimate' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'max:255'],
             'priority' => ['required', 'string', 'max:255'],
             'progress' => ['required', 'string', 'max:255'],
-            'tags' => ['required', 'string', 'max:255'],
+            'tags' => ['nullable', 'string', 'max:255'],
             'currency' => ['required', 'string', 'max:255'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

@@ -26,10 +26,6 @@ class CustomerUpdateRequest extends FormRequest
             'state' => ['sometimes', 'required', 'string', 'max:255'],
             'country' => ['sometimes', 'required', 'string', 'max:255'],
             'kra_pin' => ['sometimes', 'required', 'string', 'max:255'],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

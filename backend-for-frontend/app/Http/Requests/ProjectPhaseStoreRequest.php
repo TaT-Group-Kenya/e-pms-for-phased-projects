@@ -15,20 +15,15 @@ class ProjectPhaseStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:255'],
-            'project_id' => ['nullable', 'exists:projects,id'],
+            'project_id' => ['required', 'exists:projects,id'],
             'name' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:255'],
             'phase_order' => ['required', 'string', 'max:255'],
-            'status' => ['required', 'string', 'max:255'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date'],
+            'status' => ['required', Rule::in(['new', 'progress', 'draft', 'complete'])],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
             'progress_percentage' => ['required', 'string', 'max:255'],
             'quote_item_id' => ['nullable', 'exists:quote_items,id'],
-            'updated_at' => ['required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

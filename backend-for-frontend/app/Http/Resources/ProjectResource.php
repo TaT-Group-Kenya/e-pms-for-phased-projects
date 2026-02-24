@@ -29,9 +29,9 @@ class ProjectResource extends BaseResource
 
             'customer' => new CustomerResource($this->whenLoaded('customer')),
 
-            'category' => new CategoryResource($this->whenLoaded('category')),
+            'category' => new ProjectCategoryResource($this->whenLoaded('category')),
 
-            'phases' => new PhasesResource($this->whenLoaded('phases')),
+            'phases' => ProjectPhaseResource::collection($this->whenLoaded('phases')),
 
             'order' => new OrderResource($this->whenLoaded('order')),
 

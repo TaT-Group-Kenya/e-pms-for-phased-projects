@@ -21,7 +21,7 @@ class ProjectUpdateRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],
             'customer_id' => ['nullable', 'exists:customers,id'],
-            'project_category_id' => ['nullable', 'exists:project_categorys,id'],
+            'project_category_id' => ['nullable', 'exists:project_categories,id'],
             'no_of_phases' => ['sometimes', 'required', 'string', 'max:255'],
             'start_date' => ['sometimes', 'required', 'date'],
             'end_date' => ['sometimes', 'required', 'date'],
@@ -31,10 +31,6 @@ class ProjectUpdateRequest extends FormRequest
             'progress' => ['sometimes', 'required', 'string', 'max:255'],
             'tags' => ['sometimes', 'required', 'string', 'max:255'],
             'currency' => ['sometimes', 'required', 'string', 'max:255'],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

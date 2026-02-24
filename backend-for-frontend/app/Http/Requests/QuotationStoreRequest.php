@@ -32,10 +32,6 @@ class QuotationStoreRequest extends FormRequest
             'payment_terms' => ['required', 'string', 'max:255'],
             'min_approval_count' => ['required', 'string', 'max:255'],
             'notes_to_customer' => ['required', 'string', 'max:255'],
-            'updated_at' => ['required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

@@ -19,10 +19,6 @@ class CompanyProjectStoreRequest extends FormRequest
             'phase_id' => ['nullable', 'exists:phases,id'],
             'company_id' => ['nullable', 'exists:companys,id'],
             'is_complete' => ['required', 'boolean'],
-            'updated_at' => ['required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

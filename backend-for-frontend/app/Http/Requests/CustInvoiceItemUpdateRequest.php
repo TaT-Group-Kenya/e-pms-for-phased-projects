@@ -22,10 +22,6 @@ class CustInvoiceItemUpdateRequest extends FormRequest
             'item_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'is_taxable' => ['sometimes', 'required', 'boolean'],
             'custom_note' => ['sometimes', 'required', 'string', 'max:255'],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

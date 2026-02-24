@@ -49,7 +49,6 @@ class TransactionUpdateRequest extends FormRequest
             'accounting_period' => ['sometimes', 'required', 'string', 'max:255'],
             'is_adjusting_entry' => ['sometimes', 'required', 'boolean'],
             'cost_center_id' => ['nullable', 'exists:departments,id'],
-            'updated_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

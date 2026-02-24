@@ -20,10 +20,6 @@ class CompanyCreditNoteItemStoreRequest extends FormRequest
             'item_description' => ['required', 'string', 'max:255'],
             'item_amount' => ['required', 'numeric', 'min:0'],
             'custom_note' => ['required', 'string', 'max:255'],
-            'updated_at' => ['required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

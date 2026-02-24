@@ -21,10 +21,6 @@ class CompanyInvoiceItemStoreRequest extends FormRequest
             'quantity' => ['required', 'string', 'max:255'],
             'unit_price' => ['required', 'numeric', 'min:0'],
             'total_price' => ['required', 'numeric', 'min:0'],
-            'updated_at' => ['required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

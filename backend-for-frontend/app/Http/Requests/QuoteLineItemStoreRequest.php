@@ -23,10 +23,6 @@ class QuoteLineItemStoreRequest extends FormRequest
             'estimated_hours_nullable' => ['required', 'string', 'max:255'],
             'custom_note' => ['required', 'string', 'max:255'],
             'is_taxable' => ['required', 'boolean'],
-            'updated_at' => ['required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

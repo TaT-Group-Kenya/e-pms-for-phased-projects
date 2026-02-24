@@ -31,10 +31,6 @@ class OrderStoreRequest extends FormRequest
             'currency' => ['required', 'string', 'max:255'],
             'payment_terms' => ['required', 'string', 'max:255'],
             'notes_to_customer' => ['required', 'string', 'max:255'],
-            'updated_at' => ['required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 
