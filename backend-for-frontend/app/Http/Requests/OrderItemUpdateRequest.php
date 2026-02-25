@@ -20,6 +20,7 @@ class OrderItemUpdateRequest extends FormRequest
             'item_name' => ['sometimes', 'required', 'string', 'max:255'],
             'item_description' => ['sometimes', 'required', 'string', 'max:255'],
             'order_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'quantity' => ['sometimes', 'integer', 'min:1'],
             'custom_note' => ['sometimes', 'required', 'string', 'max:255'],
             'is_taxable' => ['sometimes', 'required', 'boolean'],
         ];

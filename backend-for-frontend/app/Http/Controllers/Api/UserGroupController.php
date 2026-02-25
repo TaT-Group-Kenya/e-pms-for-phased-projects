@@ -23,8 +23,15 @@ class UserGroupController extends Controller
         $this->authorize('viewAny', \App\Models\UserGroup::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
-        $filters = $request->except('per_page', 'page');
-        $data = $this->service->index($filters, $perPage, $page);
+        $filters = $request->except('per_page', 'page', 'with');
+
+        // Optional eager loading: /user-groups?with=user,group
+        $with = [];
+        if ($request->filled('with')) {
+            $with = array_filter(array_map('trim', explode(',', (string) $request->get('with'))));
+        }
+
+        $data = $this->service->index($filters, $perPage, $page, 0, $with);
         return UserGroupResource::collection($data);
     }
 
@@ -39,6 +46,8 @@ class UserGroupController extends Controller
     public function show(UserGroup $userGroup)
     {
         $this->authorize('view', $userGroup);
+
+        $userGroup->loadMissing(['user', 'group']);
 
         return new UserGroupResource($userGroup);
     }

@@ -31,7 +31,7 @@ export default function Page() {
         </ol>
       </div>
 
-      <ProjectOverviewContent />
+      <ProjectOverviewContent projectId="" />
     </AuthenticatedLayout>
   );
 }

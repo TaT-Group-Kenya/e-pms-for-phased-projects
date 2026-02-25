@@ -14,6 +14,7 @@ class ProjectProgressUpdate extends Model
         'project_id',
         'project_phase_id',
         'percentage_complete',
+        'comment',
         'updated_at',
         'updated_by',
         'created_at',

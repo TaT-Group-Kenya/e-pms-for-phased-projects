@@ -13,6 +13,8 @@ class CustInvoiceItemResource extends BaseResource
             'item_name' => $this->item_name,
             'item_description' => $this->item_description,
             'item_amount' => (float) $this->item_amount,
+            'quantity' => (int) ($this->quantity ?? 1),
+            'total' => (float) ($this->total ?? 0),
             'is_taxable' => (bool) $this->is_taxable,
             'custom_note' => $this->custom_note,
             'updated_at' => $this->formatTimestamp($this->updated_at),

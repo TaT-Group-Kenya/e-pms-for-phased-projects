@@ -14,7 +14,9 @@ class QuoteLineItem extends Model
         'phase_name',
         'phase_description',
         'quoted_amount',
-        'estimated_hours_nullable',
+        'quantity',
+        'total',
+        'estimated_hours',
         'custom_note',
         'is_taxable',
         'updated_at',
@@ -22,6 +24,15 @@ class QuoteLineItem extends Model
         'created_at',
         'created_by',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (QuoteLineItem $item) {
+            $quantity = $item->quantity ?? 1;
+            $amount = $item->quoted_amount ?? 0;
+            $item->total = $amount * $quantity;
+        });
+    }
 
     public function quotation()
     {

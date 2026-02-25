@@ -18,10 +18,11 @@ class QuoteLineItemStoreRequest extends FormRequest
             'quotation_id' => ['nullable', 'exists:quotations,id'],
             'project_phase_id' => ['nullable', 'exists:project_phases,id'],
             'phase_name' => ['required', 'string', 'max:255'],
-            'phase_description' => ['required', 'string', 'max:255'],
+            'phase_description' => ['nullable', 'string', 'max:255'],
             'quoted_amount' => ['required', 'numeric', 'min:0'],
-            'estimated_hours_nullable' => ['required', 'string', 'max:255'],
-            'custom_note' => ['required', 'string', 'max:255'],
+            'quantity' => ['required', 'integer', 'min:1'], // Allow optional quantity field
+            'estimated_hours' => ['nullable', 'string', 'max:255'],
+            'custom_note' => ['nullable', 'string', 'max:255'],
             'is_taxable' => ['required', 'boolean'],
         ];
     }

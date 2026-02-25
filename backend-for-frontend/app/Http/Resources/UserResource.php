@@ -29,7 +29,8 @@ class UserResource extends BaseResource
 
             'customer' => new CustomerResource($this->whenLoaded('customer')),
 
-            'groups' => new UserGroupResource($this->whenLoaded('groups')),
+            // Groups this user belongs to
+            'groups' => SysGroupResource::collection($this->whenLoaded('groups')),
 
         ];
     }

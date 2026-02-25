@@ -11892,7 +11892,7 @@
                         "type": "number",
                         "format": "float"
                     },
-                    "estimated_hours_nullable": {
+                    "estimated_hours": {
                         "type": "string"
                     },
                     "custom_note": {
@@ -11924,7 +11924,7 @@
                     "phase_name": "",
                     "phase_description": "",
                     "quoted_amount": 0,
-                    "estimated_hours_nullable": "",
+                    "estimated_hours": "",
                     "custom_note": "",
                     "is_taxable": 0,
                     "updated_at": "2026-02-19",
@@ -11954,7 +11954,7 @@
                         "type": "number",
                         "format": "float"
                     },
-                    "estimated_hours_nullable": {
+                    "estimated_hours": {
                         "type": "string"
                     },
                     "custom_note": {
@@ -11975,7 +11975,7 @@
                     "phase_name",
                     "phase_description",
                     "quoted_amount",
-                    "estimated_hours_nullable",
+                    "estimated_hours",
                     "custom_note",
                     "is_taxable"
                 ],
@@ -11986,7 +11986,7 @@
                     "phase_name": "",
                     "phase_description": "",
                     "quoted_amount": 0,
-                    "estimated_hours_nullable": "",
+                    "estimated_hours": "",
                     "custom_note": "",
                     "is_taxable": 0,
                     "updated_at": "2026-02-19",

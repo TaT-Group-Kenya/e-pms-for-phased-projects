@@ -22,8 +22,15 @@ class SysGroupController extends Controller
         $this->authorize('viewAny', \App\Models\SysGroup::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
-        $filters = $request->except('per_page', 'page');
-        $data = $this->service->index($filters, $perPage, $page);
+        $filters = $request->except('per_page', 'page', 'with');
+
+        // Optional eager loading: /sys-groups?with=roles,users
+        $with = [];
+        if ($request->filled('with')) {
+            $with = array_filter(array_map('trim', explode(',', (string) $request->get('with'))));
+        }
+
+        $data = $this->service->index($filters, $perPage, $page, 0, $with);
         return SysGroupResource::collection($data);
     }
 
@@ -36,6 +43,9 @@ class SysGroupController extends Controller
     public function show(SysGroup $sysGroup)
     {
         $this->authorize('view', $sysGroup);
+
+        // Always include roles and users for a single group view
+        $sysGroup->loadMissing(['roles', 'users']);
 
         return new SysGroupResource($sysGroup);
     }

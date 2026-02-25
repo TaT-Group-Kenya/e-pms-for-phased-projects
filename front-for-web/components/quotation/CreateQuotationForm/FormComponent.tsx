@@ -1,0 +1,443 @@
+"use client";
+
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/router";
+import { useSelector } from "react-redux";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { selectAccessToken } from "../../../store/auth/selectors";
+import { useToast } from "../../../hooks/useToast";
+import { ToastContainer } from "../../common/Toast";
+import { formatApiError } from "../../../utils/errorHandler";
+
+const quotationSchema = z.object({
+  title: z.string().min(1, "Quotation title is required").max(255, "Title must not exceed 255 characters"),
+  status: z.string().min(1, "Status is required"),
+  description: z.string().optional(),
+  customer_id: z.string().min(1, "Customer is required"),
+  project_id: z.string().optional().nullable(),
+  valid_until_date: z.string().min(1, "Valid until date is required"),
+  payment_terms: z.string().optional(),
+  notes_to_customer: z.string().optional(),
+  tax_percentage: z.string().optional(),
+  discount_percentage: z.string().optional(),
+  min_approval_count: z.string().min(1, "Minimum approval count is required"),
+});
+
+type QuotationFormData = z.infer<typeof quotationSchema>;
+
+interface Customer {
+  id: number;
+  name: string;
+}
+
+interface Project {
+  id: number;
+  code: string;
+  name: string;
+  customer_id?: number;
+}
+
+const CreateQuotationForm: React.FC = () => {
+  const router = useRouter();
+  const accessToken = useSelector(selectAccessToken);
+  const { toasts, addToast, removeToast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [formError, setFormError] = useState("");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+  } = useForm<QuotationFormData>({
+    resolver: zodResolver(quotationSchema),
+    mode: "onBlur",
+    defaultValues: {
+      status: "draft",
+      min_approval_count: "1",
+    },
+  });
+
+  // Filter projects based on selected customer
+  const filteredProjects = useMemo(() => {
+    if (!selectedCustomer) return [];
+    return projects.filter(
+      (project) => project.customer_id?.toString() === selectedCustomer
+    );
+  }, [selectedCustomer, projects]);
+
+  // Handle customer change and clear project selection
+  const handleCustomerChange = (customerId: string) => {
+    setSelectedCustomer(customerId);
+    setValue("project_id", "");
+  };
+
+  // Load customers, projects, and currencies
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        const [customersRes, projectsRes] = await Promise.all([
+          fetch("/api/customers/list?per_page=1000", {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
+          }),
+          fetch("/api/projects/list?per_page=1000", {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
+          }),
+        ]);
+
+        if (controller.signal.aborted) return;
+
+        const customersData = await customersRes.json();
+        const projectsData = await projectsRes.json();
+
+        const customerList = customersData.data || customersData;
+        const projectList = projectsData.data || projectsData;
+
+        setCustomers(Array.isArray(customerList) ? customerList : []);
+        setProjects(Array.isArray(projectList) ? projectList : []);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
+        console.error("Error fetching data:", err);
+        addToast("Error loading form data. Please refresh the page.", "error");
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    if (accessToken) {
+      fetchData();
+    } else {
+      setLoadingData(false);
+    }
+
+    return () => controller.abort();
+  }, [accessToken, addToast]);
+
+  const onSubmit: SubmitHandler<QuotationFormData> = async (data) => {
+    setIsSubmitting(true);
+    setFormError("");
+    setSuccessMessage("");
+
+    try {
+      const bodyData = {
+        title: data.title,
+        status: data.status || "draft",
+        description: data.description || "",
+        customer_id: data.customer_id ? parseInt(data.customer_id) : null,
+        project_id: data.project_id ? parseInt(data.project_id) : null,
+        valid_until_date: data.valid_until_date,
+        payment_terms: data.payment_terms || "",
+        notes_to_customer: data.notes_to_customer || "",
+        subtotal_amount: 0,
+        tax_percentage: parseFloat(data.tax_percentage || "0") || 0,
+        tax_amount: 0,
+        discount_percentage: parseFloat(data.discount_percentage || "0") || 0,
+        discount_amount: 0,
+        total_amount: 0,
+        min_approval_count: parseInt(data.min_approval_count || "1") || 1,
+      };
+
+      const response = await fetch("/api/quotations/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(bodyData),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        setFormError(formatApiError(responseData));
+        return;
+      }
+
+      setSuccessMessage("Quotation created successfully! Redirecting...");
+      reset();
+
+      setTimeout(() => {
+        router.push(`/quotation/${responseData.data?.id || responseData.id}`);
+      }, 2000);
+    } catch (err) {
+      console.error("Error creating quotation:", err);
+      setFormError("An error occurred while creating the quotation");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderFieldError = (fieldName: keyof QuotationFormData) => {
+    const error = errors[fieldName];
+    if (error && error.message) {
+      return (
+        <p className="text-danger-500 text-sm mt-1">{error.message.toString()}</p>
+      );
+    }
+    return null;
+  };
+
+  // Set minimum date to today
+  const today = new Date().toISOString().split('T')[0];
+
+  return (
+    <>
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+          <div className="trezo-card-content">
+            {/* Form Error Alert */}
+            {formError && (
+              <div className="mb-[20px] p-[15px] bg-danger-50 dark:bg-danger-950 border border-danger-200 dark:border-danger-800 rounded-md">
+                <div className="text-danger-600 dark:text-danger-400 text-sm whitespace-pre-wrap">
+                  {formError}
+                </div>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {successMessage && (
+              <div className="mb-[20px] p-[15px] bg-success-50 dark:bg-success-950 border border-success-200 dark:border-success-800 rounded-md">
+                <p className="text-success-600 dark:text-success-400 text-sm">
+                  {successMessage}
+                </p>
+              </div>
+            )}
+
+            <div className="mb-[25px]">
+              <div className="sm:grid sm:grid-cols-2 sm:gap-[25px]">
+                {/* Title - Required */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Quotation Title <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    {...register("title")}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${
+                      errors.title ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
+                    placeholder="E.g. Website Development Quote"
+                  />
+                  {renderFieldError("title")}
+                </div>
+
+                {/* Status - Draft Only */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Status
+                  </label>
+                  <select
+                    {...register("status")}
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
+                    disabled
+                  >
+                    <option value="draft">Draft</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="mb-[20px]">
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Description
+                </label>
+                <textarea
+                  {...register("description")}
+                  className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                  placeholder="Enter quotation description"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="mb-[25px]">
+              <div className="sm:grid sm:grid-cols-2 sm:gap-[25px]">
+                {/* Customer - Required */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Customer <span className="text-danger-500">*</span>
+                  </label>
+                  <select
+                    {...register("customer_id")}
+                    onChange={(e) => handleCustomerChange(e.target.value)}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${
+                      errors.customer_id ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500`}
+                  >
+                    <option value="">Select Customer</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </option>
+                    ))}
+                  </select>
+                  {renderFieldError("customer_id")}
+                </div>
+
+                {/* Project */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Related Project
+                  </label>
+                  <select
+                    {...register("project_id")}
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 disabled:opacity-50"
+                    disabled={!selectedCustomer}
+                  >
+                    <option value="">
+                      {selectedCustomer
+                        ? "Select Project (Optional)"
+                        : "Select Customer First"}
+                    </option>
+                    {filteredProjects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.code} - {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-[25px]">
+              <div className="sm:grid sm:grid-cols-2 sm:gap-[25px]">
+                {/* Valid Until Date - Required */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Valid Until <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    {...register("valid_until_date")}
+                    min={today}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${
+                      errors.valid_until_date ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500`}
+                  />
+                  {renderFieldError("valid_until_date")}
+                </div>
+
+                {/* Tax Percentage */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Tax Percentage (%)
+                  </label>
+                  <input
+                    type="number"
+                    {...register("tax_percentage")}
+                    defaultValue="0"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              {/* Discount Percentage */}
+              <div className="mb-[20px]">
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Discount Percentage (%)
+                </label>
+                <input
+                  type="number"
+                  {...register("discount_percentage")}
+                  defaultValue="0"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                  placeholder="0.00"
+                />
+              </div>
+
+              {/* Payment Terms */}
+              <div className="mb-[20px]">
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Payment Terms
+                </label>
+                <textarea
+                  {...register("payment_terms")}
+                  className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                  placeholder="E.g. 50% deposit required, balance on completion"
+                  rows={2}
+                />
+              </div>
+
+              {/* Min Approval Count */}
+              <div className="mb-[20px]">
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Minimum Approval Count <span className="text-danger-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  {...register("min_approval_count")}
+                  defaultValue="1"
+                  min="1"
+                  max="10"
+                  step="1"
+                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                  placeholder="1"
+                />
+              </div>
+            </div>
+
+            <div className="mb-[25px]">
+              <div>
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Notes to Customer
+                </label>
+                <textarea
+                  {...register("notes_to_customer")}
+                  className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                  placeholder="Add any special notes or instructions for the customer"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            {/* Form Actions */}
+            <div className="flex gap-[12px] justify-start pt-[20px] border-t border-gray-200 dark:border-[#172036] mt-[25px]">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[24px] py-[11px] bg-gray-100 dark:bg-[#15203c] text-black dark:text-white hover:bg-gray-200 dark:hover:bg-[#1f2d4d]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[24px] py-[11px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? "Creating..." : "Create Quotation"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </>
+  );
+};
+
+export default CreateQuotationForm;

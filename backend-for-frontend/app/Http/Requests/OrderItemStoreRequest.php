@@ -20,6 +20,7 @@ class OrderItemStoreRequest extends FormRequest
             'item_name' => ['required', 'string', 'max:255'],
             'item_description' => ['required', 'string', 'max:255'],
             'order_amount' => ['required', 'numeric', 'min:0'],
+            'quantity' => ['sometimes', 'integer', 'min:1'],
             'custom_note' => ['required', 'string', 'max:255'],
             'is_taxable' => ['required', 'boolean'],
         ];

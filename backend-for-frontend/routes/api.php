@@ -43,6 +43,7 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('group-roles', App\Http\Controllers\Api\GroupRoleController::class);
 		Route::apiResource('languages', App\Http\Controllers\Api\LanguageController::class);
 		Route::apiResource('orders', App\Http\Controllers\Api\OrderController::class);
+		Route::post('orders/generate-from-quotation', [App\Http\Controllers\Api\OrderController::class, 'generateFromQuotation']);
 		Route::apiResource('order-documents', App\Http\Controllers\Api\OrderDocumentController::class);
 		Route::apiResource('order-items', App\Http\Controllers\Api\OrderItemController::class);
 		Route::apiResource('order-tax-items', App\Http\Controllers\Api\OrderTaxItemController::class);

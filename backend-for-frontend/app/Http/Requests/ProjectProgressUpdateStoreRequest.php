@@ -18,6 +18,7 @@ class ProjectProgressUpdateStoreRequest extends FormRequest
             'project_id' => ['nullable', 'exists:projects,id'],
             'project_phase_id' => ['nullable', 'exists:project_phases,id'],
             'percentage_complete' => ['required', 'string', 'max:255'],
+            'comment' => ['required', 'string'],
         ];
     }
 

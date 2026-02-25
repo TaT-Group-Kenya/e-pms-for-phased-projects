@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\QuoteLineltem;
+use App\Models\QuoteLineItem;
 
-class QuoteLineltemService
+class QuoteLineItemService
 {
     public function index(
         array $filters = [],
@@ -14,7 +14,7 @@ class QuoteLineltemService
         array $with = []
     ) {
         // optimized query: apply eager loading and simple filters
-        $query = QuoteLineltem::query();
+        $query = QuoteLineItem::query();
         if (!empty($with)) {
             $query->with($with);
         }
@@ -30,25 +30,25 @@ class QuoteLineltemService
 
     public function find(int $id, array $with = [])
     {
-        $query = QuoteLineltem::query();
+        $query = QuoteLineItem::query();
         if (!empty($with)) $query->with($with);
         return $query->findOrFail($id);
     }
 
     public function create(array $data)
     {
-        return QuoteLineltem::create($data);
+        return QuoteLineItem::create($data);
     }
 
     public function update(int $id, array $data)
     {
-        $model = QuoteLineltem::findOrFail($id);
+        $model = QuoteLineItem::findOrFail($id);
         $model->update($data);
         return $model;
     }
 
     public function delete(int $id)
     {
-        return QuoteLineltem::destroy($id);
+        return QuoteLineItem::destroy($id);
     }
 }

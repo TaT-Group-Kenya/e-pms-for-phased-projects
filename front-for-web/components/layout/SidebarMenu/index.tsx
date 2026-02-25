@@ -17,8 +17,7 @@ const getAccordionIndexFromPathname = (pathname: string | null): number | null =
   if (pathname.startsWith("/project")) return 0;
   if (pathname.startsWith("/customer")) return 1;
   if (pathname.startsWith("/company")) return 2;
-  if (pathname.startsWith("/helpdesk")) return 3;
-  if (pathname.startsWith("/nft")) return 4;
+  if (pathname.startsWith("/quotation")) return 4;
   if (pathname.startsWith("/real-estate")) return 5;
   if (pathname.startsWith("/invoices")) return 6;
   if (pathname.startsWith("/finance")) return 7;
@@ -316,89 +315,40 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                   <ul className="sidebar-sub-menu">
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/nft/marketplace/"
+                        href="/quotation/quotation-list"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/nft/marketplace/" ? "active" : ""
+                          isSameEntityPage("/quotation/quotation-list", pathname)
+                            ? "active"
+                            : ""
                         }`}
                       >
-                        Marketplace
+                        Quotations
                       </Link>
                     </li>
 
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/nft/explore-all/"
+                        href="/quotation/create-quotation"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/nft/explore-all/" ? "active" : ""
+                          pathname === "/quotation/create-quotation"
+                            ? "active"
+                            : ""
                         }`}
                       >
-                        Explore All
+                        Create Quotation
                       </Link>
                     </li>
 
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/nft/live-auction/"
+                        href="/quotation/report"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/nft/live-auction/" ? "active" : ""
+                          pathname === "/quotation/report"
+                            ? "active"
+                            : ""
                         }`}
                       >
-                        Live Auction
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/nft/nft-details/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/nft/nft-details/" ? "active" : ""
-                        }`}
-                      >
-                        NFT Details
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/nft/creators/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/nft/creators/" ? "active" : ""
-                        }`}
-                      >
-                        Creators
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/nft/creator-details/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/nft/creator-details/" ? "active" : ""
-                        }`}
-                      >
-                        Creator Details
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/nft/wallet-connect/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/nft/wallet-connect/" ? "active" : ""
-                        }`}
-                      >
-                        Wallet Connect
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/nft/create-nft/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/nft/create-nft/" ? "active" : ""
-                        }`}
-                      >
-                        Create NFT
+                        Reports
                       </Link>
                     </li>
                   </ul>
@@ -671,20 +621,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                   <ul className="sidebar-sub-menu">
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/users/team-members/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/users/team-members/" ? "active" : ""
-                        }`}
-                      >
-                        Team Members
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
                         href="/users/users-list/"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/users/users-list/" ? "active" : ""
+                          pathname === "/users/users-list" ? "active" : ""
                         }`}
                       >
                         Users List
@@ -695,7 +634,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                       <Link
                         href="/users/add-user/"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/users/add-user/" ? "active" : ""
+                          pathname === "/users/add-user" ? "active" : ""
                         }`}
                       >
                         Add User

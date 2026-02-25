@@ -37,12 +37,29 @@ class QuotationService
 
     public function create(array $data)
     {
+        // If project_id is provided and currency is not, get currency from project
+        if (!empty($data['project_id']) && empty($data['currency'])) {
+            $project = \App\Models\Project::find($data['project_id']);
+            if ($project && !empty($project->currency)) {
+                $data['currency'] = $project->currency;
+            }
+        }
+        
         return Quotation::create($data);
     }
 
     public function update(int $id, array $data)
     {
         $model = Quotation::findOrFail($id);
+        
+        // If project_id is provided and currency is not, get currency from project
+        if (!empty($data['project_id']) && empty($data['currency'])) {
+            $project = \App\Models\Project::find($data['project_id']);
+            if ($project && !empty($project->currency)) {
+                $data['currency'] = $project->currency;
+            }
+        }
+        
         $model->update($data);
         return $model;
     }

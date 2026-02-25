@@ -34,11 +34,11 @@ class QuotationResource extends BaseResource
 
             'customer' => new CustomerResource($this->whenLoaded('customer')),
 
-            'quoteItems' => new QuoteItemsResource($this->whenLoaded('quoteItems')),
+            'quoteItems' => QuoteLineItemResource::collection($this->whenLoaded('quoteItems')),
 
-            'documents' => new DocumentsResource($this->whenLoaded('documents')),
+            'documents' => QuoteDocumentResource::collection($this->whenLoaded('documents')),
 
-            'approvals' => new ApprovalsResource($this->whenLoaded('approvals')),
+            'approvals' => QuoteApprovalResource::collection($this->whenLoaded('approvals')),
 
             'order' => new OrderResource($this->whenLoaded('order')),
 

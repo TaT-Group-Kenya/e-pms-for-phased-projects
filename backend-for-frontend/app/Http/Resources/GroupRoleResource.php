@@ -15,9 +15,10 @@ class GroupRoleResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
-            'group' => new GroupResource($this->whenLoaded('group')),
+            // Linked group and role details
+            'group' => new SysGroupResource($this->whenLoaded('group')),
 
-            'role' => new RoleResource($this->whenLoaded('role')),
+            'role' => new SysRoleResource($this->whenLoaded('role')),
 
         ];
     }

@@ -13,6 +13,8 @@ class OrderItemResource extends BaseResource
             'item_name' => $this->item_name,
             'item_description' => $this->item_description,
             'order_amount' => (float) $this->order_amount,
+            'quantity' => (int) ($this->quantity ?? 1),
+            'total' => (float) ($this->total ?? 0),
             'custom_note' => $this->custom_note,
             'is_taxable' => (bool) $this->is_taxable,
             'updated_at' => $this->formatTimestamp($this->updated_at),

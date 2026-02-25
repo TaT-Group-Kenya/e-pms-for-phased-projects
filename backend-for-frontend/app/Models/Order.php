@@ -60,4 +60,9 @@ class Order extends Model
     {
         return $this->hasMany(OrderTaxItem::class, 'order_id');
     }
+
+    public function custInvoices()
+    {
+        return $this->hasMany(CustInvoice::class, 'order_id');
+    }
 }

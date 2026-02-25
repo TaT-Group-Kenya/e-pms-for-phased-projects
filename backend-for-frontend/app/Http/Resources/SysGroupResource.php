@@ -15,9 +15,11 @@ class SysGroupResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
-            'roles' => new RolesResource($this->whenLoaded('roles')),
+            // Related roles assigned to this group
+            'roles' => SysRoleResource::collection($this->whenLoaded('roles')),
 
-            'users' => new UsersResource($this->whenLoaded('users')),
+            // Users that belong to this group
+            'users' => UserResource::collection($this->whenLoaded('users')),
 
         ];
     }
