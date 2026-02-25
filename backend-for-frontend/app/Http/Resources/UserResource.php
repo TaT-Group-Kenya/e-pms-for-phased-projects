@@ -32,6 +32,9 @@ class UserResource extends BaseResource
             // Groups this user belongs to
             'groups' => SysGroupResource::collection($this->whenLoaded('groups')),
 
+            // Roles derived from the user's groups (unique list)
+            'roles' => SysRoleResource::collection($this->whenLoaded('roles')),
+
         ];
     }
 }

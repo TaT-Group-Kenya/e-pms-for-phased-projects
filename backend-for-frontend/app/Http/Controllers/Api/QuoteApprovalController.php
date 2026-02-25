@@ -36,6 +36,7 @@ class QuoteApprovalController extends Controller
         $this->authorize('create', QuoteApproval::class);
         
         $validated = $request->validated();
+        $validated['user_id'] = Auth::id();
         $validated['created_by'] = Auth::id();
 
         // Ensure approvals are only recorded for quotations in sent status
@@ -105,6 +106,7 @@ class QuoteApprovalController extends Controller
 
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
+        $validated['user_id'] = Auth::id();
         $updated = $this->service->update($quoteApproval->id, $validated);
         return new QuoteApprovalResource($updated);
     }

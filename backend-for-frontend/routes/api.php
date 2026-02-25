@@ -55,6 +55,7 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('quotations', App\Http\Controllers\Api\QuotationController::class);
 		Route::apiResource('quote-documents', App\Http\Controllers\Api\QuoteDocumentController::class);
 		Route::apiResource('quote-line-items', App\Http\Controllers\Api\QuoteLineItemController::class);
+		Route::apiResource('quote-approvals', App\Http\Controllers\Api\QuoteApprovalController::class);
 		Route::apiResource('sys-configs', App\Http\Controllers\Api\SysConfigController::class);
 		Route::apiResource('sys-groups', App\Http\Controllers\Api\SysGroupController::class);
 		Route::apiResource('sys-roles', App\Http\Controllers\Api\SysRoleController::class);

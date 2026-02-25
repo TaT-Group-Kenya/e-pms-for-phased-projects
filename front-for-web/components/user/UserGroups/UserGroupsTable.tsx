@@ -69,6 +69,10 @@ const UserGroupsTable: React.FC = () => {
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
   const [savingRoles, setSavingRoles] = useState(false);
 
+  const [roleSearchTerm, setRoleSearchTerm] = useState("");
+
+  const [reloadKey, setReloadKey] = useState(0);
+
   const perPage = 15;
 
   useEffect(() => {
@@ -118,7 +122,7 @@ const UserGroupsTable: React.FC = () => {
 
     fetchData();
     return () => controller.abort();
-  }, [accessToken, currentPage, perPage, addToast]);
+  }, [accessToken, currentPage, perPage, addToast, reloadKey]);
 
   const handlePageClick = (page: number) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
@@ -176,7 +180,6 @@ const UserGroupsTable: React.FC = () => {
         "success"
       );
 
-      // Refresh groups list in a simple way
       setCurrentPage(1);
       resetForm();
     } catch (err) {
@@ -320,6 +323,8 @@ const UserGroupsTable: React.FC = () => {
       }
 
       addToast("Group roles updated", "success");
+      // Refresh groups so roles count stays accurate
+      setReloadKey((key) => key + 1);
       closeRoleModal();
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -343,6 +348,14 @@ const UserGroupsTable: React.FC = () => {
 
   const roleCountForGroup = (groupId: number) =>
     groupRoleAssignments.filter((a) => a.group_id === groupId).length;
+
+  const filteredRolesForModal = useMemo(() => {
+    const term = roleSearchTerm.trim().toLowerCase();
+    if (!term) return roles;
+    return roles.filter((r) =>
+      `${r.name} ${r.description || ""}`.toLowerCase().includes(term)
+    );
+  }, [roles, roleSearchTerm]);
 
   return (
     <>
@@ -376,14 +389,35 @@ const UserGroupsTable: React.FC = () => {
               </button>
             </div>
 
-            <div className="max-h-[360px] overflow-y-auto pr-1 space-y-2 mb-4">
+            <div className="mb-3">
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
+                  search
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search roles..."
+                  value={roleSearchTerm}
+                  onChange={(e) => setRoleSearchTerm(e.target.value)}
+                  className="w-full h-[34px] rounded-md border border-gray-200 dark:border-[#1f2937] bg-white dark:bg-[#020617] text-xs text-black dark:text-white pl-9 pr-2 focus:outline-none focus:ring-1 focus:ring-primary-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+              </div>
+            </div>
+
+            <div className="max-h-[320px] overflow-y-auto pr-1 space-y-2 mb-4">
               {roles.length === 0 && (
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   No roles defined yet. Create roles first.
                 </p>
               )}
 
-              {roles.map((role) => (
+              {roles.length > 0 && filteredRolesForModal.length === 0 && (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No roles match your search.
+                </p>
+              )}
+
+              {filteredRolesForModal.map((role) => (
                 <label
                   key={role.id}
                   className="flex items-start gap-3 p-2 rounded-md border border-gray-100 dark:border-[#1f2937] hover:bg-gray-50 dark:hover:bg-[#111827] cursor-pointer"
@@ -445,7 +479,7 @@ const UserGroupsTable: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:flex-none md:w-[220px]">
+            <div className="relative flex-1 md:flex-none md:w-[260px]">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
                 search
               </span>
@@ -460,15 +494,6 @@ const UserGroupsTable: React.FC = () => {
                 className="bg-gray-50 dark:bg-[#111827] border border-gray-100 dark:border-[#1f2937] h-[36px] rounded-md w-full text-xs text-black dark:text-white pl-9 pr-3 focus:outline-none focus:ring-1 focus:ring-primary-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
-
-            <button
-              type="button"
-              onClick={startCreate}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-primary-500 hover:bg-primary-600 text-white text-xs font-medium"
-            >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              Add Group
-            </button>
           </div>
         </div>
 
@@ -477,21 +502,21 @@ const UserGroupsTable: React.FC = () => {
           <div className="mb-4 p-3 rounded-md bg-gray-50 dark:bg-[#111827] border border-dashed border-gray-200 dark:border-[#1f2937] flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
             <div className="flex-1 flex flex-col md:flex-row md:items-center gap-3">
               <div className="flex-1">
-                <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 mb-1">
+                {/* <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 mb-1">
                   Group Name
-                </label>
+                </label> */}
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   className="w-full h-[34px] rounded-md border border-gray-200 dark:border-[#1f2937] bg-white dark:bg-[#020617] text-xs text-black dark:text-white px-2.5"
-                  placeholder="e.g. Project Managers"
+                  placeholder="Group Name"
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 mb-1">
+                {/* <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 mb-1">
                   Description
-                </label>
+                </label> */}
                 <input
                   type="text"
                   value={form.description}
@@ -499,7 +524,7 @@ const UserGroupsTable: React.FC = () => {
                     setForm((f) => ({ ...f, description: e.target.value }))
                   }
                   className="w-full h-[34px] rounded-md border border-gray-200 dark:border-[#1f2937] bg-white dark:bg-[#020617] text-xs text-black dark:text-white px-2.5"
-                  placeholder="Short summary of this group"
+                  placeholder="Description (optional)"
                 />
               </div>
             </div>
@@ -508,7 +533,7 @@ const UserGroupsTable: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-3 py-1.5 rounded-md border border-gray-200 dark:border-[#1f2937] text-gray-600 dark:text-gray-300 text-xs font-medium hover:bg-gray-50 dark:hover:bg-[#020617]"
+                  className="px-3 py-2 rounded-md border border-gray-200 dark:border-[#1f2937] text-gray-600 dark:text-gray-300 text-xs font-medium hover:bg-gray-50 dark:hover:bg-[#020617]"
                   disabled={saving}
                 >
                   Cancel
@@ -517,7 +542,7 @@ const UserGroupsTable: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSaveGroup}
-                className="px-3 py-1.5 rounded-md bg-primary-500 hover:bg-primary-600 text-white text-xs font-medium disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                className="px-3 py-2 rounded-md bg-primary-500 hover:bg-primary-600 text-white text-xs font-medium disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1"
                 disabled={saving}
               >
                 {saving && (

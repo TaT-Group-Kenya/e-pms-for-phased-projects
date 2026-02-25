@@ -15,7 +15,7 @@ class QuoteApprovalStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required', 'exists:users,id'],
+            'user_id' => ['nullable', 'exists:users,id'],
             'quote_id' => ['required', 'exists:quotations,id'],
             'action' => ['required', Rule::in(['make', 'check'])],
         ];

@@ -28,13 +28,34 @@ class UserController extends Controller
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page', 'with');
 
-        // Optional eager loading: /users?with=company,customer,groups
+        // Optional eager loading from query string: /users?with=company,customer,groups
         $with = [];
         if ($request->filled('with')) {
             $with = array_filter(array_map('trim', explode(',', (string) $request->get('with'))));
         }
 
+        // Always load groups and each group's roles so we can derive user roles
+        $with = array_unique(array_merge($with, ['groups.roles']));
+
         $data = $this->service->index($filters, $perPage, $page, 0, $with);
+
+        // Ensure relationships are loaded on the underlying collection
+        $collection = $data->getCollection();
+        $collection->loadMissing(['groups.roles']);
+
+        // For each user, merge all roles from its groups and attach as a synthetic
+        // "roles" relation so the resource can expose users.roles
+        $collection->each(function (User $user) {
+            $roles = $user->groups
+                ->flatMap(function ($group) {
+                    return $group->roles;
+                })
+                ->unique('id')
+                ->values();
+
+            $user->setRelation('roles', $roles);
+        });
+
         return UserResource::collection($data);
     }
 
@@ -59,6 +80,7 @@ class UserController extends Controller
         $authenticatedUser = Auth::user();
         $validated['created_by'] = $authenticatedUser->id ?? 1;
         $validated['updated_by'] = $authenticatedUser->id ?? 1;
+        $validated['avatar_pic'] = "https://cdn-icons-png.freepik.com/256/12225/12225881.png";
 
         try {
             $model = $this->service->create($validated);
