@@ -142,7 +142,7 @@ class UserController extends Controller
                 'password_note' => 'Please keep this password safe. You can change it after logging in.',
             ];
 
-            Mail::send('emails.user-credentials', $mailData, function ($message) use ($user) {
+            Mail::send('emails.html-user-credentials', $mailData, function ($message) use ($user) {
                 $message->to($user->email)
                         ->subject('Your Account Credentials - PMS System');
             });
