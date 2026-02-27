@@ -43,7 +43,7 @@ export default function CompanyInvoiceDetailPage() {
   const [loading, setLoading] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
   const [downloading, setDownloading] = useState(false)
-  const { showToast } = useToast()
+  const { addToast } = useToast()
 
   const fetchInvoice = useCallback(async () => {
     if (!id) return
@@ -57,11 +57,11 @@ export default function CompanyInvoiceDetailPage() {
       const inv = (data?.data || data) as any
       setInvoice(inv)
     } catch (e: any) {
-      showToast({ type: 'error', message: e.message || 'Failed to load company invoice' })
+      addToast('error', e.message || 'Failed to load company invoice')
     } finally {
       setLoading(false)
     }
-  }, [id, showToast])
+  }, [id, addToast])
 
   useEffect(() => {
     fetchInvoice()
@@ -82,9 +82,9 @@ export default function CompanyInvoiceDetailPage() {
       if (!resp.ok) {
         throw new Error(data?.message || 'Failed to send company invoice email')
       }
-      showToast({ type: 'success', message: data?.message || 'Company invoice emailed successfully' })
+      addToast('success', data?.message || 'Company invoice emailed successfully')
     } catch (e: any) {
-      showToast({ type: 'error', message: e.message || 'Failed to send company invoice email' })
+      addToast('error', e.message || 'Failed to send company invoice email')
     } finally {
       setSendingEmail(false)
     }
@@ -109,7 +109,7 @@ export default function CompanyInvoiceDetailPage() {
       a.remove()
       window.URL.revokeObjectURL(url)
     } catch (e: any) {
-      showToast({ type: 'error', message: e.message || 'Failed to download company invoice PDF' })
+      addToast('error', e.message || 'Failed to download company invoice PDF')
     } finally {
       setDownloading(false)
     }
