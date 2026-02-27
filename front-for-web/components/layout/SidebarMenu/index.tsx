@@ -4,6 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { useAppDispatch } from "../../../store/hooks";
+import { clearAuth } from "../../../store/auth/slice";
 
 interface SidebarMenuProps {
   toggleActive: () => void;
@@ -255,6 +257,7 @@ const isSubItemActive = (
 const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useAppDispatch();
 
   const [openSectionId, setOpenSectionId] = React.useState<string | null>(null);
 
@@ -300,6 +303,19 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
   const isDashboardActive =
     normalizedPath === "/dashboard" || normalizedPath.startsWith("/dashboard/");
   const isLogoutActive = normalizedPath === "" || normalizedPath === "/";
+
+  const handleLogout = React.useCallback(() => {
+    try {
+      dispatch(clearAuth());
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.removeItem("auth");
+        } catch {}
+      }
+    } finally {
+      router.replace("/sign-in");
+    }
+  }, [dispatch, router]);
 
   return (
     <div className="sidebar-area bg-white dark:bg-[#0c1427] fixed z-[7] top-0 h-screen transition-all rounded-r-md">
@@ -492,7 +508,11 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
           <div className="accordion-item rounded-md text-black dark:text-white mt-[10px] whitespace-nowrap">
             <Link
-              href="/"
+              href="/sign-in"
+              onClick={(e) => {
+                e.preventDefault();
+                handleLogout();
+              }}
               className={`accordion-button flex items-center transition-all py-[9px] pl-[14px] pr-[30px] rounded-md font-medium w-full relative text-left hover:bg-gray-50 dark:hover:bg-[#15203c]
                 ${
                   isLogoutActive
