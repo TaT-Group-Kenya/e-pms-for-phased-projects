@@ -188,7 +188,24 @@ const CompanyDetailsView: React.FC<CompanyDetailsViewProps> = ({ companyId }) =>
         });
 
         if (!response.ok) {
-          throw new Error("Failed to load company");
+          // Try to read a more specific error message from the API response
+          let errorMessage = "Failed to load company";
+          try {
+            const errorData = await response.json();
+            if (errorData?.message) {
+              errorMessage = errorData.message;
+            }
+          } catch {
+            // Fallback to status text if JSON parsing fails
+            if (response.statusText) {
+              errorMessage = response.statusText;
+            }
+          }
+
+          console.error("Error response when fetching company:", response.status, errorMessage);
+          addToast(errorMessage, "error");
+          setCompany(null);
+          return;
         }
 
         const data = await response.json();
@@ -202,8 +219,8 @@ const CompanyDetailsView: React.FC<CompanyDetailsViewProps> = ({ companyId }) =>
         setCompany(companyData);
         setEditFormData(companyData);
       } catch (err) {
-        console.error("Error fetching company:", err);
-        addToast("Error loading company details", "error");
+        console.error("Unexpected error fetching company:", err);
+        addToast("Unexpected error loading company details", "error");
       } finally {
         setLoading(false);
       }

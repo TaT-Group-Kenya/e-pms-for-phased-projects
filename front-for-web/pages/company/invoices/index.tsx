@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useToast } from '../../../hooks/useToast'
+import AuthenticatedLayout from '../../../components/authenticated/AuthenticatedLayout'
 
 interface CompanyInvoiceListItem {
   id: number
@@ -13,7 +14,7 @@ interface CompanyInvoiceListItem {
 export default function CompanyInvoiceListPage() {
   const [invoices, setInvoices] = useState<CompanyInvoiceListItem[]>([])
   const [loading, setLoading] = useState(false)
-  const { showToast } = useToast()
+  const { addToast } = useToast()
 
   useEffect(() => {
     const fetchInvoices = async () => {
@@ -35,17 +36,18 @@ export default function CompanyInvoiceListPage() {
           }))
         )
       } catch (e: any) {
-        showToast({ type: 'error', message: e.message || 'Failed to load company invoices' })
+        addToast('error', e.message || 'Failed to load company invoices')
       } finally {
         setLoading(false)
       }
     }
 
     fetchInvoices()
-  }, [showToast])
+  }, [addToast])
 
   return (
-    <div className="p-4">
+    <AuthenticatedLayout>
+      <div className="p-4">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold">Company Invoices</h1>
       </div>
@@ -87,5 +89,6 @@ export default function CompanyInvoiceListPage() {
         </table>
       )}
     </div>
+    </AuthenticatedLayout>
   )
 }

@@ -1172,11 +1172,20 @@ export default function CustInvoiceDetailPage() {
                               {item.item_type}
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
-                              {item.item_value != null
-                                ? item.item_type === 'percent'
-                                  ? `${item.item_value.toFixed(2)}%`
-                                  : formatCurrency(item.item_value, invoice.currency)
-                                : '-'}
+                              {(() => {
+                                if (item.item_value == null) return '-'
+
+                                const numericValue =
+                                  typeof item.item_value === 'number'
+                                    ? item.item_value
+                                    : Number(item.item_value)
+
+                                if (Number.isNaN(numericValue)) return '-'
+
+                                return item.item_type === 'percent'
+                                  ? `${numericValue.toFixed(2)}%`
+                                  : formatCurrency(numericValue, invoice.currency)
+                              })()}
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {formatCurrency(item.item_amount ?? 0, invoice.currency)}
