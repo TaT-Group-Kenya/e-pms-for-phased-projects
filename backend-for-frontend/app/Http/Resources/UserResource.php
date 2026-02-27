@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class UserResource extends JsonResource
+class UserResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -15,10 +13,10 @@ class UserResource extends JsonResource
             'middle_name' => $this->middle_name,
             'last_name' => $this->last_name,
             'password' => $this->password,
-            'email_verified_at' => $this->email_verified_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
+            'email_verified_at' => $this->formatTimestamp($this->email_verified_at),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
             'remember_token' => $this->remember_token,
             'avatar_pic' => $this->avatar_pic,
@@ -31,10 +29,12 @@ class UserResource extends JsonResource
 
             'customer' => new CustomerResource($this->whenLoaded('customer')),
 
-            'groups' => new GroupsResource($this->whenLoaded('groups')),
+            // Groups this user belongs to
+            'groups' => SysGroupResource::collection($this->whenLoaded('groups')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
+            // Roles derived from the user's groups (unique list)
+            'roles' => SysRoleResource::collection($this->whenLoaded('roles')),
+
         ];
     }
 }

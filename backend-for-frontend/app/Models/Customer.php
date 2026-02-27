@@ -25,4 +25,29 @@ class Customer extends Model
         'created_at',
         'created_by',
     ];
+
+    public function users()
+    {
+        return $this->hasMany(User::class, 'customer_id');
+    }
+
+    public function projects()
+    {
+        return $this->hasMany(Project::class, 'customer_id');
+    }
+
+    public function quotations()
+    {
+        return $this->hasMany(Quotation::class, 'customer_id');
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'customer_id');
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(CustInvoice::class, 'customer_id');
+    }
 }

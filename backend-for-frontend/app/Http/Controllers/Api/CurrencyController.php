@@ -21,7 +21,9 @@ class CurrencyController extends Controller
     {
         $this->authorize('viewAny', \App\Models\Currency::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return CurrencyResource::collection($data);
     }
 

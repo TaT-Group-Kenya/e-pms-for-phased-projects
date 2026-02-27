@@ -16,13 +16,10 @@ class CompanyInvoiceTaxItemUpdateRequest extends FormRequest
     {
         return [
             'invoice_id' => ['nullable', 'exists:invoices,id'],
-            'item_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'tax_id' => ['sometimes', 'nullable', 'integer', 'exists:taxes,id'],
+            'item_name' => ['sometimes', 'required_without:tax_id', 'string', 'max:255'],
             'item_type' => ['sometimes', 'required', Rule::in(['fixed','percent'])],
             'item_value' => ['sometimes', 'required', 'string', 'max:255'],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

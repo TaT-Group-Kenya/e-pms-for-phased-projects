@@ -18,10 +18,6 @@ class CustInvoiceDocumentUpdateRequest extends FormRequest
             'invoice_id' => ['nullable', 'exists:invoices,id'],
             'document_path' => ['sometimes', 'required', 'string', 'max:255'],
             'document_type' => ['sometimes', 'required', Rule::in(['proposal','terms','attachments'])],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

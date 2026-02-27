@@ -41,7 +41,7 @@ class Project extends Model
 
     public function phases()
     {
-        return $this->hasMany(Phase::class);
+        return $this->hasMany(ProjectPhase::class);
     }
 
     public function order()
@@ -52,5 +52,15 @@ class Project extends Model
     public function quotation()
     {
         return $this->hasOne(Quotation::class);
+    }
+
+    public function customer_invoices()
+    {
+        return $this->hasMany(CustInvoice::class);
+    }
+
+    public function company_invoices()
+    {
+        return $this->hasMany(CompanyInvoice::class);
     }
 }

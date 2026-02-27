@@ -18,10 +18,6 @@ class CompanyInvoiceDocumentUpdateRequest extends FormRequest
             'invoice_id' => ['nullable', 'exists:invoices,id'],
             'document_name' => ['sometimes', 'required', 'string', 'max:255'],
             'document_path' => ['sometimes', 'required', 'string', 'max:255'],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class CompanyProjectResource extends JsonResource
+class CompanyProjectResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -14,19 +12,17 @@ class CompanyProjectResource extends JsonResource
             'phase_id' => $this->phase_id,
             'company_id' => $this->company_id,
             'is_complete' => (bool) $this->is_complete,
-            'updated_at' => $this->updated_at?->toISOString(),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
             'project' => new ProjectResource($this->whenLoaded('project')),
 
-            'phase' => new PhaseResource($this->whenLoaded('phase')),
+            'phase' => new ProjectPhaseResource($this->whenLoaded('phase')),
 
             'company' => new CompanyResource($this->whenLoaded('company')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

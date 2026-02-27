@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class OrderDocumentResource extends JsonResource
+class OrderDocumentResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -13,15 +11,16 @@ class OrderDocumentResource extends JsonResource
             'order_id' => $this->order_id,
             'document_path' => $this->document_path,
             'document_type' => $this->document_type,
-            'updated_at' => $this->updated_at?->toISOString(),
+            'document_url' => $this->when($this->document_path, function () {
+                return $this->document_url;
+            }),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
             'order' => new OrderResource($this->whenLoaded('order')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

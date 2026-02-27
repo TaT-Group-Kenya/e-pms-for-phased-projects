@@ -20,13 +20,10 @@ class QuoteLineItemUpdateRequest extends FormRequest
             'phase_name' => ['sometimes', 'required', 'string', 'max:255'],
             'phase_description' => ['sometimes', 'required', 'string', 'max:255'],
             'quoted_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'estimated_hours_nullable' => ['sometimes', 'required', 'string', 'max:255'],
-            'custom_note' => ['sometimes', 'required', 'string', 'max:255'],
+            'quantity' => ['sometimes', 'integer', 'min:1'],
+            'estimated_hours' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'custom_note' => ['sometimes', 'nullable', 'string', 'max:255'],
             'is_taxable' => ['sometimes', 'required', 'boolean'],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

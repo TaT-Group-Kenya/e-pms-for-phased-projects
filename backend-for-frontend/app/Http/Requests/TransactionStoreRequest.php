@@ -43,7 +43,6 @@ class TransactionStoreRequest extends FormRequest
             'accounting_period' => ['required', 'string', 'max:255'],
             'is_adjusting_entry' => ['required', 'boolean'],
             'cost_center_id' => ['nullable', 'exists:departments,id'],
-            'created_by' => ['exists:users,id'],
         ];
     }
 

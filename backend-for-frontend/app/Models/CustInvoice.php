@@ -17,7 +17,6 @@ class CustInvoice extends Model
         'description',
         'status',
         'subtotal_amount',
-        'tax_percentage',
         'tax_amount',
         'discount_percentage',
         'discount_amount',
@@ -54,7 +53,12 @@ class CustInvoice extends Model
 
     public function payments()
     {
-        return $this->hasMany(CustPayment::class, 'invoice_id');
+        return $this->belongsToMany(
+            CustPayment::class,
+            'cust_payment_allocations',
+            'invoice_id',
+            'payment_id'
+        );
     }
 
     public function creditnotes()

@@ -27,10 +27,6 @@ class ProjectPhaseUpdateRequest extends FormRequest
             'end_date' => ['sometimes', 'required', 'date'],
             'progress_percentage' => ['sometimes', 'required', 'string', 'max:255'],
             'quote_item_id' => ['nullable', 'exists:quote_items,id'],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

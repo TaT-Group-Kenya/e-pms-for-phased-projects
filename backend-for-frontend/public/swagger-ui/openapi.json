@@ -4761,7 +4761,7 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/OrderTaxItems"
+                                        "$ref": "#/components/schemas/OrderTaxItem"
                                     }
                                 }
                             }
@@ -4773,13 +4773,13 @@
                 "tags": [
                     "order-tax-items"
                 ],
-                "summary": "Create OrderTaxItemss",
+                "summary": "Create OrderTaxItems",
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/OrderTaxItemsCreate"
+                                "$ref": "#/components/schemas/OrderTaxItemCreate"
                             }
                         }
                     }
@@ -4790,7 +4790,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/OrderTaxItems"
+                                    "$ref": "#/components/schemas/OrderTaxItem"
                                 }
                             }
                         }
@@ -4813,14 +4813,14 @@
                 "tags": [
                     "order-tax-items"
                 ],
-                "summary": "Get OrderTaxItemss",
+                "summary": "Get OrderTaxItems",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/OrderTaxItems"
+                                    "$ref": "#/components/schemas/OrderTaxItem"
                                 }
                             }
                         }
@@ -4831,13 +4831,13 @@
                 "tags": [
                     "order-tax-items"
                 ],
-                "summary": "Replace OrderTaxItemss",
+                "summary": "Replace OrderTaxItems",
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/OrderTaxItemsCreate"
+                                "$ref": "#/components/schemas/OrderTaxItemCreate"
                             }
                         }
                     }
@@ -4848,7 +4848,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/OrderTaxItems"
+                                    "$ref": "#/components/schemas/OrderTaxItem"
                                 }
                             }
                         }
@@ -4859,13 +4859,13 @@
                 "tags": [
                     "order-tax-items"
                 ],
-                "summary": "Update OrderTaxItemss",
+                "summary": "Update OrderTaxItems",
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/OrderTaxItemsUpdate"
+                                "$ref": "#/components/schemas/OrderTaxItemUpdate"
                             }
                         }
                     }
@@ -4876,7 +4876,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/OrderTaxItems"
+                                    "$ref": "#/components/schemas/OrderTaxItem"
                                 }
                             }
                         }
@@ -4887,7 +4887,7 @@
                 "tags": [
                     "order-tax-items"
                 ],
-                "summary": "Delete OrderTaxItemss",
+                "summary": "Delete OrderTaxItems",
                 "responses": {
                     "204": {
                         "description": "No Content"
@@ -10895,7 +10895,7 @@
                 "type": "object",
                 "additionalProperties": true
             },
-            "OrderTaxItems": {
+            "OrderTaxItem": {
                 "type": "object",
                 "properties": {
                     "id": {
@@ -10937,7 +10937,7 @@
                     "created_by": ""
                 }
             },
-            "OrderTaxItemsCreate": {
+            "OrderTaxItemCreate": {
                 "type": "object",
                 "properties": {
                     "order_id": {
@@ -10972,7 +10972,7 @@
                     "created_by": ""
                 }
             },
-            "OrderTaxItemsUpdate": {
+            "OrderTaxItemUpdate": {
                 "type": "object",
                 "additionalProperties": true
             },
@@ -11892,7 +11892,7 @@
                         "type": "number",
                         "format": "float"
                     },
-                    "estimated_hours_nullable": {
+                    "estimated_hours": {
                         "type": "string"
                     },
                     "custom_note": {
@@ -11924,7 +11924,7 @@
                     "phase_name": "",
                     "phase_description": "",
                     "quoted_amount": 0,
-                    "estimated_hours_nullable": "",
+                    "estimated_hours": "",
                     "custom_note": "",
                     "is_taxable": 0,
                     "updated_at": "2026-02-19",
@@ -11954,7 +11954,7 @@
                         "type": "number",
                         "format": "float"
                     },
-                    "estimated_hours_nullable": {
+                    "estimated_hours": {
                         "type": "string"
                     },
                     "custom_note": {
@@ -11975,7 +11975,7 @@
                     "phase_name",
                     "phase_description",
                     "quoted_amount",
-                    "estimated_hours_nullable",
+                    "estimated_hours",
                     "custom_note",
                     "is_taxable"
                 ],
@@ -11986,7 +11986,7 @@
                     "phase_name": "",
                     "phase_description": "",
                     "quoted_amount": 0,
-                    "estimated_hours_nullable": "",
+                    "estimated_hours": "",
                     "custom_note": "",
                     "is_taxable": 0,
                     "updated_at": "2026-02-19",

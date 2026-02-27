@@ -17,7 +17,6 @@ class Quotation extends Model
         'status',
         'valid_until_date',
         'subtotal_amount',
-        'tax_percentage',
         'tax_amount',
         'discount_percentage',
         'discount_amount',
@@ -44,21 +43,26 @@ class Quotation extends Model
     
     public function quoteItems()
     {
-        return $this->hasMany(QuotationItem::class, 'quotation_id');
+        return $this->hasMany(QuoteLineItem::class, 'quotation_id');
     }
     
     public function documents()
     {
-        return $this->hasMany(Document::class, 'quotation_id');
+        return $this->hasMany(QuoteDocument::class, 'quotation_id');
     }
 
     public function approvals()
     {
-        return $this->hasMany(Approval::class, 'quotation_id');
+        return $this->hasMany(QuoteApproval::class, 'quote_id');
     }
 
     public function order()
     {
         return $this->hasOne(Order::class, 'quotation_id');
+    }
+
+    public function taxitems()
+    {
+        return $this->hasMany(QuotationTaxItem::class, 'quotation_id');
     }
 }

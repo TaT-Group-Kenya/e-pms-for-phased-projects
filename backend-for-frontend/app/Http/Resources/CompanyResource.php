@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class CompanyResource extends JsonResource
+class CompanyResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -21,13 +19,15 @@ class CompanyResource extends JsonResource
             'state' => $this->state,
             'country' => $this->country,
             'kra_pin' => $this->kra_pin,
-            'updated_at' => $this->updated_at?->toISOString(),
-            'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'created_by' => $this->created_by,
+            'updated_by' => $this->updated_by,
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
+            'users' => UserResource::collection($this->whenLoaded('users')),
+            'assignments' => CompanyProjectResource::collection($this->whenLoaded('assignments')),
+            'bank_accounts' => CompanyBankResource::collection($this->whenLoaded('bankAccounts')),
+            'invoices' => CompanyInvoiceResource::collection($this->whenLoaded('invoices')),
         ];
     }
 }

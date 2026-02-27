@@ -10,8 +10,11 @@ class CustInvoiceTaxItem extends Model
 
     protected $fillable = [
         'invoice_id',
+        'tax_id',
         'item_name',
         'item_type',
+        'item_value',
+        'item_amount',
         'updated_at',
         'updated_by',
         'created_at',
@@ -21,5 +24,10 @@ class CustInvoiceTaxItem extends Model
     public function invoice()
     {
         return $this->belongsTo(CustInvoice::class, 'invoice_id');
+    }
+
+    public function tax()
+    {
+        return $this->belongsTo(Tax::class, 'tax_id');
     }
 }

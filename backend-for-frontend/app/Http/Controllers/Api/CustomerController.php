@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Customer;
 use App\Services\CustomerService;
 use App\Http\Resources\CustomerResource;
@@ -21,19 +22,40 @@ class CustomerController extends Controller
     {
         $this->authorize('viewAny', \App\Models\Customer::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return CustomerResource::collection($data);
     }
 
     public function store(CustomerStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $filename = time() . '.' . strtolower($file->getClientOriginalExtension());
+            $file->storeAs('logos', $filename, 'public');
+            $validated['logo'] = $filename;
+        }
+        
+        $model = $this->service->create($validated);
         return new CustomerResource($model);
     }
 
     public function show(Customer $customer)
     {
         $this->authorize('view', $customer);
+
+        // Eager load all relationships
+        $customer->load([
+            'users',
+            'projects',
+            'quotations',
+            'orders',
+            'invoices'
+        ]);
 
         return new CustomerResource($customer);
     }
@@ -42,7 +64,17 @@ class CustomerController extends Controller
     {
         $this->authorize('update', $customer);
 
-        $updated = $this->service->update($customer->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $filename = time() . '.' . strtolower($file->getClientOriginalExtension());
+            $file->storeAs('logos', $filename, 'public');
+            $validated['logo'] = $filename;
+        }
+        
+        $updated = $this->service->update($customer->id, $validated);
         return new CustomerResource($updated);
     }
 

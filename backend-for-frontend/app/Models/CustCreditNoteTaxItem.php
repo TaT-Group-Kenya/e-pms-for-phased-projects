@@ -10,6 +10,7 @@ class CustCreditNoteTaxItem extends Model
 
     protected $fillable = [
         'credit_note_id',
+        'tax_id',
         'item_name',
         'item_type',
         'updated_at',
@@ -21,5 +22,10 @@ class CustCreditNoteTaxItem extends Model
     public function creditNote()
     {
         return $this->belongsTo(CustCreditNote::class, 'credit_note_id');
+    }
+
+    public function tax()
+    {
+        return $this->belongsTo(Tax::class, 'tax_id');
     }
 }

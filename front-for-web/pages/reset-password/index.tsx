@@ -209,7 +209,6 @@ const ResetPassword: NextPage = () => {
                                 </form>
                             )}
                         </div>
-
                     </div>
                 </div>
             </div>

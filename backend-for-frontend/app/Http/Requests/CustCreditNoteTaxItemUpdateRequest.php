@@ -16,12 +16,9 @@ class CustCreditNoteTaxItemUpdateRequest extends FormRequest
     {
         return [
             'credit_note_id' => ['nullable', 'exists:credit_notes,id'],
-            'item_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'tax_id' => ['sometimes', 'nullable', 'integer', 'exists:taxes,id'],
+            'item_name' => ['sometimes', 'required_without:tax_id', 'string', 'max:255'],
             'item_type' => ['sometimes', 'required', Rule::in(['fixed','percent'])],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\CustCreditNoteTaxItem;
+use App\Models\Tax;
 use App\Services\CustCreditNoteTaxItemService;
 use App\Http\Resources\CustCreditNoteTaxItemResource;
 use App\Http\Requests\CustCreditNoteTaxItemStoreRequest;
@@ -21,13 +23,24 @@ class CustCreditNoteTaxItemController extends Controller
     {
         $this->authorize('viewAny', \App\Models\CustCreditNoteTaxItem::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return CustCreditNoteTaxItemResource::collection($data);
     }
 
     public function store(CustCreditNoteTaxItemStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+        $taxId = $validated['tax_id'] ?? null;
+        unset($validated['tax_id']);
+
+        if ($taxId) {
+            $tax = Tax::findOrFail($taxId);
+            $validated['item_name'] = $tax->name;
+        }
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new CustCreditNoteTaxItemResource($model);
     }
 
@@ -42,7 +55,16 @@ class CustCreditNoteTaxItemController extends Controller
     {
         $this->authorize('update', $custCreditNoteTaxItem);
 
-        $updated = $this->service->update($custCreditNoteTaxItem->id, $request->validated());
+        $validated = $request->validated();
+        $taxId = $validated['tax_id'] ?? null;
+        unset($validated['tax_id']);
+
+        if ($taxId) {
+            $tax = Tax::findOrFail($taxId);
+            $validated['item_name'] = $tax->name;
+        }
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($custCreditNoteTaxItem->id, $validated);
         return new CustCreditNoteTaxItemResource($updated);
     }
 

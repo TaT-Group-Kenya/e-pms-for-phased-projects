@@ -14,31 +14,77 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
+use Illuminate\Database\QueryException;
+use PDOException;
 
 class AuthController extends Controller
 {
     public function login(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'email' => ['required','email'],
-            'password' => ['required'],
-            'device_name' => ['nullable','string']
-        ]);
+        try {
+            $data = $request->validate([
+                'email' => ['required','email'],
+                'password' => ['required'],
+                'device_name' => ['nullable','string']
+            ]);
 
-        $user = User::where('email', $data['email'])->first();
+            $user = User::where('email', $data['email'])->with('groups.roles')->first();
 
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+            if (! $user || ! Hash::check($data['password'], $user->password)) {
+                return response()->json(['message' => 'Invalid credentials'], 401);
+            }
+
+            $device = $data['device_name'] ?? 'api-client';
+            $token = $user->createToken($device)->plainTextToken;
+
+            return response()->json([
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'user' => $user,
+            ]);
+        } catch (QueryException $e) {
+            if ($this->isConnectionError($e)) {
+                return response()->json(['message' => 'Database server not running'], 500);
+            }
+            throw $e;
+        } catch (PDOException $e) {
+            if ($this->isConnectionError($e)) {
+                return response()->json(['message' => 'Database server not running'], 500);
+            }
+            throw $e;
         }
+    }
 
-        $device = $data['device_name'] ?? 'api-client';
-        $token = $user->createToken($device)->plainTextToken;
-
-        return response()->json([
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user,
-        ]);
+    /**
+     * Check if an exception is a database connection error.
+     */
+    private function isConnectionError(\Throwable $e): bool
+    {
+        // Check for PDO error code 2002 (Connection refused)
+        if ($e->getCode() == 2002) {
+            return true;
+        }
+        
+        $message = $e->getMessage();
+        
+        // Check for common connection error indicators
+        $connectionErrors = [
+            'Connection refused',
+            'Connection timed out',
+            'SQLSTATE[HY000]',
+            'Connection reset',
+            'Broken pipe',
+            'No route to host',
+            'Network is unreachable',
+        ];
+        
+        foreach ($connectionErrors as $error) {
+            if (strpos($message, $error) !== false) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     public function logout(Request $request): JsonResponse
@@ -53,7 +99,8 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json($request->user());
+        $user = $request->user()->load('groups.roles');
+        return response()->json($user);
     }
 
     /**
@@ -148,6 +195,7 @@ class AuthController extends Controller
         DB::table($table)->where('email', $email)->delete();
 
         $token = $user->createToken('api-client')->plainTextToken;
+        $user->load('groups.roles');
         return response()->json([
             'message' => 'Password has been reset',
             'access_token' => $token,

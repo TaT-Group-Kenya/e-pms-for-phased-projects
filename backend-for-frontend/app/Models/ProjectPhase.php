@@ -32,11 +32,16 @@ class ProjectPhase extends Model
 
     public function quoteItem()
     {
-        return $this->belongsTo(QuotationItem::class, 'quote_item_id');
+        return $this->belongsTo(QuoteLineItem::class, 'quote_item_id');
     }
 
     public function orderItem()
     {
         return $this->hasOne(OrderItem::class, 'project_phase_id');
+    }
+
+    public function assignment()
+    {
+        return $this->hasOne(CompanyProject::class, 'phase_id');
     }
 }

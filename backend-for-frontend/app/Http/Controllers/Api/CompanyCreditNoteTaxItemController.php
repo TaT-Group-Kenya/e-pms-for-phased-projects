@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\CompanyCreditNoteTaxItem;
+use App\Models\Tax;
 use App\Services\CompanyCreditNoteTaxItemService;
 use App\Http\Resources\CompanyCreditNoteTaxItemResource;
 use App\Http\Requests\CompanyCreditNoteTaxItemStoreRequest;
@@ -21,13 +23,24 @@ class CompanyCreditNoteTaxItemController extends Controller
     {
         $this->authorize('viewAny', \App\Models\CompanyCreditNoteTaxItem::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return CompanyCreditNoteTaxItemResource::collection($data);
     }
 
     public function store(CompanyCreditNoteTaxItemStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+        $taxId = $validated['tax_id'] ?? null;
+        unset($validated['tax_id']);
+
+        if ($taxId) {
+            $tax = Tax::findOrFail($taxId);
+            $validated['item_name'] = $tax->name;
+        }
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new CompanyCreditNoteTaxItemResource($model);
     }
 
@@ -42,7 +55,16 @@ class CompanyCreditNoteTaxItemController extends Controller
     {
         $this->authorize('update', $companyCreditNoteTaxItem);
 
-        $updated = $this->service->update($companyCreditNoteTaxItem->id, $request->validated());
+        $validated = $request->validated();
+        $taxId = $validated['tax_id'] ?? null;
+        unset($validated['tax_id']);
+
+        if ($taxId) {
+            $tax = Tax::findOrFail($taxId);
+            $validated['item_name'] = $tax->name;
+        }
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($companyCreditNoteTaxItem->id, $validated);
         return new CompanyCreditNoteTaxItemResource($updated);
     }
 

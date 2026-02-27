@@ -9,6 +9,8 @@ class UserService
     public function index(
         array $filters = [],
         int $perPage = 15,
+        int $page = 1,
+        int $offset = 0,
         array $with = []
     ) {
         // optimized query: apply eager loading and simple filters
@@ -19,7 +21,11 @@ class UserService
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
-        return $query->paginate($perPage);
+        
+        // Calculate offset if page is provided, otherwise use explicit offset
+        $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
+        
+        return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
@@ -37,7 +43,17 @@ class UserService
     public function update(int $id, array $data)
     {
         $model = User::findOrFail($id);
-        $model->update($data);
+        
+        // Perform the update
+        $result = $model->update($data);
+        
+        if (!$result) {
+            throw new \Exception('Failed to update user in database');
+        }
+        
+        // Refresh the model to get the latest data from database
+        $model->refresh();
+        
         return $model;
     }
 

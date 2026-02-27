@@ -17,12 +17,8 @@ class CompanyProjectUpdateRequest extends FormRequest
         return [
             'project_id' => ['nullable', 'exists:projects,id'],
             'phase_id' => ['nullable', 'exists:phases,id'],
-            'company_id' => ['nullable', 'exists:companys,id'],
+            'company_id' => ['nullable', 'exists:companies,id'],
             'is_complete' => ['sometimes', 'required', 'boolean'],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

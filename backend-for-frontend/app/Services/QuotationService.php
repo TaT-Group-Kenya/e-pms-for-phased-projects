@@ -9,6 +9,8 @@ class QuotationService
     public function index(
         array $filters = [],
         int $perPage = 15,
+        int $page = 1,
+        int $offset = 0,
         array $with = []
     ) {
         // optimized query: apply eager loading and simple filters
@@ -19,7 +21,11 @@ class QuotationService
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
-        return $query->paginate($perPage);
+        
+        // Calculate offset if page is provided, otherwise use explicit offset
+        $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
+        
+        return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
@@ -31,12 +37,29 @@ class QuotationService
 
     public function create(array $data)
     {
+        // If project_id is provided and currency is not, get currency from project
+        if (!empty($data['project_id']) && empty($data['currency'])) {
+            $project = \App\Models\Project::find($data['project_id']);
+            if ($project && !empty($project->currency)) {
+                $data['currency'] = $project->currency;
+            }
+        }
+        
         return Quotation::create($data);
     }
 
     public function update(int $id, array $data)
     {
         $model = Quotation::findOrFail($id);
+        
+        // If project_id is provided and currency is not, get currency from project
+        if (!empty($data['project_id']) && empty($data['currency'])) {
+            $project = \App\Models\Project::find($data['project_id']);
+            if ($project && !empty($project->currency)) {
+                $data['currency'] = $project->currency;
+            }
+        }
+        
         $model->update($data);
         return $model;
     }

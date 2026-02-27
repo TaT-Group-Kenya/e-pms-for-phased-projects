@@ -15,12 +15,8 @@ class GroupRoleStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'group_id' => ['nullable', 'exists:groups,id'],
-            'role_id' => ['nullable', 'exists:roles,id'],
-            'updated_at' => ['required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
+            'group_id' => ['nullable', 'exists:sys_groups,id'],
+            'role_id' => ['nullable', 'exists:sys_roles,id'],
         ];
     }
 

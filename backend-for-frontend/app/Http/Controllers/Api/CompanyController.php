@@ -8,6 +8,7 @@ use App\Services\CompanyService;
 use App\Http\Resources\CompanyResource;
 use App\Http\Requests\CompanyStoreRequest;
 use App\Http\Requests\CompanyUpdateRequest;
+use Illuminate\Support\Facades\Auth;
 
 class CompanyController extends Controller
 {
@@ -21,19 +22,41 @@ class CompanyController extends Controller
     {
         $this->authorize('viewAny', Company::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return CompanyResource::collection($data);
     }
 
     public function store(CompanyStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $this->authorize('create', Company::class);
+
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $filename = time() . '.' . strtolower($file->getClientOriginalExtension());
+            $file->storeAs('logos', $filename, 'public');
+            $validated['logo'] = $filename;
+        }
+        
+        $model = $this->service->create($validated);
         return new CompanyResource($model);
     }
 
     public function show(Company $company)
     {
         $this->authorize('view', $company);
+
+        // Eager load all relationships
+        $company->load([
+            'users',
+            'assignments.project',
+            'bankAccounts',
+            'invoices'
+        ]);
 
         return new CompanyResource($company);
     }
@@ -42,7 +65,16 @@ class CompanyController extends Controller
     {
         $this->authorize('update', $company);
 
-        $updated = $this->service->update($company->id, $request->validated());
+        $validated = $request->validated();
+        
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $filename = time() . '.' . strtolower($file->getClientOriginalExtension());
+            $file->storeAs('logos', $filename, 'public');
+            $validated['logo'] = $filename;
+        }
+
+        $updated = $this->service->update($company->id, $validated);
         return new CompanyResource($updated);
     }
 

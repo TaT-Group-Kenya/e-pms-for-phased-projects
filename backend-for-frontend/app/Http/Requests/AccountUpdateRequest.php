@@ -16,18 +16,14 @@ class AccountUpdateRequest extends FormRequest
     {
         return [
             'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('accounts')->ignore(
-                    $this->route('account')
-                )],
+                $this->route('account')
+            )],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],
             'type' => ['sometimes', 'required', Rule::in(['cash','mpesa','bank'])],
             'group' => ['sometimes', 'required', Rule::in(['Petty','Checking','Savings'])],
             'balance' => ['sometimes', 'required', 'string', 'max:255'],
             'overdraft_allowed' => ['sometimes', 'required', 'string', 'max:255'],
-            'updated_at' => ['sometimes', 'required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['sometimes', 'required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

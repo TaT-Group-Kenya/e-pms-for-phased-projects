@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class OrderResource extends JsonResource
+class OrderResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -18,7 +16,6 @@ class OrderResource extends JsonResource
             'description' => $this->description,
             'status' => $this->status,
             'subtotal_amount' => (float) $this->subtotal_amount,
-            'tax_percentage' => (float) $this->tax_percentage,
             'tax_amount' => (float) $this->tax_amount,
             'discount_percentage' => $this->discount_percentage,
             'discount_amount' => (float) $this->discount_amount,
@@ -26,9 +23,9 @@ class OrderResource extends JsonResource
             'currency' => $this->currency,
             'payment_terms' => $this->payment_terms,
             'notes_to_customer' => $this->notes_to_customer,
-            'updated_at' => $this->updated_at?->toISOString(),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
             'quotation' => new QuotationResource($this->whenLoaded('quotation')),
@@ -37,14 +34,13 @@ class OrderResource extends JsonResource
 
             'customer' => new CustomerResource($this->whenLoaded('customer')),
 
-            'orderItems' => new OrderItemsResource($this->whenLoaded('orderItems')),
+            // Collections
+            'orderItems' => OrderItemResource::collection($this->whenLoaded('orderItems')),
 
-            'documents' => new DocumentsResource($this->whenLoaded('documents')),
+            'documents' => OrderDocumentResource::collection($this->whenLoaded('documents')),
 
-            'taxitems' => new TaxitemsResource($this->whenLoaded('taxitems')),
+            'taxitems' => OrderTaxItemResource::collection($this->whenLoaded('taxitems')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

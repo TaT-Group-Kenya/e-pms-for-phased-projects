@@ -19,7 +19,6 @@ class CompanyInvoice extends Model
         'description',
         'status',
         'subtotal_amount',
-        'tax_percentage',
         'tax_amount',
         'discount_percentage',
         'discount_amount',
@@ -41,7 +40,7 @@ class CompanyInvoice extends Model
 
     public function invoiceItems()
     {
-        return $this->hasMany(CompanyInvoiceItem::class, 'company_invoice_id');
+        return $this->hasMany(CompanyInvoiceItem::class, 'invoice_id');
     }
 
     public function payments()

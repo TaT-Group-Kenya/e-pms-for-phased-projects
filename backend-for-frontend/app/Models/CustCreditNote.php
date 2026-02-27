@@ -14,7 +14,6 @@ class CustCreditNote extends Model
         'description',
         'status',
         'subtotal_amount',
-        'tax_percentage',
         'tax_amount',
         'total_amount',
         'currency',
@@ -27,6 +26,6 @@ class CustCreditNote extends Model
 
     public function invoice()
     {
-        return $this->belongsTo(Invoice::class, 'invoice_id');
+        return $this->belongsTo(CustInvoice::class, 'invoice_id');
     }
 }

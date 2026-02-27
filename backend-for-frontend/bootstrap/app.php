@@ -14,5 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Symfony\Component\Routing\Exception\RouteNotFoundException $e, $request) {
+            if ($e->getMessage() === 'Route [login] not defined.') {
+                return response()->json(['message' => 'Unauthenticated'], 401);
+            }
+        });
     })->create();

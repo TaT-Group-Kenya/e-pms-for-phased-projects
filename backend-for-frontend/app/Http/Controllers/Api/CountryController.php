@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Country;
 use App\Services\CountryService;
 use App\Http\Resources\CountryResource;
@@ -21,13 +22,17 @@ class CountryController extends Controller
     {
         $this->authorize('viewAny', \App\Models\Country::class);
         $perPage = (int) ($request->get('per_page', 15));
-        $data = $this->service->index($request->all(), $perPage);
+        $page = (int) ($request->get('page', 1));
+        $filters = $request->except('per_page', 'page');
+        $data = $this->service->index($filters, $perPage, $page);
         return CountryResource::collection($data);
     }
 
     public function store(CountryStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new CountryResource($model);
     }
 
@@ -42,7 +47,9 @@ class CountryController extends Controller
     {
         $this->authorize('update', $country);
 
-        $updated = $this->service->update($country->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($country->id, $validated);
         return new CountryResource($updated);
     }
 

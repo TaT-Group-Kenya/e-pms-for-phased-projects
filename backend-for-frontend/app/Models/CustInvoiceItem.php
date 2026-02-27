@@ -14,6 +14,8 @@ class CustInvoiceItem extends Model
         'item_name',
         'item_description',
         'item_amount',
+        'quantity',
+        'total',
         'is_taxable',
         'custom_note',
         'updated_at',
@@ -21,6 +23,15 @@ class CustInvoiceItem extends Model
         'created_at',
         'created_by',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (CustInvoiceItem $item) {
+            $quantity = $item->quantity ?? 1;
+            $amount = $item->item_amount ?? 0;
+            $item->total = $amount * $quantity;
+        });
+    }
 
     public function invoice()
     {

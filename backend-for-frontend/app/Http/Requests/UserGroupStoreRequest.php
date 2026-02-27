@@ -17,10 +17,6 @@ class UserGroupStoreRequest extends FormRequest
         return [
             'user_id' => ['nullable', 'exists:users,id'],
             'sys_group_id' => ['nullable', 'exists:sys_groups,id'],
-            'updated_at' => ['required', 'date'],
-            'updated_by' => ['nullable', 'exists:users,id'],
-            'created_at' => ['required', 'date'],
-            'created_by' => ['nullable', 'exists:users,id'],
         ];
     }
 

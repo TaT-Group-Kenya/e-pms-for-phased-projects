@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Resources\Json\JsonResource;
-
-class GroupRoleResource extends JsonResource
+class GroupRoleResource extends BaseResource
 {
     public function toArray($request): array
     {
@@ -12,17 +10,16 @@ class GroupRoleResource extends JsonResource
             'id' => $this->id,
             'group_id' => $this->group_id,
             'role_id' => $this->role_id,
-            'updated_at' => $this->updated_at?->toISOString(),
+            'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
-            'group' => new GroupResource($this->whenLoaded('group')),
+            // Linked group and role details
+            'group' => new SysGroupResource($this->whenLoaded('group')),
 
-            'role' => new RoleResource($this->whenLoaded('role')),
+            'role' => new SysRoleResource($this->whenLoaded('role')),
 
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }

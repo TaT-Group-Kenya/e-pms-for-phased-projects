@@ -9,6 +9,8 @@ class AccountGroupService
     public function index(
         array $filters = [],
         int $perPage = 15,
+        int $page = 1,
+        int $offset = 0,
         array $with = []
     ) {
         $query = AccountGroup::query();
@@ -18,7 +20,11 @@ class AccountGroupService
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
-        return $query->paginate($perPage);
+        
+        // Calculate offset if page is provided, otherwise use explicit offset
+        $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
+        
+        return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
