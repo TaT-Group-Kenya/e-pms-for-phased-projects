@@ -17,7 +17,6 @@ class Order extends Model
         'description',
         'status',
         'subtotal_amount',
-        'tax_percentage',
         'tax_amount',
         'discount_percentage',
         'discount_amount',
@@ -58,6 +57,8 @@ class Order extends Model
 
     public function taxitems()
     {
+        // Use the correct OrderTaxItem model so related tax items
+        // are properly queried and can be deleted with the order.
         return $this->hasMany(OrderTaxItem::class, 'order_id');
     }
 

@@ -20,7 +20,6 @@ const quotationSchema = z.object({
   valid_until_date: z.string().min(1, "Valid until date is required"),
   payment_terms: z.string().optional(),
   notes_to_customer: z.string().optional(),
-  tax_percentage: z.string().optional(),
   discount_percentage: z.string().optional(),
   min_approval_count: z.string().min(1, "Minimum approval count is required"),
 });
@@ -147,7 +146,6 @@ const CreateQuotationForm: React.FC = () => {
         payment_terms: data.payment_terms || "",
         notes_to_customer: data.notes_to_customer || "",
         subtotal_amount: 0,
-        tax_percentage: parseFloat(data.tax_percentage || "0") || 0,
         tax_amount: 0,
         discount_percentage: parseFloat(data.discount_percentage || "0") || 0,
         discount_amount: 0,
@@ -336,22 +334,7 @@ const CreateQuotationForm: React.FC = () => {
                   {renderFieldError("valid_until_date")}
                 </div>
 
-                {/* Tax Percentage */}
-                <div className="mb-[20px] sm:mb-0">
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Tax Percentage (%)
-                  </label>
-                  <input
-                    type="number"
-                    {...register("tax_percentage")}
-                    defaultValue="0"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
-                    placeholder="0.00"
-                  />
-                </div>
+                {/* Tax percentage field removed: tax is now driven by explicit tax items or backend logic. */}
               </div>
 
               {/* Discount Percentage */}

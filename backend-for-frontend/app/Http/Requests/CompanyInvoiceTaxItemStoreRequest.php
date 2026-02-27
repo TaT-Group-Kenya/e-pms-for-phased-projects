@@ -16,7 +16,8 @@ class CompanyInvoiceTaxItemStoreRequest extends FormRequest
     {
         return [
             'invoice_id' => ['nullable', 'exists:invoices,id'],
-            'item_name' => ['required', 'string', 'max:255'],
+            'tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
+            'item_name' => ['required_without:tax_id', 'string', 'max:255'],
             'item_type' => ['required', Rule::in(['fixed','percent'])],
             'item_value' => ['required', 'string', 'max:255'],
         ];

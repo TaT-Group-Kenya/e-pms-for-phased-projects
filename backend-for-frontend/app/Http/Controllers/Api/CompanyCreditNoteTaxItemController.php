@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\CompanyCreditNoteTaxItem;
+use App\Models\Tax;
 use App\Services\CompanyCreditNoteTaxItemService;
 use App\Http\Resources\CompanyCreditNoteTaxItemResource;
 use App\Http\Requests\CompanyCreditNoteTaxItemStoreRequest;
@@ -31,6 +32,13 @@ class CompanyCreditNoteTaxItemController extends Controller
     public function store(CompanyCreditNoteTaxItemStoreRequest $request)
     {
         $validated = $request->validated();
+        $taxId = $validated['tax_id'] ?? null;
+        unset($validated['tax_id']);
+
+        if ($taxId) {
+            $tax = Tax::findOrFail($taxId);
+            $validated['item_name'] = $tax->name;
+        }
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
         return new CompanyCreditNoteTaxItemResource($model);
@@ -48,6 +56,13 @@ class CompanyCreditNoteTaxItemController extends Controller
         $this->authorize('update', $companyCreditNoteTaxItem);
 
         $validated = $request->validated();
+        $taxId = $validated['tax_id'] ?? null;
+        unset($validated['tax_id']);
+
+        if ($taxId) {
+            $tax = Tax::findOrFail($taxId);
+            $validated['item_name'] = $tax->name;
+        }
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($companyCreditNoteTaxItem->id, $validated);
         return new CompanyCreditNoteTaxItemResource($updated);

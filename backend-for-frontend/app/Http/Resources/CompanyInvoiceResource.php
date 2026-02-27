@@ -16,7 +16,6 @@ class CompanyInvoiceResource extends BaseResource
             'description' => $this->description,
             'status' => $this->status,
             'subtotal_amount' => (float) $this->subtotal_amount,
-            'tax_percentage' => (float) $this->tax_percentage,
             'tax_amount' => (float) $this->tax_amount,
             'discount_percentage' => $this->discount_percentage,
             'discount_amount' => (float) $this->discount_amount,
@@ -32,15 +31,15 @@ class CompanyInvoiceResource extends BaseResource
 
             'project' => new ProjectResource($this->whenLoaded('project')),
 
-            'invoiceItems' => new InvoiceItemsResource($this->whenLoaded('invoiceItems')),
+            'invoiceItems' => CompanyInvoiceItemResource::collection($this->whenLoaded('invoiceItems')),
 
-            'payments' => new PaymentsResource($this->whenLoaded('payments')),
+            'payments' => CompanyPaymentResource::collection($this->whenLoaded('payments')),
 
-            'taxitems' => new TaxitemsResource($this->whenLoaded('taxitems')),
+            'taxitems' => CompanyInvoiceTaxItemResource::collection($this->whenLoaded('taxitems')),
 
-            'creditnotes' => new CreditnotesResource($this->whenLoaded('creditnotes')),
+            'creditnotes' => CompanyCreditNoteResource::collection($this->whenLoaded('creditnotes')),
 
-            'documents' => new DocumentsResource($this->whenLoaded('documents')),
+            'documents' => CompanyInvoiceDocumentResource::collection($this->whenLoaded('documents')),
 
         ];
     }

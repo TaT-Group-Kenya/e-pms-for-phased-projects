@@ -22,7 +22,7 @@ class CustInvoiceItemResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
-            'invoice' => new InvoiceResource($this->whenLoaded('invoice')),
+            'invoice' => new CustInvoiceResource($this->whenLoaded('invoice')),
 
             'projectPhase' => new ProjectPhaseResource($this->whenLoaded('projectPhase')),
 

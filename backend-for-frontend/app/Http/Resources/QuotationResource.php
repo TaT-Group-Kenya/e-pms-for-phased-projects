@@ -16,7 +16,6 @@ class QuotationResource extends BaseResource
             'status' => $this->status,
             'valid_until_date' => $this->formatTimestamp($this->valid_until_date),
             'subtotal_amount' => (float) $this->subtotal_amount,
-            'tax_percentage' => (float) $this->tax_percentage,
             'tax_amount' => (float) $this->tax_amount,
             'discount_percentage' => $this->discount_percentage,
             'discount_amount' => (float) $this->discount_amount,
@@ -41,6 +40,8 @@ class QuotationResource extends BaseResource
             'approvals' => QuoteApprovalResource::collection($this->whenLoaded('approvals')),
 
             'order' => new OrderResource($this->whenLoaded('order')),
+
+            'taxitems' => QuotationTaxItemResource::collection($this->whenLoaded('taxitems')),
 
         ];
     }

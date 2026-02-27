@@ -16,7 +16,6 @@ class OrderResource extends BaseResource
             'description' => $this->description,
             'status' => $this->status,
             'subtotal_amount' => (float) $this->subtotal_amount,
-            'tax_percentage' => (float) $this->tax_percentage,
             'tax_amount' => (float) $this->tax_amount,
             'discount_percentage' => $this->discount_percentage,
             'discount_amount' => (float) $this->discount_amount,
@@ -35,11 +34,12 @@ class OrderResource extends BaseResource
 
             'customer' => new CustomerResource($this->whenLoaded('customer')),
 
-            'orderItems' => new OrderItemsResource($this->whenLoaded('orderItems')),
+            // Collections
+            'orderItems' => OrderItemResource::collection($this->whenLoaded('orderItems')),
 
-            'documents' => new DocumentsResource($this->whenLoaded('documents')),
+            'documents' => OrderDocumentResource::collection($this->whenLoaded('documents')),
 
-            'taxitems' => new TaxitemsResource($this->whenLoaded('taxitems')),
+            'taxitems' => OrderTaxItemResource::collection($this->whenLoaded('taxitems')),
 
         ];
     }

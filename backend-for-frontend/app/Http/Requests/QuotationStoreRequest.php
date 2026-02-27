@@ -23,7 +23,6 @@ class QuotationStoreRequest extends FormRequest
             'status' => ['required', Rule::in(['draft','sent','approved','rejected','revised'])],
             'valid_until_date' => ['required', 'date'],
             'subtotal_amount' => ['required', 'numeric', 'min:0'],
-            'tax_percentage' => ['required', 'numeric', 'min:0'],
             'tax_amount' => ['required', 'numeric', 'min:0'],
             'discount_percentage' => ['required', 'numeric', 'min:0'],
             'discount_amount' => ['required', 'numeric', 'min:0'],

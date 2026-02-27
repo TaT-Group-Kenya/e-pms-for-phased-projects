@@ -11,6 +11,9 @@ class OrderDocumentResource extends BaseResource
             'order_id' => $this->order_id,
             'document_path' => $this->document_path,
             'document_type' => $this->document_type,
+            'document_url' => $this->when($this->document_path, function () {
+                return $this->document_url;
+            }),
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
             'created_at' => $this->formatTimestamp($this->created_at),

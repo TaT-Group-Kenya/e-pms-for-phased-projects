@@ -3,6 +3,10 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\Quotation;
+use App\Models\OrderItem;
+use App\Models\OrderTaxItem;
+use App\Services\CommonService;
 
 class OrderService
 {
@@ -50,5 +54,73 @@ class OrderService
     public function delete(int $id)
     {
         return Order::destroy($id);
+    }
+
+    /**
+     * Create an order (header + items + tax items) by copying
+     * financial details from a quotation. Non-financial fields
+     * such as title, description, payment_terms and notes_to_customer
+     * can be overridden via the $overrides array.
+     */
+    public function createFromQuotation(Quotation $quotation, array $overrides = [], ?int $userId = null): Order
+    {
+        $commonService = new CommonService();
+        do {
+            $orderNumber = $commonService->generateUniqueCode('ORD-');
+        } while (Order::where('order_number', $orderNumber)->exists());
+
+        $data = [
+            'order_number'        => $orderNumber,
+            'quotation_id'        => $quotation->id,
+            'project_id'          => $overrides['project_id'] ?? $quotation->project_id,
+            'customer_id'         => $overrides['customer_id'] ?? $quotation->customer_id,
+            'title'               => $overrides['title'] ?? $quotation->title,
+            'description'         => $overrides['description'] ?? $quotation->description,
+            'status'              => $overrides['status'] ?? 'sent',
+            'subtotal_amount'     => $quotation->subtotal_amount,
+            'tax_amount'          => $quotation->tax_amount,
+            'discount_percentage' => $quotation->discount_percentage,
+            'discount_amount'     => $quotation->discount_amount,
+            'total_amount'        => $quotation->total_amount,
+            'currency'            => $quotation->currency,
+            'payment_terms'       => $overrides['payment_terms'] ?? $quotation->payment_terms,
+            'notes_to_customer'   => $overrides['notes_to_customer'] ?? $quotation->notes_to_customer,
+            'created_by'          => $userId,
+            'updated_by'          => $userId,
+        ];
+
+        $order = Order::create($data);
+
+        foreach ($quotation->quoteItems as $item) {
+            OrderItem::create([
+                'order_id'         => $order->id,
+                'project_phase_id' => $item->project_phase_id,
+                'item_name'        => $item->phase_name,
+                'item_description' => $item->phase_description,
+                'order_amount'     => $item->quoted_amount,
+                'quantity'         => $item->quantity ?? 1,
+                'custom_note'      => $item->custom_note,
+                'is_taxable'       => (bool) $item->is_taxable,
+                'created_by'       => $userId,
+                'updated_by'       => $userId,
+            ]);
+        }
+
+        foreach ($quotation->taxitems as $taxItem) {
+            OrderTaxItem::create([
+                'order_id'    => $order->id,
+                'tax_id'      => $taxItem->tax_id,
+                'item_name'   => $taxItem->item_name,
+                'item_type'   => $taxItem->item_type,
+                'item_value'  => $taxItem->item_value,
+                'item_amount' => $taxItem->item_amount,
+                'created_by'  => $userId,
+                'updated_by'  => $userId,
+            ]);
+        }
+
+        $order->load(['orderItems', 'taxitems', 'project', 'customer', 'quotation']);
+
+        return $order;
     }
 }

@@ -18,7 +18,7 @@ const getAccordionIndexFromPathname = (pathname: string | null): number | null =
   if (pathname.startsWith("/customer")) return 1;
   if (pathname.startsWith("/company")) return 2;
   if (pathname.startsWith("/quotation")) return 4;
-  if (pathname.startsWith("/real-estate")) return 5;
+  if (pathname.startsWith("/orders")) return 5;
   if (pathname.startsWith("/invoices")) return 6;
   if (pathname.startsWith("/finance")) return 7;
   if (pathname.startsWith("/users")) return 8;
@@ -379,86 +379,12 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                   <ul className="sidebar-sub-menu">
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/real-estate/property-list/"
+                        href="/orders/order-list"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/real-estate/property-list/"
-                            ? "active"
-                            : ""
+                          isSameEntityPage("/orders/order-list", pathname) ? "active" : ""
                         }`}
                       >
-                        Property List
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/real-estate/property-details/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/real-estate/property-details/"
-                            ? "active"
-                            : ""
-                        }`}
-                      >
-                        Property Details
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/real-estate/add-property/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/real-estate/add-property/"
-                            ? "active"
-                            : ""
-                        }`}
-                      >
-                        Add Property
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/real-estate/agents/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/real-estate/agents/" ? "active" : ""
-                        }`}
-                      >
-                        Agents
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/real-estate/agent-details/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/real-estate/agent-details/"
-                            ? "active"
-                            : ""
-                        }`}
-                      >
-                        Agent Details
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/real-estate/add-agent/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/real-estate/add-agent/" ? "active" : ""
-                        }`}
-                      >
-                        Add Agent
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/real-estate/customers/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/real-estate/customers/" ? "active" : ""
-                        }`}
-                      >
-                        Customers
+                        Orders
                       </Link>
                     </li>
                   </ul>
@@ -477,7 +403,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                 <i className="material-symbols-outlined transition-all text-gray-500 dark:text-gray-400 ltr:mr-[7px] rtl:ml-[7px] !text-[22px] leading-none relative -top-px">
                   content_paste
                 </i>
-                <span className="title leading-none">Invoices</span>
+                <span className="title leading-none">Customer Invoices</span>
               </button>
 
               <div
@@ -489,49 +415,22 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                   <ul className="sidebar-sub-menu">
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/invoices/"
+                        href="/cust-invoices/invoice-list"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/invoices/" ? "active" : ""
+                          isSameEntityPage("/cust-invoices/invoice-list", pathname) ? "active" : ""
                         }`}
                       >
-                        Invoices
+                        Customer Invoices
                       </Link>
                     </li>
-
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/invoices/invoice-details/"
+                        href="/cust/credit-notes"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/invoices/invoice-details/"
-                            ? "active"
-                            : ""
+                          isSameEntityPage("/cust/credit-notes", pathname) ? "active" : ""
                         }`}
                       >
-                        Invoice Details
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/invoices/create-invoice/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/invoices/create-invoice/"
-                            ? "active"
-                            : ""
-                        }`}
-                      >
-                        Create Invoice
-                      </Link>
-                    </li>
-
-                    <li className="sidemenu-item mb-[4px] last:mb-0">
-                      <Link
-                        href="/invoices/edit-invoice/"
-                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/invoices/edit-invoice/" ? "active" : ""
-                        }`}
-                      >
-                        Edit Invoice
+                        Customer Credit Notes
                       </Link>
                     </li>
                   </ul>
@@ -546,6 +445,52 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                 }`}
                 type="button"
                 onClick={() => toggleAccordion(7)}
+              >
+                <i className="material-symbols-outlined transition-all text-gray-500 dark:text-gray-400 ltr:mr-[7px] rtl:ml-[7px] !text-[22px] leading-none relative -top-px">
+                  domain
+                </i>
+                <span className="title leading-none">Company Invoices</span>
+              </button>
+
+              <div
+                className={`accordion-collapse ${
+                  openIndex === 7 ? "open" : "hidden"
+                }`}
+              >
+                <div className="pt-[4px]">
+                  <ul className="sidebar-sub-menu">
+                    <li className="sidemenu-item mb-[4px] last:mb-0">
+                      <Link
+                        href="/company/invoices"
+                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
+                          isSameEntityPage("/company/invoices", pathname) ? "active" : ""
+                        }`}
+                      >
+                        Company Invoices
+                      </Link>
+                    </li>
+                    <li className="sidemenu-item mb-[4px] last:mb-0">
+                      <Link
+                        href="/company/credit-notes"
+                        className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
+                          isSameEntityPage("/company/credit-notes", pathname) ? "active" : ""
+                        }`}
+                      >
+                        Company Credit Notes
+                      </Link>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="accordion-item rounded-md text-black dark:text-white mb-[5px] whitespace-nowrap">
+              <button
+                className={`accordion-button toggle flex items-center transition-all py-[9px] ltr:pl-[14px] ltr:pr-[30px] rtl:pr-[14px] rtl:pl-[30px] rounded-md font-medium w-full relative hover:bg-gray-50 text-left dark:hover:bg-[#15203c] ${
+                  openIndex === 8 ? "open" : ""
+                }`}
+                type="button"
+                onClick={() => toggleAccordion(8)}
               >
                 <i className="material-symbols-outlined transition-all text-gray-500 dark:text-gray-400 ltr:mr-[7px] rtl:ml-[7px] !text-[22px] leading-none relative -top-px">
                   calculate
@@ -658,11 +603,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                   <ul className="sidebar-sub-menu">
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/doctor/write-prescription/"
+                        href="/setup/departments"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/doctor/write-prescription/"
-                            ? "active"
-                            : ""
+                          pathname === "/setup/departments" ? "active" : ""
                         }`}
                       >
                         Departments
@@ -671,9 +614,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/doctor/patients-list/"
+                        href="/setup/configurations"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/doctor/patients-list/" ? "active" : ""
+                          pathname === "/setup/configurations" ? "active" : ""
                         }`}
                       >
                         Configurations
@@ -682,9 +625,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/doctor/add-patient/"
+                        href="/setup/account-types"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/doctor/add-patient/" ? "active" : ""
+                          pathname === "/setup/account-types" ? "active" : ""
                         }`}
                       >
                         Account Types
@@ -693,9 +636,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/doctor/patient-details/"
+                        href="/setup/account-groups"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/doctor/patient-details/"
+                          pathname === "/setup/account-groups"
                             ? "active"
                             : ""
                         }`}
@@ -706,9 +649,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/doctor/appointments/"
+                        href="/setup/currencies"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/doctor/appointments/" ? "active" : ""
+                          pathname === "/setup/currencies" ? "active" : ""
                         }`}
                       >
                         Currencies
@@ -717,9 +660,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/doctor/prescriptions/"
+                        href="/setup/countries"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/doctor/prescriptions/" ? "active" : ""
+                          pathname === "/setup/countries" ? "active" : ""
                         }`}
                       >
                         Countries
@@ -728,9 +671,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/doctor/write-prescription/"
+                        href="/setup/taxes"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/doctor/write-prescription/"
+                          pathname === "/setup/taxes"
                             ? "active"
                             : ""
                         }`}
@@ -741,9 +684,9 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
                     <li className="sidemenu-item mb-[4px] last:mb-0">
                       <Link
-                        href="/doctor/write-prescription/"
+                        href="/setup/languages"
                         className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium text-gray-500 dark:text-gray-400 py-[9px] ltr:pl-[38px] ltr:pr-[30px] rtl:pr-[38px] rtl:pl-[30px] hover:text-primary-500 hover:bg-primary-50 w-full text-left dark:hover:bg-[#15203c] ${
-                          pathname === "/doctor/write-prescription/"
+                          pathname === "/setup/languages"
                             ? "active"
                             : ""
                         }`}

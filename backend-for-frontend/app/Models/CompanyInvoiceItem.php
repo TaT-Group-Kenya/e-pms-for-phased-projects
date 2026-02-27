@@ -8,15 +8,13 @@ class CompanyInvoiceItem extends Model
 {
     protected $table = 'company_invoice_items';
 
-    public $timestamps = false;
-
     protected $fillable = [
         'invoice_id',
+        'project_phase_id',
         'item_name',
         'item_description',
-        'quantity',
-        'unit_price',
-        'total_price',
+        'item_amount',
+        'is_taxable',
         'updated_at',
         'updated_by',
         'created_at',
@@ -26,5 +24,10 @@ class CompanyInvoiceItem extends Model
     public function invoice()
     {
         return $this->belongsTo(CompanyInvoice::class, 'invoice_id');
+    }
+
+    public function projectPhase()
+    {
+        return $this->belongsTo(ProjectPhase::class, 'project_phase_id');
     }
 }

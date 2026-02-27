@@ -179,10 +179,10 @@ class QuoteLineItemController extends Controller
             return (float) ($item->total ?? 0);
         });
 
-        $taxPercentage = (float) ($quotation->tax_percentage ?? 0);
         $discountPercentage = (float) ($quotation->discount_percentage ?? 0);
 
-        $taxAmount = $subtotal * ($taxPercentage / 100);
+        // Tax amount is now managed independently of a header tax_percentage.
+        $taxAmount = (float) ($quotation->tax_amount ?? 0);
         $discountAmount = $subtotal * ($discountPercentage / 100);
         $totalAmount = $subtotal + $taxAmount - $discountAmount;
 

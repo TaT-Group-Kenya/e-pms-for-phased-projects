@@ -13,7 +13,6 @@ class CustCreditNoteResource extends BaseResource
             'description' => $this->description,
             'status' => $this->status,
             'subtotal_amount' => (float) $this->subtotal_amount,
-            'tax_percentage' => (float) $this->tax_percentage,
             'tax_amount' => (float) $this->tax_amount,
             'total_amount' => (float) $this->total_amount,
             'currency' => $this->currency,
@@ -23,7 +22,7 @@ class CustCreditNoteResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
-            'invoice' => new InvoiceResource($this->whenLoaded('invoice')),
+            'invoice' => new CustInvoiceResource($this->whenLoaded('invoice')),
 
         ];
     }

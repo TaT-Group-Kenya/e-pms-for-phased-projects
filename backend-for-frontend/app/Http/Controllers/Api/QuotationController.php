@@ -4,7 +4,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use App\Models\Quotation;
+use App\Models\Download;
+use App\Models\SysConfig;
 use App\Services\QuotationService;
 use App\Services\CommonService;
 use App\Http\Resources\QuotationResource;
@@ -133,6 +139,7 @@ class QuotationController extends Controller
             'documents',
             'approvals.user',
             'order',
+            'taxitems',
         ]));
     }
 
@@ -238,7 +245,7 @@ class QuotationController extends Controller
                 'quoteItems',
                 'documents',
                 'approvals',
-                'order',
+                'order.orderItems'
             ]));
         }
 
@@ -289,7 +296,7 @@ class QuotationController extends Controller
             'quoteItems',
             'documents',
             'approvals',
-            'order',
+            'order.orderItems',
         ]));
     }
 
@@ -302,11 +309,106 @@ class QuotationController extends Controller
     }
 
     /**
+     * Generate and download a PDF representation of the quotation.
+     * The PDF is stored as {quotation_number}.pdf under the public disk
+     * and a corresponding entry is recorded/updated in the downloads table.
+     */
+    public function downloadPdf(Quotation $quotation, Request $request)
+    {
+        $this->authorize('view', $quotation);
+
+        $pdf = $this->buildQuotationPdf($quotation, $request->user()?->id);
+
+        return response()->streamDownload(
+            function () use ($pdf) {
+                echo $pdf['output'];
+            },
+            $pdf['fileName'],
+            [
+                'Content-Type' => 'application/pdf',
+            ]
+        );
+    }
+
+    /**
+     * Send the quotation PDF to the customer via email.
+     * If a PDF already exists for this quotation, reuse it; otherwise generate a new one.
+     */
+    public function sendEmail(Quotation $quotation, Request $request)
+    {
+        $this->authorize('view', $quotation);
+
+        // Ensure we have a customer with an email address
+        $quotation->loadMissing(['customer', 'project']);
+
+        if (! $quotation->customer || empty($quotation->customer->email)) {
+            return response()->json([
+                'message' => 'Quotation customer email address is missing.',
+            ], 422);
+        }
+
+        // Try to reuse an existing PDF for this quotation, if available
+        $download = Download::where('name', $quotation->quotation_number)->first();
+
+        if ($download && Storage::disk('public')->exists($download->path)) {
+            $relativePath = $download->path;
+            $fileName = basename($download->path);
+        } else {
+            $pdf = $this->buildQuotationPdf($quotation, $request->user()?->id);
+            $relativePath = $pdf['relativePath'];
+            $fileName = $pdf['fileName'];
+        }
+
+        $fullPath = Storage::disk('public')->path($relativePath);
+
+        $recipientName = $quotation->customer->name ?? 'Customer';
+        $projectName = $quotation->project->name ?? null;
+        $fromName = config('mail.from.name', config('app.name', 'EPMS'));
+
+        $subject = sprintf(
+            'Quotation %s%s',
+            $quotation->quotation_number,
+            $projectName ? ' - ' . $projectName : ''
+        );
+
+        $mailData = [
+            'quotation'     => $quotation,
+            'recipientName' => $recipientName,
+            'projectName'   => $projectName,
+            'fromName'      => $fromName,
+        ];
+
+        try {
+            Mail::send('emails.quotation', $mailData, function ($message) use ($quotation, $recipientName, $subject, $fullPath, $fileName) {
+                $message->to($quotation->customer->email, $recipientName)
+                    ->subject($subject)
+                    ->attach($fullPath, [
+                        'as'   => $fileName,
+                        'mime' => 'application/pdf',
+                    ]);
+            });
+        } catch (\Throwable $e) {
+            \Log::error('Failed to send quotation email', [
+                'quotation_id' => $quotation->id,
+                'error'        => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to send quotation email to customer.',
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => 'Quotation emailed to customer successfully.',
+        ]);
+    }
+
+    /**
      * Recalculate quotation financial amounts from line items and percentages.
      */
     protected function recalculateQuotationTotals(int $quotationId): void
     {
-        $quotation = Quotation::with('quoteItems')->find($quotationId);
+        $quotation = Quotation::with(['quoteItems', 'taxitems'])->find($quotationId);
         if (!$quotation) {
             return;
         }
@@ -315,10 +417,13 @@ class QuotationController extends Controller
             return (float) ($item->total ?? 0);
         });
 
-        $taxPercentage = (float) ($quotation->tax_percentage ?? 0);
         $discountPercentage = (float) ($quotation->discount_percentage ?? 0);
 
-        $taxAmount = $subtotal * ($taxPercentage / 100);
+        // Tax amount is driven by quotation tax items.
+        $taxAmount = $quotation->taxitems->sum(function ($taxItem) {
+            return (float) ($taxItem->item_amount ?? 0);
+        });
+
         $discountAmount = $subtotal * ($discountPercentage / 100);
         $totalAmount = $subtotal + $taxAmount - $discountAmount;
 
@@ -328,5 +433,88 @@ class QuotationController extends Controller
         $quotation->total_amount = $totalAmount;
 
         $quotation->save();
+    }
+
+    /**
+     * Build the quotation PDF, persist it to storage and track it in downloads.
+     *
+     * @return array{fileName: string, relativePath: string, output: string}
+     */
+    protected function buildQuotationPdf(Quotation $quotation, ?int $userId = null): array
+    {
+        // Load all details needed for a rich business-style quotation
+        $quotation->loadMissing([
+            'project.phases',
+            'customer',
+            'quoteItems',
+            'documents',
+            'approvals.user',
+            'order',
+        ]);
+
+        // Load sender/company details from sys_configs, with sensible fallbacks
+        $configValues = SysConfig::whereIn('name', [
+            'NAME',
+            'EMAIL',
+            'ADDRESS_LINE_1',
+            'CITY',
+            'STATE',
+            'COUNTRY',
+            'PHONE',
+            'WEBSITE',
+        ])->pluck('value', 'name');
+
+        $senderName = $configValues['NAME'] ?? config('app.name', 'EPMS');
+        $senderEmail = $configValues['EMAIL'] ?? config('mail.from.address', 'no-reply@example.com');
+        $generatedAt = now();
+
+        $data = [
+            'quotation'          => $quotation,
+            'senderName'         => $senderName,
+            'senderEmail'        => $senderEmail,
+            'senderPhone'        => $configValues['PHONE']   ?? null,
+            'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
+            'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
+            'senderCity'         => $configValues['CITY']    ?? null,
+            'senderState'        => $configValues['STATE']   ?? null,
+            'senderCountry'      => $configValues['COUNTRY'] ?? null,
+            'generatedAt'        => $generatedAt,
+        ];
+
+        // Render the Blade view to HTML and generate a PDF using Dompdf
+        $html = view('pdf.quotation', $data)->render();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $output = $dompdf->output();
+
+        $fileName = $quotation->quotation_number . '.pdf';
+        $relativePath = 'quotations/' . $fileName;
+
+        // Persist the PDF to storage (public disk) so it can be reused/replaced
+        Storage::disk('public')->put($relativePath, $output);
+
+        // Track or update the secure download entry
+        $download = Download::firstOrNew(['name' => $quotation->quotation_number]);
+        $download->path = $relativePath;
+        $download->updated_at = now();
+        $download->updated_by = $userId;
+        if (! $download->exists) {
+            $download->created_at = now();
+            $download->created_by = $userId;
+        }
+        $download->save();
+
+        return [
+            'fileName'     => $fileName,
+            'relativePath' => $relativePath,
+            'output'       => $output,
+        ];
     }
 }

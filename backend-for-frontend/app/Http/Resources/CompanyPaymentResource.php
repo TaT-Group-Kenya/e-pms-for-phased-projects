@@ -27,7 +27,7 @@ class CompanyPaymentResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
-            'invoice' => new InvoiceResource($this->whenLoaded('invoice')),
+            'invoice' => new CompanyInvoiceResource($this->whenLoaded('invoice')),
 
             'transaction' => new TransactionResource($this->whenLoaded('transaction')),
 

@@ -22,7 +22,6 @@ class QuotationUpdateRequest extends FormRequest
             'status' => ['sometimes', 'required', Rule::in(['draft','sent','approved','rejected','revised'])],
             'valid_until_date' => ['sometimes', 'required', 'date'],
             'subtotal_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'tax_percentage' => ['sometimes', 'required', 'numeric', 'min:0'],
             'tax_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'discount_percentage' => ['sometimes', 'required', 'numeric', 'min:0'],
             'discount_amount' => ['sometimes', 'required', 'numeric', 'min:0'],

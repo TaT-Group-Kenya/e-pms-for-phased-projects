@@ -44,7 +44,6 @@ interface Invoice {
   description?: string;
   status: string;
   subtotal_amount: number;
-  tax_percentage: number;
   tax_amount: number;
   discount_percentage?: number;
   discount_amount?: number;

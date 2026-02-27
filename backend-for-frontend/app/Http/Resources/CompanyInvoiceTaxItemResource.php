@@ -9,6 +9,7 @@ class CompanyInvoiceTaxItemResource extends BaseResource
         return [
             'id' => $this->id,
             'invoice_id' => $this->invoice_id,
+            'tax_id' => $this->tax_id,
             'item_name' => $this->item_name,
             'item_type' => $this->item_type,
             'item_value' => $this->item_value,
@@ -17,7 +18,8 @@ class CompanyInvoiceTaxItemResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
-            'invoice' => new InvoiceResource($this->whenLoaded('invoice')),
+            'invoice' => new CompanyInvoiceResource($this->whenLoaded('invoice')),
+            'tax' => new TaxResource($this->whenLoaded('tax')),
 
         ];
     }

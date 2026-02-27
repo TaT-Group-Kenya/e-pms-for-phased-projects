@@ -23,7 +23,6 @@ class CompanyInvoiceStoreRequest extends FormRequest
             'description' => ['required', 'string', 'max:255'],
             'status' => ['required', Rule::in(['draft','sent','paid','overdue','partially-paid','cancelled'])],
             'subtotal_amount' => ['required', 'numeric', 'min:0'],
-            'tax_percentage' => ['required', 'numeric', 'min:0'],
             'tax_amount' => ['required', 'numeric', 'min:0'],
             'discount_percentage' => ['required', 'string', 'max:255'],
             'discount_amount' => ['required', 'numeric', 'min:0'],

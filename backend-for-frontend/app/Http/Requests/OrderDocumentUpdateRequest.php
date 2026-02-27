@@ -16,7 +16,9 @@ class OrderDocumentUpdateRequest extends FormRequest
     {
         return [
             'order_id' => ['nullable', 'exists:orders,id'],
-            'document_path' => ['sometimes', 'required', 'string', 'max:255'],
+            // On update, a new file is optional; when provided it will
+            // overwrite the stored path on the model.
+            'document_file' => ['sometimes', 'file'],
             'document_type' => ['sometimes', 'required', Rule::in(['proposal','terms','attachments'])],
         ];
     }

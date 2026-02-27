@@ -60,8 +60,8 @@ foreach (glob($migrationsDir . '*.php') as $mf) {
 $manualPluralMap = [
     'Country' => 'Countries',
     'Currency' => 'Currencies',
-    'OrderTaxItem' => 'OrderTaxItems',
-    'OrderTaxItems' => 'OrderTaxItems',
+    'OrderTaxItem' => 'OrderTaxItem',
+    'OrderTaxItem' => 'OrderTaxItem',
     'ProjectCategory' => 'ProjectCategories',
     'Tax' => 'Taxes',
 ];
@@ -233,7 +233,7 @@ function correctSchemaName($name, $keys) {
         'Currencys' => 'Currencies',
         'Taxs' => 'Taxes',
         'ProjectCategorys' => 'ProjectCategories',
-        'OrderTaxItemss' => 'OrderTaxItems'
+        'OrderTaxItems' => 'OrderTaxItem'
     ];
     if (isset($replacements[$name]) && in_array($replacements[$name], $keys)) return $replacements[$name];
     return null;

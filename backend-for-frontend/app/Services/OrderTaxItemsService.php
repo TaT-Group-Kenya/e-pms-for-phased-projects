@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\OrderTaxItems;
+use App\Models\OrderTaxItem;
 
-class OrderTaxItemsService
+class OrderTaxItemService
 {
     public function index(
         array $filters = [],
@@ -14,7 +14,7 @@ class OrderTaxItemsService
         array $with = []
     ) {
         // optimized query: apply eager loading and simple filters
-        $query = OrderTaxItems::query();
+        $query = OrderTaxItem::query();
         if (!empty($with)) {
             $query->with($with);
         }
@@ -30,25 +30,25 @@ class OrderTaxItemsService
 
     public function find(int $id, array $with = [])
     {
-        $query = OrderTaxItems::query();
+        $query = OrderTaxItem::query();
         if (!empty($with)) $query->with($with);
         return $query->findOrFail($id);
     }
 
     public function create(array $data)
     {
-        return OrderTaxItems::create($data);
+        return OrderTaxItem::create($data);
     }
 
     public function update(int $id, array $data)
     {
-        $model = OrderTaxItems::findOrFail($id);
+        $model = OrderTaxItem::findOrFail($id);
         $model->update($data);
         return $model;
     }
 
     public function delete(int $id)
     {
-        return OrderTaxItems::destroy($id);
+        return OrderTaxItem::destroy($id);
     }
 }

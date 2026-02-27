@@ -20,7 +20,6 @@ class CustCreditNoteUpdateRequest extends FormRequest
             'description' => ['sometimes', 'required', 'string', 'max:255'],
             'status' => ['sometimes', 'required', Rule::in(['draft','raised','refunded'])],
             'subtotal_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'tax_percentage' => ['sometimes', 'required', 'numeric', 'min:0'],
             'tax_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'total_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'currency' => ['sometimes', 'required', 'string', 'max:255'],

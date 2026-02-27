@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\CustInvoiceTaxItem;
+use App\Models\Tax;
 use App\Services\CustInvoiceTaxItemService;
 use App\Http\Resources\CustInvoiceTaxItemResource;
 use App\Http\Requests\CustInvoiceTaxItemStoreRequest;
@@ -31,6 +32,11 @@ class CustInvoiceTaxItemController extends Controller
     public function store(CustInvoiceTaxItemStoreRequest $request)
     {
         $validated = $request->validated();
+        $taxId = $validated['tax_id'] ?? null;
+        if ($taxId) {
+            $tax = Tax::findOrFail($taxId);
+            $validated['item_name'] = $tax->name;
+        }
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
         return new CustInvoiceTaxItemResource($model);
@@ -48,6 +54,10 @@ class CustInvoiceTaxItemController extends Controller
         $this->authorize('update', $custInvoiceTaxItem);
 
         $validated = $request->validated();
+        if (!empty($validated['tax_id'])) {
+            $tax = Tax::findOrFail($validated['tax_id']);
+            $validated['item_name'] = $tax->name;
+        }
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($custInvoiceTaxItem->id, $validated);
         return new CustInvoiceTaxItemResource($updated);

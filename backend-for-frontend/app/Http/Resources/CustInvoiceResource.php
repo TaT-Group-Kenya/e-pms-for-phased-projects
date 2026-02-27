@@ -16,7 +16,6 @@ class CustInvoiceResource extends BaseResource
             'description' => $this->description,
             'status' => $this->status,
             'subtotal_amount' => (float) $this->subtotal_amount,
-            'tax_percentage' => (float) $this->tax_percentage,
             'tax_amount' => (float) $this->tax_amount,
             'discount_percentage' => $this->discount_percentage,
             'discount_amount' => (float) $this->discount_amount,
@@ -36,15 +35,15 @@ class CustInvoiceResource extends BaseResource
 
             'customer' => new CustomerResource($this->whenLoaded('customer')),
 
-            'invoiceItems' => new InvoiceItemsResource($this->whenLoaded('invoiceItems')),
+            'invoiceItems' => CustInvoiceItemResource::collection($this->whenLoaded('invoiceItems')),
 
-            'payments' => new PaymentsResource($this->whenLoaded('payments')),
+            'payments' => CustPaymentResource::collection($this->whenLoaded('payments')),
 
-            'creditnotes' => new CreditnotesResource($this->whenLoaded('creditnotes')),
+            'creditnotes' => CustCreditNoteResource::collection($this->whenLoaded('creditnotes')),
 
-            'taxitems' => new TaxitemsResource($this->whenLoaded('taxitems')),
+            'taxitems' => CustInvoiceTaxItemResource::collection($this->whenLoaded('taxitems')),
 
-            'documents' => new DocumentsResource($this->whenLoaded('documents')),
+            'documents' => CustInvoiceDocumentResource::collection($this->whenLoaded('documents')),
 
         ];
     }

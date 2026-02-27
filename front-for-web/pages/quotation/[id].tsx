@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
@@ -71,7 +71,6 @@ interface OrderSummary {
   description?: string | null;
   status: string;
   subtotal_amount: number;
-  tax_percentage: number;
   tax_amount: number;
   discount_percentage: number | null;
   discount_amount: number;
@@ -92,6 +91,22 @@ interface OrderSummary {
   } | null;
 }
 
+interface QuotationTaxItem {
+  id: number;
+  quotation_id: number;
+  item_name: string;
+  item_type: string; // fixed | percent
+  item_value: number | null;
+  item_amount: number | null;
+}
+
+interface TaxSummary {
+  id: number;
+  name: string;
+  code: string;
+  description?: string | null;
+}
+
 interface Quotation {
   id: number;
   quotation_number: string;
@@ -104,7 +119,6 @@ interface Quotation {
   project?: Project;
   valid_until_date: string;
   subtotal_amount: number;
-  tax_percentage: number;
   tax_amount: number;
   discount_percentage: number;
   discount_amount: number;
@@ -116,6 +130,7 @@ interface Quotation {
   approvals?: QuoteApproval[];
   min_approval_count?: number;
   order?: OrderSummary | null;
+  taxitems?: QuotationTaxItem[];
   created_at: string;
   updated_at: string;
 }
@@ -164,6 +179,58 @@ const QuotationDetail: React.FC = () => {
   const [isDeleteOrderModalOpen, setIsDeleteOrderModalOpen] = useState(false);
   const [isDeletingOrder, setIsDeletingOrder] = useState(false);
   const [deleteOrderError, setDeleteOrderError] = useState<string | null>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
+  const [editingTaxItem, setEditingTaxItem] = useState<QuotationTaxItem | null>(null);
+  type TaxItemEditState = Partial<QuotationTaxItem> & { tax_id?: number | null };
+  const [taxItemEditData, setTaxItemEditData] = useState<TaxItemEditState>({});
+  const [isTaxSubmitting, setIsTaxSubmitting] = useState(false);
+  const [taxItemEditError, setTaxItemEditError] = useState<string | null>(null);
+  const [deletingTaxItemId, setDeletingTaxItemId] = useState<number | null>(null);
+  const [taxes, setTaxes] = useState<TaxSummary[]>([]);
+  const [loadingTaxes, setLoadingTaxes] = useState(false);
+  const [taxesError, setTaxesError] = useState<string | null>(null);
+  const [isDeleteTaxItemModalOpen, setIsDeleteTaxItemModalOpen] = useState(false);
+  const [taxItemToDelete, setTaxItemToDelete] = useState<QuotationTaxItem | null>(null);
+  const [isDeletingTaxItem, setIsDeletingTaxItem] = useState(false);
+  const [deleteTaxItemError, setDeleteTaxItemError] = useState<string | null>(null);
+
+  const handleSendEmail = async () => {
+    if (!quotation) return;
+
+    try {
+      setIsSendingEmail(true);
+
+      const response = await fetch("/api/quotations/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ id: quotation.id }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message = data?.message || "Failed to send quotation email";
+        addToast(message, "error");
+        return;
+      }
+
+      addToast(
+        data?.message || "Quotation emailed to customer successfully.",
+        "success"
+      );
+    } catch (err) {
+      console.error("Error sending quotation email:", err);
+      addToast("Failed to send quotation email. Please try again.", "error");
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
 
   // Fetch quotation details
   useEffect(() => {
@@ -258,6 +325,50 @@ const QuotationDetail: React.FC = () => {
     return () => controller.abort();
   }, [accessToken]);
 
+  // Load taxes for quotation tax items
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const controller = new AbortController();
+
+    const fetchTaxes = async () => {
+      setLoadingTaxes(true);
+      setTaxesError(null);
+
+      try {
+        const resp = await fetch(`/api/taxes/list?per_page=1000`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
+        });
+
+        const data = await resp.json().catch(() => null);
+
+        if (!resp.ok) {
+          const message = data?.message || "Failed to load taxes";
+          setTaxesError(message);
+          addToast(message, "error");
+          return;
+        }
+
+        const list = (data?.data || data) as TaxSummary[];
+        setTaxes(Array.isArray(list) ? list : []);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        console.error("fetch taxes error", err);
+        setTaxesError("Error loading taxes");
+      } finally {
+        setLoadingTaxes(false);
+      }
+    };
+
+    fetchTaxes();
+
+    return () => controller.abort();
+  }, [accessToken, addToast]);
+
   const refreshQuotationDetails = async () => {
     if (!quotationId || !accessToken) return;
 
@@ -282,6 +393,23 @@ const QuotationDetail: React.FC = () => {
       console.error("Error refreshing quotation:", err);
     }
   };
+
+  // When editing a tax item, ensure tax dropdown is prefilled once taxes load
+  useEffect(() => {
+    if (!editingTaxItem || !taxes.length) return;
+
+    const currentTaxId = taxItemEditData.tax_id;
+    if (currentTaxId != null) return;
+
+    const matchedTax = taxes.find((t) => t.name === editingTaxItem.item_name);
+    if (!matchedTax) return;
+
+    setTaxItemEditData((prev) => ({
+      ...prev,
+      tax_id: matchedTax.id,
+      item_name: matchedTax.name,
+    }));
+  }, [editingTaxItem, taxes, taxItemEditData]);
 
   const handleStatusChange = async (newStatus: string) => {
     try {
@@ -353,10 +481,7 @@ const QuotationDetail: React.FC = () => {
             : quotation.valid_until_date,
         payment_terms: (editData.payment_terms ?? quotation.payment_terms ?? "").toString(),
         notes_to_customer: (editData.notes_to_customer ?? quotation.notes_to_customer ?? "").toString(),
-        tax_percentage:
-          typeof editData.tax_percentage === "number"
-            ? editData.tax_percentage
-            : quotation.tax_percentage,
+        // tax_percentage removed; tax_amount is driven by backend/tax items.
         discount_percentage:
           typeof editData.discount_percentage === "number"
             ? editData.discount_percentage
@@ -695,6 +820,58 @@ const QuotationDetail: React.FC = () => {
     }
   };
 
+  const openDeleteTaxItemModal = (item: QuotationTaxItem) => {
+    setTaxItemToDelete(item);
+    setDeleteTaxItemError(null);
+    setIsDeleteTaxItemModalOpen(true);
+  };
+
+  const closeDeleteTaxItemModal = () => {
+    if (isDeletingTaxItem) return;
+    setIsDeleteTaxItemModalOpen(false);
+    setTaxItemToDelete(null);
+    setDeleteTaxItemError(null);
+  };
+
+  const handleConfirmDeleteTaxItem = async () => {
+    if (!taxItemToDelete) return;
+
+    setIsDeletingTaxItem(true);
+    setDeleteTaxItemError(null);
+    setDeletingTaxItemId(taxItemToDelete.id);
+
+    try {
+      const resp = await fetch(`/api/quotation-tax-items/${taxItemToDelete.id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (resp.status !== 204 && !resp.ok) {
+        const data = await resp.json().catch(() => null);
+        const message =
+          formatApiError(data) || data?.message || "Failed to delete tax item";
+        setDeleteTaxItemError(message);
+        addToast(message, "error");
+        return;
+      }
+
+      await refreshQuotationDetails();
+      addToast("Tax item deleted successfully", "success");
+      closeDeleteTaxItemModal();
+    } catch (err) {
+      console.error("Error deleting tax item:", err);
+      const message = "Unexpected error while deleting tax item.";
+      setDeleteTaxItemError(message);
+      addToast(message, "error");
+    } finally {
+      setIsDeletingTaxItem(false);
+      setDeletingTaxItemId(null);
+    }
+  };
+
   const handleGenerateOrder = async () => {
     if (!quotation || isGeneratingOrder) return;
 
@@ -711,7 +888,7 @@ const QuotationDetail: React.FC = () => {
         body: JSON.stringify({ quotation_id: quotation.id }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
 
       if (!response.ok) {
         const message = formatApiError(data) || data?.message || "Failed to generate order";
@@ -720,7 +897,19 @@ const QuotationDetail: React.FC = () => {
         return;
       }
 
+      // Prefer navigating directly to the newly generated order for a
+      // seamless experience, using the ID from the API response.
+      const orderData = (data && (data.data || data)) as OrderSummary | null;
+
       addToast("Order generated successfully", "success");
+
+      if (orderData && orderData.id) {
+        router.push(`/orders/${orderData.id}`);
+        return;
+      }
+
+      // Fallback: if the response shape is unexpected, just refresh the
+      // quotation details so the "View Order" link appears.
       await refreshQuotationDetails();
     } catch (err) {
       console.error("Error generating order:", err);
@@ -780,6 +969,84 @@ const QuotationDetail: React.FC = () => {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!quotation || isDownloadingPdf) return;
+
+    setIsDownloadingPdf(true);
+
+    try {
+      const response = await fetch(`/api/quotations/download-pdf?id=${quotation.id}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        const message = data?.message || "Failed to download PDF";
+        addToast(message, "error");
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${quotation.quotation_number}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error downloading PDF:", err);
+      addToast("Error downloading PDF", "error");
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+  const itemsSubtotal =
+    quotation?.quoteItems && quotation.quoteItems.length > 0
+      ? quotation.quoteItems.reduce(
+          (sum, item) => sum + Number(item.total ?? 0),
+          0
+        )
+      : quotation?.subtotal_amount ?? 0;
+
+  const formatCurrency = (value: number, currency: string) => {
+    if (Number.isNaN(value)) return "-";
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currency || "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value || 0);
+  };
+
+  const previewTaxAmount = useMemo(() => {
+    if (!quotation) return null;
+
+    const value = taxItemEditData.item_value;
+    if (value == null) return null;
+
+    const type = (taxItemEditData.item_type || "fixed").toString();
+    const baseAmount = (quotation.quoteItems || []).reduce((sum, item) => {
+      const lineTotal = item.total ?? item.quoted_amount * item.quantity;
+      return sum + Number(lineTotal || 0);
+    }, 0);
+
+    if (type === "fixed") {
+      return Number(value);
+    }
+
+    if (type === "percent") {
+      return baseAmount * (Number(value) / 100);
+    }
+
+    return null;
+  }, [quotation, taxItemEditData.item_type, taxItemEditData.item_value]);
+
   if (loading) {
     return (
       <AuthenticatedLayout>
@@ -813,14 +1080,6 @@ const QuotationDetail: React.FC = () => {
     );
   }
 
-  const itemsSubtotal =
-    quotation.quoteItems && quotation.quoteItems.length > 0
-      ? quotation.quoteItems.reduce(
-        (sum, item) => sum + Number(item.total ?? 0),
-        0
-      )
-      : quotation.subtotal_amount ?? 0;
-
   const currentUserId = currentUser?.id ? Number(currentUser.id) : null;
 
   const hasCurrentUserApproval =
@@ -830,6 +1089,7 @@ const QuotationDetail: React.FC = () => {
 
   const canEditLineItems = quotation.status === "draft";
   const canEditHeaderFields = quotation.status === "draft";
+  const canEditTaxItems = quotation.status === "draft";
 
   return (
     <AuthenticatedLayout>
@@ -855,6 +1115,17 @@ const QuotationDetail: React.FC = () => {
         error={deleteOrderError}
         onConfirm={handleConfirmDeleteOrder}
         onCancel={closeDeleteOrderModal}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteTaxItemModalOpen}
+        title="Remove Tax From Quote"
+        message="You're about to remove this tax from the quotation. This will immediately update the quote totals and cannot be undone."
+        itemName={taxItemToDelete?.item_name || "Tax item"}
+        isDeleting={isDeletingTaxItem}
+        error={deleteTaxItemError}
+        onConfirm={handleConfirmDeleteTaxItem}
+        onCancel={closeDeleteTaxItemModal}
       />
 
       <div className="mb-[25px] md:flex items-center justify-between">
@@ -966,6 +1237,20 @@ const QuotationDetail: React.FC = () => {
                       : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                     }`}
                 >
+                    <i className="material-symbols-outlined !text-[20px]">receipt_long</i>
+                    Tax Items
+                  </button>
+                </li>
+
+                <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab(3)}
+                    className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 3
+                        ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
+                        : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+                      }`}
+                  >
                   <i className="material-symbols-outlined !text-[20px]">task_alt</i>
                   Approvals
                 </button>
@@ -974,8 +1259,8 @@ const QuotationDetail: React.FC = () => {
               <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
                 <button
                   type="button"
-                  onClick={() => setActiveTab(3)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 3
+                    onClick={() => setActiveTab(4)}
+                    className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 4
                       ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
                       : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                     }`}
@@ -1085,15 +1370,31 @@ const QuotationDetail: React.FC = () => {
                         </span>
                       </div>
 
-                      {quotation.tax_percentage > 0 && (
+                      {quotation.taxitems && quotation.taxitems.length > 0 ? (
                         <>
+                          {quotation.taxitems.map((taxItem) => (
+                            <div
+                              key={taxItem.id}
+                              className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]"
+                            >
+                              <span className="text-gray-600 dark:text-gray-400">
+                                {taxItem.item_name}
+                              </span>
+                              <span className="text-black dark:text-white font-semibold">
+                                {quotation.currency} {Number(taxItem.item_amount ?? 0).toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                        </>
+                      ) : (
+                        quotation.tax_amount > 0 && (
                           <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
-                            <span className="text-gray-600 dark:text-gray-400">Tax ({quotation.tax_percentage}%):</span>
+                            <span className="text-gray-600 dark:text-gray-400">Tax</span>
                             <span className="text-black dark:text-white font-semibold">
                               {quotation.currency} {quotation.tax_amount?.toLocaleString()}
                             </span>
                           </div>
-                        </>
+                        )
                       )}
 
                       {quotation.discount_percentage > 0 && (
@@ -1188,14 +1489,24 @@ const QuotationDetail: React.FC = () => {
                         Edit Quotation
                       </button>
 
-                      <button className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-info-50 dark:bg-info-950 text-info-500 hover:bg-info-100 dark:hover:bg-info-900">
+                      <button
+                        type="button"
+                        onClick={handleDownloadPdf}
+                        disabled={isDownloadingPdf}
+                        className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-info-50 dark:bg-info-950 text-info-500 hover:bg-info-100 dark:hover:bg-info-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
                         <i className="material-symbols-outlined mr-[8px] !text-[20px]">download</i>
-                        Download PDF
+                        {isDownloadingPdf ? "Downloading..." : "Download PDF"}
                       </button>
 
-                      <button className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-success-50 dark:bg-success-950 text-success-500 hover:bg-success-100 dark:hover:bg-success-900">
+                      <button
+                        type="button"
+                        onClick={handleSendEmail}
+                        disabled={isSendingEmail}
+                        className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-success-50 dark:bg-success-950 text-success-500 hover:bg-success-100 dark:hover:bg-success-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
                         <i className="material-symbols-outlined mr-[8px] !text-[20px]">mail</i>
-                        Send Email
+                        {isSendingEmail ? "Sending..." : "Send Email"}
                       </button>
 
                       {quotation.status === "draft" && (
@@ -1306,8 +1617,126 @@ const QuotationDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Approvals Tab */}
+          {/* Tax Items Tab */}
           {activeTab === 2 && (
+            <div className="pt-[20px]">
+              <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+                <div className="flex items-center justify-between mb-[20px]">
+                  <h6 className="text-black dark:text-white font-semibold">Tax Items</h6>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!quotation) return;
+                      setTaxItemEditError(null);
+                      setEditingTaxItem(null);
+                      setTaxItemEditData({
+                        item_name: "",
+                        item_type: "percent",
+                        item_value: 0,
+                      });
+                      setIsTaxModalOpen(true);
+                    }}
+                    disabled={!canEditTaxItems}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <i className="material-symbols-outlined mr-[8px] !text-[18px]">add</i>
+                    Add Tax Item
+                  </button>
+                </div>
+
+                {(!quotation.taxitems || quotation.taxitems.length === 0) && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    No tax items configured for this quotation.
+                  </p>
+                )}
+
+                {quotation.taxitems && quotation.taxitems.length > 0 && (
+                  <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 dark:bg-[#15203c]">
+                        <tr>
+                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                            Tax Name
+                          </th>
+                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                            Type
+                          </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Value
+                          </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Amount
+                          </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(quotation.taxitems || []).map((item) => (
+                          <tr
+                            key={item.id}
+                            className="border-b border-gray-100 dark:border-[#172036] align-middle"
+                          >
+                            <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                              {item.item_name}
+                            </td>
+                            <td className="text-sm capitalize ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                              {item.item_type}
+                            </td>
+                            <td className="text-sm text-right px-[15px] py-[12px]">
+                              {item.item_value != null
+                                ? item.item_type === "percent"
+                                  ? `${item.item_value.toFixed(2)}%`
+                                  : formatCurrency(item.item_value, quotation.currency)
+                                : "-"}
+                            </td>
+                            <td className="text-sm text-right px-[15px] py-[12px]">
+                              {formatCurrency(item.item_amount ?? 0, quotation.currency)}
+                            </td>
+                            <td className="text-sm text-right px-[15px] py-[12px] whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const matchedTax = taxes.find(
+                                    (t) => t.name === item.item_name
+                                  ) || null;
+                                  setTaxItemEditError(null);
+                                  setEditingTaxItem(item);
+                                  setTaxItemEditData({
+                                    item_name: item.item_name,
+                                    item_type: item.item_type,
+                                    item_value: item.item_value ?? 0,
+                                    tax_id: matchedTax ? matchedTax.id : undefined,
+                                  });
+                                  setIsTaxModalOpen(true);
+                                }}
+                                disabled={!canEditTaxItems}
+                                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 mr-[6px] disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openDeleteTaxItemModal(item)}
+                                disabled={deletingTaxItemId === item.id || !canEditTaxItems}
+                                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-danger-50 dark:bg-danger-950 text-danger-500 hover:bg-danger-100 dark:hover:bg-danger-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {deletingTaxItemId === item.id ? "Deleting..." : "Delete"}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Approvals Tab */}
+          {activeTab === 3 && (
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <div className="flex items-center justify-between mb-[20px]">
@@ -1398,7 +1827,7 @@ const QuotationDetail: React.FC = () => {
           )}
 
           {/* Orders Tab */}
-          {activeTab === 3 && (
+          {activeTab === 4 && (
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md mb-[25px]">
                 <div className="flex items-center justify-between mb-[20px]">
@@ -1461,11 +1890,31 @@ const QuotationDetail: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
-                      <span className="text-gray-600 dark:text-gray-400">Total Amount:</span>
-                      <span className="text-black dark:text-white font-semibold">
-                        {quotation.order.currency} {quotation.order.total_amount.toLocaleString()}
-                      </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                        <span className="text-black dark:text-white font-medium">
+                          {quotation.order.currency} {quotation.order.subtotal_amount.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 dark:text-gray-400">Tax</span>
+                        <span className="text-black dark:text-white font-medium">
+                          {quotation.order.currency} {quotation.order.tax_amount.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 dark:text-gray-400">Discount{quotation.order.discount_percentage != null ? ` (${quotation.order.discount_percentage}%)` : ''}:</span>
+                        <span className="text-black dark:text-white font-medium">
+                          {quotation.order.currency} {quotation.order.discount_amount.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 dark:text-gray-400">Total Amount:</span>
+                        <span className="text-black dark:text-white font-semibold">
+                          {quotation.order.currency} {quotation.order.total_amount.toLocaleString()}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
@@ -1480,6 +1929,24 @@ const QuotationDetail: React.FC = () => {
                         <span className="text-gray-600 dark:text-gray-400 block mb-[8px]">Description:</span>
                         <p className="text-black dark:text-white text-sm">
                           {quotation.order.description}
+                        </p>
+                      </div>
+                    )}
+
+                    {quotation.order.payment_terms && (
+                      <div className="pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                        <span className="text-gray-600 dark:text-gray-400 block mb-[8px]">Payment Terms:</span>
+                        <p className="text-black dark:text-white text-sm">
+                          {quotation.order.payment_terms}
+                        </p>
+                      </div>
+                    )}
+
+                    {quotation.order.notes_to_customer && (
+                      <div className="pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                        <span className="text-gray-600 dark:text-gray-400 block mb-[8px]">Notes to Customer:</span>
+                        <p className="text-black dark:text-white text-sm">
+                          {quotation.order.notes_to_customer}
                         </p>
                       </div>
                     )}
@@ -1698,6 +2165,234 @@ const QuotationDetail: React.FC = () => {
         </div>
       )}
 
+      {/* Tax Item Modal */}
+      {isTaxModalOpen && quotation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[520px] max-h-[90vh] overflow-y-auto shadow-xl shadow-black/10 dark:shadow-black/40">
+            <h5 className="mb-[8px] text-black dark:text-white font-semibold">
+              {editingTaxItem ? "Edit Tax Item" : "Add Tax Item"}
+            </h5>
+            <p className="mb-[16px] text-xs text-gray-500 dark:text-gray-400">
+              Configure an additional tax line that will be applied on top
+              of your current quotation line items.
+            </p>
+
+            {taxItemEditError && (
+              <div className="mb-[15px] text-sm font-medium text-danger-500 bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/40 rounded-md px-[12px] py-[8px]">
+                {taxItemEditError}
+              </div>
+            )}
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!quotation) return;
+
+                setIsTaxSubmitting(true);
+                setTaxItemEditError(null);
+
+                try {
+                  const payload: any = {
+                    quotation_id: quotation.id,
+                    item_name: (taxItemEditData.item_name || "").toString(),
+                    item_type: (taxItemEditData.item_type || "fixed").toString(),
+                    item_value: Number(taxItemEditData.item_value ?? 0),
+                  };
+
+                  if (taxItemEditData.tax_id != null) {
+                    payload.tax_id = Number(taxItemEditData.tax_id);
+                  }
+
+                  const url = editingTaxItem
+                    ? `/api/quotation-tax-items/${editingTaxItem.id}`
+                    : "/api/quotation-tax-items";
+
+                  const method = editingTaxItem ? "PUT" : "POST";
+
+                  const resp = await fetch(url, {
+                    method,
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify(payload),
+                  });
+
+                  const data = await resp.json().catch(() => null);
+
+                  if (!resp.ok) {
+                    const message =
+                      formatApiError(data) || data?.message || "Failed to save tax item";
+                    setTaxItemEditError(message);
+                    addToast(message, "error");
+                    return;
+                  }
+
+                  await refreshQuotationDetails();
+
+                  setIsTaxModalOpen(false);
+                  setEditingTaxItem(null);
+                  setTaxItemEditData({});
+                  addToast(
+                    editingTaxItem
+                      ? "Tax item updated successfully"
+                      : "Tax item added successfully",
+                    "success"
+                  );
+                } catch (err) {
+                  console.error("Error saving tax item:", err);
+                  setTaxItemEditError(
+                    "An error occurred while saving the tax item."
+                  );
+                  addToast("Error saving tax item", "error");
+                } finally {
+                  setIsTaxSubmitting(false);
+                }
+              }}
+              className="space-y-[20px] mt-[5px]"
+            >
+              <div>
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Tax Name <span className="text-danger-500">*</span>
+                </label>
+                <select
+                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
+                  value={taxItemEditData.tax_id ?? ""}
+                  onChange={(e) => {
+                    const selectedId = e.target.value
+                      ? Number(e.target.value)
+                      : undefined;
+                    const selectedTax =
+                      taxes.find((t) => t.id === selectedId) || null;
+                    setTaxItemEditData((prev) => ({
+                      ...prev,
+                      item_name: selectedTax ? selectedTax.name : "",
+                      tax_id: selectedId ?? null,
+                    }));
+                  }}
+                  required
+                  disabled={loadingTaxes || taxes.length === 0}
+                >
+                  <option value="" disabled>
+                    {loadingTaxes
+                      ? "Loading taxes..."
+                      : taxes.length === 0
+                      ? "No taxes configured"
+                      : "Select tax"}
+                  </option>
+                  {taxes.map((tax) => (
+                    <option key={tax.id} value={tax.id}>
+                      {tax.name}
+                    </option>
+                  ))}
+                </select>
+                {taxesError && (
+                  <p className="mt-[6px] text-[11px] text-danger-500">
+                    {taxesError}
+                  </p>
+                )}
+              </div>
+
+              <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Type <span className="text-danger-500">*</span>
+                  </label>
+                  <select
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
+                    value={taxItemEditData.item_type || "fixed"}
+                    onChange={(e) =>
+                      setTaxItemEditData((prev) => ({
+                        ...prev,
+                        item_type: e.target.value,
+                      }))
+                    }
+                    required
+                  >
+                    <option value="fixed">Fixed Amount</option>
+                    <option value="percent">Percentage</option>
+                  </select>
+                  <p className="mt-[6px] text-[11px] text-gray-500 dark:text-gray-400">
+                    Fixed adds a flat amount; Percentage applies on the
+                    total of quotation items.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Value{" "}
+                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                      {(taxItemEditData.item_type || "fixed") === "percent"
+                        ? "as % of items total"
+                        : `in ${quotation.currency}`}
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={taxItemEditData.item_value ?? ""}
+                    onChange={(e) =>
+                      setTaxItemEditData((prev) => ({
+                        ...prev,
+                        item_value:
+                          e.target.value === "" ? null : Number(e.target.value),
+                      }))
+                    }
+                    required
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                  />
+
+                  {previewTaxAmount != null && (
+                    <div className="mt-[6px] rounded-md border border-dashed border-primary-200 dark:border-primary-500/40 bg-primary-50/70 dark:bg-primary-500/10 px-[12px] py-[8px] text-xs">
+                      <p className="text-gray-800 dark:text-gray-100">
+                        Estimated tax on current items:{" "}
+                        <span className="font-semibold">
+                          {formatCurrency(previewTaxAmount, quotation.currency)}
+                        </span>
+                      </p>
+                      {(taxItemEditData.item_type || "fixed") === "percent" && (
+                        <p className="mt-[2px] text-[11px] text-gray-600 dark:text-gray-300">
+                          Calculated from the sum of all quotation line items.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-[10px] mt-[10px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isTaxSubmitting) return;
+                    setIsTaxModalOpen(false);
+                    setEditingTaxItem(null);
+                    setTaxItemEditError(null);
+                    setTaxItemEditData({});
+                  }}
+                  disabled={isTaxSubmitting}
+                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isTaxSubmitting}
+                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isTaxSubmitting
+                    ? "Saving..."
+                    : editingTaxItem
+                    ? "Update Tax Item"
+                    : "Add Tax Item"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Edit Quotation Header Modal */}
       {isEditing && quotation && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -1822,13 +2517,13 @@ const QuotationDetail: React.FC = () => {
                       min="0"
                       step="0.01"
                       value={
-                        editData.tax_percentage != null
-                          ? String(editData.tax_percentage)
-                          : String(quotation.tax_percentage)
+                        editData.tax_amount != null
+                          ? String(editData.tax_amount)
+                          : String(quotation.tax_amount)
                       }
                       onChange={(e) =>
                         handleEditFieldChange(
-                          "tax_percentage",
+                          "tax_amount",
                           e.target.value === "" ? 0 : Number(e.target.value)
                         )
                       }
