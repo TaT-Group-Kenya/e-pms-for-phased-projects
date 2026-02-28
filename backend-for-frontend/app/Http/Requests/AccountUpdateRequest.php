@@ -22,6 +22,7 @@ class AccountUpdateRequest extends FormRequest
             'description' => ['sometimes', 'required', 'string', 'max:255'],
             'type' => ['sometimes', 'required', Rule::in(['cash','mpesa','bank'])],
             'group' => ['sometimes', 'required', Rule::in(['Petty','Checking','Savings'])],
+            'currency' => ['sometimes', 'required', 'string', 'max:10', 'exists:currencies,code'],
             'balance' => ['sometimes', 'required', 'string', 'max:255'],
             'overdraft_allowed' => ['sometimes', 'required', 'string', 'max:255'],
         ];

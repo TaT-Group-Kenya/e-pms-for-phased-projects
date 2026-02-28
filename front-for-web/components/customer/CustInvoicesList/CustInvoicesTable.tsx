@@ -64,7 +64,15 @@ const CustInvoicesTable: React.FC = () => {
       setLoading(true);
 
       try {
-        const resp = await fetch("/api/cust-invoices/list", {
+        const params = new URLSearchParams();
+        if (statusFilter && statusFilter !== "all") {
+          params.append("status", statusFilter);
+        }
+
+        const qs = params.toString();
+        const url = qs ? `/api/cust-invoices/list?${qs}` : "/api/cust-invoices/list";
+
+        const resp = await fetch(url, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -110,7 +118,7 @@ const CustInvoicesTable: React.FC = () => {
     fetchInvoices();
 
     return () => controller.abort();
-  }, [accessToken, addToast, reloadKey]);
+  }, [accessToken, addToast, reloadKey, statusFilter]);
 
   const formatCurrency = (value: number, currency: string) => {
     if (Number.isNaN(value)) return "-";
@@ -128,6 +136,8 @@ const CustInvoicesTable: React.FC = () => {
         return "bg-success-50 text-success-500";
       case "sent":
         return "bg-info-50 text-info-500";
+      case "partial-paid":
+        return "bg-warning-50 text-warning-500";
       case "draft":
         return "bg-warning-50 text-warning-500";
       case "overdue":
@@ -337,7 +347,7 @@ const CustInvoicesTable: React.FC = () => {
             <option value="draft">Draft</option>
             <option value="sent">Sent</option>
             <option value="paid">Paid</option>
-            <option value="overdue">Overdue</option>
+            <option value="partial-paid">Partial Paid</option>
           </select>
 
           <div className="relative flex-1 md:flex-none md:w-[265px]">

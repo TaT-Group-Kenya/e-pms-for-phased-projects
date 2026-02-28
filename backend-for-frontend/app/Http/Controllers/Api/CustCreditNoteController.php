@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\CustCreditNote;
+use App\Models\CustInvoice;
 use App\Services\CustCreditNoteService;
 use App\Http\Resources\CustCreditNoteResource;
 use App\Http\Requests\CustCreditNoteStoreRequest;
@@ -31,6 +32,21 @@ class CustCreditNoteController extends Controller
     public function store(CustCreditNoteStoreRequest $request)
     {
         $validated = $request->validated();
+        if (!empty($validated['invoice_id'])) {
+            $invoice = CustInvoice::find($validated['invoice_id']);
+
+            if (!$invoice) {
+                return response()->json([
+                    'message' => 'The selected invoice is invalid.',
+                ], 422);
+            }
+
+            if (strtolower($invoice->status) !== 'paid') {
+                return response()->json([
+                    'message' => 'Credit notes can only be created for fully paid invoices.',
+                ], 422);
+            }
+        }
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
         return new CustCreditNoteResource($model);

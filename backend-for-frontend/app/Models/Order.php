@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class Order extends Model
 {
+    use HasLogicalDeletion;
     protected $table = 'orders';
 
     protected $fillable = [
@@ -28,6 +30,9 @@ class Order extends Model
         'updated_by',
         'created_at',
         'created_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
 
     public function quotation()

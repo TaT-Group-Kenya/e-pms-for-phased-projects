@@ -149,7 +149,7 @@ const SECTIONS: SidebarSection[] = [
     items: [
       {
         label: "Accounts",
-        href: "/finance/wallet/",
+        href: "/finance/accounts/",
         matchStrategy: "startsWith",
       },
       {
@@ -158,8 +158,18 @@ const SECTIONS: SidebarSection[] = [
         matchStrategy: "startsWith",
       },
       {
-        label: "Transaction Log",
-        href: "/finance/transactions/",
+        label: "Customer Trxns Ledger",
+        href: "/finance/customer-ledger/",
+        matchStrategy: "startsWith",
+      },
+      {
+        label: "Company Trxns Ledger",
+        href: "/finance/company-ledger/",
+        matchStrategy: "startsWith",
+      },
+      {
+        label: "Expenses & Others",
+        href: "/finance/expenses-and-others/",
         matchStrategy: "startsWith",
       },
     ],

@@ -38,8 +38,9 @@ const Page = () => {
             { key: "code", label: "Code" },
             { key: "name", label: "Name" },
             { key: "description", label: "Description" },
+            { key: "current_forex_rate", label: "Forex Rate to KES" },
           ]}
-          searchableKeys={["code", "name", "description"]}
+          searchableKeys={["code", "name", "description", "current_forex_rate"]}
         />
       </>
     </AuthenticatedLayout>

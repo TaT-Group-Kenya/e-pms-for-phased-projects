@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Account;
 use App\Services\AccountService;
+use App\Services\CommonService;
 use App\Http\Resources\AccountResource;
 use App\Http\Requests\AccountStoreRequest;
 use App\Http\Requests\AccountUpdateRequest;
@@ -23,20 +24,26 @@ class AccountController extends Controller
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
-        $data = $this->service->index($filters, $perPage, $page);
+        $data = $this->service->index($filters, $perPage, $page, 0);
         return AccountResource::collection($data);
     }
 
     public function store(AccountStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+
+        // Generate account code in backend using CommonService
+        $commonService = new CommonService();
+        $validated['code'] = $commonService->generateUniqueCode('INT-ACC-');
+        $validated['currency'] = 'KES'; // Accounts run on Base currency
+
+        $model = $this->service->create($validated);
         return new AccountResource($model);
     }
 
     public function show(Account $account)
     {
         $this->authorize('view', $account);
-
         return new AccountResource($account);
     }
 
@@ -44,7 +51,10 @@ class AccountController extends Controller
     {
         $this->authorize('update', $account);
 
-        $updated = $this->service->update($account->id, $request->validated());
+        $validated = $request->validated();
+        $validated['currency'] = 'KES'; // Accounts run on Base currency
+
+        $updated = $this->service->update($account->id, $validated);
         return new AccountResource($updated);
     }
 

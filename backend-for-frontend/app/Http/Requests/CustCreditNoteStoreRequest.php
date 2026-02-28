@@ -15,7 +15,7 @@ class CustCreditNoteStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'invoice_id' => ['nullable', 'exists:cust_invoices,id'],
+            'invoice_id' => ['required', 'exists:cust_invoices,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:255'],
             'status' => ['required', Rule::in(['draft','raised','refunded'])],

@@ -8,9 +8,11 @@ class CompanyPaymentResource extends BaseResource
     {
         return [
             'id' => $this->id,
-            'transaction_id' => $this->transaction_id,
+            'transaction_number' => $this->transaction_number,
             'invoice_id' => $this->invoice_id,
             'amount_paid' => (float) $this->amount_paid,
+            'tax_amount' => (float) $this->tax_amount,
+            'net_amount' => (float) $this->net_amount,
             'payment_date' => $this->formatTimestamp($this->payment_date),
             'payment_method' => $this->payment_method,
             'payment_status' => $this->payment_status,
@@ -29,7 +31,7 @@ class CompanyPaymentResource extends BaseResource
 
             'invoice' => new CompanyInvoiceResource($this->whenLoaded('invoice')),
 
-            'transaction' => new TransactionResource($this->whenLoaded('transaction')),
+            'ledger_entries' => CompanyTransactionsLedgerResource::collection($this->whenLoaded('companyLedgerEntries')),
 
         ];
     }

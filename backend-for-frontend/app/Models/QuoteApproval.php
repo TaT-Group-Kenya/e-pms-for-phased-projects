@@ -14,6 +14,9 @@ class QuoteApproval extends Model
         'action',
         'created_by',
         'updated_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
 
     protected $casts = [

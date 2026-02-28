@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class Transaction extends Model
 {
+    use HasLogicalDeletion;
     protected $table = 'transactions';
 
     protected $fillable = [
@@ -14,9 +16,12 @@ class Transaction extends Model
         'transaction_date',
         'posted_date',
         'amount',
+        'transaction_currency',
         'base_currency',
         'exchange_rate',
         'converted_amount',
+        'converted_tax_amount',
+        'converted_net_amount',
         'tax_amount',
         'net_amount',
         'customer_id',
@@ -41,7 +46,13 @@ class Transaction extends Model
         'updated_by',
         'created_at',
         'created_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
+
+    public const TYPE_TOPUP = 'topup';
+    public const TYPE_EXPENSE = 'expense';
 
     public function customer()
     {

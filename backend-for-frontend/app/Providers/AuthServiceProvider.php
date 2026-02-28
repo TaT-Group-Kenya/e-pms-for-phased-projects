@@ -55,6 +55,8 @@ use App\Policies\{
     TransactionPolicy,
     UserPolicy,
     UserGroupPolicy,
+    CompanyTransactionsLedgerPolicy,
+    CustomerTransactionsLedgerPolicy,
 };
 
 class AuthServiceProvider extends ServiceProvider
@@ -115,6 +117,8 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Transaction::class => TransactionPolicy::class,
         \App\Models\User::class => UserPolicy::class,
         \App\Models\UserGroup::class => UserGroupPolicy::class,
+        \App\Models\CompanyTransactionsLedger::class => CompanyTransactionsLedgerPolicy::class,
+        \App\Models\CustomerTransactionsLedger::class => CustomerTransactionsLedgerPolicy::class,
     ];
 
     public function register(): void

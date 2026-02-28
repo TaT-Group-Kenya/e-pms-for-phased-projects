@@ -3,16 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class CustPayment extends Model
 {
+    use HasLogicalDeletion;
     protected $table = 'cust_payments';
 
     public $timestamps = true;
 
     protected $fillable = [
-        'transaction_id',
+        'transaction_number',
         'amount_paid',
+        'tax_amount',
+        'net_amount',
         'payment_date',
         'payment_method',
         'payment_status',
@@ -30,11 +34,14 @@ class CustPayment extends Model
         'updated_by',
         'created_at',
         'created_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
 
-    public function transaction()
+    public function customerLedgerEntries()
     {
-        return $this->belongsTo(Transaction::class, 'transaction_id');
+        return $this->hasMany(CustomerTransactionsLedger::class, 'cust_payment_id');
     }
 
     public function allocations()

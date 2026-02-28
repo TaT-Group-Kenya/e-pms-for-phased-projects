@@ -18,7 +18,7 @@ class CompanyCreditNoteUpdateRequest extends FormRequest
             'credit_note_number' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('company_credit_notes')->ignore(
                     $this->route('company_credit_note')
                 )],
-            'invoice_id' => ['nullable', 'exists:invoices,id'],
+            'invoice_id' => ['nullable', 'exists:company_invoices,id'],
             'credit_note_date' => ['sometimes', 'required', 'date'],
             'reason' => ['sometimes', 'required', 'string', 'max:255'],
             'subtotal_amount' => ['sometimes', 'required', 'numeric', 'min:0'],

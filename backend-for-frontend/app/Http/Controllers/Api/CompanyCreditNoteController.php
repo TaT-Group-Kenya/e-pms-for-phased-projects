@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\CompanyCreditNote;
+use App\Models\CompanyInvoice;
 use App\Services\CompanyCreditNoteService;
+use App\Services\CommonService;
 use App\Http\Resources\CompanyCreditNoteResource;
 use App\Http\Requests\CompanyCreditNoteStoreRequest;
 use App\Http\Requests\CompanyCreditNoteUpdateRequest;
@@ -29,7 +32,38 @@ class CompanyCreditNoteController extends Controller
 
     public function store(CompanyCreditNoteStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $validated = $request->validated();
+
+        if (!empty($validated['invoice_id'])) {
+            $invoice = CompanyInvoice::find($validated['invoice_id']);
+
+            if (!$invoice) {
+                return response()->json([
+                    'message' => 'The selected invoice is invalid.',
+                ], 422);
+            }
+
+            if (strtolower($invoice->status) !== 'paid') {
+                return response()->json([
+                    'message' => 'Credit notes can only be created for fully paid invoices.',
+                ], 422);
+            }
+        }
+
+        // Auto-generate a unique credit note number if not provided
+        if (empty($validated['credit_note_number'] ?? null)) {
+            $commonService = new CommonService();
+
+            do {
+                $number = $commonService->generateUniqueCode('CMPCN-');
+            } while (CompanyCreditNote::where('credit_note_number', $number)->exists());
+
+            $validated['credit_note_number'] = $number;
+        }
+
+        $validated['created_by'] = Auth::id();
+
+        $model = $this->service->create($validated);
         return new CompanyCreditNoteResource($model);
     }
 
@@ -44,7 +78,9 @@ class CompanyCreditNoteController extends Controller
     {
         $this->authorize('update', $companyCreditNote);
 
-        $updated = $this->service->update($companyCreditNote->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($companyCreditNote->id, $validated);
         return new CompanyCreditNoteResource($updated);
     }
 

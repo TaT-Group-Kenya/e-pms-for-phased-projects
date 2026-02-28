@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Traits\HasLogicalDeletion;
 
 class GroupRole extends Model
 {
-    use HasFactory;
+    use HasFactory, HasLogicalDeletion;
 
     protected $table = 'group_roles';
 
@@ -18,6 +19,9 @@ class GroupRole extends Model
         'updated_by',
         'created_at',
         'created_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
 
     public function group()

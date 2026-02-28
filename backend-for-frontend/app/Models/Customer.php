@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class Customer extends Model
 {
+    use HasLogicalDeletion;
     protected $table = 'customers';
 
     protected $fillable = [
@@ -24,6 +26,9 @@ class Customer extends Model
         'updated_by',
         'created_at',
         'created_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
 
     public function users()

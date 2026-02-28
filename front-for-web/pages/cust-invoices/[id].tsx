@@ -62,6 +62,12 @@ interface OrderSummary {
   currency: string
 }
 
+interface AccountSummary {
+  id: number
+  code: string
+  name: string
+}
+
 interface CustInvoice {
   id: number
   invoice_number: string
@@ -107,14 +113,14 @@ export default function CustInvoiceDetailPage() {
   const [paymentDate, setPaymentDate] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa' | 'bank_transfer' | 'check'>('cash')
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'complete'>('complete')
-  const [paymentCurrency, setPaymentCurrency] = useState('')
   const [bankName, setBankName] = useState('')
   const [checkNumber, setCheckNumber] = useState('')
-  const [transactionReference, setTransactionReference] = useState('')
   const [receiptNumber, setReceiptNumber] = useState('')
-  const [exchangeRate, setExchangeRate] = useState('1')
-  const [feeOrCharge, setFeeOrCharge] = useState('0')
   const [savingPayment, setSavingPayment] = useState(false)
+
+  const [accounts, setAccounts] = useState<AccountSummary[]>([])
+  const [accountsLoading, setAccountsLoading] = useState(false)
+  const [selectedAccountId, setSelectedAccountId] = useState('')
 
   const [isAddingCreditNote, setIsAddingCreditNote] = useState(false)
   const [creditNoteTitle, setCreditNoteTitle] = useState('')
@@ -155,6 +161,41 @@ export default function CustInvoiceDetailPage() {
   useEffect(() => {
     fetchInvoice()
   }, [fetchInvoice])
+
+  const fetchAccounts = useCallback(async () => {
+    if (!accessToken) return
+
+    setAccountsLoading(true)
+    try {
+      const resp = await fetch('/api/accounts/list?per_page=100', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      const data = await resp.json().catch(() => null)
+      if (!resp.ok) {
+        throw new Error(data?.message || 'Failed to load accounts')
+      }
+
+      const items = (data?.data || []) as any[]
+      const mapped: AccountSummary[] = items.map((item) => ({
+        id: Number(item.id),
+        code: String(item.code ?? ''),
+        name: String(item.name ?? ''),
+      }))
+      setAccounts(mapped)
+    } catch (e: any) {
+      addToast(e.message || 'Failed to load accounts', 'error')
+    } finally {
+      setAccountsLoading(false)
+    }
+  }, [accessToken, addToast])
+
+  useEffect(() => {
+    fetchAccounts()
+  }, [fetchAccounts])
 
   const handleSendEmail = async () => {
     if (!id) return
@@ -308,17 +349,18 @@ export default function CustInvoiceDetailPage() {
 
   const handleOpenAddPayment = () => {
     if (!invoice) return
+    if (invoice.status !== 'sent') {
+      addToast('Payments can only be added when the invoice is sent.', 'error')
+      return
+    }
     setPaymentAmount('')
     setPaymentDate(new Date().toISOString().slice(0, 10))
     setPaymentMethod('cash')
     setPaymentStatus('complete')
-    setPaymentCurrency(invoice.currency)
     setBankName('')
     setCheckNumber('')
-    setTransactionReference('')
     setReceiptNumber('')
-    setExchangeRate('1')
-    setFeeOrCharge('0')
+    setSelectedAccountId('')
     setIsAddingPayment(true)
   }
 
@@ -329,10 +371,12 @@ export default function CustInvoiceDetailPage() {
       return
     }
 
-    const amount = Number(paymentAmount)
-    const rate = Number(exchangeRate || '0')
-    const fee = Number(feeOrCharge || '0')
+    if (invoice.status !== 'sent') {
+      addToast('Payments can only be added when the invoice is sent.', 'error')
+      return
+    }
 
+    const amount = Number(paymentAmount)
     if (!paymentAmount || Number.isNaN(amount) || amount <= 0) {
       addToast('Enter a valid payment amount.', 'error')
       return
@@ -348,13 +392,8 @@ export default function CustInvoiceDetailPage() {
       return
     }
 
-    if (Number.isNaN(rate) || rate <= 0) {
-      addToast('Enter a valid exchange rate.', 'error')
-      return
-    }
-
-    if (Number.isNaN(fee) || fee < 0) {
-      addToast('Enter a valid fee or charge.', 'error')
+    if (!selectedAccountId) {
+      addToast('Please select a benefiting account.', 'error')
       return
     }
 
@@ -372,13 +411,10 @@ export default function CustInvoiceDetailPage() {
           payment_date: paymentDate,
           payment_method: paymentMethod,
           payment_status: paymentStatus,
-          currency: paymentCurrency,
           bank_name: bankName || null,
           check_number: checkNumber || null,
-          transaction_reference: transactionReference || null,
           receipt_number: receiptNumber,
-          exchange_rate: rate,
-          fee_or_charge: fee,
+          account_id: Number(selectedAccountId),
         }),
       })
 
@@ -407,6 +443,11 @@ export default function CustInvoiceDetailPage() {
 
     if (!creditNoteTitle.trim()) {
       addToast('Credit note title is required.', 'error')
+      return
+    }
+
+    if (invoice.status !== 'paid') {
+      addToast('Credit notes can only be created for fully paid invoices.', 'error')
       return
     }
 
@@ -1044,16 +1085,22 @@ export default function CustInvoiceDetailPage() {
                         {sendingEmail ? 'Sending…' : 'Send Email'}
                       </button>
 
-                      {(invoice.status === 'sent' || invoice.status === 'partial-paid') && (
+                      <div>
                         <button
                           type="button"
                           onClick={handleOpenAddPayment}
-                          className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-warning-50 dark:bg-warning-950 text-warning-500 hover:bg-warning-100 dark:hover:bg-warning-900"
+                          disabled={invoice.status !== 'sent'}
+                          className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-warning-50 dark:bg-warning-950 text-warning-500 hover:bg-warning-100 dark:hover:bg-warning-900 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <i className="material-symbols-outlined mr-[8px] !text-[20px]">payments</i>
                           Add Payment
                         </button>
-                      )}
+                        {invoice.status !== 'sent' && (
+                          <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                            Payments can only be added when the invoice status is <span className="font-medium">sent</span>.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1208,15 +1255,22 @@ export default function CustInvoiceDetailPage() {
                   <h6 className="text-black dark:text-white font-semibold">
                     Credit Notes
                   </h6>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingCreditNote(true)}
-                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900"
-                  >
-                    <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
-                    Add Credit Note
-                  </button>
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCreditNote(true)}
+                      disabled={invoice.status !== 'paid'}
+                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
+                      Add Credit Note
+                    </button>
+                    {invoice.status !== 'paid' && (
+                      <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                        Credit notes can only be created when the invoice status is <span className="font-medium">paid</span>.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {(!invoice.creditnotes || invoice.creditnotes.length === 0) && (
@@ -1248,7 +1302,12 @@ export default function CustInvoiceDetailPage() {
                             className="border-b border-gray-100 dark:border-[#172036] align-middle"
                           >
                             <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              <span className="font-medium">{cn.title}</span>
+                              <Link
+                                href={`/cust/credit-notes/${cn.id}`}
+                                className="font-medium text-primary-500 hover:text-primary-600 hover:underline"
+                              >
+                                {cn.title}
+                              </Link>
                             </td>
                             <td className="text-sm capitalize ltr:text-left rtl:text-right px-[15px] py-[12px]">
                               {cn.status}
@@ -1283,16 +1342,22 @@ export default function CustInvoiceDetailPage() {
                     Payments
                   </h6>
 
-                  {(invoice.status === 'sent' || invoice.status === 'partial-paid') && (
+                  <div className="text-right">
                     <button
                       type="button"
                       onClick={handleOpenAddPayment}
-                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900"
+                      disabled={invoice.status !== 'sent'}
+                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
                       Add Payment
                     </button>
-                  )}
+                    {invoice.status !== 'sent' && (
+                      <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                        Payments can only be added when the invoice status is <span className="font-medium">sent</span>.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {(!invoice.payments || invoice.payments.length === 0) && (
@@ -1470,17 +1535,24 @@ export default function CustInvoiceDetailPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium mb-[5px]">Currency</label>
-                <input
-                  type="text"
-                  value={paymentCurrency}
-                  onChange={(e) => setPaymentCurrency(e.target.value)}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
+                <label className="block text-xs font-medium mb-[5px]">Benefiting Account</label>
+                <select
+                  value={selectedAccountId}
+                  onChange={(e) => setSelectedAccountId(e.target.value)}
+                  disabled={accountsLoading}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">{accountsLoading ? 'Loading accounts…' : 'Select account'}</option>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.code} - {account.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
-                <label className="block text-xs font-medium mb-[5px]">Receipt Number</label>
+                <label className="block text-xs font-medium mb-[5px]">Receipt / Transaction Reference</label>
                 <input
                   type="text"
                   value={receiptNumber}
@@ -1509,39 +1581,6 @@ export default function CustInvoiceDetailPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium mb-[5px]">Transaction Reference (optional)</label>
-                <input
-                  type="text"
-                  value={transactionReference}
-                  onChange={(e) => setTransactionReference(e.target.value)}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium mb-[5px]">Exchange Rate</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.0001"
-                  value={exchangeRate}
-                  onChange={(e) => setExchangeRate(e.target.value)}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium mb-[5px]">Fee / Charge</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={feeOrCharge}
-                  onChange={(e) => setFeeOrCharge(e.target.value)}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-              </div>
             </div>
 
             <div className="flex justify-end space-x-[10px]">

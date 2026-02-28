@@ -12,8 +12,12 @@ use App\Models\Order;
 use App\Models\CustInvoice;
 use App\Models\CustPayment;
 use App\Models\CustPaymentAllocation;
+use App\Models\CustomerTransactionsLedger;
+use App\Services\CurrencyConversionService;
+use App\Models\Account;
 use App\Models\Download;
 use App\Models\SysConfig;
+use App\Services\CommonService;
 use App\Services\CustInvoiceService;
 use App\Services\OrderToCustInvoiceService;
 use App\Http\Resources\CustInvoiceResource;
@@ -203,11 +207,11 @@ class CustInvoiceController extends Controller
             ], 422);
         }
 
-        if ($custInvoice->status !== 'sent' && $custInvoice->status !== 'partial-paid') {
+        if ($custInvoice->status !== 'sent') {
             return response()->json([
-                'message' => 'Payments can only be added to sent or partially paid invoices.',
+                'message' => 'Payments can only be added to invoices in sent status.',
                 'errors'  => [
-                    'status' => ['Invoice must be in sent or partial-paid status to add payments.'],
+                    'status' => ['Invoice must be in sent status to add payments.'],
                 ],
             ], 422);
         }
@@ -217,38 +221,74 @@ class CustInvoiceController extends Controller
             'payment_date' => ['required', 'date'],
             'payment_method' => ['required', Rule::in(['cash', 'mpesa', 'bank_transfer', 'check'])],
             'payment_status' => ['required', Rule::in(['pending', 'complete'])],
-            'currency' => ['required', 'string', 'max:255'],
             'bank_name' => ['nullable', 'string', 'max:255'],
             'check_number' => ['nullable', 'string', 'max:255'],
-            'transaction_reference' => ['nullable', 'string', 'max:255'],
             'receipt_number' => ['required', 'string', 'max:255'],
-            'exchange_rate' => ['required', 'numeric', 'min:0'],
-            'fee_or_charge' => ['required', 'numeric', 'min:0'],
+            'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
 
         $invoice = $custInvoice;
 
         $invoice = DB::transaction(function () use ($invoice, $validated) {
+            $commonService = new CommonService();
+
+            $account = Account::findOrFail($validated['account_id']);
+
+            // Generate a unique transaction number for the payment, similar to order numbers
+            do {
+                $transactionNumber = $commonService->generateUniqueCode('CPM-');
+            } while (CustPayment::where('transaction_number', $transactionNumber)->exists());
+
             $existingAllocations = CustPaymentAllocation::where('invoice_id', $invoice->id)->get();
             $previousBalance = (float) $invoice->total_amount - (float) $existingAllocations->sum('allocated_amount');
             $afterBalance = max($previousBalance - (float) $validated['amount_paid'], 0);
             $installmentNumber = $existingAllocations->count() + 1;
 
+            // Derive tax vs net portions based on invoice totals.
+            // If the invoice has a non-zero tax_amount, allocate proportionally;
+            // otherwise treat the entire payment as net.
+            $invoiceTotal = (float) $invoice->total_amount;
+            $invoiceTaxTotal = (float) $invoice->tax_amount;
+
+            if ($invoiceTotal > 0 && $invoiceTaxTotal > 0) {
+                $taxPortion = min(
+                    round(($invoiceTaxTotal / $invoiceTotal) * (float) $validated['amount_paid'], 2),
+                    (float) $validated['amount_paid']
+                );
+            } else {
+                $taxPortion = 0.0;
+            }
+
+            $netPortion = (float) $validated['amount_paid'] - $taxPortion;
+
+            // Determine base (account) currency and invoice currency
+            $accountCurrencyCode = $account->currency ?? 'KES';
+            $invoiceCurrencyCode = $invoice->currency;
+
+            // Use shared conversion helper: 1 invoice currency unit = exchange_rate * base currency units
+            $conversionService = new CurrencyConversionService();
+            $conversion = $conversionService->convertToBaseFromInvoice((float) $validated['amount_paid'], $invoiceCurrencyCode, $accountCurrencyCode);
+            $exchangeRate = $conversion['exchange_rate'];
+            $convertedAmount = $conversion['converted_amount'];
+
+            $feeOrCharge = 0.0;
+
             $payment = CustPayment::create([
-                // In this schema, transaction_id is linked to cust_invoices via FK
-                'transaction_id' => $invoice->id,
+                'transaction_number' => $transactionNumber,
                 'amount_paid' => $validated['amount_paid'],
+                'tax_amount' => $taxPortion,
+                'net_amount' => $netPortion,
                 'payment_date' => $validated['payment_date'],
                 'payment_method' => $validated['payment_method'],
                 'payment_status' => $validated['payment_status'],
-                'currency' => $validated['currency'],
+                'currency' => $invoiceCurrencyCode,
                 'bank_name' => $validated['bank_name'] ?? null,
                 'check_number' => $validated['check_number'] ?? null,
-                'transaction_reference' => $validated['transaction_reference'] ?? null,
+                'transaction_reference' => $validated['receipt_number'],
                 'receipt_number' => $validated['receipt_number'],
                 'invoice_total_amount' => $invoice->total_amount,
-                'exchange_rate' => $validated['exchange_rate'],
-                'fee_or_charge' => $validated['fee_or_charge'],
+                'exchange_rate' => $exchangeRate,
+                'fee_or_charge' => $feeOrCharge,
                 'reconciled' => false,
                 'reconciliation_date' => null,
                 'created_by' => Auth::id(),
@@ -266,6 +306,60 @@ class CustInvoiceController extends Controller
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]);
+
+            // Create a corresponding customer transactions ledger entry
+            CustomerTransactionsLedger::create([
+                'cust_payment_id' => $payment->id,
+                'transaction_number' => $payment->transaction_number,
+                'transaction_type' => 'receipt',
+                'transaction_date' => $validated['payment_date'],
+                'posted_date' => now(),
+                'amount' => $validated['amount_paid'],
+                'transaction_currency' => $invoiceCurrencyCode,
+                'base_currency' => $accountCurrencyCode,
+                'exchange_rate' => $exchangeRate,
+                'converted_amount' => $convertedAmount,
+                'converted_tax_amount' => $taxPortion * $exchangeRate,
+                'converted_net_amount' => $netPortion * $exchangeRate,
+                'tax_amount' => $taxPortion,
+                'net_amount' => $netPortion,
+                'customer_id' => $invoice->customer_id,
+                'source_type' => 'cust_invoice',
+                'source_id' => $invoice->id,
+                'account_debit' => null,
+                'account_credit' => $account->id,
+                'category' => 'revenue',
+                'payment_method' => $validated['payment_method'],
+                'bank_account' => $validated['bank_name'] ?? null,
+                'check_number' => $validated['check_number'] ?? null,
+                'transaction_status' => $validated['payment_status'],
+                'related_transaction_id' => $validated['related_transaction_id'] ?? null,
+                'narration' => 'Payment for invoice ' . $invoice->invoice_number,
+                'is_recurring' => false,
+                'fiscal_year' => now()->year,
+                'accounting_period' => now()->format('Ym'),
+                'is_adjusting_entry' => false,
+                'cost_center_id' => null,
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
+            ]);
+
+            // Update benefiting account balance: credit increases balance
+            $currentBalance = (float) $account->balance;
+            $account->balance = (string) number_format($currentBalance + $convertedAmount, 2, '.', '');
+            $account->updated_at = now();
+            $account->updated_by = Auth::id();
+            $account->save();
+
+            // Update invoice status based on remaining balance
+            if ($afterBalance <= 0) {
+                $invoice->status = 'paid';
+            } else {
+                $invoice->status = 'partial-paid';
+            }
+
+            $invoice->updated_by = Auth::id();
+            $invoice->save();
 
             $invoice->refresh();
 
