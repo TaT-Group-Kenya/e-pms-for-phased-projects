@@ -212,7 +212,7 @@ class CustInvoiceController extends Controller
             return response()->json([
                 'message' => 'Payments can only be added when the invoice status is sent or partial-paid.',
                 'errors'  => [
-                    'status' => ['Invoice must be in sent or partial-paid status to add payments.'],
+                    'status' => ['Invoice must be in sent status to add payments.'],
                 ],
             ], 422);
         }
