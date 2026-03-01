@@ -73,8 +73,13 @@ class ProjectService
                     // Exactly one phase exists, update it
                     $this->updatePhaseFromProject($model);
                 } elseif ($existingPhases > 1 && $model->status === 'draft') {
-                    // Multiple phases exist and project is draft, delete all and create one
-                    $model->phases()->delete();
+                    // Multiple phases exist and project is draft, logically delete all and create one
+                    $deletedBy = $model->updated_by ?? $model->created_by;
+
+                    $model->phases()->get()->each(function (ProjectPhase $phase) use ($deletedBy) {
+                        $phase->softDelete($deletedBy);
+                    });
+
                     $this->createPhaseFromProject($model);
                 }
                 // If multiple phases and project is not draft, do nothing
@@ -86,10 +91,12 @@ class ProjectService
         });
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return DB::transaction(function () use ($id) {
-            return Project::destroy($id);
+        return DB::transaction(function () use ($id, $deletedBy) {
+            $model = Project::findOrFail($id);
+
+            return $model->softDelete($deletedBy);
         });
     }
 

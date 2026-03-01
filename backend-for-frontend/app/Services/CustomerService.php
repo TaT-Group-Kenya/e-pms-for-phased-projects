@@ -47,8 +47,10 @@ class CustomerService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return Customer::destroy($id);
+        $model = Customer::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

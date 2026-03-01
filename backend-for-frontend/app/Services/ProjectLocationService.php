@@ -43,8 +43,10 @@ class ProjectLocationService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return ProjectLocation::destroy($id);
+        $model = ProjectLocation::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
+import DeleteConfirmationModal from "../../common/DeleteConfirmationModal/DeleteConfirmationModal";
 
 interface AccountSummary {
   id: number;
@@ -45,6 +46,9 @@ const AccountsTable: React.FC = () => {
   const [formCurrency, setFormCurrency] = useState("");
   const [formBalance, setFormBalance] = useState("0.00");
   const [formOverdraft, setFormOverdraft] = useState("0");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AccountSummary | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -290,18 +294,23 @@ const AccountsTable: React.FC = () => {
     }
   };
 
-  const handleDelete = async (acc: AccountSummary) => {
+  const handleRequestDelete = (acc: AccountSummary) => {
+    setDeleteTarget(acc);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+
     if (!accessToken) {
       addToast("You are not authenticated.", "error");
       return;
     }
 
-    if (!window.confirm(`Delete account ${acc.code} - ${acc.name}?`)) {
-      return;
-    }
+    setDeleting(true);
 
     try {
-      const resp = await fetch(`/api/accounts/${acc.id}`, {
+      const resp = await fetch(`/api/accounts/${deleteTarget.id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -317,10 +326,14 @@ const AccountsTable: React.FC = () => {
 
       addToast("Account deleted successfully.", "success");
       setReloadKey((k) => k + 1);
+      setShowDeleteModal(false);
+      setDeleteTarget(null);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("delete account error", err);
       addToast("Failed to delete account.", "error");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -478,7 +491,7 @@ const AccountsTable: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(acc)}
+                        onClick={() => handleRequestDelete(acc)}
                         className="inline-flex items-center px-[10px] py-[5px] rounded-md border border-danger-200 text-xs font-medium text-danger-600 hover:bg-danger-50"
                       >
                         Delete
@@ -555,7 +568,7 @@ const AccountsTable: React.FC = () => {
                     disabled={currenciesLoading}
                   >
                     <option value="">Select currency</option>
-                    {currencies.map((c) => (
+                    {currencies.filter((c) => c.code === 'KES').map((c) => (
                       <option key={c.id} value={c.code}>
                         {c.code} - {c.name}
                       </option>
@@ -615,6 +628,22 @@ const AccountsTable: React.FC = () => {
       )}
 
       <ToastContainer toasts={toasts} onClose={removeToast} />
+
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        title="Delete Account"
+        message={
+          deleteTarget
+            ? `Are you sure you want to delete account "${deleteTarget.name}" (${deleteTarget.code})? This action cannot be undone.`
+            : "Are you sure you want to delete this account? This action cannot be undone."
+        }
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setShowDeleteModal(false);
+          setDeleteTarget(null);
+        }}
+        isDeleting={deleting}
+      />
     </>
   );
 };

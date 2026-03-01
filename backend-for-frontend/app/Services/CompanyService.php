@@ -47,8 +47,10 @@ class CompanyService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return Company::destroy($id);
+        $model = Company::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

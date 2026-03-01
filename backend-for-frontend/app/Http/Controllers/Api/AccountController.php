@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Account;
+use App\Models\CustomerTransactionsLedger;
+use App\Models\CompanyTransactionsLedger;
+use App\Models\Transaction;
 use App\Services\AccountService;
 use App\Services\CommonService;
 use App\Http\Resources\AccountResource;
@@ -62,7 +66,36 @@ class AccountController extends Controller
     {
         $this->authorize('delete', $account);
 
-        $this->service->delete($account->id);
+        $accountId = $account->id;
+
+        $hasLedgerReferences =
+            CustomerTransactionsLedger::where(function ($query) use ($accountId) {
+                $query
+                    ->where('account_debit', $accountId)
+                    ->orWhere('account_credit', $accountId)
+                    ->orWhere('bank_account', $accountId);
+            })->exists()
+            || CompanyTransactionsLedger::where(function ($query) use ($accountId) {
+                $query
+                    ->where('account_debit', $accountId)
+                    ->orWhere('account_credit', $accountId)
+                    ->orWhere('bank_account', $accountId);
+            })->exists()
+            || Transaction::where(function ($query) use ($accountId) {
+                $query
+                    ->where('account_debit', $accountId)
+                    ->orWhere('account_credit', $accountId)
+                    ->orWhere('bank_account', $accountId);
+            })->exists();
+
+        if ($hasLedgerReferences) {
+            return response()->json([
+                'message' => 'Account cannot be deleted because it is referenced in existing payments or transactions ledger.',
+            ], 422);
+        }
+
+        $account->softDelete(Auth::id());
+
         return response()->noContent();
     }
 }

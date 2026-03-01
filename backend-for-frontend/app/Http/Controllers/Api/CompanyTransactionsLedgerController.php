@@ -71,7 +71,7 @@ class CompanyTransactionsLedgerController extends Controller
     {
         $this->authorize('delete', $companyTransactionsLedger);
 
-        $this->service->delete($companyTransactionsLedger->id);
+        $this->service->delete($companyTransactionsLedger->id, Auth::id());
 
         return response()->noContent();
     }

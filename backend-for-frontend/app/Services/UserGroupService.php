@@ -47,8 +47,10 @@ class UserGroupService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return UserGroup::destroy($id);
+        $model = UserGroup::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

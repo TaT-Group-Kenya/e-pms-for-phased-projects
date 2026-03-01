@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class CustInvoice extends Model
 {
+    use HasLogicalDeletion;
     protected $table = 'cust_invoices';
 
     protected $fillable = [

@@ -57,7 +57,7 @@ class CompanyPaymentController extends Controller
     {
         $this->authorize('delete', $companyPayment);
 
-        $this->service->delete($companyPayment->id);
+        $this->service->delete($companyPayment->id, Auth::id());
         return response()->noContent();
     }
 }

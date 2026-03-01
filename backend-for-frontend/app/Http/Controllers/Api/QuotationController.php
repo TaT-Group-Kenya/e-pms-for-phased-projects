@@ -233,8 +233,10 @@ class QuotationController extends Controller
                 'updated_by' => $validated['updated_by'],
             ]);
 
-            // Clear all approvals when reverting to draft
-            QuoteApproval::where('quote_id', $updated->id)->delete();
+            // Clear all approvals when reverting to draft (logical delete)
+            QuoteApproval::where('quote_id', $updated->id)->get()->each(function (QuoteApproval $approval) use ($validated) {
+                $approval->softDelete($validated['updated_by'] ?? null);
+            });
 
             // Ensure financial amounts are consistent with current line items
             $this->recalculateQuotationTotals($updated->id);
@@ -259,7 +261,9 @@ class QuotationController extends Controller
                 && $validated['project_id'] != $originalProjectId;
 
             if ($customerChanged || $projectChanged) {
-                QuoteLineItem::where('quotation_id', $updated->id)->delete();
+                QuoteLineItem::where('quotation_id', $updated->id)->get()->each(function (QuoteLineItem $item) use ($validated) {
+                    $item->softDelete($validated['updated_by'] ?? null);
+                });
 
                 $updated->subtotal_amount = 0;
                 $updated->tax_amount = 0;

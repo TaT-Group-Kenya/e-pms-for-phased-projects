@@ -82,7 +82,7 @@ class CustomerController extends Controller
     {
         $this->authorize('delete', $customer);
 
-        $this->service->delete($customer->id);
+        $this->service->delete($customer->id, Auth::id());
         return response()->noContent();
     }
 }

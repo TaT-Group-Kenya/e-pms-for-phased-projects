@@ -63,7 +63,7 @@ class TransactionController extends Controller
     {
         $this->authorize('delete', $transaction);
 
-        $this->service->delete($transaction->id);
+        $this->service->delete($transaction->id, Auth::id());
         return response()->noContent();
     }
 

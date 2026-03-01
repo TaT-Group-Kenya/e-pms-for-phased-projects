@@ -52,8 +52,10 @@ class CustPaymentService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return CustPayment::destroy($id);
+        $model = CustPayment::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

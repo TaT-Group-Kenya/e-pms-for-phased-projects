@@ -21,7 +21,7 @@ class AccountStoreRequest extends FormRequest
             'group' => ['required', Rule::in(['Petty','Checking','Savings'])],
             'currency' => ['required', 'string', 'max:10', 'exists:currencies,code'],
             'balance' => ['required', 'string', 'max:255'],
-            'overdraft_allowed' => ['required', 'string', 'max:255'],
+            'overdraft_allowed' => ['required', 'numeric', 'max:255'],
         ];
     }
 

@@ -43,8 +43,10 @@ class ProjectSourceOriginService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return ProjectSourceOrigin::destroy($id);
+        $model = ProjectSourceOrigin::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

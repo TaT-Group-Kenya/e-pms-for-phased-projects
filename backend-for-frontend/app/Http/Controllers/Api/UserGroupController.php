@@ -66,7 +66,7 @@ class UserGroupController extends Controller
     {
         $this->authorize('delete', $userGroup);
 
-        $this->service->delete($userGroup->id);
+        $this->service->delete($userGroup->id, Auth::id());
         return response()->noContent();
     }
 }

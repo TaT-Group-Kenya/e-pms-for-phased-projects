@@ -47,8 +47,10 @@ class GroupRoleService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return GroupRole::destroy($id);
+        $model = GroupRole::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

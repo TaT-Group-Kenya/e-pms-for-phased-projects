@@ -51,8 +51,10 @@ class CustomerTransactionsLedgerService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return CustomerTransactionsLedger::destroy($id);
+        $model = CustomerTransactionsLedger::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

@@ -270,28 +270,29 @@ const FinancePaymentsPage: React.FC = () => {
             </ul>
           </div>
 
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Switch between customer receipts and company outgoing payments.
-          </p>
+          <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end mt-[10px] md:mt-0">
+            <p className="text-xs w-full text-gray-500 dark:text-gray-400">
+              Switch between customer receipts and company outgoing payments.
+            </p>
+            <input
+              type="text"
+              placeholder="Search transaction by status..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full md:max-w-xs px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
+
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="px-[12px] py-[8px] w-64 rounded-md bg-primary-500 border border-primary-200 dark:border-[#172036] text-sm font-medium text-white dark:text-gray-300 hover:bg-primary-500 dark:hover:bg-[#111827]"
+            >
+              Export CSV
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end mt-[10px] md:mt-0">
-          <input
-            type="text"
-            placeholder="Search by transaction #, method, status..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:max-w-xs px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-          />
-
-          <button
-            type="button"
-            onClick={handleExportCsv}
-            className="px-[12px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827]"
-          >
-            Export CSV
-          </button>
-        </div>
+      
       </div>
 
       <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md overflow-hidden">

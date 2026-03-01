@@ -70,7 +70,7 @@ class CustPaymentController extends Controller
     {
         $this->authorize('delete', $custPayment);
 
-        $this->service->delete($custPayment->id);
+        $this->service->delete($custPayment->id, Auth::id());
 
         return response()->noContent();
     }

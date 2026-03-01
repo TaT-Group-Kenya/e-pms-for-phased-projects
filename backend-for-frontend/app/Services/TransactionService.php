@@ -78,8 +78,10 @@ class TransactionService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return Transaction::destroy($id);
+        $model = Transaction::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

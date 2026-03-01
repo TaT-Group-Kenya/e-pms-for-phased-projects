@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class QuoteLineItem extends Model
 {
+    use HasLogicalDeletion;
     protected $table = 'quote_line_items';
 
     protected $fillable = [
