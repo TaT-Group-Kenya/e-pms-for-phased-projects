@@ -59,6 +59,8 @@ class ProjectController extends Controller
         $project->load([
             'customer',
             'category',
+            'sourceOrigin',
+            'location',
             'phases.assignment.company',
             'order',
             'quotation',

@@ -65,6 +65,8 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('payment-methods', App\Http\Controllers\Api\PaymentMethodController::class);
 		Route::apiResource('projects', App\Http\Controllers\Api\ProjectController::class);
 		Route::apiResource('project-categories', App\Http\Controllers\Api\ProjectCategoryController::class);
+		Route::apiResource('project-source-origins', App\Http\Controllers\Api\ProjectSourceOriginController::class);
+		Route::apiResource('project-locations', App\Http\Controllers\Api\ProjectLocationController::class);
 		Route::apiResource('project-phases', App\Http\Controllers\Api\ProjectPhaseController::class);
 		Route::apiResource('project-progress-updates', App\Http\Controllers\Api\ProjectProgressUpdateController::class);
 		Route::get('quotations/{quotation}/download-pdf', [App\Http\Controllers\Api\QuotationController::class, 'downloadPdf']);

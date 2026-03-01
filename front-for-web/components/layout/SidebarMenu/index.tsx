@@ -45,6 +45,8 @@ const SECTIONS: SidebarSection[] = [
       { label: "Add Project", href: "/project/create-project" },
       { label: "Reports", href: "/project/report" },
       { label: "Categories", href: "/project/category" },
+      { label: "Sources", href: "/project/source-origins" },
+      { label: "Locations", href: "/project/locations" },
     ],
   },
   {

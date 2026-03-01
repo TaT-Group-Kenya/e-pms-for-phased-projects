@@ -13,6 +13,8 @@ class ProjectResource extends BaseResource
             'description' => $this->description,
             'customer_id' => $this->customer_id,
             'project_category_id' => $this->project_category_id,
+            'project_source_origin_id' => $this->project_source_origin_id,
+            'project_location_id' => $this->project_location_id,
             'no_of_phases' => $this->no_of_phases,
             'start_date' => $this->formatTimestamp($this->start_date),
             'end_date' => $this->formatTimestamp($this->end_date),
@@ -30,6 +32,10 @@ class ProjectResource extends BaseResource
             'customer' => new CustomerResource($this->whenLoaded('customer')),
 
             'category' => new ProjectCategoryResource($this->whenLoaded('category')),
+
+            'source_origin' => new ProjectSourceOriginResource($this->whenLoaded('sourceOrigin')),
+
+            'location' => new ProjectLocationResource($this->whenLoaded('location')),
 
             'phases' => ProjectPhaseResource::collection($this->whenLoaded('phases')),
 
