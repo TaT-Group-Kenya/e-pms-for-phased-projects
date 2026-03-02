@@ -694,6 +694,27 @@ class CompanyInvoiceController extends Controller
                 $ledger->softDelete($userId);
             }
 
+            // Recalculate invoice status based on remaining (non-deleted) payments
+            $activePayments = CompanyPayment::where('invoice_id', $invoice->id)
+                ->where('is_deleted', false)
+                ->get();
+
+            $paidTotal = (float) $activePayments->sum('amount_paid');
+            $remaining = max((float) $invoice->total_amount - $paidTotal, 0.0);
+
+            if ($paidTotal <= 0.0) {
+                // No active payments remaining
+                $invoice->status = 'sent';
+            } elseif ($remaining <= 0.0) {
+                $invoice->status = 'paid';
+            } else {
+                $invoice->status = 'partially-paid';
+            }
+
+            $invoice->updated_by = $userId;
+            $invoice->updated_at = now();
+            $invoice->save();
+
             $invoice->refresh();
 
             return $invoice;
