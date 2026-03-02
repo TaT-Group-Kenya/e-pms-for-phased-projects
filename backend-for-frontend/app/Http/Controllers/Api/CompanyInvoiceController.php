@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\CompanyInvoice;
 use App\Models\CompanyPayment;
 use App\Models\CompanyTransactionsLedger;
+use App\Models\CompanyBank;
 use App\Services\CurrencyConversionService;
 use App\Models\Account;
 use App\Models\CompanyProject;
@@ -45,6 +46,23 @@ class CompanyInvoiceController extends Controller
     public function store(CompanyInvoiceStoreRequest $request)
     {
         $validated = $request->validated();
+
+        // Ensure the selected company has at least one configured bank/payment method
+        if (! empty($validated['company_id'])) {
+            $hasBankAccount = CompanyBank::where('company_id', $validated['company_id'])
+                ->where('is_deleted', false)
+                ->exists();
+
+            if (! $hasBankAccount) {
+                return response()->json([
+                    'message' => 'The selected company does not have any bank/payment details configured. Please add at least one company bank account before creating an invoice.',
+                    'errors'  => [
+                        'company_id' => ['Company must have at least one bank/payment method configured.'],
+                    ],
+                ], 422);
+            }
+        }
+
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
         return new CompanyInvoiceResource($model);
@@ -69,6 +87,21 @@ class CompanyInvoiceController extends Controller
             'payment_terms'    => ['nullable', 'string'],
             'notes_to_customer'=> ['nullable', 'string'],
         ]);
+
+        // Company invoices require at least one bank/payment method so that
+        // payment details can be presented on the invoice.
+        $hasBankAccount = CompanyBank::where('company_id', $data['company_id'])
+            ->where('is_deleted', false)
+            ->exists();
+
+        if (! $hasBankAccount) {
+            return response()->json([
+                'message' => 'The selected company does not have any bank/payment details configured. Please add at least one company bank account before creating an invoice.',
+                'errors'  => [
+                    'company_id' => ['Company must have at least one bank/payment method configured.'],
+                ],
+            ], 422);
+        }
 
         $phase = ProjectPhase::with('project')->findOrFail($data['project_phase_id']);
 
@@ -139,6 +172,7 @@ class CompanyInvoiceController extends Controller
 
         $invoice->loadMissing([
             'project',
+            'project.phases',
             'invoiceItems.projectPhase',
             'taxitems',
             'payments',
@@ -155,6 +189,7 @@ class CompanyInvoiceController extends Controller
 
         $companyInvoice->loadMissing([
             'project',
+            'project.phases',
             'invoiceItems.projectPhase',
             'taxitems',
             'payments',
@@ -195,14 +230,20 @@ class CompanyInvoiceController extends Controller
 
         $invoice = $companyInvoice;
 
-        $invoice = DB::transaction(function () use ($invoice, $validated) {
+        $commonService = new CommonService();
+
+        $invoice = DB::transaction(function () use ($invoice, $validated, $commonService) {
             $amountPaid = (float) $validated['amount_paid'];
 
             $account = Account::findOrFail($validated['account_id']);
 
             // Strictly prevent overpayments beyond the current outstanding balance,
-            // allowing a small tolerance for rounding differences.
-            $existingPaymentsTotal = (float) CompanyPayment::where('invoice_id', $invoice->id)->sum('amount_paid');
+            // allowing a small tolerance for rounding differences. Only consider
+            // non-deleted payments so that deleted ones do not affect the
+            // outstanding balance.
+            $existingPaymentsTotal = (float) CompanyPayment::where('invoice_id', $invoice->id)
+                ->where('is_deleted', false)
+                ->sum('amount_paid');
             $outstandingBalance = max((float) $invoice->total_amount - $existingPaymentsTotal, 0.0);
             $tolerance = 0.01; // 1 cent tolerance
 
@@ -248,7 +289,16 @@ class CompanyInvoiceController extends Controller
                 ]);
             }
 
+            // Generate a unique transaction number for this company payment
+            do {
+                $transactionNumber = $commonService->generateUniqueCode('CMPPAY-');
+            } while (
+                CompanyPayment::where('transaction_number', $transactionNumber)->exists() ||
+                CompanyTransactionsLedger::where('transaction_number', $transactionNumber)->exists()
+            );
+
             $payment = CompanyPayment::create([
+                'transaction_number' => $transactionNumber,
                 'invoice_id' => $invoice->id,
                 'amount_paid' => $amountPaid,
                 'tax_amount' => $taxPortion,
@@ -270,7 +320,7 @@ class CompanyInvoiceController extends Controller
 
             CompanyTransactionsLedger::create([
                 'company_payment_id' => $payment->id,
-                'transaction_number' => $payment->transaction_number ?? null,
+                'transaction_number' => $payment->transaction_number,
                 'transaction_type' => 'payment',
                 'transaction_date' => $validated['payment_date'],
                 'posted_date' => now(),
@@ -310,6 +360,21 @@ class CompanyInvoiceController extends Controller
             $account->updated_at = now();
             $account->updated_by = Auth::id();
             $account->save();
+
+            // Update invoice status based on remaining balance after this payment.
+            // Reuse the existing non-deleted payments total and include this payment.
+            $paidTotal = $existingPaymentsTotal + $amountPaid;
+            $remaining = max((float) $invoice->total_amount - $paidTotal, 0.0);
+
+            if ($remaining <= 0.0) {
+                $invoice->status = 'paid';
+            } else {
+                $invoice->status = 'partially-paid';
+            }
+
+            $invoice->updated_by = Auth::id();
+            $invoice->updated_at = now();
+            $invoice->save();
 
             $invoice->refresh();
 
@@ -400,6 +465,27 @@ class CompanyInvoiceController extends Controller
             foreach ($ledgers as $ledger) {
                 $ledger->softDelete($userId);
             }
+
+            // Recalculate invoice status based on remaining (non-deleted) payments
+            $activePayments = CompanyPayment::where('invoice_id', $invoice->id)
+                ->where('is_deleted', false)
+                ->get();
+
+            $paidTotal = (float) $activePayments->sum('amount_paid');
+            $remaining = max((float) $invoice->total_amount - $paidTotal, 0.0);
+
+            if ($paidTotal <= 0.0) {
+                // No active payments remaining
+                $invoice->status = 'sent';
+            } elseif ($remaining <= 0.0) {
+                $invoice->status = 'paid';
+            } else {
+                $invoice->status = 'partially-paid';
+            }
+
+            $invoice->updated_by = $userId;
+            $invoice->updated_at = now();
+            $invoice->save();
 
             $invoice->refresh();
 
@@ -549,6 +635,12 @@ class CompanyInvoiceController extends Controller
     {
         $this->authorize('delete', $companyInvoice);
 
+        if ($companyInvoice->status !== 'draft') {
+            return response()->json([
+                'message' => 'Only draft company invoices can be deleted.',
+            ], 422);
+        }
+
         $this->service->delete($companyInvoice->id);
         return response()->noContent();
     }
@@ -580,10 +672,10 @@ class CompanyInvoiceController extends Controller
     {
         $this->authorize('view', $companyInvoice);
 
-        $companyInvoice->loadMissing(['project.company']);
+        $companyInvoice->loadMissing(['company', 'project']);
 
-        $recipientEmail = $companyInvoice->project->company->email ?? null;
-        $recipientName = $companyInvoice->project->company->name ?? 'Company';
+        $recipientEmail = $companyInvoice->company->email ?? null;
+        $recipientName = $companyInvoice->company->name ?? 'Company';
 
         if (! $recipientEmail) {
             return response()->json([
@@ -654,7 +746,9 @@ class CompanyInvoiceController extends Controller
     protected function buildCompanyInvoicePdf(CompanyInvoice $companyInvoice, ?int $userId = null): array
     {
         $companyInvoice->loadMissing([
-            'project.company',
+            'project',
+            'company',
+            'company.bankAccounts',
             'invoiceItems',
             'taxitems',
             'documents',

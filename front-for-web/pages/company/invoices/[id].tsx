@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useSelector } from 'react-redux'
@@ -7,6 +7,13 @@ import { ToastContainer } from '../../../components/common/Toast'
 import { useToast } from '../../../hooks/useToast'
 import { selectAccessToken } from '../../../store/auth/selectors'
 
+interface ProjectPhaseSummary {
+  id: number
+  code: string
+  name: string
+  status?: string | null
+}
+
 interface CompanyInvoiceItem {
   id: number
   item_name: string
@@ -14,6 +21,9 @@ interface CompanyInvoiceItem {
   quantity?: number | null
   item_amount: number
   total?: number | null
+  project_phase_id?: number | null
+  projectPhase?: ProjectPhaseSummary | null
+  is_taxable?: boolean | null
 }
 
 interface CompanyInvoiceTaxItem {
@@ -22,6 +32,22 @@ interface CompanyInvoiceTaxItem {
   item_type: string
   item_value?: number | null
   item_amount?: number | null
+}
+
+interface CompanyBankAccountSummary {
+  id: number
+  type: string
+  account_no: string
+  swiftcode?: string | null
+  branch?: string | null
+  account_holder_name: string
+}
+
+interface TaxSummary {
+  id: number
+  name: string
+  code: string
+  description?: string | null
 }
 
 interface CompanyPaymentSummary {
@@ -53,6 +79,22 @@ interface ProjectSummary {
   status?: string | null
 }
 
+interface ProjectWithPhasesSummary extends ProjectSummary {
+  phases?: ProjectPhaseSummary[]
+}
+
+interface CompanySummary {
+  id: number
+  name: string
+  email?: string | null
+  phone?: string | null
+  contact_person_name?: string | null
+  address?: string | null
+  city?: string | null
+  country?: string | null
+   bank_accounts?: CompanyBankAccountSummary[]
+}
+
 interface AccountSummary {
   id: number
   code: string
@@ -70,6 +112,8 @@ type CompanyInvoiceStatus =
 interface CompanyInvoice {
   id: number
   invoice_number: string
+  company_id?: number | null
+  project_phase_id?: number | null
   title?: string | null
   description?: string | null
   status: string
@@ -84,7 +128,7 @@ interface CompanyInvoice {
   taxitems?: CompanyInvoiceTaxItem[]
   payments?: CompanyPaymentSummary[]
   creditnotes?: CompanyCreditNoteSummary[]
-  project?: ProjectSummary
+  project?: ProjectWithPhasesSummary
 }
 
 export default function CompanyInvoiceDetailPage() {
@@ -136,8 +180,78 @@ export default function CompanyInvoiceDetailPage() {
 
   const [updatingStatus, setUpdatingStatus] = useState<CompanyInvoiceStatus | null>(null)
 
+  const [company, setCompany] = useState<CompanySummary | null>(null)
+
+  const [isAddingItem, setIsAddingItem] = useState(false)
+  const [itemName, setItemName] = useState('')
+  const [itemDescription, setItemDescription] = useState('')
+  const [itemAmount, setItemAmount] = useState('')
+  const [itemTaxable, setItemTaxable] = useState(true)
+  const [savingItem, setSavingItem] = useState(false)
+
+  const [isEditingItem, setIsEditingItem] = useState(false)
+  const [editingItemId, setEditingItemId] = useState<number | null>(null)
+  const [editItemName, setEditItemName] = useState('')
+  const [editItemDescription, setEditItemDescription] = useState('')
+  const [editItemAmount, setEditItemAmount] = useState('')
+  const [editItemTaxable, setEditItemTaxable] = useState(true)
+  const [savingItemEdit, setSavingItemEdit] = useState(false)
+
+  const [itemToDelete, setItemToDelete] = useState<CompanyInvoiceItem | null>(null)
+  const [deletingItem, setDeletingItem] = useState(false)
+
+  const [isAddingTaxItem, setIsAddingTaxItem] = useState(false)
+  const [taxItemName, setTaxItemName] = useState('')
+  const [taxItemType, setTaxItemType] = useState<'fixed' | 'percent'>('percent')
+  const [taxItemValue, setTaxItemValue] = useState('')
+  const [savingTaxItem, setSavingTaxItem] = useState(false)
+
+  const [taxes, setTaxes] = useState<TaxSummary[]>([])
+  const [loadingTaxes, setLoadingTaxes] = useState(false)
+  const [taxesError, setTaxesError] = useState<string | null>(null)
+  const [selectedTaxId, setSelectedTaxId] = useState<number | null>(null)
+
+  const [isEditingTaxItem, setIsEditingTaxItem] = useState(false)
+  const [editingTaxItemId, setEditingTaxItemId] = useState<number | null>(null)
+  const [editTaxItemName, setEditTaxItemName] = useState('')
+  const [editTaxItemType, setEditTaxItemType] = useState<'fixed' | 'percent'>('percent')
+  const [editTaxItemValue, setEditTaxItemValue] = useState('')
+  const [savingTaxItemEdit, setSavingTaxItemEdit] = useState(false)
+
+  const [taxItemToDelete, setTaxItemToDelete] = useState<CompanyInvoiceTaxItem | null>(null)
+  const [deletingTaxItem, setDeletingTaxItem] = useState(false)
+
   const { toasts, addToast, removeToast } = useToast()
   const accessToken = useSelector(selectAccessToken)
+
+  const previewTaxAmount = useMemo(() => {
+    if (!invoice) return null
+
+    const rawValue = taxItemValue
+    if (rawValue === '') return null
+
+    const numericValue = Number(rawValue)
+    if (Number.isNaN(numericValue)) return null
+
+    const baseAmount = (invoice.invoiceItems || []).reduce((sum, item) => {
+      const quantity = item.quantity ?? 1
+      const unitAmount = item.item_amount ?? 0
+      const lineTotal = item.total ?? unitAmount * quantity
+      const numericTotal =
+        typeof lineTotal === 'number' ? lineTotal : Number(lineTotal)
+      return sum + (Number.isNaN(numericTotal) ? 0 : numericTotal)
+    }, 0)
+
+    if (taxItemType === 'fixed') {
+      return numericValue
+    }
+
+    if (taxItemType === 'percent') {
+      return baseAmount * (numericValue / 100)
+    }
+
+    return null
+  }, [invoice, taxItemType, taxItemValue])
 
   const fetchInvoice = useCallback(async () => {
     if (!id) return
@@ -167,8 +281,78 @@ export default function CompanyInvoiceDetailPage() {
   }, [id, accessToken, addToast])
 
   useEffect(() => {
+    if (!accessToken) return
+
+    const controller = new AbortController()
+
+    const fetchTaxes = async () => {
+      setLoadingTaxes(true)
+      setTaxesError(null)
+
+      try {
+        const resp = await fetch('/api/taxes/list?per_page=1000', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
+        })
+
+        const data = await resp.json().catch(() => null)
+
+        if (!resp.ok) {
+          const message = data?.message || 'Failed to load taxes'
+          setTaxesError(message)
+          addToast(message, 'error')
+          return
+        }
+
+        const list = (data?.data || data) as TaxSummary[]
+        setTaxes(Array.isArray(list) ? list : [])
+      } catch (err: any) {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        // eslint-disable-next-line no-console
+        console.error('fetch taxes error', err)
+        setTaxesError('Error loading taxes')
+      } finally {
+        setLoadingTaxes(false)
+      }
+    }
+
+    fetchTaxes()
+
+    return () => controller.abort()
+  }, [accessToken, addToast])
+
+  useEffect(() => {
     fetchInvoice()
   }, [fetchInvoice])
+
+  useEffect(() => {
+    const loadCompany = async () => {
+      if (!invoice?.company_id) return
+      if (!accessToken) return
+
+      try {
+        const resp = await fetch(`/api/companies/${invoice.company_id}`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        })
+
+        const data = await resp.json().catch(() => null)
+        if (!resp.ok) return
+
+        const comp = (data?.data || data) as CompanySummary
+        setCompany(comp)
+      } catch {
+        // Ignore company load errors in invoice view
+      }
+    }
+
+    loadCompany()
+  }, [invoice?.company_id, accessToken])
 
   const fetchAccounts = useCallback(async () => {
     if (!accessToken) return
@@ -261,7 +445,10 @@ export default function CompanyInvoiceDetailPage() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `company-invoice-${id}.pdf`
+      const filename = invoice?.invoice_number
+        ? `${invoice.invoice_number}.pdf`
+        : `company-invoice-${id}.pdf`
+      a.download = filename
       document.body.appendChild(a)
       a.click()
       a.remove()
@@ -325,6 +512,16 @@ export default function CompanyInvoiceDetailPage() {
   const updateStatus = async (status: CompanyInvoiceStatus) => {
     if (!invoice || !accessToken) return
 
+    if (status === 'sent' && (!invoice.invoiceItems || invoice.invoiceItems.length === 0)) {
+      addToast('You cannot mark this invoice as sent because it has no items.', 'error')
+      return
+    }
+
+    if (status === 'draft' && invoice.payments && invoice.payments.length > 0) {
+      addToast('You cannot revert this invoice to draft because it has payment entries.', 'error')
+      return
+    }
+
     setUpdatingStatus(status)
     try {
       const resp = await fetch(`/api/company-invoices/${invoice.id}` as string, {
@@ -349,6 +546,331 @@ export default function CompanyInvoiceDetailPage() {
       addToast(e.message || 'Failed to update invoice status', 'error')
     } finally {
       setUpdatingStatus(null)
+    }
+  }
+
+  const handleSaveItem = async () => {
+    if (!invoice) return
+    if (!accessToken) {
+      addToast('You are not authenticated.', 'error')
+      return
+    }
+
+    if (invoice.status !== 'draft') {
+      addToast('Invoice items can only be modified while the invoice is in draft status.', 'error')
+      return
+    }
+
+    const amount = Number(itemAmount)
+    if (!itemName.trim()) {
+      addToast('Item name is required.', 'error')
+      return
+    }
+    if (!itemAmount || Number.isNaN(amount) || amount <= 0) {
+      addToast('Enter a valid item amount.', 'error')
+      return
+    }
+
+    setSavingItem(true)
+    try {
+      const resp = await fetch('/api/company-invoice-items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          invoice_id: invoice.id,
+          project_phase_id: invoice.project_phase_id ?? null,
+          item_name: itemName.trim(),
+          item_description: itemDescription.trim() || null,
+          item_amount: amount,
+          is_taxable: itemTaxable,
+        }),
+      })
+
+      const data = await resp.json().catch(() => null)
+      if (!resp.ok) {
+        throw new Error(data?.message || 'Failed to add invoice item')
+      }
+
+      await fetchInvoice()
+      setIsAddingItem(false)
+      addToast('Invoice item added successfully.', 'success')
+    } catch (e: any) {
+      addToast(e.message || 'Failed to add invoice item', 'error')
+    } finally {
+      setSavingItem(false)
+    }
+  }
+
+  const handleStartEditItem = (item: CompanyInvoiceItem) => {
+    setEditingItemId(item.id)
+    setEditItemName(item.item_name)
+    setEditItemDescription(item.item_description || '')
+    setEditItemAmount(String(item.item_amount))
+    setEditItemTaxable(item.is_taxable ?? true)
+    setIsEditingItem(true)
+  }
+
+  const handleSaveItemEdit = async () => {
+    if (!invoice || editingItemId == null) return
+    if (!accessToken) {
+      addToast('You are not authenticated.', 'error')
+      return
+    }
+
+    if (invoice.status !== 'draft') {
+      addToast('Invoice items can only be modified while the invoice is in draft status.', 'error')
+      return
+    }
+
+    const amount = Number(editItemAmount)
+    if (!editItemName.trim()) {
+      addToast('Item name is required.', 'error')
+      return
+    }
+    if (!editItemAmount || Number.isNaN(amount) || amount <= 0) {
+      addToast('Enter a valid item amount.', 'error')
+      return
+    }
+
+    setSavingItemEdit(true)
+    try {
+      const resp = await fetch(`/api/company-invoice-items/${editingItemId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          item_name: editItemName.trim(),
+          item_description: editItemDescription.trim() || null,
+          item_amount: amount,
+          is_taxable: editItemTaxable,
+        }),
+      })
+
+      const data = await resp.json().catch(() => null)
+      if (!resp.ok) {
+        throw new Error(data?.message || 'Failed to update invoice item')
+      }
+
+      await fetchInvoice()
+      setIsEditingItem(false)
+      setEditingItemId(null)
+      addToast('Invoice item updated successfully.', 'success')
+    } catch (e: any) {
+      addToast(e.message || 'Failed to update invoice item', 'error')
+    } finally {
+      setSavingItemEdit(false)
+    }
+  }
+
+  const handleDeleteItem = (item: CompanyInvoiceItem) => {
+    setItemToDelete(item)
+  }
+
+  const handleConfirmDeleteItem = async () => {
+    if (!invoice || !itemToDelete) return
+    if (!accessToken) {
+      addToast('You are not authenticated.', 'error')
+      return
+    }
+
+    if (invoice.status !== 'draft') {
+      addToast('Invoice items can only be deleted while the invoice is in draft status.', 'error')
+      return
+    }
+
+    setDeletingItem(true)
+    try {
+      const resp = await fetch(`/api/company-invoice-items/${itemToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      const data = await resp.json().catch(() => null)
+      if (!resp.ok) {
+        throw new Error(data?.message || 'Failed to delete invoice item')
+      }
+
+      await fetchInvoice()
+      setItemToDelete(null)
+      addToast('Invoice item deleted successfully.', 'success')
+    } catch (e: any) {
+      addToast(e.message || 'Failed to delete invoice item', 'error')
+    } finally {
+      setDeletingItem(false)
+    }
+  }
+
+  const handleSaveTaxItem = async () => {
+    if (!invoice) return
+    if (!accessToken) {
+      addToast('You are not authenticated.', 'error')
+      return
+    }
+
+    if (invoice.status !== 'draft') {
+      addToast('Tax items can only be modified while the invoice is in draft status.', 'error')
+      return
+    }
+
+    if (!selectedTaxId && !taxItemName.trim()) {
+      addToast('Tax item name is required.', 'error')
+      return
+    }
+
+    const valueNum = Number(taxItemValue)
+    if (!taxItemValue || Number.isNaN(valueNum) || valueNum < 0) {
+      addToast('Enter a valid tax value.', 'error')
+      return
+    }
+
+    setSavingTaxItem(true)
+    try {
+      const payload: any = {
+        invoice_id: invoice.id,
+        tax_id: selectedTaxId ?? null,
+        item_name: (taxItemName || '').trim(),
+        item_type: taxItemType,
+        item_value: String(valueNum),
+      }
+
+      const resp = await fetch('/api/company-invoice-tax-items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await resp.json().catch(() => null)
+      if (!resp.ok) {
+        throw new Error(data?.message || 'Failed to add tax item')
+      }
+
+      await fetchInvoice()
+      setIsAddingTaxItem(false)
+      setSelectedTaxId(null)
+      addToast('Tax item added successfully.', 'success')
+    } catch (e: any) {
+      addToast(e.message || 'Failed to add tax item', 'error')
+    } finally {
+      setSavingTaxItem(false)
+    }
+  }
+
+  const handleStartEditTaxItem = (item: CompanyInvoiceTaxItem) => {
+    setEditingTaxItemId(item.id)
+    setEditTaxItemName(item.item_name)
+    setEditTaxItemType(item.item_type as 'fixed' | 'percent')
+
+    const rawValue = item.item_value
+    const numericValue =
+      typeof rawValue === 'number' ? rawValue : rawValue != null ? Number(rawValue) : 0
+    setEditTaxItemValue(Number.isNaN(numericValue) ? '' : String(numericValue))
+
+    setIsEditingTaxItem(true)
+  }
+
+  const handleSaveTaxItemEdit = async () => {
+    if (!invoice || editingTaxItemId == null) return
+    if (!accessToken) {
+      addToast('You are not authenticated.', 'error')
+      return
+    }
+
+    if (invoice.status !== 'draft') {
+      addToast('Tax items can only be modified while the invoice is in draft status.', 'error')
+      return
+    }
+
+    if (!editTaxItemName.trim()) {
+      addToast('Tax item name is required.', 'error')
+      return
+    }
+
+    const valueNum = Number(editTaxItemValue)
+    if (!editTaxItemValue || Number.isNaN(valueNum) || valueNum < 0) {
+      addToast('Enter a valid tax value.', 'error')
+      return
+    }
+
+    setSavingTaxItemEdit(true)
+    try {
+      const resp = await fetch(`/api/company-invoice-tax-items/${editingTaxItemId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          item_name: editTaxItemName.trim(),
+          item_type: editTaxItemType,
+          item_value: String(valueNum),
+        }),
+      })
+
+      const data = await resp.json().catch(() => null)
+      if (!resp.ok) {
+        throw new Error(data?.message || 'Failed to update tax item')
+      }
+
+      await fetchInvoice()
+      setIsEditingTaxItem(false)
+      setEditingTaxItemId(null)
+      addToast('Tax item updated successfully.', 'success')
+    } catch (e: any) {
+      addToast(e.message || 'Failed to update tax item', 'error')
+    } finally {
+      setSavingTaxItemEdit(false)
+    }
+  }
+
+  const handleDeleteTaxItem = (item: CompanyInvoiceTaxItem) => {
+    setTaxItemToDelete(item)
+  }
+
+  const handleConfirmDeleteTaxItem = async () => {
+    if (!invoice || !taxItemToDelete) return
+    if (!accessToken) {
+      addToast('You are not authenticated.', 'error')
+      return
+    }
+
+    if (invoice.status !== 'draft') {
+      addToast('Tax items can only be deleted while the invoice is in draft status.', 'error')
+      return
+    }
+
+    setDeletingTaxItem(true)
+    try {
+      const resp = await fetch(`/api/company-invoice-tax-items/${taxItemToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      const data = await resp.json().catch(() => null)
+      if (!resp.ok) {
+        throw new Error(data?.message || 'Failed to delete tax item')
+      }
+
+      await fetchInvoice()
+      setTaxItemToDelete(null)
+      addToast('Tax item deleted successfully.', 'success')
+    } catch (e: any) {
+      addToast(e.message || 'Failed to delete tax item', 'error')
+    } finally {
+      setDeletingTaxItem(false)
     }
   }
 
@@ -600,8 +1122,52 @@ export default function CompanyInvoiceDetailPage() {
     (sum, pmt) => sum + (pmt?.amount_paid ?? 0),
     0
   )
-  const outstandingBalance = Math.max(invoice.total_amount - totalPayments, 0)
+
+  const computedItemsSubtotal = (invoice.invoiceItems || []).reduce((sum, item) => {
+    const quantity = item.quantity ?? 1
+    const unitAmount = item.item_amount ?? 0
+    const lineTotal = item.total ?? unitAmount * quantity
+    const numericTotal = typeof lineTotal === 'number' ? lineTotal : Number(lineTotal)
+    return sum + (Number.isNaN(numericTotal) ? 0 : numericTotal)
+  }, 0)
+
+  const computedTaxTotal = (invoice.taxitems || []).reduce((sum, item) => {
+    const amount = item.item_amount ?? 0
+    const numericAmount = typeof amount === 'number' ? amount : Number(amount)
+    return sum + (Number.isNaN(numericAmount) ? 0 : numericAmount)
+  }, 0)
+
+  const hasTaxItems = !!invoice && Array.isArray(invoice.taxitems) && invoice.taxitems.length > 0
+
+  const effectiveSubtotal =
+    invoice.subtotal_amount && invoice.subtotal_amount !== 0
+      ? invoice.subtotal_amount
+      : computedItemsSubtotal
+
+  const effectiveTax =
+    invoice.tax_amount && invoice.tax_amount !== 0 ? invoice.tax_amount : computedTaxTotal
+
+  const effectiveDiscount = invoice.discount_amount ?? 0
+
+  const effectiveTotal =
+    invoice.total_amount && invoice.total_amount !== 0
+      ? invoice.total_amount
+      : effectiveSubtotal + effectiveTax - effectiveDiscount
+
+  const outstandingBalance = Math.max(effectiveTotal - totalPayments, 0)
   const canAddPayment = invoice.status !== 'paid' && invoice.status !== 'draft'
+
+  const primaryPhase: ProjectPhaseSummary | null = (() => {
+    if (!invoice) return null
+
+    if (invoice.project?.phases && invoice.project.phases.length > 0 && invoice.project_phase_id) {
+      const match = invoice.project.phases.find((p) => p.id === invoice.project_phase_id)
+      if (match) return match
+    }
+
+    const itemPhase = invoice.invoiceItems?.find((it) => it.projectPhase)?.projectPhase
+    return itemPhase || null
+  })()
 
   const formatCurrency = (value: number, currency: string) => {
     if (Number.isNaN(value)) return '-'
@@ -817,7 +1383,11 @@ export default function CompanyInvoiceDetailPage() {
                         <div className="flex flex-wrap gap-[6px]">
                           <button
                             type="button"
-                            disabled={invoice.status === 'draft' || updatingStatus !== null}
+                            disabled={
+                              invoice.status === 'draft' ||
+                              updatingStatus !== null ||
+                              (invoice.payments && invoice.payments.length > 0)
+                            }
                             onClick={() => updateStatus('draft')}
                             className="px-[10px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -825,43 +1395,16 @@ export default function CompanyInvoiceDetailPage() {
                           </button>
                           <button
                             type="button"
-                            disabled={invoice.status === 'sent' || updatingStatus !== null}
+                            disabled={
+                              invoice.status === 'sent' ||
+                              updatingStatus !== null ||
+                              !invoice.invoiceItems ||
+                              invoice.invoiceItems.length === 0
+                            }
                             onClick={() => updateStatus('sent')}
                             className="px-[10px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Mark Sent
-                          </button>
-                          <button
-                            type="button"
-                            disabled={invoice.status === 'paid' || updatingStatus !== null}
-                            onClick={() => updateStatus('paid')}
-                            className="px-[10px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Mark Paid
-                          </button>
-                          <button
-                            type="button"
-                            disabled={invoice.status === 'partially-paid' || updatingStatus !== null}
-                            onClick={() => updateStatus('partially-paid')}
-                            className="px-[10px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Mark Partially Paid
-                          </button>
-                          <button
-                            type="button"
-                            disabled={invoice.status === 'overdue' || updatingStatus !== null}
-                            onClick={() => updateStatus('overdue')}
-                            className="px-[10px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Mark Overdue
-                          </button>
-                          <button
-                            type="button"
-                            disabled={invoice.status === 'cancelled' || updatingStatus !== null}
-                            onClick={() => updateStatus('cancelled')}
-                            className="px-[10px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Mark Cancelled
                           </button>
                         </div>
                       </div>
@@ -881,6 +1424,18 @@ export default function CompanyInvoiceDetailPage() {
                           {invoice.description || 'No description provided.'}
                         </p>
                       </div>
+
+                      {primaryPhase && (
+                        <div className="flex justify-between items-center pt-[10px]">
+                          <span className="text-gray-600 dark:text-gray-400">Project Phase:</span>
+                          <span className="text-black dark:text-white text-sm text-right">
+                            <span className="font-semibold">{primaryPhase.name}</span>
+                            {primaryPhase.code && (
+                              <span className="text-xs text-gray-500 ml-[6px]">({primaryPhase.code})</span>
+                            )}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -901,6 +1456,9 @@ export default function CompanyInvoiceDetailPage() {
                             <tr>
                               <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
                                 Item
+                              </th>
+                              <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                                Phase
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                                 Unit
@@ -925,6 +1483,20 @@ export default function CompanyInvoiceDetailPage() {
                                     <div className="text-xs text-gray-500">
                                       {item.item_description}
                                     </div>
+                                  )}
+                                </td>
+                                <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                                  {item.projectPhase ? (
+                                    <span>
+                                      <span className="font-medium">{item.projectPhase.name}</span>
+                                      {item.projectPhase.code && (
+                                        <span className="ml-[4px] text-xs text-gray-500">
+                                          ({item.projectPhase.code})
+                                        </span>
+                                      )}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-gray-500">-</span>
                                   )}
                                 </td>
                                 <td className="text-sm text-right px-[15px] py-[12px]">
@@ -957,32 +1529,42 @@ export default function CompanyInvoiceDetailPage() {
                       <div className="flex items-center justify-between pb-[15px] border-b border-gray-100 dark:border-[#172036]">
                         <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
                         <span className="font-medium">
-                          {formatCurrency(invoice.subtotal_amount, invoice.currency)}
+                          {formatCurrency(effectiveSubtotal, invoice.currency)}
                         </span>
                       </div>
 
-                      {invoice.tax_amount > 0 && (
+                      {hasTaxItems ? (
+                        <div className="flex items-center justify-between pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                          <span className="text-gray-600 dark:text-gray-400">Tax (from items)</span>
+                          <span className="font-medium">
+                            {formatCurrency(computedTaxTotal, invoice.currency)}
+                          </span>
+                        </div>
+                      ) : (
                         <div className="flex items-center justify-between pb-[15px] border-b border-gray-100 dark:border-[#172036]">
                           <span className="text-gray-600 dark:text-gray-400">Tax</span>
                           <span className="font-medium">
-                            {formatCurrency(invoice.tax_amount, invoice.currency)}
+                            {formatCurrency(effectiveTax, invoice.currency)}
                           </span>
                         </div>
                       )}
 
-                      {invoice.discount_amount > 0 && (
-                        <div className="flex items-center justify-between pb-[15px] border-b border-gray-100 dark:border-[#172036]">
-                          <span className="text-gray-600 dark:text-gray-400">Discount</span>
-                          <span className="font-medium">
-                            {formatCurrency(invoice.discount_amount, invoice.currency)}
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                        <span className="text-gray-600 dark:text-gray-400">Discount</span>
+                        <span className="font-medium">
+                          {formatCurrency(effectiveDiscount, invoice.currency)}
+                        </span>
+                      </div>
 
                       <div className="flex items-center justify-between pt-[15px] border-t-2 border-gray-200 dark:border-[#172036] text-base">
                         <span className="font-semibold">Total</span>
                         <span className="font-semibold text-primary-500 text-lg">
-                          {formatCurrency(invoice.total_amount, invoice.currency)}
+                          {formatCurrency(
+                            hasTaxItems
+                              ? effectiveSubtotal + computedTaxTotal - effectiveDiscount
+                              : effectiveTotal,
+                            invoice.currency
+                          )}
                         </span>
                       </div>
 
@@ -1034,6 +1616,58 @@ export default function CompanyInvoiceDetailPage() {
                             </p>
                           </div>
                         )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Payment Details (Company Bank Accounts) */}
+                  {company && company.bank_accounts && company.bank_accounts.length > 0 && (
+                    <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md mb-[25px]">
+                      <h6 className="text-black dark:text-white font-semibold mb-[15px]">
+                        Payment Details
+                      </h6>
+
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[12px]">
+                        Use any of the bank accounts below when paying this invoice.
+                      </p>
+
+                      <div className="space-y-[10px] text-xs md:text-sm">
+                        {company.bank_accounts.map((account) => (
+                          <div
+                            key={account.id}
+                            className="border border-gray-100 dark:border-[#172036] rounded-md p-[10px]"
+                          >
+                            <div className="flex justify-between mb-[4px]">
+                              <span className="text-gray-600 dark:text-gray-400">Account Holder</span>
+                              <span className="text-black dark:text-white font-medium">
+                                {account.account_holder_name}
+                              </span>
+                            </div>
+                            <div className="flex justify-between mb-[4px]">
+                              <span className="text-gray-600 dark:text-gray-400">Account Number</span>
+                              <span className="text-black dark:text-white font-medium">
+                                {account.account_no}
+                              </span>
+                            </div>
+                            <div className="flex justify-between mb-[4px]">
+                              <span className="text-gray-600 dark:text-gray-400">Type</span>
+                              <span className="text-black dark:text-white">
+                                {account.type}
+                                {account.branch && (
+                                  <span className="ml-[4px] text-[11px] text-gray-500">
+                                    ({account.branch})
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">SWIFT</span>
+                              <span className="text-black dark:text-white">
+                                {account.swiftcode || 'N/A'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -1100,6 +1734,56 @@ export default function CompanyInvoiceDetailPage() {
                             <span className="text-gray-600 dark:text-gray-400">Status</span>
                             <span className="text-black dark:text-white capitalize">
                               {invoice.project.status}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Company */}
+                  {company && (
+                    <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+                      <h6 className="text-black dark:text-white font-semibold mb-[15px]">
+                        Company
+                      </h6>
+
+                      <div className="space-y-[8px] text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Name</span>
+                          <span className="text-black dark:text-white font-medium">
+                            <Link
+                              href={`/company/${company.id}`}
+                              className="text-primary-500 hover:underline"
+                            >
+                              {company.name}
+                            </Link>
+                          </span>
+                        </div>
+
+                        {company.contact_person_name && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Contact</span>
+                            <span className="text-black dark:text-white">
+                              {company.contact_person_name}
+                            </span>
+                          </div>
+                        )}
+
+                        {company.email && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Email</span>
+                            <span className="text-black dark:text-white">
+                              {company.email}
+                            </span>
+                          </div>
+                        )}
+
+                        {company.phone && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Phone</span>
+                            <span className="text-black dark:text-white">
+                              {company.phone}
                             </span>
                           </div>
                         )}
@@ -1176,9 +1860,37 @@ export default function CompanyInvoiceDetailPage() {
           {activeTab === 1 && (
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
-                <h6 className="text-black dark:text-white font-semibold mb-[15px]">
-                  Invoice Items
-                </h6>
+                <div className="flex items-center justify-between mb-[15px]">
+                  <h6 className="text-black dark:text-white font-semibold">
+                    Invoice Items
+                  </h6>
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (invoice.status !== 'draft') {
+                          addToast('Invoice items can only be modified while the invoice is in draft status.', 'error')
+                          return
+                        }
+                        setItemName(primaryPhase?.name || '')
+                        setItemDescription('')
+                        setItemAmount('')
+                        setItemTaxable(true)
+                        setIsAddingItem(true)
+                      }}
+                      disabled={invoice.status !== 'draft'}
+                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
+                      Add Item
+                    </button>
+                    {invoice.status !== 'draft' && (
+                      <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                        Items can only be added or changed while the invoice is <span className="font-medium">draft</span>.
+                      </p>
+                    )}
+                  </div>
+                </div>
 
                 {(!invoice.invoiceItems || invoice.invoiceItems.length === 0) && (
                   <p className="text-xs text-gray-500">No items on this invoice.</p>
@@ -1200,6 +1912,9 @@ export default function CompanyInvoiceDetailPage() {
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Total
+                          </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Actions
                           </th>
                         </tr>
                       </thead>
@@ -1229,6 +1944,24 @@ export default function CompanyInvoiceDetailPage() {
                                 invoice.currency
                               )}
                             </td>
+                            <td className="text-sm text-right px-[15px] py-[12px] space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditItem(item)}
+                                disabled={invoice.status !== 'draft'}
+                                className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteItem(item)}
+                                disabled={invoice.status !== 'draft'}
+                                className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-danger-200 text-danger-600 hover:bg-danger-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Delete
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -1243,9 +1976,36 @@ export default function CompanyInvoiceDetailPage() {
           {activeTab === 2 && (
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
-                <h6 className="text-black dark:text-white font-semibold mb-[15px]">
-                  Tax Items
-                </h6>
+                <div className="flex items-center justify-between mb-[15px]">
+                  <h6 className="text-black dark:text-white font-semibold">
+                    Tax Items
+                  </h6>
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (invoice.status !== 'draft') {
+                          addToast('Tax items can only be modified while the invoice is in draft status.', 'error')
+                          return
+                        }
+                        setTaxItemName('')
+                        setTaxItemType('percent')
+                        setTaxItemValue('')
+                        setIsAddingTaxItem(true)
+                      }}
+                      disabled={invoice.status !== 'draft'}
+                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
+                      Add Tax Item
+                    </button>
+                    {invoice.status !== 'draft' && (
+                      <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                        Tax items can only be added or changed while the invoice is <span className="font-medium">draft</span>.
+                      </p>
+                    )}
+                  </div>
+                </div>
 
                 {(!invoice.taxitems || invoice.taxitems.length === 0) && (
                   <p className="text-xs text-gray-500">No tax items on this invoice.</p>
@@ -1267,6 +2027,9 @@ export default function CompanyInvoiceDetailPage() {
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Amount
+                          </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Actions
                           </th>
                         </tr>
                       </thead>
@@ -1300,6 +2063,24 @@ export default function CompanyInvoiceDetailPage() {
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {formatCurrency(item.item_amount ?? 0, invoice.currency)}
+                            </td>
+                            <td className="text-sm text-right px-[15px] py-[12px] space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditTaxItem(item)}
+                                disabled={invoice.status !== 'draft'}
+                                className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTaxItem(item)}
+                                disabled={invoice.status !== 'draft'}
+                                className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-danger-200 text-danger-600 hover:bg-danger-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Delete
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -1682,6 +2463,462 @@ export default function CompanyInvoiceDetailPage() {
                 className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {savingPayment ? 'Saving…' : 'Save Payment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAddingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
+              Add Invoice Item
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-[5px]">Item Name</label>
+                <input
+                  type="text"
+                  value={itemName}
+                  onChange={(e) => setItemName(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-[5px]">Description (optional)</label>
+                <textarea
+                  value={itemDescription}
+                  onChange={(e) => setItemDescription(e.target.value)}
+                  rows={3}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Amount</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={itemAmount}
+                  onChange={(e) => setItemAmount(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
+                  Amount is in the invoice currency ({invoice?.currency}).
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Taxable</label>
+                <select
+                  value={itemTaxable ? 'yes' : 'no'}
+                  onChange={(e) => setItemTaxable(e.target.value === 'yes')}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-[10px]">
+              <button
+                type="button"
+                onClick={() => setIsAddingItem(false)}
+                disabled={savingItem}
+                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveItem}
+                disabled={savingItem}
+                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingItem ? 'Saving…' : 'Save Item'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isEditingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
+              Edit Invoice Item
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-[5px]">Item Name</label>
+                <input
+                  type="text"
+                  value={editItemName}
+                  onChange={(e) => setEditItemName(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-[5px]">Description (optional)</label>
+                <textarea
+                  value={editItemDescription}
+                  onChange={(e) => setEditItemDescription(e.target.value)}
+                  rows={3}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Amount</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editItemAmount}
+                  onChange={(e) => setEditItemAmount(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
+                  Amount is in the invoice currency ({invoice?.currency}).
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Taxable</label>
+                <select
+                  value={editItemTaxable ? 'yes' : 'no'}
+                  onChange={(e) => setEditItemTaxable(e.target.value === 'yes')}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-[10px]">
+              <button
+                type="button"
+                onClick={() => setIsEditingItem(false)}
+                disabled={savingItemEdit}
+                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveItemEdit}
+                disabled={savingItemEdit}
+                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingItemEdit ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAddingTaxItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
+              Add Tax Item
+            </h3>
+
+            <div className="space-y-[15px] mb-[20px]">
+              <div>
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Tax Name <span className="text-danger-500">*</span>
+                </label>
+                <select
+                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
+                  value={selectedTaxId ?? ''}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    const id = value ? Number(value) : null
+                    setSelectedTaxId(id)
+
+                    const matched = taxes.find((t) => t.id === id) || null
+                    if (matched) {
+                      setTaxItemName(matched.name)
+                    }
+                  }}
+                  disabled={loadingTaxes || taxes.length === 0}
+                >
+                  <option value="">
+                    {loadingTaxes
+                      ? 'Loading taxes…'
+                      : taxes.length === 0
+                      ? 'No taxes configured'
+                      : 'Select tax'}
+                  </option>
+                  {taxes.map((tax) => (
+                    <option key={tax.id} value={tax.id}>
+                      {tax.name}
+                    </option>
+                  ))}
+                </select>
+                {taxesError && (
+                  <p className="mt-[6px] text-[11px] text-danger-500">{taxesError}</p>
+                )}
+                <p className="mt-[6px] text-[11px] text-gray-500 dark:text-gray-400">
+                  Choose a configured tax. You can adjust the type and value below.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px]">
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Type <span className="text-danger-500">*</span>
+                  </label>
+                  <select
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
+                    value={taxItemType}
+                    onChange={(e) => setTaxItemType(e.target.value as 'fixed' | 'percent')}
+                  >
+                    <option value="fixed">Fixed Amount</option>
+                    <option value="percent">Percentage</option>
+                  </select>
+                  <p className="mt-[6px] text-[11px] text-gray-500 dark:text-gray-400">
+                    Fixed adds a flat amount; Percentage applies on the total of invoice items.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Value{' '}
+                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                      {taxItemType === 'percent'
+                        ? 'as % of items total'
+                        : `in ${invoice?.currency ?? ''}`}
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={taxItemValue}
+                    onChange={(e) => setTaxItemValue(e.target.value)}
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                  />
+
+                  {previewTaxAmount != null && invoice && (
+                    <div className="mt-[6px] rounded-md border border-dashed border-primary-200 dark:border-primary-500/40 bg-primary-50/70 dark:bg-primary-500/10 px-[12px] py-[8px] text-xs">
+                      <p className="text-gray-800 dark:text-gray-100">
+                        Estimated tax on current items:{' '}
+                        <span className="font-semibold">
+                          {formatCurrency(previewTaxAmount, invoice.currency)}
+                        </span>
+                      </p>
+                      {taxItemType === 'percent' && (
+                        <p className="mt-[2px] text-[11px] text-gray-600 dark:text-gray-300">
+                          Calculated from the sum of all invoice line items.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-[10px]">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddingTaxItem(false)
+                  setSelectedTaxId(null)
+                }}
+                disabled={savingTaxItem}
+                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTaxItem}
+                disabled={savingTaxItem}
+                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingTaxItem ? 'Saving…' : 'Save Tax Item'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isEditingTaxItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
+              Edit Tax Item
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-[5px]">Name</label>
+                <input
+                  type="text"
+                  value={editTaxItemName}
+                  onChange={(e) => setEditTaxItemName(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Type</label>
+                <select
+                  value={editTaxItemType}
+                  onChange={(e) => setEditTaxItemType(e.target.value as 'fixed' | 'percent')}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="percent">Percent</option>
+                  <option value="fixed">Fixed Amount</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Value</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editTaxItemValue}
+                  onChange={(e) => setEditTaxItemValue(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
+                  {editTaxItemType === 'percent'
+                    ? 'Value is a percentage (e.g. 16 for 16%).'
+                    : `Value is a fixed amount in the invoice currency (${invoice?.currency}).`}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-[10px]">
+              <button
+                type="button"
+                onClick={() => setIsEditingTaxItem(false)}
+                disabled={savingTaxItemEdit}
+                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTaxItemEdit}
+                disabled={savingTaxItemEdit}
+                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingTaxItemEdit ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {itemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-[10px]">
+              Confirm Delete Invoice Item
+            </h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-[12px]">
+              This will remove the invoice item and update the invoice totals accordingly.
+            </p>
+
+            <div className="border border-gray-200 dark:border-[#172036] rounded-md p-[12px] mb-[16px] text-xs space-y-[4px]">
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Item</span>
+                <span className="text-gray-900 dark:text-gray-100 font-medium">
+                  {itemToDelete.item_name}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Amount</span>
+                <span className="text-gray-900 dark:text-gray-100">
+                  {formatCurrency(itemToDelete.item_amount, invoice.currency)}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-danger-600 dark:text-danger-400 mb-[16px]">
+              This action cannot be undone from the UI. You may need to recreate the item if this was done in error.
+            </p>
+
+            <div className="flex justify-end space-x-[8px]">
+              <button
+                type="button"
+                disabled={deletingItem}
+                onClick={() => setItemToDelete(null)}
+                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletingItem}
+                onClick={handleConfirmDeleteItem}
+                className="px-[13px] py-[8px] rounded-md bg-danger-500 text-white text-xs font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deletingItem ? 'Deleting…' : 'Delete Item'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {taxItemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-[10px]">
+              Confirm Delete Tax Item
+            </h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-[12px]">
+              This will remove the tax item and update the invoice totals accordingly.
+            </p>
+
+            <div className="border border-gray-200 dark:border-[#172036] rounded-md p-[12px] mb-[16px] text-xs space-y-[4px]">
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Name</span>
+                <span className="text-gray-900 dark:text-gray-100 font-medium">
+                  {taxItemToDelete.item_name}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Type</span>
+                <span className="text-gray-900 dark:text-gray-100 capitalize">
+                  {taxItemToDelete.item_type}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-danger-600 dark:text-danger-400 mb-[16px]">
+              This action cannot be undone from the UI. You may need to recreate the tax item if this was done in error.
+            </p>
+
+            <div className="flex justify-end space-x-[8px]">
+              <button
+                type="button"
+                disabled={deletingTaxItem}
+                onClick={() => setTaxItemToDelete(null)}
+                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletingTaxItem}
+                onClick={handleConfirmDeleteTaxItem}
+                className="px-[13px] py-[8px] rounded-md bg-danger-500 text-white text-xs font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deletingTaxItem ? 'Deleting…' : 'Delete Tax Item'}
               </button>
             </div>
           </div>

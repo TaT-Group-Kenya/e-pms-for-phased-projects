@@ -24,6 +24,11 @@ class CustomerResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
+            // Aggregate count of projects for list views and summaries
+            'projects_count' => isset($this->projects_count)
+                ? $this->projects_count
+                : ($this->relationLoaded('projects') ? $this->projects->count() : 0),
+
             'users' => UserResource::collection($this->whenLoaded('users')),
             
             'projects' => ProjectResource::collection($this->whenLoaded('projects')),

@@ -178,6 +178,10 @@ const CompanyInvoicesTable: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const canDeleteInvoice = (inv: CompanyInvoiceSummary): boolean => {
+    return inv.status.toLowerCase() === "draft";
+  };
+
   const handleSendEmail = async (id: number) => {
     if (!accessToken) {
       addToast("You are not authenticated.", "error");
@@ -209,7 +213,7 @@ const CompanyInvoicesTable: React.FC = () => {
     }
   };
 
-  const handleDownloadPdf = async (id: number) => {
+  const handleDownloadPdf = async (id: number, invoiceNumber?: string | null) => {
     if (!accessToken) {
       addToast("You are not authenticated.", "error");
       return;
@@ -236,7 +240,10 @@ const CompanyInvoicesTable: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `company-invoice-${id}.pdf`;
+      const filename = invoiceNumber
+        ? `${invoiceNumber}.pdf`
+        : `company-invoice-${id}.pdf`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -597,7 +604,7 @@ const CompanyInvoicesTable: React.FC = () => {
 
                             <button
                               type="button"
-                              onClick={() => handleDownloadPdf(inv.id)}
+                              onClick={() => handleDownloadPdf(inv.id, inv.invoice_number)}
                               disabled={downloadingId === inv.id}
                               className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-primary-500 hover:text-white hover:border-primary-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Download PDF"

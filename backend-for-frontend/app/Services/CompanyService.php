@@ -15,6 +15,9 @@ class CompanyService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = Company::query();
+
+        // Include projects count for each company (uses assignments relation)
+        $query->withCount('assignments');
         if (!empty($with)) {
             $query->with($with);
         }

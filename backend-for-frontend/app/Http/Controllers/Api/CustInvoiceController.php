@@ -240,7 +240,12 @@ class CustInvoiceController extends Controller
                 $transactionNumber = $commonService->generateUniqueCode('CPM-');
             } while (CustPayment::where('transaction_number', $transactionNumber)->exists());
 
-            $existingAllocations = CustPaymentAllocation::where('invoice_id', $invoice->id)->get();
+            // Only consider active (non-deleted) allocations when computing the
+            // previous balance so that deleted payments do not affect
+            // outstanding balance or overpayment checks.
+            $existingAllocations = CustPaymentAllocation::where('invoice_id', $invoice->id)
+                ->where('is_deleted', false)
+                ->get();
             $previousBalance = (float) $invoice->total_amount - (float) $existingAllocations->sum('allocated_amount');
 
             // Strictly prevent overpayments beyond the current outstanding balance,

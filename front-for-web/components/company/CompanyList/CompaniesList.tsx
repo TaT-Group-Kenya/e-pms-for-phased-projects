@@ -16,6 +16,7 @@ interface Company {
   email: string;
   contact_person_name: string;
   phone: string;
+  // Numeric projects count provided by API (CompanyResource::projects)
   projects?: number;
   logo?: string;
 }
@@ -305,7 +306,7 @@ const CompaniesList: React.FC = () => {
                     <span className="ltr:mr-[7px] rtl:ml-[7px] text-gray-500 dark:text-gray-400 font-normal">
                       Projects:
                     </span>
-                    {company.projects || 0}
+                    {company.projects ?? 0}
                   </li>
                 </ul>
 

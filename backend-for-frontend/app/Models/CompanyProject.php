@@ -31,7 +31,7 @@ class CompanyProject extends Model
 
     public function phase()
     {
-        return $this->belongsTo(Phase::class, 'phase_id');
+        return $this->belongsTo(ProjectPhase::class, 'phase_id');
     }
 
     public function company()

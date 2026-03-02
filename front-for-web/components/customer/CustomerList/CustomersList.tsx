@@ -16,7 +16,10 @@ interface Customer {
   email: string;
   contact_person_name: string;
   phone: string;
-  projects?: number;
+  // For list/index: numeric count from CustomerResource::projects_count
+  projects_count?: number;
+  // For detail views (when loaded): may be an array of project objects
+  projects?: any;
   logo?: string;
 }
 
@@ -305,7 +308,7 @@ const CustomersList: React.FC = () => {
                     <span className="ltr:mr-[7px] rtl:ml-[7px] text-gray-500 dark:text-gray-400 font-normal">
                       Projects:
                     </span>
-                    {customer.projects || 0}
+                    {customer.projects_count ?? 0}
                   </li>
                 </ul>
 

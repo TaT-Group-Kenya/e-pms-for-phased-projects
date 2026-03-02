@@ -125,6 +125,7 @@ class QuotationController extends Controller
             'documents',
             'approvals',
             'order',
+            'taxitems'
         ]));
     }
 
@@ -247,7 +248,8 @@ class QuotationController extends Controller
                 'quoteItems',
                 'documents',
                 'approvals',
-                'order.orderItems'
+                'order.orderItems',
+                'taxitems'
             ]));
         }
 

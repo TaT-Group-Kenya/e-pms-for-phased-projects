@@ -15,6 +15,9 @@ class CustomerService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = Customer::query();
+
+        // Include projects count for each customer
+        $query->withCount('projects');
         if (!empty($with)) {
             $query->with($with);
         }
