@@ -30,6 +30,12 @@ interface CustPaymentSummary {
   amount_paid: number
   currency: string
   payment_status: string
+  payment_method?: string | null
+  bank_name?: string | null
+  check_number?: string | null
+  transaction_reference?: string | null
+  receipt_number?: string | null
+  reconciled?: boolean
 }
 
 interface CustCreditNoteSummary {
@@ -117,6 +123,17 @@ export default function CustInvoiceDetailPage() {
   const [checkNumber, setCheckNumber] = useState('')
   const [receiptNumber, setReceiptNumber] = useState('')
   const [savingPayment, setSavingPayment] = useState(false)
+
+  const [isEditingPayment, setIsEditingPayment] = useState(false)
+  const [editingPaymentId, setEditingPaymentId] = useState<number | null>(null)
+  const [editPaymentStatus, setEditPaymentStatus] = useState<'pending' | 'complete'>('complete')
+  const [editBankName, setEditBankName] = useState('')
+  const [editCheckNumber, setEditCheckNumber] = useState('')
+  const [editReceiptNumber, setEditReceiptNumber] = useState('')
+  const [savingPaymentEdit, setSavingPaymentEdit] = useState(false)
+
+  const [paymentToDelete, setPaymentToDelete] = useState<CustPaymentSummary | null>(null)
+  const [deletingPayment, setDeletingPayment] = useState(false)
 
   const [accounts, setAccounts] = useState<AccountSummary[]>([])
   const [accountsLoading, setAccountsLoading] = useState(false)
@@ -349,8 +366,8 @@ export default function CustInvoiceDetailPage() {
 
   const handleOpenAddPayment = () => {
     if (!invoice) return
-    if (invoice.status !== 'sent') {
-      addToast('Payments can only be added when the invoice is sent.', 'error')
+    if (invoice.status === 'paid' || invoice.status === 'draft') {
+      addToast('Payments cannot be added when the invoice is draft or paid.', 'error')
       return
     }
     setPaymentAmount('')
@@ -371,8 +388,8 @@ export default function CustInvoiceDetailPage() {
       return
     }
 
-    if (invoice.status !== 'sent') {
-      addToast('Payments can only be added when the invoice is sent.', 'error')
+    if (invoice.status === 'paid' || invoice.status === 'draft') {
+      addToast('Payments cannot be added when the invoice is draft or paid.', 'error')
       return
     }
 
@@ -491,6 +508,67 @@ export default function CustInvoiceDetailPage() {
     }
   }
 
+  const handleStartEditPayment = (payment: CustPaymentSummary) => {
+    setEditingPaymentId(payment.id)
+    setEditPaymentStatus((payment.payment_status as 'pending' | 'complete') || 'complete')
+    setEditBankName(payment.bank_name || '')
+    setEditCheckNumber(payment.check_number || '')
+    setEditReceiptNumber(payment.receipt_number || '')
+    setIsEditingPayment(true)
+  }
+
+  const handleSavePaymentEdit = async () => {
+    if (!invoice || editingPaymentId == null) return
+    if (!accessToken) {
+      addToast('You are not authenticated.', 'error')
+      return
+    }
+
+    if (!editReceiptNumber.trim()) {
+      addToast('Receipt number is required.', 'error')
+      return
+    }
+
+    setSavingPaymentEdit(true)
+    try {
+      const resp = await fetch('/api/cust-invoices/update-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          id: invoice.id,
+          paymentId: editingPaymentId,
+          payment_status: editPaymentStatus,
+          bank_name: editBankName || null,
+          check_number: editCheckNumber || null,
+          receipt_number: editReceiptNumber,
+        }),
+      })
+
+      const data = await resp.json().catch(() => null)
+      if (!resp.ok) {
+        throw new Error(data?.message || 'Failed to update payment')
+      }
+
+      const inv = (data?.data || data) as CustInvoice
+      setInvoice(inv)
+      setIsEditingPayment(false)
+      setEditingPaymentId(null)
+      addToast('Payment updated successfully.', 'success')
+    } catch (e: any) {
+      addToast(e.message || 'Failed to update payment', 'error')
+    } finally {
+      setSavingPaymentEdit(false)
+    }
+  }
+
+  const handleDeletePayment = async (payment: CustPaymentSummary) => {
+    if (!invoice) return
+    setPaymentToDelete(payment)
+  }
+
   if (loading && !invoice) {
     return (
       <AuthenticatedLayout>
@@ -529,6 +607,13 @@ export default function CustInvoiceDetailPage() {
 
   if (!invoice) return null
 
+  const totalPayments = (invoice.payments || []).reduce(
+    (sum, pmt) => sum + (pmt?.amount_paid ?? 0),
+    0
+  )
+  const outstandingBalance = Math.max(invoice.total_amount - totalPayments, 0)
+  const canAddPayment = invoice.status !== 'paid' && invoice.status !== 'draft'
+
   const formatCurrency = (value: number, currency: string) => {
     if (Number.isNaN(value)) return '-'
     return new Intl.NumberFormat(undefined, {
@@ -551,6 +636,14 @@ export default function CustInvoiceDetailPage() {
       default:
         return 'bg-gray-50 text-gray-500'
     }
+  }
+
+  const formatPaymentStatus = (status: string): string => {
+    if (!status) return '-'
+    const normalized = status.toLowerCase()
+    if (normalized.startsWith('complete')) return 'Complete'
+    if (normalized.startsWith('pending')) return 'Pending'
+    return status
   }
 
   return (
@@ -855,6 +948,23 @@ export default function CustInvoiceDetailPage() {
                           {formatCurrency(invoice.total_amount, invoice.currency)}
                         </span>
                       </div>
+
+                      {invoice.status === 'partial-paid' && invoice.payments && invoice.payments.length > 0 && (
+                        <div className="mt-[10px] pt-[10px] border-t border-dashed border-gray-200 dark:border-[#172036] space-y-[8px] text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Payments so far</span>
+                            <span className="font-medium">
+                              {formatCurrency(totalPayments, invoice.currency)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Outstanding balance</span>
+                            <span className="font-semibold text-warning-500">
+                              {formatCurrency(outstandingBalance, invoice.currency)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1089,15 +1199,15 @@ export default function CustInvoiceDetailPage() {
                         <button
                           type="button"
                           onClick={handleOpenAddPayment}
-                          disabled={invoice.status !== 'sent'}
+                          disabled={['draft','paid'].includes(invoice.status)}
                           className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-warning-50 dark:bg-warning-950 text-warning-500 hover:bg-warning-100 dark:hover:bg-warning-900 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <i className="material-symbols-outlined mr-[8px] !text-[20px]">payments</i>
                           Add Payment
                         </button>
-                        {invoice.status !== 'sent' && (
+                        {['draft','paid'].includes(invoice.status) && (
                           <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
-                            Payments can only be added when the invoice status is <span className="font-medium">sent</span>.
+                            Payments can only be added when the invoice status is <span className="font-medium">sent</span> or <span className="font-medium">partial-paid</span>.
                           </p>
                         )}
                       </div>
@@ -1346,15 +1456,15 @@ export default function CustInvoiceDetailPage() {
                     <button
                       type="button"
                       onClick={handleOpenAddPayment}
-                      disabled={invoice.status !== 'sent'}
+                      disabled={!canAddPayment}
                       className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
                       Add Payment
                     </button>
-                    {invoice.status !== 'sent' && (
+                    {!canAddPayment && (
                       <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
-                        Payments can only be added when the invoice status is <span className="font-medium">sent</span>.
+                        Payments cannot be added when the invoice status is <span className="font-medium">draft</span> or <span className="font-medium">paid</span>.
                       </p>
                     )}
                   </div>
@@ -1380,10 +1490,13 @@ export default function CustInvoiceDetailPage() {
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Amount
                           </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Actions
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {invoice.payments.map((pmt) => (
+                        {(invoice.payments ?? []).map((pmt) => (
                           <tr
                             key={pmt.id}
                             className="border-b border-gray-100 dark:border-[#172036] align-middle"
@@ -1394,10 +1507,33 @@ export default function CustInvoiceDetailPage() {
                                 : '-'}
                             </td>
                             <td className="text-sm capitalize ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              {pmt.payment_status}
+                              <span>{formatPaymentStatus(pmt.payment_status)}</span>
+                              {Number(pmt.reconciled) === 1 && (
+                                <span className="ml-2 inline-flex items-center px-2 py-[2px] rounded-full text-[10px] font-medium bg-success-50 text-success-600 dark:bg-success-900/40 dark:text-success-300">
+                                  Reconciled
+                                </span>
+                              )}
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {formatCurrency(pmt.amount_paid, pmt.currency)}
+                            </td>
+                            <td className="text-sm text-right px-[15px] py-[12px] space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditPayment(pmt)}
+                                className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={pmt.reconciled === true}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeletePayment(pmt)}
+                                className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-danger-200 text-danger-600 hover:bg-danger-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={pmt.reconciled === true}
+                              >
+                                Delete
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -1494,6 +1630,13 @@ export default function CustInvoiceDetailPage() {
                   onChange={(e) => setPaymentAmount(e.target.value)}
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
+                <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
+                  Amount is in the invoice currency ({invoice?.currency}).
+                </p>
+                <p className="mt-[2px] text-[11px] text-gray-500 dark:text-gray-400">
+                  Outstanding balance on this invoice:{' '}
+                  {formatCurrency(outstandingBalance, invoice?.currency || 'USD')}.
+                </p>
               </div>
 
               <div>
@@ -1599,6 +1742,186 @@ export default function CustInvoiceDetailPage() {
                 className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {savingPayment ? 'Saving…' : 'Save Payment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isEditingPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
+              Edit Payment
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Status</label>
+                <select
+                  value={editPaymentStatus}
+                  onChange={(e) => setEditPaymentStatus(e.target.value as 'pending' | 'complete')}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="complete">Complete</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Receipt / Transaction Reference</label>
+                <input
+                  type="text"
+                  value={editReceiptNumber}
+                  onChange={(e) => setEditReceiptNumber(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Bank Name (optional)</label>
+                <input
+                  type="text"
+                  value={editBankName}
+                  onChange={(e) => setEditBankName(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Cheque Number (optional)</label>
+                <input
+                  type="text"
+                  value={editCheckNumber}
+                  onChange={(e) => setEditCheckNumber(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            <p className="mb-[15px] text-xs text-gray-500 dark:text-gray-400">
+              Only non-financial details can be edited here. To change the amount, date or benefiting account, delete this payment and add a new one.
+            </p>
+
+            <div className="flex justify-end space-x-[10px]">
+              <button
+                type="button"
+                onClick={() => setIsEditingPayment(false)}
+                disabled={savingPaymentEdit}
+                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSavePaymentEdit}
+                disabled={savingPaymentEdit}
+                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingPaymentEdit ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {paymentToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-[10px]">
+              Confirm Delete Payment
+            </h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-[12px]">
+              This will remove the payment below and adjust the invoice balance and related ledger entries.
+            </p>
+
+            <div className="border border-gray-200 dark:border-[#172036] rounded-md p-[12px] mb-[16px] text-xs space-y-[4px]">
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Date</span>
+                <span className="text-gray-900 dark:text-gray-100">
+                  {paymentToDelete!.payment_date
+                    ? new Date(paymentToDelete!.payment_date as string).toLocaleDateString()
+                    : '-'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Amount</span>
+                <span className="text-gray-900 dark:text-gray-100">
+                  {formatCurrency(paymentToDelete!.amount_paid, paymentToDelete!.currency)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Status</span>
+                <span className="text-gray-900 dark:text-gray-100 capitalize">
+                  {formatPaymentStatus(paymentToDelete!.payment_status)}
+                  {paymentToDelete!.reconciled && ' (reconciled)'}
+                </span>
+              </div>
+              {paymentToDelete!.receipt_number && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Receipt / Ref</span>
+                  <span className="text-gray-900 dark:text-gray-100 truncate max-w-[200px] text-right">
+                    {paymentToDelete!.receipt_number}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <p className="text-[11px] text-danger-600 dark:text-danger-400 mb-[16px]">
+              This action cannot be undone from the UI. You may need to create a new payment with corrected details.
+            </p>
+
+            <div className="flex justify-end space-x-[8px]">
+              <button
+                type="button"
+                disabled={deletingPayment}
+                onClick={() => setPaymentToDelete(null)}
+                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deletingPayment || !invoice}
+                onClick={async () => {
+                  if (!invoice || !paymentToDelete) return
+                  if (!accessToken) {
+                    addToast('You are not authenticated.', 'error')
+                    return
+                  }
+
+                  setDeletingPayment(true)
+                  try {
+                    const resp = await fetch('/api/cust-invoices/delete-payment', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${accessToken}`,
+                      },
+                      body: JSON.stringify({
+                        id: invoice.id,
+                        paymentId: paymentToDelete.id,
+                      }),
+                    })
+
+                    const data = await resp.json().catch(() => null)
+                    if (!resp.ok) {
+                      throw new Error(data?.message || 'Failed to delete payment')
+                    }
+
+                    const inv = (data?.data || data) as CustInvoice
+                    setInvoice(inv)
+                    setPaymentToDelete(null)
+                    addToast('Payment deleted successfully.', 'success')
+                  } catch (e: any) {
+                    addToast(e.message || 'Failed to delete payment', 'error')
+                  } finally {
+                    setDeletingPayment(false)
+                  }
+                }}
+                className="px-[13px] py-[8px] rounded-md bg-danger-500 text-white text-xs font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deletingPayment ? 'Deleting…' : 'Delete Payment'}
               </button>
             </div>
           </div>

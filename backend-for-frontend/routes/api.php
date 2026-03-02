@@ -24,6 +24,8 @@ Route::prefix('/')->group(function () {
 		Route::get('company-invoices/{companyInvoice}/download-pdf', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'downloadPdf']);
 		Route::post('company-invoices/{companyInvoice}/send-email', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'sendEmail']);
 		Route::post('company-invoices/{companyInvoice}/payments', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'addPayment']);
+		Route::patch('company-invoices/{companyInvoice}/payments/{companyPayment}', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'updatePayment']);
+		Route::delete('company-invoices/{companyInvoice}/payments/{companyPayment}', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'deletePayment']);
 		Route::post('company-invoices/create-from-phase', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'createFromPhase']);
 		Route::apiResource('company-invoices', App\Http\Controllers\Api\CompanyInvoiceController::class);
 		Route::apiResource('company-invoice-documents', App\Http\Controllers\Api\CompanyInvoiceDucomentController::class);
@@ -40,6 +42,8 @@ Route::prefix('/')->group(function () {
 		Route::post('cust-invoices/{custInvoice}/send-email', [App\Http\Controllers\Api\CustInvoiceController::class, 'sendEmail']);
 		Route::post('cust-invoices/{custInvoice}/mark-sent', [App\Http\Controllers\Api\CustInvoiceController::class, 'markSent']);
 		Route::post('cust-invoices/{custInvoice}/payments', [App\Http\Controllers\Api\CustInvoiceController::class, 'addPayment']);
+		Route::patch('cust-invoices/{custInvoice}/payments/{custPayment}', [App\Http\Controllers\Api\CustInvoiceController::class, 'updatePayment']);
+		Route::delete('cust-invoices/{custInvoice}/payments/{custPayment}', [App\Http\Controllers\Api\CustInvoiceController::class, 'deletePayment']);
 		Route::post('cust-invoices/create-from-order', [App\Http\Controllers\Api\CustInvoiceController::class, 'createFromOrder']);
 		Route::apiResource('cust-invoices', App\Http\Controllers\Api\CustInvoiceController::class);
 		Route::apiResource('cust-invoice-documents', App\Http\Controllers\Api\CustInvoiceDocumentController::class);
