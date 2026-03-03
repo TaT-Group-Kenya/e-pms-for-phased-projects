@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
@@ -26,6 +27,7 @@ interface CurrencyOption {
 }
 
 const AccountsTable: React.FC = () => {
+  const router = useRouter();
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
 
@@ -488,6 +490,13 @@ const AccountsTable: React.FC = () => {
                       {renderOverdraftLabel(acc.overdraft_allowed)}
                     </td>
                     <td className="text-sm px-[10px] py-[6px] text-right space-x-2 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/finance/accounts/${acc.id}`)}
+                        className="inline-flex items-center px-[10px] py-[5px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827]"
+                      >
+                        View statements
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(acc)}

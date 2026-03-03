@@ -13,6 +13,8 @@ Route::prefix('/')->group(function () {
 		Route::post('logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
 		Route::get('me', [App\Http\Controllers\Api\AuthController::class, 'me']);
 
+		Route::get('accounts/{account}/statement', [App\Http\Controllers\Api\AccountController::class, 'statement']);
+		Route::get('accounts/{account}/statement-pdf', [App\Http\Controllers\Api\AccountController::class, 'downloadStatementPdf']);
 		Route::apiResource('accounts', App\Http\Controllers\Api\AccountController::class);
 		Route::apiResource('account-types', App\Http\Controllers\Api\AccountTypeController::class);
 		Route::apiResource('account-groups', App\Http\Controllers\Api\AccountGroupController::class);
