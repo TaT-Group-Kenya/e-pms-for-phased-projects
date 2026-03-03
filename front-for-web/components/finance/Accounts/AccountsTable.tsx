@@ -254,7 +254,6 @@ const AccountsTable: React.FC = () => {
         type: formType,
         group: formGroup,
         currency: formCurrency,
-        balance: formBalance || "0.00",
         overdraft_allowed: Number(formOverdraft),
       };
 
@@ -580,7 +579,7 @@ const AccountsTable: React.FC = () => {
                     value={formCurrency}
                     onChange={(e) => setFormCurrency(e.target.value)}
                     className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    disabled={currenciesLoading}
+                    disabled={currenciesLoading || !!editingAccount}
                   >
                     <option value="">Select currency</option>
                     {currencies.filter((c) => c.code === 'KES').map((c) => (
@@ -599,7 +598,8 @@ const AccountsTable: React.FC = () => {
                     step="0.01"
                     value={formBalance}
                     onChange={(e) => setFormBalance(e.target.value)}
-                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    disabled
+                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-gray-50 dark:bg-[#111827] text-sm text-gray-500 dark:text-gray-400 cursor-not-allowed"
                   />
                 </div>
 

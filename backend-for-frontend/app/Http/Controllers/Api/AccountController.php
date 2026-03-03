@@ -5,12 +5,14 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\Account;
 use App\Models\CustomerTransactionsLedger;
 use App\Models\CompanyTransactionsLedger;
 use App\Models\Transaction;
 use App\Services\AccountService;
 use App\Services\CommonService;
+use App\Services\TransactionService;
 use App\Http\Resources\AccountResource;
 use App\Http\Requests\AccountStoreRequest;
 use App\Http\Requests\AccountUpdateRequest;
@@ -45,6 +47,8 @@ class AccountController extends Controller
         $commonService = new CommonService();
         $validated['code'] = $commonService->generateUniqueCode('INT-ACC-');
         $validated['currency'] = 'KES'; // Accounts run on Base currency
+        // Opening balance is always zero on creation
+        $validated['balance'] = $validated['balance'] ?? 0;
 
         $model = $this->service->create($validated);
         return new AccountResource($model);
@@ -61,10 +65,94 @@ class AccountController extends Controller
         $this->authorize('update', $account);
 
         $validated = $request->validated();
+        // Enforce base currency and prevent balance changes via update
+        unset($validated['currency'], $validated['balance']);
         $validated['currency'] = 'KES'; // Accounts run on Base currency
 
         $updated = $this->service->update($account->id, $validated);
         return new AccountResource($updated);
+    }
+
+    public function topup(Request $request, Account $account, TransactionService $transactionService)
+    {
+        $this->authorize('update', $account);
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'transaction_date' => ['nullable', 'date'],
+            'posted_date' => ['nullable', 'date'],
+            'narration' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $amount = (float) $data['amount'];
+        $transactionDate = $data['transaction_date'] ?? now()->toDateString();
+        $postedDate = $data['posted_date'] ?? now()->toDateString();
+
+        $userId = $request->user()?->id;
+
+        DB::transaction(function () use ($account, $amount, $transactionDate, $postedDate, $data, $userId, $transactionService) {
+            $baseCurrency = $account->currency ?? 'KES';
+
+            $commonService = new CommonService();
+            $transactionNumber = $commonService->generateUniqueCode('TRX-');
+
+            $transactionService->create([
+                'transaction_number' => $transactionNumber,
+                // Use a valid enum value for transaction_type in the current schema
+                'transaction_type' => 'topup',
+                'transaction_date' => $transactionDate,
+                'posted_date' => $postedDate,
+                'amount' => $amount,
+                'base_currency' => $baseCurrency,
+                'tax_amount' => 0,
+                'net_amount' => $amount,
+                'transaction_currency' => $baseCurrency,
+                'base_currency' => $baseCurrency,
+                'exchange_rate' => 1,
+                'converted_amount' => $amount,
+                'converted_tax_amount' => 0,
+                'converted_net_amount' => $amount,
+                'customer_id' => null,
+                'company_id' => null,
+                'source_type' => 'account_topup',
+                'source_id' => $account->id,
+                'account_debit' => null,
+                'account_credit' => $account->id,
+                // Top-ups increase funds, so classify as revenue
+                'category' => 'revenue',
+                'payment_method' => 'CASH',
+                'bank_account' => null,
+                'check_number' => null,
+                // Immediately cleared since this is an internal top-up
+                'transaction_status' => 'cleared',
+                'related_transaction_id' => null,
+                'narration' => $data['narration'] ?? 'Account top-up',
+                'is_recurring' => false,
+                'fiscal_year' => now()->year,
+                'accounting_period' => now()->format('Y-m'),
+                'is_adjusting_entry' => false,
+                'cost_center_id' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ]);
+
+            // Increase the account balance
+            $account->balance = (float) $account->balance + $amount;
+            $account->updated_at = now();
+            $account->updated_by = $userId;
+            $account->save();
+        });
+
+        $account->refresh();
+
+        return response()->json([
+            'message' => 'Account topped up successfully.',
+            'data' => [
+                'account' => new AccountResource($account),
+            ],
+        ]);
     }
 
     public function statement(Request $request, Account $account)

@@ -65,6 +65,12 @@ const AccountStatementPage: React.FC = () => {
   const [toDate, setToDate] = useState<string>("");
   const [reloadKey, setReloadKey] = useState(0);
 
+  const [showTopupModal, setShowTopupModal] = useState(false);
+  const [topupAmount, setTopupAmount] = useState<string>("");
+  const [topupDate, setTopupDate] = useState<string>("");
+  const [topupNarration, setTopupNarration] = useState<string>("");
+  const [toppingUp, setToppingUp] = useState(false);
+
   useEffect(() => {
     if (!id || !accessToken) return;
 
@@ -120,6 +126,72 @@ const AccountStatementPage: React.FC = () => {
     setFromDate("");
     setToDate("");
     setReloadKey((k) => k + 1);
+  };
+
+  const handleOpenTopup = () => {
+    if (!account) {
+      addToast("Account details not loaded yet.", "error");
+      return;
+    }
+
+    setTopupAmount("");
+    setTopupNarration("Account top-up");
+    setTopupDate(new Date().toISOString().slice(0, 10));
+    setShowTopupModal(true);
+  };
+
+  const handleSubmitTopup = async () => {
+    if (!id) return;
+
+    if (!accessToken) {
+      addToast("You must be logged in to top up this account.", "error");
+      return;
+    }
+
+    const amount = parseFloat(topupAmount || "0");
+    if (!topupAmount || Number.isNaN(amount) || amount <= 0) {
+      addToast("Please enter a valid top-up amount greater than zero.", "error");
+      return;
+    }
+
+    setToppingUp(true);
+    try {
+      const payload: any = {
+        amount,
+        narration: topupNarration.trim() || undefined,
+      };
+      if (topupDate) {
+        payload.transaction_date = topupDate;
+      }
+
+      const resp = await fetch(`/api/accounts/${id}/topup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data: any = await resp.json().catch(() => null);
+      if (!resp.ok) {
+        const message = data?.message || "Failed to top up account";
+        addToast(message, "error");
+        return;
+      }
+
+      addToast("Account topped up successfully.", "success");
+      setShowTopupModal(false);
+      setTopupAmount("");
+      setTopupNarration("");
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("account topup error", err);
+      addToast("Failed to top up account.", "error");
+    } finally {
+      setToppingUp(false);
+    }
   };
 
   const handleDownloadPdf = async () => {
@@ -288,6 +360,15 @@ const AccountStatementPage: React.FC = () => {
                 maximumFractionDigits: 2,
               })}
             </div>
+
+            <button
+              type="button"
+              onClick={handleOpenTopup}
+              className="mt-[6px] inline-flex items-center px-[10px] py-[6px] rounded-md bg-primary-500 text-white text-xs font-medium hover:bg-primary-600"
+            >
+              <i className="material-symbols-outlined text-[16px] mr-[4px]">account_balance_wallet</i>
+              Top up account
+            </button>
           </div>
         </div>
 
@@ -416,6 +497,72 @@ const AccountStatementPage: React.FC = () => {
         </div>
       </div>
       </div>
+
+      {showTopupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto p-[20px] md:p-[24px]">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-[10px]">Top up account</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-[16px]">
+              Record a manual top-up to increase this account&apos;s balance. A transaction entry
+              will be created in the finance ledger.
+            </p>
+
+            <div className="space-y-[12px] mb-[18px]">
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Amount ({account?.currency || "KES"})</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={topupAmount}
+                  onChange={(e) => setTopupAmount(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Date</label>
+                <input
+                  type="date"
+                  value={topupDate}
+                  onChange={(e) => setTopupDate(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Narration</label>
+                <textarea
+                  rows={3}
+                  value={topupNarration}
+                  onChange={(e) => setTopupNarration(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-[10px]">
+              <button
+                type="button"
+                onClick={() => setShowTopupModal(false)}
+                disabled={toppingUp}
+                className="px-[12px] py-[7px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitTopup}
+                disabled={toppingUp}
+                className="px-[12px] py-[7px] rounded-md bg-primary-500 text-white text-xs font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {toppingUp ? "Topping up..." : "Confirm top up"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </AuthenticatedLayout>
   );

@@ -15,6 +15,7 @@ Route::prefix('/')->group(function () {
 
 		Route::get('accounts/{account}/statement', [App\Http\Controllers\Api\AccountController::class, 'statement']);
 		Route::get('accounts/{account}/statement-pdf', [App\Http\Controllers\Api\AccountController::class, 'downloadStatementPdf']);
+		Route::post('accounts/{account}/topup', [App\Http\Controllers\Api\AccountController::class, 'topup']);
 		Route::apiResource('accounts', App\Http\Controllers\Api\AccountController::class);
 		Route::apiResource('account-types', App\Http\Controllers\Api\AccountTypeController::class);
 		Route::apiResource('account-groups', App\Http\Controllers\Api\AccountGroupController::class);
