@@ -29,11 +29,9 @@ class CustPaymentResource extends BaseResource
             'updated_by' => $this->updated_by,
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
-
+            'transaction_id' => $this->transaction_id,
             'ledger_entries' => CustomerTransactionsLedgerResource::collection($this->whenLoaded('customerLedgerEntries')),
-
             'allocations' => CustPaymentAllocationResource::collection($this->whenLoaded('allocations')),
-
             'invoices' => CustInvoiceResource::collection($this->whenLoaded('invoices')),
         ];
     }

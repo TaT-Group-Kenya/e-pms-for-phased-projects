@@ -28,7 +28,12 @@ class CustPaymentController extends Controller
         $page = (int) $request->get('page', 1);
         $filters = $request->except('per_page', 'page');
 
-        $data = $this->service->index($filters, $perPage, $page);
+        $with = [
+            'invoices.customer',
+            'invoices.project',
+        ];
+
+        $data = $this->service->index($filters, $perPage, $page, 0, $with);
 
         return CustPaymentResource::collection($data);
     }

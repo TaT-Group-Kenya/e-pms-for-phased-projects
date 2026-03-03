@@ -293,8 +293,7 @@ class CompanyInvoiceController extends Controller
             do {
                 $transactionNumber = $commonService->generateUniqueCode('CMPPAY-');
             } while (
-                CompanyPayment::where('transaction_number', $transactionNumber)->exists() ||
-                CompanyTransactionsLedger::where('transaction_number', $transactionNumber)->exists()
+                CompanyPayment::where('transaction_number', $transactionNumber)->exists()
             );
 
             $payment = CompanyPayment::create([
@@ -314,11 +313,13 @@ class CompanyInvoiceController extends Controller
                 'receipt_number' => $validated['receipt_number'],
                 'reconciled' => false,
                 'reconciliation_date' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]);
 
-            CompanyTransactionsLedger::create([
+            $trxn = CompanyTransactionsLedger::create([
                 'company_payment_id' => $payment->id,
                 'transaction_number' => $payment->transaction_number,
                 'transaction_type' => 'payment',
@@ -354,6 +355,9 @@ class CompanyInvoiceController extends Controller
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]);
+
+            $payment->transaction_id = $trxn->id;
+            $payment->save();
 
             // Update accounts account balance: debit decreases balance
             $account->balance = (string) number_format($currentBalance - $convertedAmount, 2, '.', '');

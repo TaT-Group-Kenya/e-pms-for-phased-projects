@@ -33,7 +33,13 @@ class CustomerTransactionsLedgerController extends Controller
         $page = (int) $request->get('page', 1);
         $filters = $request->except('per_page', 'page');
 
-        $data = $this->service->index($filters, $perPage, $page);
+        $with = [
+            'customer',
+            'payment',
+            'relatedTransaction',
+        ];
+
+        $data = $this->service->index($filters, $perPage, $page, 0, $with);
 
         return CustomerTransactionsLedgerResource::collection($data);
     }
@@ -51,6 +57,12 @@ class CustomerTransactionsLedgerController extends Controller
     public function show(CustomerTransactionsLedger $customerTransactionsLedger)
     {
         $this->authorize('view', $customerTransactionsLedger);
+
+        $customerTransactionsLedger->loadMissing([
+            'customer',
+            'payment',
+            'relatedTransaction',
+        ]);
 
         return new CustomerTransactionsLedgerResource($customerTransactionsLedger);
     }

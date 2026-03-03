@@ -13,6 +13,7 @@ class CustPayment extends Model
     public $timestamps = true;
 
     protected $fillable = [
+        'transaction_id',
         'transaction_number',
         'amount_paid',
         'tax_amount',

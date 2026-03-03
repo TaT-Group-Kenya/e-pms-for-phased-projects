@@ -10,18 +10,24 @@ import { ToastContainer } from "../../../components/common/Toast";
 
 interface CompanyLedgerDetail {
   id: number;
+  company_payment_id?: number | null;
   transaction_number?: string | null;
   transaction_type?: string | null;
   transaction_date?: string | null;
   posted_date?: string | null;
   amount: number;
+  transaction_currency?: string | null;
   base_currency?: string | null;
   exchange_rate: number;
   converted_amount: number;
+  converted_tax_amount: number;
+  converted_net_amount: number;
   tax_amount: number;
   net_amount: number;
   company_id?: number | null;
   customer_id?: number | null;
+  company_name?: string | null;
+  customer_name?: string | null;
   source_type?: string | null;
   source_id?: number | null;
   account_debit?: number | null;
@@ -43,6 +49,7 @@ const CompanyLedgerDetailPageInner: React.FC = () => {
 
   const [entry, setEntry] = useState<CompanyLedgerDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
 
   const idParam = router.query.id ? String(router.query.id) : undefined;
 
@@ -73,18 +80,31 @@ const CompanyLedgerDetailPageInner: React.FC = () => {
         const src = data?.data || data;
         setEntry({
           id: Number(src.id),
+          company_payment_id:
+            src.company_payment_id != null ? Number(src.company_payment_id) : null,
           transaction_number: src.transaction_number ?? null,
           transaction_type: src.transaction_type ?? null,
           transaction_date: src.transaction_date ?? null,
           posted_date: src.posted_date ?? null,
           amount: Number(src.amount ?? 0),
+          transaction_currency: src.transaction_currency ?? null,
           base_currency: src.base_currency ?? null,
           exchange_rate: Number(src.exchange_rate ?? 1),
           converted_amount: Number(src.converted_amount ?? 0),
+          converted_tax_amount: Number(src.converted_tax_amount ?? 0),
+          converted_net_amount: Number(src.converted_net_amount ?? 0),
           tax_amount: Number(src.tax_amount ?? 0),
           net_amount: Number(src.net_amount ?? 0),
           company_id: src.company_id != null ? Number(src.company_id) : null,
           customer_id: src.customer_id != null ? Number(src.customer_id) : null,
+          company_name:
+            src.company && typeof src.company === "object" && src.company.name
+              ? String(src.company.name)
+              : null,
+          customer_name:
+            src.customer && typeof src.customer === "object" && src.customer.name
+              ? String(src.customer.name)
+              : null,
           source_type: src.source_type ?? null,
           source_id: src.source_id != null ? Number(src.source_id) : null,
           account_debit: src.account_debit != null ? Number(src.account_debit) : null,
@@ -160,6 +180,10 @@ const CompanyLedgerDetailPageInner: React.FC = () => {
     }
   };
 
+  const handleTabClick = (index: number) => {
+    setActiveTab(index);
+  };
+
   if (!idParam) {
     return (
       <div className="text-sm text-gray-500 dark:text-gray-400">Missing ledger ID.</div>
@@ -186,108 +210,253 @@ const CompanyLedgerDetailPageInner: React.FC = () => {
           Export PDF
         </button>
       </div>
-
-      <div className="border border-gray-100 dark:border-[#172036] rounded-md p-[20px]">
-        {loading && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">Loading entry...</p>
-        )}
-
-        {!loading && !entry && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">Entry not found.</p>
-        )}
-
-        {entry && (
-          <div className="space-y-[10px] text-sm">
-            <h3 className="text-base font-semibold mb-[5px]">
-              Company Ledger Entry #{entry.id}
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px]">
-              <div>
-                <span className="font-medium">Transaction #:</span> {entry.transaction_number || "-"}
-              </div>
-              <div>
-                <span className="font-medium">Type:</span> {entry.transaction_type || "-"}
-              </div>
-              <div>
-                <span className="font-medium">Date:</span>{" "}
-                {entry.transaction_date
-                  ? new Date(entry.transaction_date).toLocaleString()
-                  : "-"}
-              </div>
-              <div>
-                <span className="font-medium">Posted:</span>{" "}
-                {entry.posted_date ? new Date(entry.posted_date).toLocaleString() : "-"}
-              </div>
-              <div>
-                <span className="font-medium">Amount:</span>{" "}
-                {entry.amount.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                {entry.base_currency || ""}
-              </div>
-              <div>
-                <span className="font-medium">Converted Amount:</span>{" "}
-                {entry.converted_amount.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </div>
-              <div>
-                <span className="font-medium">Tax Amount:</span>{" "}
-                {entry.tax_amount.toFixed(2)}
-              </div>
-              <div>
-                <span className="font-medium">Net Amount:</span>{" "}
-                {entry.net_amount.toFixed(2)}
-              </div>
-              <div>
-                <span className="font-medium">Company ID:</span> {entry.company_id ?? "-"}
-              </div>
-              <div>
-                <span className="font-medium">Customer ID:</span> {entry.customer_id ?? "-"}
-              </div>
-              <div>
-                <span className="font-medium">Source:</span> {entry.source_type || "-"} #{
-                  entry.source_id ?? "-"
-                }
-              </div>
-              <div>
-                <span className="font-medium">Accounts:</span> Dr {entry.account_debit ?? "-"} / Cr {" "}
-                {entry.account_credit ?? "-"}
-              </div>
-              <div>
-                <span className="font-medium">Category:</span> {entry.category || "-"}
-              </div>
-              <div>
-                <span className="font-medium">Status:</span> {entry.transaction_status || "-"}
-              </div>
-              <div>
-                <span className="font-medium">Payment Method:</span> {entry.payment_method || "-"}
-              </div>
-              <div>
-                <span className="font-medium">Bank Account:</span> {entry.bank_account || "-"}
-              </div>
-              <div>
-                <span className="font-medium">Cheque #:</span> {entry.check_number || "-"}
-              </div>
-              <div>
-                <span className="font-medium">Fiscal Year:</span> {entry.fiscal_year ?? "-"}
-              </div>
-              <div>
-                <span className="font-medium">Accounting Period:</span> {entry.accounting_period || "-"}
-              </div>
+      <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+        <div className="trezo-card-content">
+          {loading && (
+            <div className="text-center py-[30px]">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Loading entry...</p>
             </div>
+          )}
 
-            <div>
-              <span className="font-medium">Narration:</span>
-              <p className="mt-[3px] text-gray-700 dark:text-gray-300">
-                {entry.narration || "-"}
-              </p>
+          {!loading && !entry && (
+            <div className="text-center py-[30px]">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Entry not found.</p>
             </div>
-          </div>
-        )}
+          )}
+
+          {entry && (
+            <>
+              {/* Header summary */}
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-[15px] mb-[20px]">
+                <div>
+                  <h3 className="text-base md:text-lg font-semibold text-black dark:text-white mb-[4px]">
+                    Company Ledger Entry #{entry.id}
+                  </h3>
+                  <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                    Detailed view of the posted transaction and its accounting impact.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-[8px]">
+                  {entry.transaction_status && (
+                    <span className="inline-flex items-center px-[10px] py-[4px] rounded-full text-xs font-medium bg-primary-50 dark:bg-[#15203c] text-primary-600 dark:text-primary-400">
+                      <span className="w-[6px] h-[6px] rounded-full bg-primary-500 mr-[6px]"></span>
+                      {entry.transaction_status}
+                    </span>
+                  )}
+                  {entry.transaction_type && (
+                    <span className="inline-flex items-center px-[10px] py-[4px] rounded-full text-xs font-medium bg-gray-100 dark:bg-[#111827] text-gray-700 dark:text-gray-300">
+                      {entry.transaction_type}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center px-[12px] py-[6px] rounded-md text-xs md:text-sm font-semibold bg-gray-900 text-white dark:bg-primary-500">
+                    {entry.amount.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    {entry.transaction_currency || entry.base_currency || ""}
+                  </span>
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div className="trezo-tabs mb-[20px] md:mb-[25px]">
+                <ul className="navs border-b border-gray-100 dark:border-[#172036] overflow-x-auto whitespace-nowrap">
+                  <li className="nav-item inline-block ltr:mr-[30px] rtl:ml-[30px]">
+                    <button
+                      type="button"
+                      onClick={() => handleTabClick(0)}
+                      className={`nav-link flex items-center gap-[6px] pb-[10px] transition-all relative text-xs md:text-sm font-medium ${
+                        activeTab === 0
+                          ? "text-primary-500 border-b-[3px] border-primary-500 pb-[7px]"
+                          : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+                      }`}
+                    >
+                      <i className="material-symbols-outlined !text-[18px]">info</i>
+                      Overview
+                    </button>
+                  </li>
+
+                  <li className="nav-item inline-block ltr:mr-[30px] rtl:ml-[30px]">
+                    <button
+                      type="button"
+                      onClick={() => handleTabClick(1)}
+                      className={`nav-link flex items-center gap-[6px] pb-[10px] transition-all relative text-xs md:text-sm font-medium ${
+                        activeTab === 1
+                          ? "text-primary-500 border-b-[3px] border-primary-500 pb-[7px]"
+                          : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+                      }`}
+                    >
+                      <i className="material-symbols-outlined !text-[18px]">account_balance</i>
+                      Accounting
+                    </button>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Tab content */}
+              {activeTab === 0 && (
+                <div className="space-y-[20px] text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px]">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Transaction #</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.transaction_number || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Company</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.company_name || entry.company_id || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Customer</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.customer_name || entry.customer_id || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Transaction Date</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.transaction_date
+                          ? new Date(entry.transaction_date).toLocaleString()
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Posted Date</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.posted_date
+                          ? new Date(entry.posted_date).toLocaleString()
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Source</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.source_type || "-"} {entry.source_id ? `#${entry.source_id}` : ""}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Category</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.category || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Payment Method</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.payment_method || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Bank / Cheque</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.bank_account || entry.check_number
+                          ? `${entry.bank_account || "-"} / ${entry.check_number || "-"}`
+                          : "-"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-[10px]">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-[4px]">Narration</p>
+                    <div className="rounded-md border border-gray-100 dark:border-[#172036] bg-gray-50 dark:bg-[#111827] px-[12px] py-[10px]">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                        {entry.narration || "No narration provided for this entry."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 1 && (
+                <div className="space-y-[20px] text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-[15px]">
+                    <div className="rounded-md border border-gray-100 dark:border-[#172036] bg-gray-50 dark:bg-[#111827] p-[12px]">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[4px]">Transaction Gross</p>
+                      <p className="text-sm font-semibold text-black dark:text-white">
+                        {entry.amount.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}{" "}
+                        {entry.transaction_currency || entry.base_currency || ""}
+                      </p>
+                    </div>
+                    <div className="rounded-md border border-gray-100 dark:border-[#172036] bg-gray-50 dark:bg-[#111827] p-[12px]">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[4px]">Transaction Tax</p>
+                      <p className="text-sm font-semibold text-black dark:text-white">
+                        {entry.tax_amount.toFixed(2)} {entry.transaction_currency || ""}
+                      </p>
+                    </div>
+                    <div className="rounded-md border border-gray-100 dark:border-[#172036] bg-gray-50 dark:bg-[#111827] p-[12px]">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[4px]">Transaction Net</p>
+                      <p className="text-sm font-semibold text-black dark:text-white">
+                        {entry.net_amount.toFixed(2)} {entry.transaction_currency || ""}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-[15px] mt-[10px]">
+                    <div className="rounded-md border border-gray-100 dark:border-[#172036] bg-gray-50 dark:bg-[#111827] p-[12px]">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[4px]">Base Gross</p>
+                      <p className="text-sm font-semibold text-black dark:text-white">
+                        {entry.converted_amount.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}{" "}
+                        {entry.base_currency || ""}
+                      </p>
+                    </div>
+                    <div className="rounded-md border border-gray-100 dark:border-[#172036] bg-gray-50 dark:bg-[#111827] p-[12px]">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[4px]">Base Tax</p>
+                      <p className="text-sm font-semibold text-black dark:text-white">
+                        {entry.converted_tax_amount.toFixed(2)} {entry.base_currency || ""}
+                      </p>
+                    </div>
+                    <div className="rounded-md border border-gray-100 dark:border-[#172036] bg-gray-50 dark:bg-[#111827] p-[12px]">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[4px]">Base Net</p>
+                      <p className="text-sm font-semibold text-black dark:text-white">
+                        {entry.converted_net_amount.toFixed(2)} {entry.base_currency || ""}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mt-[10px]">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Exchange Rate</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.exchange_rate.toFixed(4)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Converted Amount</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.converted_amount.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Accounts</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        Dr {entry.account_debit ?? "-"} / Cr {entry.account_credit ?? "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Fiscal Context</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        FY {entry.fiscal_year ?? "-"} · Period {entry.accounting_period || "-"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       <ToastContainer toasts={toasts} onClose={removeToast} />

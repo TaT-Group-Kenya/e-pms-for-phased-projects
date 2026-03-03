@@ -331,7 +331,7 @@ class CustInvoiceController extends Controller
             ]);
 
             // Create a corresponding customer transactions ledger entry
-            CustomerTransactionsLedger::create([
+            $trxn = CustomerTransactionsLedger::create([
                 'cust_payment_id' => $payment->id,
                 'transaction_number' => $payment->transaction_number,
                 'transaction_type' => 'receipt',
@@ -366,6 +366,9 @@ class CustInvoiceController extends Controller
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]);
+
+            $payment->transaction_id = $trxn->id;
+            $payment->save();
 
             // Update benefiting account balance: credit increases balance
             $currentBalance = (float) $account->balance;

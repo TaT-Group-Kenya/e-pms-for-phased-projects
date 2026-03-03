@@ -47,10 +47,8 @@ class CompanyTransactionsLedgerResource extends BaseResource
             'is_deleted' => (bool) $this->is_deleted,
             'deleted_at' => $this->formatTimestamp($this->deleted_at),
             'deleted_by' => $this->deleted_by,
-
             'payment' => new CompanyPaymentResource($this->whenLoaded('payment')),
             'company' => new CompanyResource($this->whenLoaded('company')),
-            'customer' => new CustomerResource($this->whenLoaded('customer')),
         ];
     }
 }
