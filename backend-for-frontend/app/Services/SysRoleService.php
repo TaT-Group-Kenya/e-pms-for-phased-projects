@@ -47,8 +47,10 @@ class SysRoleService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return SysRole::destroy($id);
+        $model = SysRole::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

@@ -28,6 +28,7 @@ use App\Policies\{
     CustInvoiceDocumentPolicy,
     CustInvoiceItemPolicy,
     CustInvoiceTaxItemPolicy,
+    CustPaymentPolicy,
     CustPaymentAllocationPolicy,
     CustomerPolicy,
     DepartmentPolicy,
@@ -43,6 +44,8 @@ use App\Policies\{
     ProjectCategoryPolicy,
     ProjectPhasePolicy,
     ProjectProgressUpdatePolicy,
+    ProjectSourceOriginPolicy,
+    ProjectLocationPolicy,
     QuotationPolicy,
     QuoteDocumentPolicy,
     QuoteLineitemPolicy,
@@ -55,6 +58,8 @@ use App\Policies\{
     TransactionPolicy,
     UserPolicy,
     UserGroupPolicy,
+    CompanyTransactionsLedgerPolicy,
+    CustomerTransactionsLedgerPolicy,
 };
 
 class AuthServiceProvider extends ServiceProvider
@@ -88,6 +93,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\CustInvoiceDocument::class => CustInvoiceDocumentPolicy::class,
         \App\Models\CustInvoiceItem::class => CustInvoiceItemPolicy::class,
         \App\Models\CustInvoiceTaxItem::class => CustInvoiceTaxItemPolicy::class,
+        \App\Models\CustPayment::class => CustPaymentPolicy::class,
         \App\Models\CustPaymentAllocation::class => CustPaymentAllocationPolicy::class,
         \App\Models\Customer::class => CustomerPolicy::class,
         \App\Models\Department::class => DepartmentPolicy::class,
@@ -101,6 +107,8 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\PaymentMethod::class => PaymentMethodPolicy::class,
         \App\Models\Project::class => ProjectPolicy::class,
         \App\Models\ProjectCategory::class => ProjectCategoryPolicy::class,
+        \App\Models\ProjectSourceOrigin::class => ProjectSourceOriginPolicy::class,
+        \App\Models\ProjectLocation::class => ProjectLocationPolicy::class,
         \App\Models\ProjectPhase::class => ProjectPhasePolicy::class,
         \App\Models\ProjectProgressUpdate::class => ProjectProgressUpdatePolicy::class,
         \App\Models\Quotation::class => QuotationPolicy::class,
@@ -115,6 +123,8 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Transaction::class => TransactionPolicy::class,
         \App\Models\User::class => UserPolicy::class,
         \App\Models\UserGroup::class => UserGroupPolicy::class,
+        \App\Models\CompanyTransactionsLedger::class => CompanyTransactionsLedgerPolicy::class,
+        \App\Models\CustomerTransactionsLedger::class => CustomerTransactionsLedgerPolicy::class,
     ];
 
     public function register(): void

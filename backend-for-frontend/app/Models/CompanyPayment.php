@@ -3,17 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class CompanyPayment extends Model
 {
+    use HasLogicalDeletion;
     protected $table = 'company_payments';
 
     public $timestamps = false;
 
     protected $fillable = [
-        'transaction_id',
+        'transaction_number',
         'invoice_id',
         'amount_paid',
+        'tax_amount',
+        'net_amount',
         'payment_date',
         'payment_method',
         'payment_status',
@@ -29,6 +33,9 @@ class CompanyPayment extends Model
         'updated_by',
         'created_at',
         'created_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
 
     public function invoice()
@@ -36,8 +43,8 @@ class CompanyPayment extends Model
         return $this->belongsTo(CompanyInvoice::class, 'invoice_id');
     }
 
-    public function transaction()
+    public function companyLedgerEntries()
     {
-        return $this->belongsTo(Transaction::class, 'transaction_id');
+        return $this->hasMany(CompanyTransactionsLedger::class, 'company_payment_id');
     }
 }

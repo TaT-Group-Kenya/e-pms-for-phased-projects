@@ -59,6 +59,8 @@ class ProjectController extends Controller
         $project->load([
             'customer',
             'category',
+            'sourceOrigin',
+            'location',
             'phases.assignment.company',
             'order',
             'quotation',
@@ -114,7 +116,7 @@ class ProjectController extends Controller
     {
         $this->authorize('delete', $project);
 
-        $this->service->delete($project->id);
+        $this->service->delete($project->id, Auth::id());
         return response()->noContent();
     }
 }

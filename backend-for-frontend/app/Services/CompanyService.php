@@ -15,6 +15,9 @@ class CompanyService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = Company::query();
+
+        // Include projects count for each company (uses assignments relation)
+        $query->withCount('assignments');
         if (!empty($with)) {
             $query->with($with);
         }
@@ -47,8 +50,10 @@ class CompanyService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return Company::destroy($id);
+        $model = Company::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

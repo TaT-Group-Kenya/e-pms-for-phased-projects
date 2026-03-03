@@ -82,7 +82,7 @@ class CompanyController extends Controller
     {
         $this->authorize('delete', $company);
 
-        $this->service->delete($company->id);
+        $this->service->delete($company->id, Auth::id());
         return response()->noContent();
     }
 }

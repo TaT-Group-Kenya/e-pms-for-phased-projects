@@ -15,8 +15,8 @@ class CompanyCreditNoteStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'credit_note_number' => ['required', 'string', 'max:255'],
-            'invoice_id' => ['nullable', 'exists:invoices,id'],
+            'credit_note_number' => ['nullable', 'string', 'max:255', 'unique:company_credit_notes,credit_note_number'],
+            'invoice_id' => ['required', 'exists:company_invoices,id'],
             'credit_note_date' => ['required', 'date'],
             'reason' => ['required', 'string', 'max:255'],
             'subtotal_amount' => ['required', 'numeric', 'min:0'],

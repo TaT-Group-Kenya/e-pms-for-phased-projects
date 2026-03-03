@@ -15,6 +15,9 @@ class ProjectCategory extends Model
         'updated_by',
         'created_at',
         'created_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
 
     public function projects()

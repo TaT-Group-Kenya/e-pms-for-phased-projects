@@ -8,12 +8,17 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use App\Models\Order;
 use App\Models\CustInvoice;
 use App\Models\CustPayment;
 use App\Models\CustPaymentAllocation;
+use App\Models\CustomerTransactionsLedger;
+use App\Services\CurrencyConversionService;
+use App\Models\Account;
 use App\Models\Download;
 use App\Models\SysConfig;
+use App\Services\CommonService;
 use App\Services\CustInvoiceService;
 use App\Services\OrderToCustInvoiceService;
 use App\Http\Resources\CustInvoiceResource;
@@ -203,9 +208,9 @@ class CustInvoiceController extends Controller
             ], 422);
         }
 
-        if ($custInvoice->status !== 'sent' && $custInvoice->status !== 'partial-paid') {
+        if (! in_array($custInvoice->status, ['sent', 'partial-paid'], true)) {
             return response()->json([
-                'message' => 'Payments can only be added to sent or partially paid invoices.',
+                'message' => 'Payments can only be added when the invoice status is sent or partial-paid.',
                 'errors'  => [
                     'status' => ['Invoice must be in sent or partial-paid status to add payments.'],
                 ],
@@ -217,38 +222,96 @@ class CustInvoiceController extends Controller
             'payment_date' => ['required', 'date'],
             'payment_method' => ['required', Rule::in(['cash', 'mpesa', 'bank_transfer', 'check'])],
             'payment_status' => ['required', Rule::in(['pending', 'complete'])],
-            'currency' => ['required', 'string', 'max:255'],
             'bank_name' => ['nullable', 'string', 'max:255'],
             'check_number' => ['nullable', 'string', 'max:255'],
-            'transaction_reference' => ['nullable', 'string', 'max:255'],
             'receipt_number' => ['required', 'string', 'max:255'],
-            'exchange_rate' => ['required', 'numeric', 'min:0'],
-            'fee_or_charge' => ['required', 'numeric', 'min:0'],
+            'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
 
         $invoice = $custInvoice;
 
         $invoice = DB::transaction(function () use ($invoice, $validated) {
-            $existingAllocations = CustPaymentAllocation::where('invoice_id', $invoice->id)->get();
+            $commonService = new CommonService();
+
+            $account = Account::findOrFail($validated['account_id']);
+
+            // Generate a unique transaction number for the payment, similar to order numbers
+            do {
+                $transactionNumber = $commonService->generateUniqueCode('CPM-');
+            } while (CustPayment::where('transaction_number', $transactionNumber)->exists());
+
+            // Only consider active (non-deleted) allocations when computing the
+            // previous balance so that deleted payments do not affect
+            // outstanding balance or overpayment checks.
+            $existingAllocations = CustPaymentAllocation::where('invoice_id', $invoice->id)
+                ->where('is_deleted', false)
+                ->get();
             $previousBalance = (float) $invoice->total_amount - (float) $existingAllocations->sum('allocated_amount');
-            $afterBalance = max($previousBalance - (float) $validated['amount_paid'], 0);
+
+            // Strictly prevent overpayments beyond the current outstanding balance,
+            // allowing a small tolerance for rounding differences.
+            $amountPaid = (float) $validated['amount_paid'];
+            $tolerance = 0.01; // 1 cent tolerance
+            $outstandingBalance = max($previousBalance, 0.0);
+
+            if ($amountPaid > $outstandingBalance + $tolerance) {
+                $excess = $amountPaid - $outstandingBalance;
+
+                throw ValidationException::withMessages([
+                    'amount_paid' => [
+                        'Payment amount exceeds the outstanding invoice balance by ' . number_format($excess, 2, '.', '') . '.',
+                    ],
+                ]);
+            }
+
+            $afterBalance = max($previousBalance - $amountPaid, 0);
             $installmentNumber = $existingAllocations->count() + 1;
 
+            // Derive tax vs net portions based on invoice totals.
+            // If the invoice has a non-zero tax_amount, allocate proportionally;
+            // otherwise treat the entire payment as net.
+            $invoiceTotal = (float) $invoice->total_amount;
+            $invoiceTaxTotal = (float) $invoice->tax_amount;
+
+            if ($invoiceTotal > 0 && $invoiceTaxTotal > 0) {
+                $taxPortion = min(
+                    round(($invoiceTaxTotal / $invoiceTotal) * (float) $validated['amount_paid'], 2),
+                    (float) $validated['amount_paid']
+                );
+            } else {
+                $taxPortion = 0.0;
+            }
+
+            $netPortion = (float) $validated['amount_paid'] - $taxPortion;
+
+            // Determine base (account) currency and invoice currency
+            $accountCurrencyCode = $account->currency ?? 'KES';
+            $invoiceCurrencyCode = $invoice->currency;
+
+            // Use shared conversion helper: 1 invoice currency unit = exchange_rate * base currency units
+            $conversionService = new CurrencyConversionService();
+            $conversion = $conversionService->convertToBaseFromInvoice((float) $validated['amount_paid'], $invoiceCurrencyCode, $accountCurrencyCode);
+            $exchangeRate = $conversion['exchange_rate'];
+            $convertedAmount = $conversion['converted_amount'];
+
+            $feeOrCharge = 0.0;
+
             $payment = CustPayment::create([
-                // In this schema, transaction_id is linked to cust_invoices via FK
-                'transaction_id' => $invoice->id,
+                'transaction_number' => $transactionNumber,
                 'amount_paid' => $validated['amount_paid'],
+                'tax_amount' => $taxPortion,
+                'net_amount' => $netPortion,
                 'payment_date' => $validated['payment_date'],
                 'payment_method' => $validated['payment_method'],
                 'payment_status' => $validated['payment_status'],
-                'currency' => $validated['currency'],
+                'currency' => $invoiceCurrencyCode,
                 'bank_name' => $validated['bank_name'] ?? null,
                 'check_number' => $validated['check_number'] ?? null,
-                'transaction_reference' => $validated['transaction_reference'] ?? null,
+                'transaction_reference' => $validated['receipt_number'],
                 'receipt_number' => $validated['receipt_number'],
                 'invoice_total_amount' => $invoice->total_amount,
-                'exchange_rate' => $validated['exchange_rate'],
-                'fee_or_charge' => $validated['fee_or_charge'],
+                'exchange_rate' => $exchangeRate,
+                'fee_or_charge' => $feeOrCharge,
                 'reconciled' => false,
                 'reconciliation_date' => null,
                 'created_by' => Auth::id(),
@@ -267,6 +330,332 @@ class CustInvoiceController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
+            // Create a corresponding customer transactions ledger entry
+            CustomerTransactionsLedger::create([
+                'cust_payment_id' => $payment->id,
+                'transaction_number' => $payment->transaction_number,
+                'transaction_type' => 'receipt',
+                'transaction_date' => $validated['payment_date'],
+                'posted_date' => now(),
+                'amount' => $validated['amount_paid'],
+                'transaction_currency' => $invoiceCurrencyCode,
+                'base_currency' => $accountCurrencyCode,
+                'exchange_rate' => $exchangeRate,
+                'converted_amount' => $convertedAmount,
+                'converted_tax_amount' => $taxPortion * $exchangeRate,
+                'converted_net_amount' => $netPortion * $exchangeRate,
+                'tax_amount' => $taxPortion,
+                'net_amount' => $netPortion,
+                'customer_id' => $invoice->customer_id,
+                'source_type' => 'cust_invoice',
+                'source_id' => $invoice->id,
+                'account_debit' => null,
+                'account_credit' => $account->id,
+                'category' => 'revenue',
+                'payment_method' => $validated['payment_method'],
+                'bank_account' => $validated['bank_name'] ?? null,
+                'check_number' => $validated['check_number'] ?? null,
+                'transaction_status' => 'cleared',
+                'related_transaction_id' => $validated['related_transaction_id'] ?? null,
+                'narration' => 'Payment for invoice ' . $invoice->invoice_number,
+                'is_recurring' => false,
+                'fiscal_year' => now()->year,
+                'accounting_period' => now()->format('Ym'),
+                'is_adjusting_entry' => false,
+                'cost_center_id' => null,
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
+            ]);
+
+            // Update benefiting account balance: credit increases balance
+            $currentBalance = (float) $account->balance;
+            $account->balance = (string) number_format($currentBalance + $convertedAmount, 2, '.', '');
+            $account->updated_at = now();
+            $account->updated_by = Auth::id();
+            $account->save();
+
+            // Update invoice status based on remaining balance
+            if ($afterBalance <= 0) {
+                $invoice->status = 'paid';
+            } else {
+                $invoice->status = 'partial-paid';
+            }
+
+            $invoice->updated_by = Auth::id();
+            $invoice->save();
+
+            $invoice->refresh();
+
+            return $invoice;
+        });
+
+        $invoice->loadMissing([
+            'order',
+            'project',
+            'customer',
+            'invoiceItems',
+            'taxitems',
+            'payments',
+            'creditnotes',
+            'documents',
+        ]);
+
+        return new CustInvoiceResource($invoice);
+    }
+
+    /**
+     * Delete (logically) a payment recorded against a customer invoice and
+     * reverse its impact on allocations, ledger and account balance.
+     */
+    public function deletePayment(Request $request, CustInvoice $custInvoice, CustPayment $custPayment)
+    {
+        $this->authorize('update', $custInvoice);
+
+        $custInvoice->loadMissing('order');
+
+        if (! $custInvoice->order || $custInvoice->order->status !== 'approved') {
+            return response()->json([
+                'message' => 'Payments can only be modified for invoices whose order is approved.',
+                'errors'  => [
+                    'order_id' => ['Invoice must be associated with an approved order to modify payments.'],
+                ],
+            ], 422);
+        }
+
+        if ($custPayment->is_deleted) {
+            return response()->json([
+                'message' => 'This payment has already been deleted.',
+            ], 422);
+        }
+
+        // Ensure the payment is actually allocated to this invoice
+        $allocations = CustPaymentAllocation::where('payment_id', $custPayment->id)
+            ->where('invoice_id', $custInvoice->id)
+            ->where('is_deleted', false)
+            ->get();
+
+        if ($allocations->isEmpty()) {
+            return response()->json([
+                'message' => 'Payment is not associated with this invoice.',
+            ], 404);
+        }
+
+        if ($custPayment->reconciled) {
+            return response()->json([
+                'message' => 'Reconciled payments cannot be deleted.',
+                'errors'  => [
+                    'payment_id' => ['Reverse the reconciliation before deleting this payment.'],
+                ],
+            ], 422);
+        }
+
+        $invoice = $custInvoice;
+
+        $invoice = DB::transaction(function () use ($invoice, $custPayment, $allocations) {
+            $userId = Auth::id();
+
+            // Soft delete the payment record itself
+            $custPayment->softDelete($userId);
+
+            // Logically delete allocations for this payment on this invoice
+            foreach ($allocations as $allocation) {
+                if (! $allocation->is_deleted) {
+                    $allocation->is_deleted = true;
+                    $allocation->deleted_at = now();
+                    $allocation->deleted_by = $userId;
+                    $allocation->save();
+                }
+            }
+
+            // Fetch active ledger entries for this payment against this invoice
+            $ledgers = CustomerTransactionsLedger::where('cust_payment_id', $custPayment->id)
+                ->where('source_type', 'cust_invoice')
+                ->where('source_id', $invoice->id)
+                ->where('is_deleted', false)
+                ->get();
+
+            // Reverse the impact on the benefiting account balance(s)
+            $amountsByAccount = [];
+            foreach ($ledgers as $ledger) {
+                if (! empty($ledger->account_credit)) {
+                    $accountId = $ledger->account_credit;
+                    $amountsByAccount[$accountId] = ($amountsByAccount[$accountId] ?? 0.0)
+                        + (float) $ledger->converted_amount;
+                }
+            }
+
+            foreach ($amountsByAccount as $accountId => $amountToReverse) {
+                // Include logically deleted accounts as well, just in case
+                $account = Account::withDeleted()->find($accountId);
+                if ($account) {
+                    $currentBalance = (float) $account->balance;
+                    $account->balance = (string) number_format($currentBalance - $amountToReverse, 2, '.', '');
+                    $account->updated_at = now();
+                    $account->updated_by = $userId;
+                    $account->save();
+                }
+            }
+
+            // Soft delete ledger rows so they no longer participate in normal queries
+            foreach ($ledgers as $ledger) {
+                $ledger->softDelete($userId);
+            }
+
+            // Recalculate invoice status based on remaining (non-deleted) allocations
+            $existingAllocations = CustPaymentAllocation::where('invoice_id', $invoice->id)
+                ->where('is_deleted', false)
+                ->get();
+
+            $allocatedTotal = (float) $existingAllocations->sum('allocated_amount');
+            $remaining = max((float) $invoice->total_amount - $allocatedTotal, 0);
+
+            if ($allocatedTotal <= 0) {
+                // No active payments remaining
+                $invoice->status = 'sent';
+            } elseif ($remaining <= 0) {
+                $invoice->status = 'paid';
+            } else {
+                $invoice->status = 'partial-paid';
+            }
+
+            $invoice->updated_by = $userId;
+            $invoice->save();
+
+            $invoice->refresh();
+
+            return $invoice;
+        });
+
+        $invoice->loadMissing([
+            'order',
+            'project',
+            'customer',
+            'invoiceItems',
+            'taxitems',
+            'payments',
+            'creditnotes',
+            'documents',
+        ]);
+
+        return new CustInvoiceResource($invoice);
+    }
+
+    /**
+     * Update non-financial metadata for a payment recorded against a
+     * customer invoice. Financial fields such as amount, date, account
+     * or currency must not be edited in-place and require delete+re-add.
+     */
+    public function updatePayment(Request $request, CustInvoice $custInvoice, CustPayment $custPayment)
+    {
+        $this->authorize('update', $custInvoice);
+
+        $custInvoice->loadMissing('order');
+
+        if (! $custInvoice->order || $custInvoice->order->status !== 'approved') {
+            return response()->json([
+                'message' => 'Payments can only be modified for invoices whose order is approved.',
+                'errors'  => [
+                    'order_id' => ['Invoice must be associated with an approved order to modify payments.'],
+                ],
+            ], 422);
+        }
+
+        if ($custPayment->is_deleted) {
+            return response()->json([
+                'message' => 'This payment has already been deleted.',
+            ], 422);
+        }
+
+        // Ensure the payment is actually allocated to this invoice
+        $hasAllocation = CustPaymentAllocation::where('payment_id', $custPayment->id)
+            ->where('invoice_id', $custInvoice->id)
+            ->where('is_deleted', false)
+            ->exists();
+
+        if (! $hasAllocation) {
+            return response()->json([
+                'message' => 'Payment is not associated with this invoice.',
+            ], 404);
+        }
+
+        if ($custPayment->reconciled) {
+            return response()->json([
+                'message' => 'Reconciled payments cannot be edited.',
+                'errors'  => [
+                    'payment_id' => ['Reverse the reconciliation before editing this payment.'],
+                ],
+            ], 422);
+        }
+
+        // Block financial field edits; these require a delete + re-add flow
+        if ($request->hasAny(['amount_paid', 'payment_date', 'account_id', 'currency', 'exchange_rate'])) {
+            return response()->json([
+                'message' => 'Financial fields (amount, date, account or currency) cannot be edited in place. Delete and re-add the payment with corrected values.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'payment_status' => ['sometimes', 'required', Rule::in(['pending', 'complete'])],
+            'bank_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'check_number' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'receipt_number' => ['sometimes', 'required', 'string', 'max:255'],
+        ]);
+
+        if (empty($validated)) {
+            return response()->json([
+                'message' => 'No editable fields were provided.',
+            ], 422);
+        }
+
+        $invoice = $custInvoice;
+
+        $invoice = DB::transaction(function () use ($invoice, $custPayment, $validated) {
+            $userId = Auth::id();
+
+            // Update payment metadata
+            if (array_key_exists('payment_status', $validated)) {
+                $custPayment->payment_status = $validated['payment_status'];
+            }
+            if (array_key_exists('bank_name', $validated)) {
+                $custPayment->bank_name = $validated['bank_name'];
+            }
+            if (array_key_exists('check_number', $validated)) {
+                $custPayment->check_number = $validated['check_number'];
+            }
+            if (array_key_exists('receipt_number', $validated)) {
+                $custPayment->receipt_number = $validated['receipt_number'];
+                $custPayment->transaction_reference = $validated['receipt_number'];
+            }
+
+            $custPayment->updated_by = $userId;
+            $custPayment->updated_at = now();
+            $custPayment->save();
+
+            // Propagate relevant metadata to ledger entries for this payment/invoice
+            $ledgers = CustomerTransactionsLedger::where('cust_payment_id', $custPayment->id)
+                ->where('source_type', 'cust_invoice')
+                ->where('source_id', $invoice->id)
+                ->where('is_deleted', false)
+                ->get();
+
+            foreach ($ledgers as $ledger) {
+                // Do not change transaction_status here; it remains one of 'cleared', 'reconciled', or 'void'.
+                if (array_key_exists('bank_name', $validated)) {
+                    $ledger->bank_account = $validated['bank_name'];
+                }
+                if (array_key_exists('check_number', $validated)) {
+                    $ledger->check_number = $validated['check_number'];
+                }
+                if (array_key_exists('receipt_number', $validated)) {
+                    $ledger->transaction_reference = $validated['receipt_number'];
+                }
+
+                $ledger->updated_by = $userId;
+                $ledger->updated_at = now();
+                $ledger->save();
+            }
+
+            // No need to recompute allocations or balances as we didn't touch financial fields
             $invoice->refresh();
 
             return $invoice;

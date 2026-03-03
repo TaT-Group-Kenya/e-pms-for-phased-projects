@@ -267,7 +267,7 @@ class OrderController extends Controller
             $order->taxitems()->delete();
             $order->documents()->delete();
 
-            $this->service->delete($order->id);
+            $this->service->delete($order->id, Auth::id());
             return response()->noContent();
         });
     }
@@ -403,10 +403,21 @@ class OrderController extends Controller
                 }
 
                 foreach ($invoices as $invoice) {
-                    $invoice->invoiceItems()->delete();
-                    $invoice->taxitems()->delete();
-                    $invoice->documents()->delete();
-                    $invoice->delete();
+                    $deletedBy = $request->user()?->id;
+
+                    $invoice->invoiceItems()->get()->each(function (\App\Models\CustInvoiceItem $item) use ($deletedBy) {
+                        $item->softDelete($deletedBy);
+                    });
+
+                    $invoice->taxitems()->get()->each(function (\App\Models\CustInvoiceTaxItem $taxItem) use ($deletedBy) {
+                        $taxItem->softDelete($deletedBy);
+                    });
+
+                    $invoice->documents()->get()->each(function (\App\Models\CustInvoiceDocument $doc) use ($deletedBy) {
+                        $doc->softDelete($deletedBy);
+                    });
+
+                    $invoice->softDelete($deletedBy);
                 }
             }
 

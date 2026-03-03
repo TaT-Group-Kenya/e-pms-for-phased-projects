@@ -31,7 +31,15 @@ class CompanyInvoice extends Model
         'updated_by',
         'created_at',
         'created_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class, 'company_id');
+    }
 
     public function project()
     {
@@ -45,22 +53,26 @@ class CompanyInvoice extends Model
 
     public function payments()
     {
-        return $this->hasMany(CompanyInvoicePayment::class, 'company_invoice_id');
+        // Payments are stored in company_payments with an invoice_id foreign key
+        return $this->hasMany(CompanyPayment::class, 'invoice_id');
     }
 
     public function taxitems()
     {
-        return $this->hasMany(CompanyInvoiceTaxItem::class, 'company_invoice_id');
+        // Tax items table uses invoice_id as the foreign key
+        return $this->hasMany(CompanyInvoiceTaxItem::class, 'invoice_id');
     }
 
     public function creditnotes()
     {
-        return $this->hasMany(CompanyCreditNote::class, 'company_invoice_id');
+        // Credit notes also reference the invoice by invoice_id
+        return $this->hasMany(CompanyCreditNote::class, 'invoice_id');
     }
 
     public function documents()
     {
-        return $this->hasMany(CompanyInvoiceDocument::class, 'company_invoice_id');
+        // Supporting documents reference the invoice via invoice_id
+        return $this->hasMany(CompanyInvoiceDocument::class, 'invoice_id');
     }
     
 }

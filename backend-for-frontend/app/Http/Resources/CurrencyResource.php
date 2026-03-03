@@ -11,6 +11,7 @@ class CurrencyResource extends BaseResource
             'code' => $this->code,
             'name' => $this->name,
             'description' => $this->description,
+            'current_forex_rate' => $this->current_forex_rate,
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
             'created_at' => $this->formatTimestamp($this->created_at),

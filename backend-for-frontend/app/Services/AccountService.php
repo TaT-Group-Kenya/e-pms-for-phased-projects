@@ -48,6 +48,8 @@ class AccountService
 
     public function delete(int $id)
     {
-        return Account::destroy($id);
+        $model = Account::findOrFail($id);
+
+        return $model->softDelete();
     }
 }

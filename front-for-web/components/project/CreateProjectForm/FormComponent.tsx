@@ -17,6 +17,8 @@ const projectSchema = z.object({
   description: z.string().min(1, "Description is required").max(255, "Description must not exceed 255 characters"),
   customer_id: z.string().min(1, "Customer is required"),
   project_category_id: z.string().min(1, "Project category is required"),
+  project_source_origin_id: z.string().optional(),
+  project_location_id: z.string().optional(),
   no_of_phases: z.string().min(1, "Number of phases is required"),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
@@ -42,6 +44,16 @@ interface ProjectCategory {
   name: string;
 }
 
+interface ProjectSourceOrigin {
+  id: number;
+  name: string;
+}
+
+interface ProjectLocation {
+  id: number;
+  name: string;
+}
+
 interface Currency {
   id: number;
   code: string;
@@ -58,6 +70,8 @@ const CreateProjectForm: React.FC = () => {
   const [formError, setFormError] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [projectCategories, setProjectCategories] = useState<ProjectCategory[]>([]);
+    const [projectSources, setProjectSources] = useState<ProjectSourceOrigin[]>([]);
+    const [projectLocations, setProjectLocations] = useState<ProjectLocation[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -78,7 +92,13 @@ const CreateProjectForm: React.FC = () => {
 
     const fetchData = async () => {
       try {
-        const [customersRes, categoriesRes, currenciesRes] = await Promise.all([
+        const [
+          customersRes,
+          categoriesRes,
+          sourcesRes,
+          locationsRes,
+          currenciesRes,
+        ] = await Promise.all([
           fetch("/api/customers/list?per_page=1000", {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -86,6 +106,18 @@ const CreateProjectForm: React.FC = () => {
             signal: controller.signal,
           }),
           fetch("/api/projects/categories/list?per_page=1000", {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
+          }),
+          fetch("/api/projects/source-origins/list?per_page=1000", {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
+          }),
+          fetch("/api/projects/locations/list?per_page=1000", {
             headers: {
               Authorization: `Bearer ${accessToken}`,
             },
@@ -103,14 +135,20 @@ const CreateProjectForm: React.FC = () => {
 
         const customersData = await customersRes.json();
         const categoriesData = await categoriesRes.json();
+        const sourcesData = await sourcesRes.json();
+        const locationsData = await locationsRes.json();
         const currenciesData = await currenciesRes.json();
 
         const customerList = customersData.data || customersData;
         const categoriesList = categoriesData.data || categoriesData;
+        const sourcesList = sourcesData.data || sourcesData;
+        const locationsList = locationsData.data || locationsData;
         const currenciesList = currenciesData.data || currenciesData;
         
         setCustomers(Array.isArray(customerList) ? customerList : []);
         setProjectCategories(Array.isArray(categoriesList) ? categoriesList : []);
+        setProjectSources(Array.isArray(sourcesList) ? sourcesList : []);
+        setProjectLocations(Array.isArray(locationsList) ? locationsList : []);
         setCurrencies(Array.isArray(currenciesList) ? currenciesList : []);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
@@ -143,6 +181,12 @@ const CreateProjectForm: React.FC = () => {
         description: data.description,
         customer_id: data.customer_id ? parseInt(data.customer_id) : null,
         project_category_id: parseInt(data.project_category_id),
+        project_source_origin_id: data.project_source_origin_id
+          ? parseInt(data.project_source_origin_id)
+          : null,
+        project_location_id: data.project_location_id
+          ? parseInt(data.project_location_id)
+          : null,
         no_of_phases: data.no_of_phases,
         start_date: data.start_date,
         end_date: data.end_date,
@@ -294,6 +338,44 @@ const CreateProjectForm: React.FC = () => {
                   ))}
                 </select>
                 {renderFieldError("project_category_id")}
+              </div>
+
+              {/* Project Source - Optional */}
+              <div className="mb-[20px] sm:mb-0">
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Project Source
+                </label>
+                <select
+                  {...register("project_source_origin_id")}
+                  disabled={loadingData}
+                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
+                >
+                  <option value="">{loadingData ? "Loading sources..." : "Select a source (optional)"}</option>
+                  {projectSources.map((source) => (
+                    <option key={source.id} value={source.id.toString()}>
+                      {source.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Project Location - Optional */}
+              <div className="mb-[20px] sm:mb-0">
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Project Location
+                </label>
+                <select
+                  {...register("project_location_id")}
+                  disabled={loadingData}
+                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
+                >
+                  <option value="">{loadingData ? "Loading locations..." : "Select a location (optional)"}</option>
+                  {projectLocations.map((location) => (
+                    <option key={location.id} value={location.id.toString()}>
+                      {location.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Number of Phases - Required */}

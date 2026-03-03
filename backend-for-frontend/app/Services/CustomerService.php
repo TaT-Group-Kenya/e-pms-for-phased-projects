@@ -15,6 +15,9 @@ class CustomerService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = Customer::query();
+
+        // Include projects count for each customer
+        $query->withCount('projects');
         if (!empty($with)) {
             $query->with($with);
         }
@@ -47,8 +50,10 @@ class CustomerService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return Customer::destroy($id);
+        $model = Customer::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

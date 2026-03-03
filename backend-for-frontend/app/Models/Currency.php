@@ -14,9 +14,13 @@ class Currency extends Model
         'code',
         'name',
         'description',
+        'current_forex_rate',
         'updated_at',
         'updated_by',
         'created_at',
         'created_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
 }

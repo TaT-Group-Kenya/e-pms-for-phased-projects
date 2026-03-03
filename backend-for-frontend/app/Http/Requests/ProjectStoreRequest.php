@@ -19,6 +19,8 @@ class ProjectStoreRequest extends FormRequest
             'description' => ['string', 'max:255'],
             'customer_id' => ['required', 'exists:customers,id'],
             'project_category_id' => ['required', 'exists:project_categories,id'],
+            'project_source_origin_id' => ['nullable', 'exists:project_source_origins,id'],
+            'project_location_id' => ['nullable', 'exists:project_locations,id'],
             'no_of_phases' => ['required', 'string', 'max:255'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date'],

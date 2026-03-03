@@ -15,9 +15,10 @@ class CompanyPaymentUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'transaction_id' => ['nullable', 'exists:transactions,id'],
             'invoice_id' => ['nullable', 'exists:invoices,id'],
             'amount_paid' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'tax_amount' => ['sometimes', 'numeric', 'min:0'],
+            'net_amount' => ['sometimes', 'numeric', 'min:0'],
             'payment_date' => ['sometimes', 'required', 'date'],
             'payment_method' => ['sometimes', 'required', 'string', 'max:255'],
             'payment_status' => ['sometimes', 'required', Rule::in(['pending','complete'])],

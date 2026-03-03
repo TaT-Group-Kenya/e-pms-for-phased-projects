@@ -22,6 +22,8 @@ class ProjectUpdateRequest extends FormRequest
             'description' => ['sometimes', 'required', 'string', 'max:255'],
             'customer_id' => ['nullable', 'exists:customers,id'],
             'project_category_id' => ['nullable', 'exists:project_categories,id'],
+            'project_source_origin_id' => ['nullable', 'exists:project_source_origins,id'],
+            'project_location_id' => ['nullable', 'exists:project_locations,id'],
             'no_of_phases' => ['sometimes', 'required', 'string', 'max:255'],
             'start_date' => ['sometimes', 'required', 'date'],
             'end_date' => ['sometimes', 'required', 'date'],

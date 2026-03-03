@@ -47,8 +47,10 @@ class SysGroupService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return SysGroup::destroy($id);
+        $model = SysGroup::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

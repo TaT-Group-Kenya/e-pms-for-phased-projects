@@ -67,7 +67,7 @@ class GroupRoleController extends Controller
     {
         $this->authorize('delete', $groupRole);
 
-        $this->service->delete($groupRole->id);
+        $this->service->delete($groupRole->id, Auth::id());
         return response()->noContent();
     }
 }

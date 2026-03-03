@@ -12,10 +12,13 @@ class Download extends Model
 
     protected $fillable = [
         'name',
-        'path',
+        'file_path',
         'updated_at',
         'updated_by',
         'created_at',
         'created_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
 }

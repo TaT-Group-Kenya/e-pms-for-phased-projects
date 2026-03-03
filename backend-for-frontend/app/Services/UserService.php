@@ -57,8 +57,10 @@ class UserService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return User::destroy($id);
+        $model = User::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

@@ -148,7 +148,7 @@ class UserController extends Controller
         $this->authorize('delete', $user);
 
         try {
-            $this->service->delete($user->id);
+            $this->service->delete($user->id, Auth::id());
             return response()->json([
                 'success' => true,
                 'message' => 'User deleted successfully.'

@@ -39,8 +39,36 @@
 </head>
 <body>
     @php
-        $logoPath = public_path('logo.png');
-        $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+        // Prefer the company's own logo when available, otherwise fall back
+        // to the default EPMS logo or brand name.
+        $companyLogoPath = null;
+
+        if ($invoice->company && !empty($invoice->company->logo)) {
+            // Logos are stored under storage/app/public/logos, so resolve from storage.
+            $candidate = storage_path('app/public/logos/' . $invoice->company->logo);
+
+            if (file_exists($candidate)) {
+                $companyLogoPath = $candidate;
+            } else {
+                // As a secondary attempt, try the public/storage symlink location if it exists.
+                $publicStorageCandidate = public_path('storage/logos/' . $invoice->company->logo);
+                if (file_exists($publicStorageCandidate)) {
+                    $companyLogoPath = $publicStorageCandidate;
+                }
+            }
+        }
+
+        $defaultLogoPath = public_path('logo.png');
+
+        if ($companyLogoPath && file_exists($companyLogoPath)) {
+            $logoPath = $companyLogoPath;
+        } else {
+            $logoPath = $defaultLogoPath;
+        }
+
+        $logoData = ($logoPath && file_exists($logoPath))
+            ? base64_encode(file_get_contents($logoPath))
+            : null;
     @endphp
     <div class="header">
         <table>
@@ -64,25 +92,23 @@
 
     <div class="section two-col">
         <div class="card" style="flex: 1; margin-top: 16px;">
-            <h2>Company</h2>
+            <h2>Sender</h2>
             <div class="text-sm">
-                @if($invoice->project && $invoice->project->company)
-                    <span class="font-semibold">{{ $invoice->project->company->name }}</span>
+                @if($invoice->company)
+                    <span class="font-semibold">{{ $invoice->company->name }}</span>
                 @else
                     N/A
                 @endif
             </div>
-            @if($invoice->project && $invoice->project->company)
-                @if(!empty($invoice->project->company->address))
-                    <div class="text-sm mt-1">{{ $invoice->project->company->address }}</div>
-                @endif
+            @if($invoice->company && !empty($invoice->company->address))
+                <div class="text-sm mt-1">{{ $invoice->company->address }}</div>
             @endif
             @if($invoice->project)
                 <div class="text-sm mt-1">Project: <span class="font-semibold">{{ $invoice->project->code ?? '' }} {{ $invoice->project->name ?? '' }}</span></div>
             @endif
         </div>
         <div class="card" style="flex: 1; margin-top: 16px;">
-            <h2>Sender</h2>
+            <h2>Recipient</h2>
             <div class="text-sm"><span class="font-semibold">{{ $senderName }}</span></div>
             @if(!empty($senderAddressLine1))
                 <div class="text-sm mt-1">{{ $senderAddressLine1 }}</div>
@@ -262,6 +288,45 @@
             @endif
         </div>
     @endif
+
+        @php
+            $companyBankAccounts = $invoice->company && $invoice->company->relationLoaded('bankAccounts')
+                ? $invoice->company->bankAccounts
+                : collect();
+        @endphp
+
+        @if($companyBankAccounts->count() > 0)
+            <div class="section card" style="margin-top: 8px;">
+                <h3>Payment Details</h3>
+                <p class="notes mt-1">Please use one of the following bank accounts when paying this invoice:</p>
+
+                <table style="margin-top: 8px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">Account Holder</th>
+                            <th style="width: 25%;">Account Number</th>
+                            <th style="width: 20%;">Type / Branch</th>
+                            <th style="width: 25%;">SWIFT Code</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($companyBankAccounts as $account)
+                            <tr>
+                                <td class="text-sm">{{ $account->account_holder_name }}</td>
+                                <td class="text-sm">{{ $account->account_no }}</td>
+                                <td class="text-sm">
+                                    {{ $account->type }}
+                                    @if(!empty($account->branch))
+                                        <br><span class="muted">Branch: {{ $account->branch }}</span>
+                                    @endif
+                                </td>
+                                <td class="text-sm">{{ $account->swiftcode ?: 'N/A' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
 
     <div class="footer">
         Company Invoice {{ $invoice->invoice_number }} &middot; Generated by {{ $senderName }}

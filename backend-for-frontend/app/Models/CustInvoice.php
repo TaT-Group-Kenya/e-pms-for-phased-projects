@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class CustInvoice extends Model
 {
+    use HasLogicalDeletion;
     protected $table = 'cust_invoices';
 
     protected $fillable = [
@@ -29,6 +31,9 @@ class CustInvoice extends Model
         'updated_by',
         'created_at',
         'created_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
 
     public function order()

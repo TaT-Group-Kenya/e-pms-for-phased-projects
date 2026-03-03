@@ -15,11 +15,12 @@ class CurrencyUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('currencys')->ignore(
+            'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('currencies')->ignore(
                     $this->route('currency')
                 )],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],
+            'current_forex_rate' => ['sometimes', 'required', 'numeric', 'min:0'],
         ];
     }
 

@@ -23,6 +23,10 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('company-credit-note-tax-items', App\Http\Controllers\Api\CompanyCreditNoteTaxItemController::class);
 		Route::get('company-invoices/{companyInvoice}/download-pdf', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'downloadPdf']);
 		Route::post('company-invoices/{companyInvoice}/send-email', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'sendEmail']);
+		Route::post('company-invoices/{companyInvoice}/payments', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'addPayment']);
+		Route::patch('company-invoices/{companyInvoice}/payments/{companyPayment}', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'updatePayment']);
+		Route::delete('company-invoices/{companyInvoice}/payments/{companyPayment}', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'deletePayment']);
+		Route::post('company-invoices/create-from-phase', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'createFromPhase']);
 		Route::apiResource('company-invoices', App\Http\Controllers\Api\CompanyInvoiceController::class);
 		Route::apiResource('company-invoice-documents', App\Http\Controllers\Api\CompanyInvoiceDucomentController::class);
 		Route::apiResource('company-invoice-items', App\Http\Controllers\Api\CompanyInvoiceItemController::class);
@@ -38,12 +42,15 @@ Route::prefix('/')->group(function () {
 		Route::post('cust-invoices/{custInvoice}/send-email', [App\Http\Controllers\Api\CustInvoiceController::class, 'sendEmail']);
 		Route::post('cust-invoices/{custInvoice}/mark-sent', [App\Http\Controllers\Api\CustInvoiceController::class, 'markSent']);
 		Route::post('cust-invoices/{custInvoice}/payments', [App\Http\Controllers\Api\CustInvoiceController::class, 'addPayment']);
+		Route::patch('cust-invoices/{custInvoice}/payments/{custPayment}', [App\Http\Controllers\Api\CustInvoiceController::class, 'updatePayment']);
+		Route::delete('cust-invoices/{custInvoice}/payments/{custPayment}', [App\Http\Controllers\Api\CustInvoiceController::class, 'deletePayment']);
 		Route::post('cust-invoices/create-from-order', [App\Http\Controllers\Api\CustInvoiceController::class, 'createFromOrder']);
 		Route::apiResource('cust-invoices', App\Http\Controllers\Api\CustInvoiceController::class);
 		Route::apiResource('cust-invoice-documents', App\Http\Controllers\Api\CustInvoiceDocumentController::class);
 		Route::apiResource('cust-invoice-items', App\Http\Controllers\Api\CustInvoiceItemController::class);
 		Route::apiResource('cust-invoice-tax-items', App\Http\Controllers\Api\CustInvoiceTaxItemController::class);
 		Route::apiResource('cust-payment-allocations', App\Http\Controllers\Api\CustPaymentAllocationController::class);
+		Route::apiResource('cust-payments', App\Http\Controllers\Api\CustPaymentController::class);
 		Route::apiResource('customers', App\Http\Controllers\Api\CustomerController::class);
 		Route::apiResource('departments', App\Http\Controllers\Api\DepartmentController::class);
 		Route::apiResource('downloads', App\Http\Controllers\Api\DownloadController::class);
@@ -62,6 +69,8 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('payment-methods', App\Http\Controllers\Api\PaymentMethodController::class);
 		Route::apiResource('projects', App\Http\Controllers\Api\ProjectController::class);
 		Route::apiResource('project-categories', App\Http\Controllers\Api\ProjectCategoryController::class);
+		Route::apiResource('project-source-origins', App\Http\Controllers\Api\ProjectSourceOriginController::class);
+		Route::apiResource('project-locations', App\Http\Controllers\Api\ProjectLocationController::class);
 		Route::apiResource('project-phases', App\Http\Controllers\Api\ProjectPhaseController::class);
 		Route::apiResource('project-progress-updates', App\Http\Controllers\Api\ProjectProgressUpdateController::class);
 		Route::get('quotations/{quotation}/download-pdf', [App\Http\Controllers\Api\QuotationController::class, 'downloadPdf']);
@@ -78,5 +87,12 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('transactions', App\Http\Controllers\Api\TransactionController::class);
 		Route::apiResource('users', App\Http\Controllers\Api\UserController::class);
 		Route::apiResource('user-groups', App\Http\Controllers\Api\UserGroupController::class);
+		Route::apiResource('company-transactions-ledger', App\Http\Controllers\Api\CompanyTransactionsLedgerController::class)
+			->parameter('company-transactions-ledger', 'company_transactions_ledger');
+		Route::apiResource('customer-transactions-ledger', App\Http\Controllers\Api\CustomerTransactionsLedgerController::class)
+			->parameter('customer-transactions-ledger', 'customer_transactions_ledger');
+		Route::get('transactions/{transaction}/download-pdf', [App\Http\Controllers\Api\TransactionController::class, 'downloadPdf']);
+		Route::get('company-transactions-ledger/{company_transactions_ledger}/download-pdf', [App\Http\Controllers\Api\CompanyTransactionsLedgerController::class, 'downloadPdf']);
+		Route::get('customer-transactions-ledger/{customer_transactions_ledger}/download-pdf', [App\Http\Controllers\Api\CustomerTransactionsLedgerController::class, 'downloadPdf']);
 	});
 });

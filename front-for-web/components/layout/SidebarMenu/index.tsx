@@ -38,13 +38,15 @@ const SECTIONS: SidebarSection[] = [
     group: "main",
     items: [
       {
-        label: "Projects",
+        label: "All Projects",
         href: "/project/project-list",
         matchStrategy: "entity",
       },
       { label: "Add Project", href: "/project/create-project" },
       { label: "Reports", href: "/project/report" },
       { label: "Categories", href: "/project/category" },
+      { label: "Sources", href: "/project/source-origins" },
+      { label: "Locations", href: "/project/locations" },
     ],
   },
   {
@@ -54,7 +56,7 @@ const SECTIONS: SidebarSection[] = [
     group: "main",
     items: [
       {
-        label: "Customers",
+        label: "All Customers",
         href: "/customer/customer-list",
         matchStrategy: "entity",
       },
@@ -69,7 +71,7 @@ const SECTIONS: SidebarSection[] = [
     group: "main",
     items: [
       {
-        label: "Companies",
+        label: "All Companies",
         href: "/company/company-list",
         matchStrategy: "entity",
       },
@@ -84,7 +86,7 @@ const SECTIONS: SidebarSection[] = [
     group: "main",
     items: [
       {
-        label: "Quotations",
+        label: "All Quotations",
         href: "/quotation/quotation-list",
         matchStrategy: "entity",
       },
@@ -99,7 +101,7 @@ const SECTIONS: SidebarSection[] = [
     group: "main",
     items: [
       {
-        label: "Orders",
+        label: "All Orders",
         href: "/orders/order-list",
         matchStrategy: "entity",
       },
@@ -112,12 +114,12 @@ const SECTIONS: SidebarSection[] = [
     group: "main",
     items: [
       {
-        label: "Customer Invoices",
+        label: "All Invoices",
         href: "/cust-invoices/invoice-list",
         matchStrategy: "entity",
       },
       {
-        label: "Customer Credit Notes",
+        label: "Credit Notes",
         href: "/cust/credit-notes",
         matchStrategy: "entity",
       },
@@ -130,12 +132,12 @@ const SECTIONS: SidebarSection[] = [
     group: "main",
     items: [
       {
-        label: "Company Invoices",
+        label: "All Invoices",
         href: "/company/invoices",
         matchStrategy: "entity",
       },
       {
-        label: "Company Credit Notes",
+        label: "Credit Notes",
         href: "/company/credit-notes",
         matchStrategy: "entity",
       },
@@ -149,7 +151,7 @@ const SECTIONS: SidebarSection[] = [
     items: [
       {
         label: "Accounts",
-        href: "/finance/wallet/",
+        href: "/finance/accounts/",
         matchStrategy: "startsWith",
       },
       {
@@ -158,8 +160,18 @@ const SECTIONS: SidebarSection[] = [
         matchStrategy: "startsWith",
       },
       {
-        label: "Transaction Log",
-        href: "/finance/transactions/",
+        label: "Customer Trxns Ledger",
+        href: "/finance/customer-ledger/",
+        matchStrategy: "startsWith",
+      },
+      {
+        label: "Company Trxns Ledger",
+        href: "/finance/company-ledger/",
+        matchStrategy: "startsWith",
+      },
+      {
+        label: "Expenses & Others",
+        href: "/finance/expenses-and-others/",
         matchStrategy: "startsWith",
       },
     ],

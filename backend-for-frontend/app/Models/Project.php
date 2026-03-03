@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class Project extends Model
 {
+    use HasLogicalDeletion;
     protected $table = 'projects';
 
     protected $fillable = [
@@ -14,6 +16,8 @@ class Project extends Model
         'description',
         'customer_id',
         'project_category_id',
+        'project_source_origin_id',
+        'project_location_id',
         'no_of_phases',
         'start_date',
         'end_date',
@@ -27,6 +31,9 @@ class Project extends Model
         'updated_by',
         'created_at',
         'created_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
 
     public function customer()
@@ -37,6 +44,16 @@ class Project extends Model
     public function category()
     {
         return $this->belongsTo(ProjectCategory::class, 'project_category_id');
+    }
+
+    public function sourceOrigin()
+    {
+        return $this->belongsTo(ProjectSourceOrigin::class, 'project_source_origin_id');
+    }
+
+    public function location()
+    {
+        return $this->belongsTo(ProjectLocation::class, 'project_location_id');
     }
 
     public function phases()

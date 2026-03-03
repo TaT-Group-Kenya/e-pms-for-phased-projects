@@ -13,6 +13,7 @@ class AccountResource extends BaseResource
             'description' => $this->description,
             'type' => $this->type,
             'group' => $this->group,
+            'currency' => $this->currency,
             'balance' => $this->balance,
             'overdraft_allowed' => $this->overdraft_allowed,
             'updated_at' => $this->formatTimestamp($this->updated_at),

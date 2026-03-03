@@ -13,6 +13,8 @@ interface ProjectDetailsData {
   description?: string;
   customer_id?: number;
   project_category_id?: number;
+  project_source_origin_id?: number;
+  project_location_id?: number;
   no_of_phases?: number;
   start_date: string;
   end_date: string;
@@ -24,6 +26,8 @@ interface ProjectDetailsData {
   currency?: string;
   customer?: { id: number; name: string };
   category?: { id: number; name: string };
+  source_origin?: { id: number; name: string };
+  location?: { id: number; name: string };
   phases?: any[];
   order?: any;
   quotation?: any;
@@ -60,6 +64,8 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
   const [updateMessage, setUpdateMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [customers, setCustomers] = useState<Array<{ id: number; name: string }>>([]);
   const [projectCategories, setProjectCategories] = useState<Array<{ id: number; name: string }>>([]);
+  const [projectSources, setProjectSources] = useState<Array<{ id: number; name: string }>>([]);
+  const [projectLocations, setProjectLocations] = useState<Array<{ id: number; name: string }>>([]);
   const [currencies, setCurrencies] = useState<Array<{ id: number; code: string; symbol: string; name: string }>>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -80,7 +86,13 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
 
     const fetchData = async () => {
       try {
-        const [customersRes, categoriesRes, currenciesRes] = await Promise.all([
+        const [
+          customersRes,
+          categoriesRes,
+          sourcesRes,
+          locationsRes,
+          currenciesRes,
+        ] = await Promise.all([
           fetch("/api/customers/list?per_page=1000", {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -88,6 +100,18 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
             signal: controller.signal,
           }),
           fetch("/api/projects/categories/list?per_page=1000", {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
+          }),
+          fetch("/api/projects/source-origins/list?per_page=1000", {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
+          }),
+          fetch("/api/projects/locations/list?per_page=1000", {
             headers: {
               Authorization: `Bearer ${accessToken}`,
             },
@@ -105,14 +129,20 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
 
         const customersData = await customersRes.json();
         const categoriesData = await categoriesRes.json();
+        const sourcesData = await sourcesRes.json();
+        const locationsData = await locationsRes.json();
         const currenciesData = await currenciesRes.json();
 
         const customerList = customersData.data || customersData;
         const categoriesList = categoriesData.data || categoriesData;
+        const sourcesList = sourcesData.data || sourcesData;
+        const locationsList = locationsData.data || locationsData;
         const currenciesList = currenciesData.data || currenciesData;
 
         setCustomers(Array.isArray(customerList) ? customerList : []);
         setProjectCategories(Array.isArray(categoriesList) ? categoriesList : []);
+        setProjectSources(Array.isArray(sourcesList) ? sourcesList : []);
+        setProjectLocations(Array.isArray(locationsList) ? locationsList : []);
         setCurrencies(Array.isArray(currenciesList) ? currenciesList : []);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
@@ -355,6 +385,56 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                 </select>
               </div>
 
+              {/* Project Source */}
+              <div className="mb-[20px] sm:mb-0">
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Project Source
+                </label>
+                <select
+                  value={editFormData.project_source_origin_id || ""}
+                  onChange={(e) =>
+                    handleFormChange(
+                      "project_source_origin_id",
+                      e.target.value ? parseInt(e.target.value) : null
+                    )
+                  }
+                  disabled={loadingData}
+                  className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
+                >
+                  <option value="">Select a source (optional)</option>
+                  {projectSources.map((source) => (
+                    <option key={source.id} value={source.id.toString()}>
+                      {source.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Project Location */}
+              <div className="mb-[20px] sm:mb-0">
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Project Location
+                </label>
+                <select
+                  value={editFormData.project_location_id || ""}
+                  onChange={(e) =>
+                    handleFormChange(
+                      "project_location_id",
+                      e.target.value ? parseInt(e.target.value) : null
+                    )
+                  }
+                  disabled={loadingData}
+                  className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
+                >
+                  <option value="">Select a location (optional)</option>
+                  {projectLocations.map((location) => (
+                    <option key={location.id} value={location.id.toString()}>
+                      {location.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Status */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
@@ -581,6 +661,14 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               <div>
                 <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Progress</span>
                 <p className="text-black dark:text-white font-medium">{project?.progress || 0}%</p>
+              </div>
+              <div>
+                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Source</span>
+                <p className="text-black dark:text-white font-medium">{project?.source_origin?.name || "N/A"}</p>
+              </div>
+              <div>
+                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Location</span>
+                <p className="text-black dark:text-white font-medium">{project?.location?.name || "N/A"}</p>
               </div>
             </div>
           </div>

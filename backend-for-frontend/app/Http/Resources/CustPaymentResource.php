@@ -8,8 +8,10 @@ class CustPaymentResource extends BaseResource
     {
         return [
             'id' => $this->id,
-            'transaction_id' => $this->transaction_id,
+            'transaction_number' => $this->transaction_number,
             'amount_paid' => (float) $this->amount_paid,
+            'tax_amount' => (float) $this->tax_amount,
+            'net_amount' => (float) $this->net_amount,
             'payment_date' => $this->formatTimestamp($this->payment_date),
             'payment_method' => $this->payment_method,
             'payment_status' => $this->payment_status,
@@ -28,7 +30,7 @@ class CustPaymentResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
-            'transaction' => new TransactionResource($this->whenLoaded('transaction')),
+            'ledger_entries' => CustomerTransactionsLedgerResource::collection($this->whenLoaded('customerLedgerEntries')),
 
             'allocations' => CustPaymentAllocationResource::collection($this->whenLoaded('allocations')),
 

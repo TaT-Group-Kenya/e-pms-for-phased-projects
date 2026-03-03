@@ -60,8 +60,8 @@ export default async function handler(
 
       return res.status(200).json({ success: true, data });
     } else if (req.method === "GET") {
-      // Get company assignments for a phase
-      const { phase_id, project_id } = req.query;
+      // Get company assignments with optional filters
+      const { phase_id, project_id, company_id, is_complete, per_page, page } = req.query;
 
       const url = new URL(`${base}/company-projects`);
       if (phase_id) {
@@ -69,6 +69,18 @@ export default async function handler(
       }
       if (project_id) {
         url.searchParams.append("project_id", String(project_id));
+      }
+      if (company_id) {
+        url.searchParams.append("company_id", String(company_id));
+      }
+      if (typeof is_complete !== "undefined") {
+        url.searchParams.append("is_complete", String(is_complete));
+      }
+      if (per_page) {
+        url.searchParams.append("per_page", String(per_page));
+      }
+      if (page) {
+        url.searchParams.append("page", String(page));
       }
 
       const response = await fetch(url.toString(), {

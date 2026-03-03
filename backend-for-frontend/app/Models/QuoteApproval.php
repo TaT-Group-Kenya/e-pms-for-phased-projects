@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class QuoteApproval extends Model
 {
+    use HasLogicalDeletion;
     protected $table = 'quote_approvals';
 
     protected $fillable = [
@@ -14,6 +16,9 @@ class QuoteApproval extends Model
         'action',
         'created_by',
         'updated_by',
+        'is_deleted',
+        'deleted_at',
+        'deleted_by',
     ];
 
     protected $casts = [

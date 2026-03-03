@@ -10,8 +10,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!base) return res.status(500).json({ message: 'EPMS_API_BASE not configured' })
 
   try {
-    const url = `${base}/cust-invoices`
+    let url = `${base}/cust-invoices`
     const token = req.headers.authorization?.replace('Bearer ', '')
+
+    const params = new URLSearchParams()
+    Object.entries(req.query || {}).forEach(([key, value]) => {
+      if (typeof value === 'string') {
+        params.append(key, value)
+      }
+    })
+
+    const qs = params.toString()
+    if (qs) {
+      url += `?${qs}`
+    }
 
     const resp = await fetch(url, {
       method: 'GET',

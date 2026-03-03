@@ -51,9 +51,11 @@ class OrderService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return Order::destroy($id);
+        $model = Order::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 
     /**

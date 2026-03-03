@@ -13,6 +13,7 @@ class CompanyInvoiceTaxItemResource extends BaseResource
             'item_name' => $this->item_name,
             'item_type' => $this->item_type,
             'item_value' => $this->item_value,
+            'item_amount' => (float) $this->item_amount,
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
             'created_at' => $this->formatTimestamp($this->created_at),
