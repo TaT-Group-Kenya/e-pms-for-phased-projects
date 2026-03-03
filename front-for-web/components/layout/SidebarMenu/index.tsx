@@ -232,11 +232,24 @@ const normalizePath = (path: string | null): string => {
 };
 
 const isEntityDetailMatch = (baseListPath: string, pathname: string): boolean => {
-  // e.g. baseListPath "/project/project-list" => detail "/project/:id"
+  // Handle two patterns:
+  // 1) List pages like "/project/project-list" -> detail "/project/:id"
+  //    We treat the first segment ("project") as the entity root.
+  // 2) Nested resources like "/company/invoices" -> detail "/company/invoices/:id"
+  //    We treat the full path ("company/invoices") as the entity root.
   const segments = baseListPath.split("/").filter(Boolean);
   if (segments.length === 0) return false;
-  const entityRoot = segments[0];
-  const entityDetailPattern = new RegExp(`^/${entityRoot}/\\d+/?$`);
+
+  const lastSegment = segments[segments.length - 1];
+  const endsWithList = /list$/i.test(lastSegment);
+
+  // If the last segment ends with "list" (e.g. "project-list", "invoice-list"),
+  // we assume detail pages live at "/<first-segment>/:id".
+  // Otherwise, we assume detail pages live directly under the full base path,
+  // e.g. base "/company/invoices" -> detail "/company/invoices/:id".
+  const entityRootPath = endsWithList ? `/${segments[0]}` : `/${segments.join("/")}`;
+
+  const entityDetailPattern = new RegExp(`^${entityRootPath}/\\d+/?$`);
   return entityDetailPattern.test(pathname);
 };
 
@@ -272,6 +285,8 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
   const dispatch = useAppDispatch();
 
   const [openSectionId, setOpenSectionId] = React.useState<string | null>(null);
+  const [shouldScrollToActive, setShouldScrollToActive] = React.useState(false);
+  const activeItemRef = React.useRef<HTMLLIElement | null>(null);
 
   const activeSectionId = React.useMemo(() => {
     if (!pathname) return null;
@@ -290,7 +305,14 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
     if (activeSectionId) {
       setOpenSectionId(activeSectionId);
     }
-  }, [activeSectionId]);
+    if (shouldScrollToActive && activeItemRef.current) {
+      activeItemRef.current.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+      setShouldScrollToActive(false);
+    }
+  }, [activeSectionId, shouldScrollToActive]);
 
   const handleSectionToggle = (section: SidebarSection) => {
     setOpenSectionId((prev) => {
@@ -299,6 +321,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
       if (isOpening) {
         const firstItem = section.items[0];
         if (firstItem && pathname !== firstItem.href) {
+          setShouldScrollToActive(true);
           router.push(firstItem.href);
         }
         return section.id;
@@ -417,11 +440,13 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
                         return (
                           <li
+                            ref={isItemActive ? activeItemRef : undefined}
                             key={item.href + item.label}
                             className="sidemenu-item mb-[4px] last:mb-0"
                           >
                             <Link
                               href={item.href}
+                              onClick={() => setShouldScrollToActive(true)}
                               className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium py-[9px] pl-[38px] pr-[30px] w-full text-left
                                 ${
                                   isItemActive
@@ -493,11 +518,13 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
 
                         return (
                           <li
+                            ref={isItemActive ? activeItemRef : undefined}
                             key={item.href + item.label}
                             className="sidemenu-item mb-[4px] last:mb-0"
                           >
                             <Link
                               href={item.href}
+                              onClick={() => setShouldScrollToActive(true)}
                               className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium py-[9px] pl-[38px] pr-[30px] w-full text-left
                                 ${
                                   isItemActive

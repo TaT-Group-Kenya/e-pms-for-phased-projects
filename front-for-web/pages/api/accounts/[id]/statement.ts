@@ -2,20 +2,20 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { JSON_HEADERS } from '../../../../constants/headers'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' })
+  if (req.method !== 'GET') {
+    return res.status(405).json({ message: 'Method not allowed' })
+  }
 
   const base = process.env.EPMS_API_BASE
   if (!base) return res.status(500).json({ message: 'EPMS_API_BASE not configured' })
 
   try {
-    const { page = 1, per_page = 20, company_id } = req.query
+    const { id, from, to } = req.query
+    if (!id) return res.status(400).json({ message: 'Account ID is required' })
 
-    const url = new URL(`${base}/company-transactions-ledger`)
-    url.searchParams.append('page', String(page))
-    url.searchParams.append('per_page', String(per_page))
-    if (company_id) {
-      url.searchParams.append('company_id', String(company_id))
-    }
+    const url = new URL(`${base}/accounts/${id}/statement`)
+    if (from) url.searchParams.append('from', String(from))
+    if (to) url.searchParams.append('to', String(to))
 
     const resp = await fetch(url.toString(), {
       method: 'GET',
@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(resp.status).json(data)
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('fetch company ledger error', err)
+    console.error('fetch account statement error', err)
     return res.status(500).json({ message: 'Proxy error' })
   }
 }

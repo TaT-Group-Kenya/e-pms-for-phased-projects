@@ -31,6 +31,8 @@ class CompanyInvoiceResource extends BaseResource
 
             'project' => new ProjectResource($this->whenLoaded('project')),
 
+            'company' => new CompanyResource($this->whenLoaded('company')),
+
             'invoiceItems' => CompanyInvoiceItemResource::collection($this->whenLoaded('invoiceItems')),
 
             'payments' => CompanyPaymentResource::collection($this->whenLoaded('payments')),

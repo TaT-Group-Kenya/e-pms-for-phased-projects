@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
@@ -26,6 +27,7 @@ interface CurrencyOption {
 }
 
 const AccountsTable: React.FC = () => {
+  const router = useRouter();
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
 
@@ -252,7 +254,6 @@ const AccountsTable: React.FC = () => {
         type: formType,
         group: formGroup,
         currency: formCurrency,
-        balance: formBalance || "0.00",
         overdraft_allowed: Number(formOverdraft),
       };
 
@@ -430,22 +431,25 @@ const AccountsTable: React.FC = () => {
       <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md overflow-hidden">
         <div className="table-responsive overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-[#15203c]">
+            <thead className="text-black dark:text-white">
               <tr>
-                <th className="text-xs font-semibold text-left px-[15px] py-[10px]">Code</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[10px]">Name</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[10px]">Type</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[10px]">Group</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[10px]">Currency</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[10px]">Balance</th>
-                <th className="text-xs font-semibold text-center px-[15px] py-[10px]">Overdraft</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[10px]">Actions</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Code</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Name</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Type</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Group</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Currency</th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Balance</th>
+                <th className="font-medium text-center px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Overdraft</th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-black dark:text-white">
               {loading && (
                 <tr>
-                  <td colSpan={8} className="text-center text-sm px-[15px] py-[12px]">
+                  <td
+                    colSpan={8}
+                    className="text-center text-sm px-[10px] py-[8px] text-gray-500 dark:text-gray-400"
+                  >
                     Loading accounts...
                   </td>
                 </tr>
@@ -453,7 +457,10 @@ const AccountsTable: React.FC = () => {
 
               {!loading && filteredAccounts.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center text-sm px-[15px] py-[12px] text-gray-500">
+                  <td
+                    colSpan={8}
+                    className="text-center text-sm px-[10px] py-[16px] text-gray-500 dark:text-gray-400"
+                  >
                     No accounts found.
                   </td>
                 </tr>
@@ -463,25 +470,32 @@ const AccountsTable: React.FC = () => {
                 filteredAccounts.map((acc) => (
                   <tr
                     key={acc.id}
-                    className="border-t border-gray-100 dark:border-[#172036] align-middle"
+                    className="border-b border-gray-100 dark:border-[#172036] align-middle hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
                   >
-                    <td className="text-sm px-[15px] py-[10px] font-medium text-gray-900 dark:text-gray-100">
+                    <td className="text-sm px-[10px] py-[6px] font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
                       {acc.code}
                     </td>
-                    <td className="text-sm px-[15px] py-[10px]">{acc.name}</td>
-                    <td className="text-sm px-[15px] py-[10px] capitalize">{acc.type}</td>
-                    <td className="text-sm px-[15px] py-[10px]">{acc.group}</td>
-                    <td className="text-sm px-[15px] py-[10px]">{acc.currency || "-"}</td>
-                    <td className="text-sm px-[15px] py-[10px] text-right">
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">{acc.name}</td>
+                    <td className="text-sm px-[10px] py-[6px] capitalize whitespace-nowrap">{acc.type}</td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">{acc.group}</td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">{acc.currency || "-"}</td>
+                    <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
                       {Number(acc.balance ?? 0).toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
                     </td>
-                    <td className="text-sm px-[15px] py-[10px] text-center">
+                    <td className="text-sm px-[10px] py-[6px] text-center whitespace-nowrap">
                       {renderOverdraftLabel(acc.overdraft_allowed)}
                     </td>
-                    <td className="text-sm px-[15px] py-[10px] text-right space-x-2">
+                    <td className="text-sm px-[10px] py-[6px] text-right space-x-2 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/finance/accounts/${acc.id}`)}
+                        className="inline-flex items-center px-[10px] py-[5px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827]"
+                      >
+                        View statements
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(acc)}
@@ -565,7 +579,7 @@ const AccountsTable: React.FC = () => {
                     value={formCurrency}
                     onChange={(e) => setFormCurrency(e.target.value)}
                     className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    disabled={currenciesLoading}
+                    disabled={currenciesLoading || !!editingAccount}
                   >
                     <option value="">Select currency</option>
                     {currencies.filter((c) => c.code === 'KES').map((c) => (
@@ -584,7 +598,8 @@ const AccountsTable: React.FC = () => {
                     step="0.01"
                     value={formBalance}
                     onChange={(e) => setFormBalance(e.target.value)}
-                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    disabled
+                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-gray-50 dark:bg-[#111827] text-sm text-gray-500 dark:text-gray-400 cursor-not-allowed"
                   />
                 </div>
 

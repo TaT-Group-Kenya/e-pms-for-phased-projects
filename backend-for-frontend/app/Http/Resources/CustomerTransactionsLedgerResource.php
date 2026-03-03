@@ -46,7 +46,6 @@ class CustomerTransactionsLedgerResource extends BaseResource
             'is_deleted' => (bool) $this->is_deleted,
             'deleted_at' => $this->formatTimestamp($this->deleted_at),
             'deleted_by' => $this->deleted_by,
-
             'payment' => new CustPaymentResource($this->whenLoaded('payment')),
             'customer' => new CustomerResource($this->whenLoaded('customer')),
         ];

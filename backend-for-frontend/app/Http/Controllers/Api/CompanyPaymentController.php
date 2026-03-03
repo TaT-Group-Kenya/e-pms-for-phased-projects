@@ -24,7 +24,12 @@ class CompanyPaymentController extends Controller
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
-        $data = $this->service->index($filters, $perPage, $page);
+        $with = [
+            'invoice.company',
+            'invoice.project',
+        ];
+
+        $data = $this->service->index($filters, $perPage, $page, 0, $with);
         return CompanyPaymentResource::collection($data);
     }
 
