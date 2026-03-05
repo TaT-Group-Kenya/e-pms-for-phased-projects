@@ -18,33 +18,16 @@ class CompanyInvoiceItemUpdateRequest extends FormRequest
     {
         return [
             'invoice_id' => ['sometimes', 'required', 'exists:company_invoices,id'],
-            'project_phase_id' => [
-                'sometimes',
-                'required',
-                'exists:project_phases,id',
-                function ($attribute, $value, $fail) {
-                    $phase = ProjectPhase::find($value);
-                    if (!$phase) {
-                        return;
-                    }
-
-                    if ($phase->status !== 'complete' || (float) $phase->progress_percentage < 100.0) {
-                        $fail('The selected project phase must be in complete status with 100% progress before invoicing.');
-                    }
-
-                    $query = CompanyInvoiceItem::where('project_phase_id', $value);
-                    if ($this->route('company_invoice_item')) {
-                        $query->where('id', '!=', $this->route('company_invoice_item')->id ?? $this->route('company_invoice_item'));
-                    }
-                    if ($query->exists()) {
-                        $fail('This project phase has already been invoiced. Only one company invoice item is allowed per phase.');
-                    }
-                },
-            ],
+            'project_phase_id' => ['sometimes', 'nullable', 'exists:project_phases,id'],
             'item_name' => ['sometimes', 'required', 'string', 'max:255'],
             'item_description' => ['sometimes', 'nullable', 'string', 'max:255'],
             'item_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'is_taxable' => ['sometimes', 'required', 'boolean'],
+            'tax_id' => ['sometimes', 'nullable', 'integer', 'exists:taxes,id'],
+            'tax_item_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'item_type' => ['sometimes', 'nullable', 'string', 'max:255', Rule::in(['fixed', 'percent'])],
+            'item_value' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'tax_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ];
     }
 

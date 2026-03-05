@@ -26,7 +26,8 @@ class ProjectController extends Controller
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
-        $data = $this->service->index($filters, $perPage, $page);
+        // Eager load customer for project listings to avoid N+1 queries
+        $data = $this->service->index($filters, $perPage, $page, 0, ['customer']);
         return ProjectResource::collection($data);
     }
 
@@ -63,17 +64,17 @@ class ProjectController extends Controller
             'location',
             'phases.assignment.company',
             'order',
-            'quotation',
-            'customer_invoices',
+            'customer_invoice',
             'company_invoices'
         ]);
 
         // Fetch incoming payments from customer invoices
         $incomingPayments = [];
-        if ($project->customer_invoices && count($project->customer_invoices) > 0) {
-            $invoiceIds = $project->customer_invoices->pluck('id')->toArray();
-            $incomingPayments = \App\Models\CustPayment::whereHas('allocations', function ($query) use ($invoiceIds) {
-                $query->whereIn('invoice_id', $invoiceIds);
+        if ($project->customer_invoice) {
+            $invoice = $project->customer_invoice;
+
+            $incomingPayments = \App\Models\CustPayment::whereHas('allocations', function ($query) use ($invoice) {
+                $query->where('invoice_id', $invoice->id);
             })->with('allocations')->get();
         }
 

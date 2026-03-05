@@ -20,9 +20,9 @@ class CustPaymentAllocationResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
-            'payment' => new PaymentResource($this->whenLoaded('payment')),
+            'payment' => new CustPaymentResource($this->whenLoaded('payment')),
 
-            'invoice' => new InvoiceResource($this->whenLoaded('invoice')),
+            'invoice' => new CustInvoiceResource($this->whenLoaded('invoice')),
 
         ];
     }

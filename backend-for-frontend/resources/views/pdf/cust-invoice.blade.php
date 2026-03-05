@@ -42,6 +42,13 @@
         $logoPath = public_path('logo.png');
         $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
     @endphp
+
+    @if($invoice->status === 'paid')
+        <div style="position: fixed; top: 40%; left: 10%; width: 80%; text-align: center; font-size: 240px; font-weight: 700; color: #a7abb1; opacity: 0.12; transform: rotate(-30deg); z-index: 0;">
+            PAID
+        </div>
+    @endif
+
     <div class="header">
         <table>
             <tr>
@@ -62,65 +69,81 @@
         </table>
     </div>
 
-    <div class="section two-col">
-        <div class="card" style="flex: 1; margin-top: 16px;">
-            <h2>Bill To</h2>
-            <div class="text-sm">
-                @if($invoice->customer)
-                    <span class="font-semibold">{{ $invoice->customer->name }}</span>
-                @else
-                    N/A
-                @endif
-            </div>
-            @if($invoice->customer)
-                @if(!empty($invoice->customer->address))
-                    <div class="text-sm mt-1">{{ $invoice->customer->address }}</div>
-                @endif
-                @if(!empty($invoice->customer->city) || !empty($invoice->customer->state) || !empty($invoice->customer->country))
-                    <div class="text-sm mt-1">
-                        {{ trim(($invoice->customer->city ?? '') . (isset($invoice->customer->city, $invoice->customer->state) ? ', ' : '') . ($invoice->customer->state ?? '')) }}
-                        @if(!empty($invoice->customer->country))
-                            {{ isset($invoice->customer->city) || isset($invoice->customer->state) ? ', ' : '' }}{{ $invoice->customer->country }}
+    <div class="section">
+        <table width="100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <!-- Sender on the left, without card borders/padding -->
+                <td style="width: 50%; vertical-align: top; padding-right: 8px;">
+                    <div style="margin-top: 16px;">
+                        <h2>Invoice Sender</h2>
+                        <div class="text-sm"><span class="font-semibold">{{ $senderName }}</span></div>
+                        @if(!empty($senderAddressLine1))
+                            <div class="text-sm mt-1">{{ $senderAddressLine1 }}</div>
+                        @endif
+                        @if(!empty($senderCity) || !empty($senderState) || !empty($senderCountry))
+                            <div class="text-sm">
+                                {{ trim(($senderCity ?? '') . (isset($senderCity, $senderState) ? ', ' : '') . ($senderState ?? '')) }}
+                                @if(!empty($senderCountry))
+                                    {{ isset($senderCity) || isset($senderState) ? ', ' : '' }}{{ $senderCountry }}
+                                @endif
+                            </div>
+                        @endif
+                        @if(!empty($senderPhone))
+                            <div class="text-sm mt-1">Phone: {{ $senderPhone }}</div>
+                        @endif
+                        @if(!empty($senderEmail))
+                            <div class="text-sm mt-1">Email: {{ $senderEmail }}</div>
+                        @endif
+                        @if(!empty($senderWebsite))
+                            <div class="text-sm mt-1">Website: {{ $senderWebsite }}</div>
+                        @endif
+                        <div class="text-sm mt-1">Generated: {{ $generatedAt->format('d M Y H:i') }}</div>
+                    </div>
+                </td>
+
+                <!-- Bill To on the far right, text left-aligned inside -->
+                <td style="width: 50%; vertical-align: top; padding-left: 8px; text-align: right;">
+                    <div style="margin-top: 16px; display: inline-block; text-align: left;">
+                        <h2>Bill To</h2>
+                        <div class="text-sm">
+                            @if($invoice->customer)
+                                <span class="font-semibold">{{ $invoice->customer->name }}</span>
+                            @else
+                                N/A
+                            @endif
+                        </div>
+                        @if($invoice->customer)
+                            @if(!empty($invoice->customer->address))
+                                <div class="text-sm mt-1">{{ $invoice->customer->address }}</div>
+                            @endif
+                            @if(!empty($invoice->customer->city) || !empty($invoice->customer->state) || !empty($invoice->customer->country))
+                                <div class="text-sm mt-1">
+                                    {{ trim(($invoice->customer->city ?? '') . (isset($invoice->customer->city, $invoice->customer->state) ? ', ' : '') . ($invoice->customer->state ?? '')) }}
+                                    @if(!empty($invoice->customer->country))
+                                        {{ isset($invoice->customer->city) || isset($invoice->customer->state) ? ', ' : '' }}{{ $invoice->customer->country }}
+                                    @endif
+                                </div>
+                            @endif
+                            @if(!empty($invoice->customer->phone))
+                                <div class="text-sm mt-1">Phone: {{ $invoice->customer->phone }}</div>
+                            @endif
+                            @if(!empty($invoice->customer->email))
+                                <div class="text-sm mt-1">Email: {{ $invoice->customer->email }}</div>
+                            @endif
                         @endif
                     </div>
-                @endif
-                @if(!empty($invoice->customer->phone))
-                    <div class="text-sm mt-1">Phone: {{ $invoice->customer->phone }}</div>
-                @endif
-                @if(!empty($invoice->customer->email))
-                    <div class="text-sm mt-1">Email: {{ $invoice->customer->email }}</div>
-                @endif
-            @endif
-            @if($invoice->project)
-                <div class="text-sm mt-1">Project: <span class="font-semibold">{{ $invoice->project->code ?? '' }} {{ $invoice->project->name ?? '' }}</span></div>
-            @endif
-        </div>
-        <div class="card" style="flex: 1; margin-top: 16px;">
-            <h2>Invoice Sender</h2>
-            <div class="text-sm"><span class="font-semibold">{{ $senderName }}</span></div>
-            @if(!empty($senderAddressLine1))
-                <div class="text-sm mt-1">{{ $senderAddressLine1 }}</div>
-            @endif
-            @if(!empty($senderCity) || !empty($senderState) || !empty($senderCountry))
-                <div class="text-sm">
-                    {{ trim(($senderCity ?? '') . (isset($senderCity, $senderState) ? ', ' : '') . ($senderState ?? '')) }}
-                    @if(!empty($senderCountry))
-                        {{ isset($senderCity) || isset($senderState) ? ', ' : '' }}{{ $senderCountry }}
-                    @endif
-                </div>
-            @endif
-            @if(!empty($senderPhone))
-                <div class="text-sm mt-1">Phone: {{ $senderPhone }}</div>
-            @endif
-            @if(!empty($senderEmail))
-                <div class="text-sm mt-1">Email: {{ $senderEmail }}</div>
-            @endif
-            @if(!empty($senderWebsite))
-                <div class="text-sm mt-1">Website: {{ $senderWebsite }}</div>
-            @endif
-            <div class="text-sm mt-1">Generated: {{ $generatedAt->format('d M Y H:i') }}</div>
-        </div>
+                </td>
+            </tr>
+        </table>
     </div>
+
+    @if($invoice->project)
+        <div class="section card">
+            <h2>Project</h2>
+            <div class="text-sm"> <span class="font-semibold">{{ $invoice->project->code ?? '' }} {{ $invoice->project->name ?? '' }}</span></div>
+        </div>
+    @endif
+
 
     @if($invoice->description)
         <div class="section card">
@@ -135,7 +158,7 @@
             <thead>
                 <tr>
                     <th style="width: 40%;">Description</th>
-                    <th style="width: 15%;" class="text-right">Phase</th>
+                    <th style="width: 15%;" class="text-right">Tax</th>
                     <th style="width: 10%;" class="text-right">Qty</th>
                     <th style="width: 17%;" class="text-right">Unit Price</th>
                     <th style="width: 18%;" class="text-right">Line Total</th>
@@ -151,10 +174,42 @@
                             @endif
                         </td>
                         <td class="text-right text-sm">
-                            @if($item->projectPhase)
-                                {{ $item->projectPhase->code ?? '' }} {{ $item->projectPhase->name ?? '' }}
+                            @if(!empty($item->is_taxable))
+                                <div>
+                                    <div class="mt-1">
+                                        <span class="badge" style="background-color: #eff6ff; color: #1d4ed8; text-transform: uppercase; font-size: 10px;">
+                                            <span class="font-semibold">{{ $item->tax_item_name ?? 'Tax' }}</span>
+                                            @if($item->item_type)
+                                                &nbsp;&middot;&nbsp;
+                                                @if($item->item_type === 'percent')
+                                                    Percent
+                                                @elseif($item->item_type === 'fixed')
+                                                    Fixed
+                                                @else
+                                                    {{ ucfirst($item->item_type) }}
+                                                @endif
+                                            @endif
+                                        </span>
+                                    </div>
+
+                                    @if($item->item_value !== null)
+                                        <div class="text-sm mt-1 muted">
+                                            @if($item->item_type === 'percent')
+                                                {{ number_format((float) $item->item_value, 2) }}%
+                                            @else
+                                                {{ $invoice->currency }} {{ number_format((float) $item->item_value, 2) }}
+                                            @endif
+                                        </div>
+                                    @endif
+
+                                    @if($item->tax_amount !== null && (float) $item->tax_amount > 0)
+                                        <div class="text-sm mt-1">
+                                            Tax amount: {{ $invoice->currency }} {{ number_format((float) $item->tax_amount, 2) }}
+                                        </div>
+                                    @endif
+                                </div>
                             @else
-                                &mdash;
+                                <span class="text-sm muted">Not taxable</span>
                             @endif
                         </td>
                         <td class="text-right">{{ number_format((float) ($item->quantity ?? 1), 0) }}</td>

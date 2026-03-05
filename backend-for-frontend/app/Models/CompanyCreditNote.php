@@ -35,4 +35,9 @@ class CompanyCreditNote extends Model
     {
         return $this->belongsTo(CompanyInvoice::class, 'invoice_id');
     }
+
+    public function items()
+    {
+        return $this->hasMany(CompanyCreditNoteItem::class, 'credit_note_id');
+    }
 }

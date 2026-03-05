@@ -10,7 +10,6 @@ class Quotation extends Model
 
     protected $fillable = [
         'quotation_number',
-        'project_id',
         'customer_id',
         'title',
         'description',
@@ -33,11 +32,6 @@ class Quotation extends Model
         'deleted_at',
         'deleted_by',
     ];
-
-    public function project()
-    {
-        return $this->belongsTo(Project::class, 'project_id');
-    }
 
     public function customer()
     {
@@ -62,10 +56,5 @@ class Quotation extends Model
     public function order()
     {
         return $this->hasOne(Order::class, 'quotation_id');
-    }
-
-    public function taxitems()
-    {
-        return $this->hasMany(QuotationTaxItem::class, 'quotation_id');
     }
 }

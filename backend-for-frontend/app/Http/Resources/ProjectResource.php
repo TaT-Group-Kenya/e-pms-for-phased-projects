@@ -11,6 +11,7 @@ class ProjectResource extends BaseResource
             'code' => $this->code,
             'name' => $this->name,
             'description' => $this->description,
+            'order_id' => $this->order_id,
             'customer_id' => $this->customer_id,
             'project_category_id' => $this->project_category_id,
             'project_source_origin_id' => $this->project_source_origin_id,
@@ -41,7 +42,12 @@ class ProjectResource extends BaseResource
 
             'order' => new OrderResource($this->whenLoaded('order')),
 
-            'quotation' => new QuotationResource($this->whenLoaded('quotation')),
+            'quotation' => $this->when(
+                $this->relationLoaded('order') && $this->order && $this->order->relationLoaded('quotation'),
+                function () {
+                    return new QuotationResource($this->order->quotation);
+                }
+            ),
 
             'customer_invoices' => CustInvoiceResource::collection($this->whenLoaded('customer_invoices')),
             

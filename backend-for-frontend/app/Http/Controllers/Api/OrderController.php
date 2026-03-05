@@ -12,7 +12,8 @@ use App\Models\Order;
 use App\Models\Quotation;
 use App\Models\QuoteLineItem;
 use App\Models\OrderItem;
-use App\Models\OrderTaxItem;
+use App\Models\Project;
+use App\Models\ProjectCategory;
 use App\Models\CustInvoice;
 use App\Models\CustInvoiceItem;
 use App\Models\CustInvoiceTaxItem;
@@ -21,19 +22,24 @@ use App\Models\SysConfig;
 use App\Services\CommonService;
 use App\Services\OrderService;
 use App\Services\OrderToCustInvoiceService;
+use App\Services\ProjectService;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\CustInvoiceResource;
 use App\Http\Requests\OrderStoreRequest;
 use App\Http\Requests\OrderUpdateRequest;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
     protected $service;
     protected $orderToCustInvoiceService;
 
-    public function __construct(OrderService $service, OrderToCustInvoiceService $orderToCustInvoiceService) {
+    protected $projectService;
+
+    public function __construct(OrderService $service, OrderToCustInvoiceService $orderToCustInvoiceService, ProjectService $projectService) {
         $this->service = $service;
         $this->orderToCustInvoiceService = $orderToCustInvoiceService;
+        $this->projectService = $projectService;
     }
 
     public function index(Request $request)
@@ -55,7 +61,7 @@ class OrderController extends Controller
             // same business rules as generateFromQuotation: the
             // quotation must be approved and must not already have an order.
             if (!empty($validated['quotation_id'])) {
-                $quotation = Quotation::with(['order', 'quoteItems', 'taxitems'])
+                $quotation = Quotation::with(['order', 'quoteItems'])
                     ->findOrFail($validated['quotation_id']);
 
                 if ($quotation->status !== 'approved') {
@@ -115,7 +121,7 @@ class OrderController extends Controller
             'quotation_id' => ['required', 'integer', 'exists:quotations,id'],
         ]);
         $order = DB::transaction(function () use ($request) {
-            $quotation = Quotation::with(['quoteItems', 'taxitems', 'order'])
+            $quotation = Quotation::with(['quoteItems', 'order'])
                 ->findOrFail($request->input('quotation_id'));
 
             // Only allow generation from approved quotations without an existing order
@@ -161,7 +167,7 @@ class OrderController extends Controller
         $this->authorize('view', $order);
 
         return DB::transaction(function () use ($order) {
-            $order->loadMissing(['orderItems', 'taxitems', 'documents', 'project', 'customer', 'quotation']);
+            $order->loadMissing(['orderItems', 'documents', 'project', 'customer', 'quotation']);
             return new OrderResource($order);
         });
     }
@@ -182,6 +188,7 @@ class OrderController extends Controller
 
         $updated = DB::transaction(function () use ($request, $order) {
             $oldStatus = $order->status;
+            $userId = $request->user()?->id;
 
             $updatedOrder = $this->service->update($order->id, $request->validated());
 
@@ -189,11 +196,22 @@ class OrderController extends Controller
             // generate a draft customer invoice (if none exists yet)
             // by copying order header, items and tax items.
             if ($oldStatus !== 'approved' && $updatedOrder->status === 'approved') {
+                // Ensure the order is linked to a project before creating an invoice,
+                // because customer invoices require a non-null project_id.
+                $updatedOrder->loadMissing(['project']);
+                if (! $updatedOrder->project) {
+                    $project = $this->createProjectFromOrder($updatedOrder, $userId);
+
+                    $updatedOrder->project_id = $project->id;
+                    $updatedOrder->save();
+                    $updatedOrder->refresh();
+                }
+
                 // Avoid creating duplicate invoices if one already exists
                 if (! $updatedOrder->custInvoices()->exists()) {
                     $this->orderToCustInvoiceService->createInvoiceFromOrder(
                         $updatedOrder,
-                        $request->user()?->id
+                        $userId
                     );
                 }
             }
@@ -202,6 +220,43 @@ class OrderController extends Controller
         });
 
         return new OrderResource($updated);
+    }
+
+    /**
+     * Create a draft project based on an approved order.
+     */
+    protected function createProjectFromOrder(Order $order, ?int $userId = null): Project
+    {
+        $commonService = new CommonService();
+        do {
+            $code = $commonService->generateUniqueCode('PRJ-');
+        } while (Project::where('code', $code)->exists());
+
+        $name = 'Project for order ' . $order->order_number;
+
+        $projectData = [
+            'code'                  => $code,
+            'name'                  => $name,
+            'description'           => $order->description,
+            'order_id'              => $order->id,
+            'customer_id'           => $order->customer_id,
+            'project_category_id'   => null,
+            'project_source_origin_id' => null,
+            'project_location_id'   => null,
+            'no_of_phases'          => '1',
+            'start_date'            => now()->toDateString(),
+            'end_date'              => now()->addMonth()->toDateString(),
+            'budget_estimate'       => $order->total_amount,
+            'status'                => 'draft',
+            'priority'              => 'medium',
+            'progress'              => '0',
+            'tags'                  => null,
+            'currency'              => $order->currency,
+            'created_by'            => $userId,
+            'updated_by'            => $userId,
+        ];
+
+        return $this->projectService->create($projectData);
     }
 
     /**
@@ -237,9 +292,21 @@ class OrderController extends Controller
         ]);
 
         $invoice = DB::transaction(function () use ($request, $order, $overrides) {
+            $userId = $request->user()?->id;
+
+            // Ensure the order is linked to a project before creating an invoice,
+            // because customer invoices require a non-null project_id.
+            $order->loadMissing(['project']);
+            if (! $order->project) {
+                $project = $this->createProjectFromOrder($order, $userId);
+                $order->project_id = $project->id;
+                $order->save();
+                $order->refresh();
+            }
+
             return $this->orderToCustInvoiceService->createInvoiceFromOrder(
                 $order,
-                $request->user()?->id,
+                $userId,
                 $overrides
             );
         });
@@ -262,12 +329,20 @@ class OrderController extends Controller
                 ], 422);
             }
 
-            // Delete order items and related records, then the order itself
-            $order->orderItems()->delete();
-            $order->taxitems()->delete();
-            $order->documents()->delete();
+            // Soft delete order items and related records, then the order itself
+            $deletedBy = Auth::id();
 
-            $this->service->delete($order->id, Auth::id());
+            $order->orderItems()->get()->each(function (OrderItem $item) use ($deletedBy) {
+                $item->softDelete($deletedBy);
+            });
+
+            $order->documents()->get()->each(function ($doc) use ($deletedBy) {
+                if (method_exists($doc, 'softDelete')) {
+                    $doc->softDelete($deletedBy);
+                }
+            });
+
+            $this->service->delete($order->id, $deletedBy);
             return response()->noContent();
         });
     }
@@ -386,7 +461,7 @@ class OrderController extends Controller
         }
 
         $updated = DB::transaction(function () use ($order, $request) {
-            $order->loadMissing(['custInvoices.payments', 'custInvoices.invoiceItems', 'custInvoices.taxitems', 'custInvoices.documents']);
+            $order->loadMissing(['custInvoices.payments', 'custInvoices.invoiceItems', 'custInvoices.documents']);
 
             $invoices = $order->custInvoices;
 
@@ -407,10 +482,6 @@ class OrderController extends Controller
 
                     $invoice->invoiceItems()->get()->each(function (\App\Models\CustInvoiceItem $item) use ($deletedBy) {
                         $item->softDelete($deletedBy);
-                    });
-
-                    $invoice->taxitems()->get()->each(function (\App\Models\CustInvoiceTaxItem $taxItem) use ($deletedBy) {
-                        $taxItem->softDelete($deletedBy);
                     });
 
                     $invoice->documents()->get()->each(function (\App\Models\CustInvoiceDocument $doc) use ($deletedBy) {

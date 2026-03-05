@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\QuoteLineltem;
+use App\Models\QuoteLineItem;
 
 class QuoteLineitemPolicy extends BaseModelPolicy
 {

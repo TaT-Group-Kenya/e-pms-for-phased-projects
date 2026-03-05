@@ -60,13 +60,6 @@ class Order extends Model
         return $this->hasMany(OrderDocument::class, 'order_id');
     }
 
-    public function taxitems()
-    {
-        // Use the correct OrderTaxItem model so related tax items
-        // are properly queried and can be deleted with the order.
-        return $this->hasMany(OrderTaxItem::class, 'order_id');
-    }
-
     public function custInvoices()
     {
         return $this->hasMany(CustInvoice::class, 'order_id');

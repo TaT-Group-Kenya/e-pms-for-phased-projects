@@ -41,8 +41,6 @@ class CustInvoiceResource extends BaseResource
 
             'creditnotes' => CustCreditNoteResource::collection($this->whenLoaded('creditnotes')),
 
-            'taxitems' => CustInvoiceTaxItemResource::collection($this->whenLoaded('taxitems')),
-
             'documents' => CustInvoiceDocumentResource::collection($this->whenLoaded('documents')),
 
         ];

@@ -18,29 +18,16 @@ class CompanyInvoiceItemStoreRequest extends FormRequest
     {
         return [
             'invoice_id' => ['required', 'exists:company_invoices,id'],
-            'project_phase_id' => [
-                'required',
-                'exists:project_phases,id',
-                function ($attribute, $value, $fail) {
-                    $phase = ProjectPhase::find($value);
-                    if (!$phase) {
-                        return;
-                    }
-
-                    // Require completed phase: status "complete" and 100% progress
-                    if ($phase->status !== 'complete' || (float) $phase->progress_percentage < 100.0) {
-                        $fail('The selected project phase must be in complete status with 100% progress before invoicing.');
-                    }
-
-                    if (CompanyInvoiceItem::where('project_phase_id', $value)->exists()) {
-                        $fail('This project phase has already been invoiced. Only one company invoice item is allowed per phase.');
-                    }
-                },
-            ],
+            'project_phase_id' => ['nullable', 'exists:project_phases,id'],
             'item_name' => ['required', 'string', 'max:255'],
             'item_description' => ['nullable', 'string', 'max:255'],
             'item_amount' => ['required', 'numeric', 'min:0'],
             'is_taxable' => ['required', 'boolean'],
+            'tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
+            'tax_item_name' => ['nullable', 'string', 'max:255'],
+            'item_type' => ['nullable', 'string', 'max:255', Rule::in(['fixed', 'percent'])],
+            'item_value' => ['nullable', 'numeric', 'min:0'],
+            'tax_amount' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

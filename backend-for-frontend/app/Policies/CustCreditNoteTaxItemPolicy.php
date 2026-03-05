@@ -1,9 +1,5 @@
 <?php
 
-namespace App\Policies;
-
-use App\Models\CustCreditNoteTaxItem;
-
-class CustCreditNoteTaxItemPolicy extends BaseModelPolicy
-{
-}
+// CustCreditNoteTaxItemPolicy is no longer used now that
+// customer credit note taxes are handled inline on
+// cust_credit_note_items.

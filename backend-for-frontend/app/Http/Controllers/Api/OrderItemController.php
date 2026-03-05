@@ -46,6 +46,11 @@ class OrderItemController extends Controller
         }
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
+
+        if (!empty($model->order_id)) {
+            $this->recalculateOrderTotals($model->order_id);
+        }
+
         return new OrderItemResource($model);
     }
 
@@ -73,6 +78,11 @@ class OrderItemController extends Controller
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($orderItem->id, $validated);
+
+        if (!empty($updated->order_id)) {
+            $this->recalculateOrderTotals($updated->order_id);
+        }
+
         return new OrderItemResource($updated);
     }
 
@@ -90,7 +100,41 @@ class OrderItemController extends Controller
             ], 422);
         }
 
+        $orderId = $orderItem->order_id;
+
         $this->service->delete($orderItem->id);
+
+        if (!empty($orderId)) {
+            $this->recalculateOrderTotals($orderId);
+        }
         return response()->noContent();
+    }
+
+    protected function recalculateOrderTotals(int $orderId): void
+    {
+        $order = Order::with('orderItems')->find($orderId);
+        if (! $order) {
+            return;
+        }
+
+        $subtotal = $order->orderItems->sum(function (OrderItem $item) {
+            return (float) ($item->total ?? 0);
+        });
+
+        $lineTaxAmount = $order->orderItems->sum(function (OrderItem $item) {
+            return (float) ($item->item_amount ?? 0);
+        });
+
+        $discountPercentage = (float) ($order->discount_percentage ?? 0);
+        $discountAmount = $subtotal * ($discountPercentage / 100);
+        $taxAmount = $lineTaxAmount;
+        $totalAmount = $subtotal + $taxAmount - $discountAmount;
+
+        $order->subtotal_amount = $subtotal;
+        $order->tax_amount = $taxAmount;
+        $order->discount_amount = $discountAmount;
+        $order->total_amount = $totalAmount;
+
+        $order->save();
     }
 }

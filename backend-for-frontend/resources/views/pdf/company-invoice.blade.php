@@ -90,48 +90,56 @@
         </table>
     </div>
 
-    <div class="section two-col">
-        <div class="card" style="flex: 1; margin-top: 16px;">
-            <h2>Sender</h2>
-            <div class="text-sm">
-                @if($invoice->company)
-                    <span class="font-semibold">{{ $invoice->company->name }}</span>
-                @else
-                    N/A
-                @endif
-            </div>
-            @if($invoice->company && !empty($invoice->company->address))
-                <div class="text-sm mt-1">{{ $invoice->company->address }}</div>
-            @endif
-            @if($invoice->project)
-                <div class="text-sm mt-1">Project: <span class="font-semibold">{{ $invoice->project->code ?? '' }} {{ $invoice->project->name ?? '' }}</span></div>
-            @endif
-        </div>
-        <div class="card" style="flex: 1; margin-top: 16px;">
-            <h2>Recipient</h2>
-            <div class="text-sm"><span class="font-semibold">{{ $senderName }}</span></div>
-            @if(!empty($senderAddressLine1))
-                <div class="text-sm mt-1">{{ $senderAddressLine1 }}</div>
-            @endif
-            @if(!empty($senderCity) || !empty($senderState) || !empty($senderCountry))
-                <div class="text-sm">
-                    {{ trim(($senderCity ?? '') . (isset($senderCity, $senderState) ? ', ' : '') . ($senderState ?? '')) }}
-                    @if(!empty($senderCountry))
-                        {{ isset($senderCity) || isset($senderState) ? ', ' : '' }}{{ $senderCountry }}
-                    @endif
-                </div>
-            @endif
-            @if(!empty($senderPhone))
-                <div class="text-sm mt-1">Phone: {{ $senderPhone }}</div>
-            @endif
-            @if(!empty($senderEmail))
-                <div class="text-sm mt-1">Email: {{ $senderEmail }}</div>
-            @endif
-            @if(!empty($senderWebsite))
-                <div class="text-sm mt-1">Website: {{ $senderWebsite }}</div>
-            @endif
-            <div class="text-sm mt-1">Generated: {{ $generatedAt->format('d M Y H:i') }}</div>
-        </div>
+    <div class="section">
+        <table width="100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td style="width: 50%; vertical-align: top; padding-right: 8px;">
+                    <div class="card" style="margin-top: 16px;">
+                        <h2>Sender</h2>
+                        <div class="text-sm">
+                            @if($invoice->company)
+                                <span class="font-semibold">{{ $invoice->company->name }}</span>
+                            @else
+                                N/A
+                            @endif
+                        </div>
+                        @if($invoice->company && !empty($invoice->company->address))
+                            <div class="text-sm mt-1">{{ $invoice->company->address }}</div>
+                        @endif
+                        @if($invoice->project)
+                            <div class="text-sm mt-1">Project: <span class="font-semibold">{{ $invoice->project->code ?? '' }} {{ $invoice->project->name ?? '' }}</span></div>
+                        @endif
+                    </div>
+                </td>
+                <td style="width: 50%; vertical-align: top; padding-left: 8px;">
+                    <div class="card" style="margin-top: 16px;">
+                        <h2>Recipient</h2>
+                        <div class="text-sm"><span class="font-semibold">{{ $senderName }}</span></div>
+                        @if(!empty($senderAddressLine1))
+                            <div class="text-sm mt-1">{{ $senderAddressLine1 }}</div>
+                        @endif
+                        @if(!empty($senderCity) || !empty($senderState) || !empty($senderCountry))
+                            <div class="text-sm">
+                                {{ trim(($senderCity ?? '') . (isset($senderCity, $senderState) ? ', ' : '') . ($senderState ?? '')) }}
+                                @if(!empty($senderCountry))
+                                    {{ isset($senderCity) || isset($senderState) ? ', ' : '' }}{{ $senderCountry }}
+                                @endif
+                            </div>
+                        @endif
+                        @if(!empty($senderPhone))
+                            <div class="text-sm mt-1">Phone: {{ $senderPhone }}</div>
+                        @endif
+                        @if(!empty($senderEmail))
+                            <div class="text-sm mt-1">Email: {{ $senderEmail }}</div>
+                        @endif
+                        @if(!empty($senderWebsite))
+                            <div class="text-sm mt-1">Website: {{ $senderWebsite }}</div>
+                        @endif
+                        <div class="text-sm mt-1">Generated: {{ $generatedAt->format('d M Y H:i') }}</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 
     @if($invoice->description)

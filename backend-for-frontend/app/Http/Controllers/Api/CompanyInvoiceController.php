@@ -158,7 +158,7 @@ class CompanyInvoiceController extends Controller
                 'discount_percentage' => '0',
                 'discount_amount'     => 0,
                 'total_amount'        => 0,
-                'currency'            => $project ? ($project->currency ?? 'USD') : 'USD',
+                'currency'            => 'KES',
                 'payment_terms'       => $data['payment_terms'] ?? '',
                 'notes_to_customer'   => $data['notes_to_customer'] ?? '',
                 'valid_until'         => now()->addDays(30),
@@ -174,7 +174,6 @@ class CompanyInvoiceController extends Controller
             'project',
             'project.phases',
             'invoiceItems.projectPhase',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -191,7 +190,6 @@ class CompanyInvoiceController extends Controller
             'project',
             'project.phases',
             'invoiceItems.projectPhase',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -388,7 +386,6 @@ class CompanyInvoiceController extends Controller
         $invoice->loadMissing([
             'project',
             'invoiceItems.projectPhase',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -499,7 +496,6 @@ class CompanyInvoiceController extends Controller
         $invoice->loadMissing([
             'project',
             'invoiceItems.projectPhase',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -616,7 +612,6 @@ class CompanyInvoiceController extends Controller
         $invoice->loadMissing([
             'project',
             'invoiceItems.projectPhase',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -754,7 +749,6 @@ class CompanyInvoiceController extends Controller
             'company',
             'company.bankAccounts',
             'invoiceItems',
-            'taxitems',
             'documents',
         ]);
 

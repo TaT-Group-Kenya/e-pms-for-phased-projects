@@ -37,8 +37,6 @@ class CompanyInvoiceResource extends BaseResource
 
             'payments' => CompanyPaymentResource::collection($this->whenLoaded('payments')),
 
-            'taxitems' => CompanyInvoiceTaxItemResource::collection($this->whenLoaded('taxitems')),
-
             'creditnotes' => CompanyCreditNoteResource::collection($this->whenLoaded('creditnotes')),
 
             'documents' => CompanyInvoiceDocumentResource::collection($this->whenLoaded('documents')),

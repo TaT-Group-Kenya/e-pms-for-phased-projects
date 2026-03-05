@@ -19,6 +19,12 @@ class CustCreditNoteItemUpdateRequest extends FormRequest
             'item_name' => ['sometimes', 'required', 'string', 'max:255'],
             'item_description' => ['sometimes', 'required', 'string', 'max:255'],
             'item_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'is_taxable' => ['sometimes', 'required', 'boolean'],
+            'tax_id' => ['sometimes', 'nullable', 'integer', 'exists:taxes,id'],
+            'tax_item_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'item_type' => ['sometimes', 'nullable', 'string', 'max:255', Rule::in(['fixed', 'percent'])],
+            'item_value' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'tax_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'custom_note' => ['sometimes', 'required', 'string', 'max:255'],
         ];
     }

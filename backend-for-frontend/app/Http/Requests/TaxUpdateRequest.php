@@ -20,6 +20,8 @@ class TaxUpdateRequest extends FormRequest
                 )],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],
+            'rate' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'is_default' => ['sometimes', 'required', 'boolean'],
         ];
     }
 

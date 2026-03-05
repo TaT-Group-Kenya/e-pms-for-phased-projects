@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class OrderDocument extends Model
 {
+    use HasLogicalDeletion;
     protected $table = 'order_documents';
 
     protected $fillable = [
