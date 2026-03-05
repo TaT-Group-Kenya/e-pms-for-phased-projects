@@ -863,7 +863,7 @@ const CompanyDetailsView: React.FC<CompanyDetailsViewProps> = ({ companyId }) =>
         {activeTab === 2 && (
           <ProjectsTab
             companyId={companyId}
-            company={company}
+            company={company as any}
             onRefresh={refetchCompanyData}
             accessToken={accessToken || ""}
           />

@@ -208,11 +208,7 @@ const AccountsTable: React.FC = () => {
   const handleOpenCreate = () => {
     setEditingAccount(null);
     resetForm();
-    if (currencies.length) {
-      const defaultCurrency =
-        currencies.find((c) => c.code === "KES") || currencies[0];
-      setFormCurrency(defaultCurrency ? String(defaultCurrency.code) : "");
-    }
+    setFormCurrency("");
     setShowModal(true);
   };
 
@@ -494,7 +490,7 @@ const AccountsTable: React.FC = () => {
                         onClick={() => router.push(`/finance/accounts/${acc.id}`)}
                         className="inline-flex items-center px-[10px] py-[5px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827]"
                       >
-                        View statements
+                        View Account Detail
                       </button>
                       <button
                         type="button"
@@ -579,10 +575,10 @@ const AccountsTable: React.FC = () => {
                     value={formCurrency}
                     onChange={(e) => setFormCurrency(e.target.value)}
                     className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    disabled={currenciesLoading || !!editingAccount}
+                    // disabled={currenciesLoading || !!editingAccount}
                   >
                     <option value="">Select currency</option>
-                    {currencies.filter((c) => c.code === 'KES').map((c) => (
+                    {currencies.map((c) => (
                       <option key={c.id} value={c.code}>
                         {c.code} - {c.name}
                       </option>

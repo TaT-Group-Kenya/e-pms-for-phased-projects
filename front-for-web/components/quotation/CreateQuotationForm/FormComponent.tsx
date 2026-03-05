@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -16,8 +16,8 @@ const quotationSchema = z.object({
   status: z.string().min(1, "Status is required"),
   description: z.string().optional(),
   customer_id: z.string().min(1, "Customer is required"),
-  project_id: z.string().optional().nullable(),
   valid_until_date: z.string().min(1, "Valid until date is required"),
+  currency: z.string().min(1, "Currency is required"),
   payment_terms: z.string().optional(),
   notes_to_customer: z.string().optional(),
   discount_percentage: z.string().optional(),
@@ -31,11 +31,11 @@ interface Customer {
   name: string;
 }
 
-interface Project {
+interface Currency {
   id: number;
   code: string;
+  symbol?: string;
   name: string;
-  customer_id?: number;
 }
 
 const CreateQuotationForm: React.FC = () => {
@@ -46,7 +46,7 @@ const CreateQuotationForm: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [formError, setFormError] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
 
@@ -55,7 +55,6 @@ const CreateQuotationForm: React.FC = () => {
     handleSubmit,
     formState: { errors },
     reset,
-    setValue,
   } = useForm<QuotationFormData>({
     resolver: zodResolver(quotationSchema),
     mode: "onBlur",
@@ -65,18 +64,9 @@ const CreateQuotationForm: React.FC = () => {
     },
   });
 
-  // Filter projects based on selected customer
-  const filteredProjects = useMemo(() => {
-    if (!selectedCustomer) return [];
-    return projects.filter(
-      (project) => project.customer_id?.toString() === selectedCustomer
-    );
-  }, [selectedCustomer, projects]);
-
   // Handle customer change and clear project selection
   const handleCustomerChange = (customerId: string) => {
     setSelectedCustomer(customerId);
-    setValue("project_id", "");
   };
 
   // Load customers, projects, and currencies
@@ -85,14 +75,14 @@ const CreateQuotationForm: React.FC = () => {
 
     const fetchData = async () => {
       try {
-        const [customersRes, projectsRes] = await Promise.all([
+        const [customersRes, currenciesRes] = await Promise.all([
           fetch("/api/customers/list?per_page=1000", {
             headers: {
               Authorization: `Bearer ${accessToken}`,
             },
             signal: controller.signal,
           }),
-          fetch("/api/projects/list?per_page=1000", {
+          fetch("/api/currencies/list?per_page=100", {
             headers: {
               Authorization: `Bearer ${accessToken}`,
             },
@@ -103,13 +93,13 @@ const CreateQuotationForm: React.FC = () => {
         if (controller.signal.aborted) return;
 
         const customersData = await customersRes.json();
-        const projectsData = await projectsRes.json();
+        const currenciesData = await currenciesRes.json();
 
         const customerList = customersData.data || customersData;
-        const projectList = projectsData.data || projectsData;
+        const currenciesList = currenciesData.data || currenciesData;
 
         setCustomers(Array.isArray(customerList) ? customerList : []);
-        setProjects(Array.isArray(projectList) ? projectList : []);
+        setCurrencies(Array.isArray(currenciesList) ? currenciesList : []);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           return;
@@ -141,8 +131,8 @@ const CreateQuotationForm: React.FC = () => {
         status: data.status || "draft",
         description: data.description || "",
         customer_id: data.customer_id ? parseInt(data.customer_id) : null,
-        project_id: data.project_id ? parseInt(data.project_id) : null,
         valid_until_date: data.valid_until_date,
+        currency: data.currency,
         payment_terms: data.payment_terms || "",
         notes_to_customer: data.notes_to_customer || "",
         subtotal_amount: 0,
@@ -221,7 +211,7 @@ const CreateQuotationForm: React.FC = () => {
             )}
 
             <div className="mb-[25px]">
-              <div className="sm:grid sm:grid-cols-2 sm:gap-[25px]">
+              <div className="sm:grid sm:grid-cols-3 sm:gap-[25px] mb-[20px]">
                 {/* Title - Required */}
                 <div className="mb-[20px] sm:mb-0">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
@@ -236,6 +226,28 @@ const CreateQuotationForm: React.FC = () => {
                     placeholder="E.g. Website Development Quote"
                   />
                   {renderFieldError("title")}
+                </div>
+
+                {/* Customer - Required */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Customer <span className="text-danger-500">*</span>
+                  </label>
+                  <select
+                    {...register("customer_id")}
+                    onChange={(e) => handleCustomerChange(e.target.value)}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${
+                      errors.customer_id ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500`}
+                  >
+                    <option value="">Select Customer</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </option>
+                    ))}
+                  </select>
+                  {renderFieldError("customer_id")}
                 </div>
 
                 {/* Status - Draft Only */}
@@ -268,56 +280,7 @@ const CreateQuotationForm: React.FC = () => {
             </div>
 
             <div className="mb-[25px]">
-              <div className="sm:grid sm:grid-cols-2 sm:gap-[25px]">
-                {/* Customer - Required */}
-                <div className="mb-[20px] sm:mb-0">
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Customer <span className="text-danger-500">*</span>
-                  </label>
-                  <select
-                    {...register("customer_id")}
-                    onChange={(e) => handleCustomerChange(e.target.value)}
-                    className={`h-[44px] rounded-md text-black dark:text-white border ${
-                      errors.customer_id ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
-                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500`}
-                  >
-                    <option value="">Select Customer</option>
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name}
-                      </option>
-                    ))}
-                  </select>
-                  {renderFieldError("customer_id")}
-                </div>
-
-                {/* Project */}
-                <div className="mb-[20px] sm:mb-0">
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Related Project
-                  </label>
-                  <select
-                    {...register("project_id")}
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 disabled:opacity-50"
-                    disabled={!selectedCustomer}
-                  >
-                    <option value="">
-                      {selectedCustomer
-                        ? "Select Project (Optional)"
-                        : "Select Customer First"}
-                    </option>
-                    {filteredProjects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.code} - {project.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-[25px]">
-              <div className="sm:grid sm:grid-cols-2 sm:gap-[25px]">
+              <div className="sm:grid sm:grid-cols-4 sm:gap-[25px] mb-[20px]">
                 {/* Valid Until Date - Required */}
                 <div className="mb-[20px] sm:mb-0">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
@@ -334,24 +297,62 @@ const CreateQuotationForm: React.FC = () => {
                   {renderFieldError("valid_until_date")}
                 </div>
 
-                {/* Tax percentage field removed: tax is now driven by explicit tax items or backend logic. */}
-              </div>
+                {/* Currency - Required */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Currency <span className="text-danger-500">*</span>
+                  </label>
+                  <select
+                    {...register("currency")}
+                    disabled={loadingData}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${
+                      errors.currency ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50`}
+                  >
+                    <option value="">{loadingData ? "Loading currencies..." : "Select a currency"}</option>
+                    {currencies.map((currency) => (
+                      <option key={currency.id} value={currency.code}>
+                        {currency.name} ({currency.code})
+                      </option>
+                    ))}
+                  </select>
+                  {renderFieldError("currency")}                
+                </div>
 
-              {/* Discount Percentage */}
-              <div className="mb-[20px]">
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Discount Percentage (%)
-                </label>
-                <input
-                  type="number"
-                  {...register("discount_percentage")}
-                  defaultValue="0"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
-                  placeholder="0.00"
-                />
+                {/* Discount Percentage */}
+                <div className="mb-[20px]">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Discount Percentage (%)
+                  </label>
+                  <input
+                    type="number"
+                    {...register("discount_percentage")}
+                    defaultValue="0"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                {/* Min Approval Count */}
+                <div className="mb-[20px]">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Minimum Approval Count <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    {...register("min_approval_count")}
+                    defaultValue="1"
+                    min="1"
+                    max="10"
+                    step="1"
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                    placeholder="1"
+                  />
+                </div>
+
               </div>
 
               {/* Payment Terms */}
@@ -364,23 +365,6 @@ const CreateQuotationForm: React.FC = () => {
                   className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
                   placeholder="E.g. 50% deposit required, balance on completion"
                   rows={2}
-                />
-              </div>
-
-              {/* Min Approval Count */}
-              <div className="mb-[20px]">
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Minimum Approval Count <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  {...register("min_approval_count")}
-                  defaultValue="1"
-                  min="1"
-                  max="10"
-                  step="1"
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
-                  placeholder="1"
                 />
               </div>
             </div>

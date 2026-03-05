@@ -81,7 +81,7 @@ interface ToastContainerProps {
 
 export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, onClose }) => {
   return (
-    <div className="fixed top-[20px] right-[20px] z-50 space-y-[10px] max-w-[400px]">
+    <div className="fixed top-[20px] right-[20px] z-[9999] space-y-[10px] max-w-[400px]">
       {toasts.map((toast) => (
         <Toast key={toast.id} {...toast} onClose={onClose} />
       ))}

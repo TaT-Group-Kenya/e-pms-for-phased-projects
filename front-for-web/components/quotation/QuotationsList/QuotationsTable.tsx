@@ -14,7 +14,6 @@ interface Quotation {
   title: string;
   description?: string;
   customer_id?: number;
-  project_id?: number;
   status: string;
   valid_until_date: string;
   subtotal_amount: number;

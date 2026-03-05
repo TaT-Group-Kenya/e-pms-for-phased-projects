@@ -652,7 +652,7 @@ const CompanyInvoicesTable: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white dark:bg-[#0c1427] rounded-md shadow-lg w-full max-w-2xl p-[20px] md:p-[25px]">
             <div className="flex items-center justify-between mb-[15px]">
-              <h5 className="!mb-0">Create Company Invoice from Phase</h5>
+              <h5 className="!mb-0">Create Company Invoice from Project</h5>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
@@ -703,35 +703,7 @@ const CompanyInvoicesTable: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[15px]">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-[6px]">
-                  Payment Terms
-                </label>
-                <input
-                  type="text"
-                  value={invoicePaymentTerms}
-                  onChange={(e) => setInvoicePaymentTerms(e.target.value)}
-                  className="w-full border border-gray-200 dark:border-[#172036] rounded-md px-[10px] py-[7px] text-sm bg-white dark:bg-[#0c1427] text-black dark:text-white outline-none"
-                  placeholder="e.g. 30 days from invoice date"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-[6px]">
-                  Notes to Company
-                </label>
-                <textarea
-                  value={invoiceNotes}
-                  onChange={(e) => setInvoiceNotes(e.target.value)}
-                  rows={3}
-                  className="w-full border border-gray-200 dark:border-[#172036] rounded-md px-[10px] py-[7px] text-sm bg-white dark:bg-[#0c1427] text-black dark:text-white outline-none resize-none"
-                  placeholder="Any special notes to show on the invoice"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[15px]">
+             <div className="grid grid-cols-1 md:grid-cols-1 gap-[15px] mb-[15px]">
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-[6px]">
                   Description
@@ -795,6 +767,34 @@ const CompanyInvoicesTable: React.FC = () => {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-[15px] mb-[15px]">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-[6px]">
+                  Payment Terms
+                </label>
+                <input
+                  type="text"
+                  value={invoicePaymentTerms}
+                  onChange={(e) => setInvoicePaymentTerms(e.target.value)}
+                  className="w-full border border-gray-200 dark:border-[#172036] rounded-md px-[10px] py-[7px] text-sm bg-white dark:bg-[#0c1427] text-black dark:text-white outline-none"
+                  placeholder="e.g. 30 days from invoice date"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-[6px]">
+                  Notes to Company
+                </label>
+                <textarea
+                  value={invoiceNotes}
+                  onChange={(e) => setInvoiceNotes(e.target.value)}
+                  rows={3}
+                  className="w-full border border-gray-200 dark:border-[#172036] rounded-md px-[10px] py-[7px] text-sm bg-white dark:bg-[#0c1427] text-black dark:text-white outline-none resize-none"
+                  placeholder="Any special notes to show on the invoice"
+                />
               </div>
             </div>
 

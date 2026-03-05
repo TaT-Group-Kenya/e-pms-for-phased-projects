@@ -14,6 +14,11 @@ interface CustInvoiceItem {
   quantity?: number | null
   item_amount: number
   total?: number | null
+  is_taxable?: boolean
+  tax_item_name?: string | null
+  item_type?: 'fixed' | 'percent' | string | null
+  item_value?: number | null
+  tax_amount?: number | null
 }
 
 interface CustInvoiceTaxItem {
@@ -72,6 +77,7 @@ interface AccountSummary {
   id: number
   code: string
   name: string
+  currency: string
 }
 
 interface CustInvoice {
@@ -201,6 +207,7 @@ export default function CustInvoiceDetailPage() {
         id: Number(item.id),
         code: String(item.code ?? ''),
         name: String(item.name ?? ''),
+        currency: String(item.currency ?? ''),
       }))
       setAccounts(mapped)
     } catch (e: any) {
@@ -270,7 +277,7 @@ export default function CustInvoiceDetailPage() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `invoice-${id}.pdf`
+      a.download = `invoice-${invoice?.invoice_number}.pdf`
       document.body.appendChild(a)
       a.click()
       a.remove()
@@ -755,8 +762,8 @@ export default function CustInvoiceDetailPage() {
                       : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
-                  <i className="material-symbols-outlined !text-[20px]">percent</i>
-                  Tax Items
+                  <i className="material-symbols-outlined !text-[20px]">receipt_long</i>
+                  Credit Notes
                 </button>
               </li>
 
@@ -766,21 +773,6 @@ export default function CustInvoiceDetailPage() {
                   onClick={() => setActiveTab(3)}
                   className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
                     activeTab === 3
-                      ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                  }`}
-                >
-                  <i className="material-symbols-outlined !text-[20px]">receipt_long</i>
-                  Credit Notes
-                </button>
-              </li>
-
-              <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab(4)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 4
                       ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
                       : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
                   }`}
@@ -872,6 +864,9 @@ export default function CustInvoiceDetailPage() {
                                 Qty
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                                Tax
+                              </th>
+                              <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                                 Total
                               </th>
                             </tr>
@@ -895,6 +890,39 @@ export default function CustInvoiceDetailPage() {
                                 </td>
                                 <td className="text-sm text-right px-[15px] py-[12px]">
                                   {item.quantity ?? 1}
+                                </td>
+                                <td className="text-sm text-right px-[15px] py-[12px] align-top">
+                                  {item.is_taxable ? (
+                                    <div className="space-y-[4px] text-right">
+                                      <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
+                                        <span className="font-semibold">
+                                          {item.tax_item_name || 'Tax'}
+                                        </span>
+                                        <span className="text-[10px] uppercase tracking-wide">
+                                          {item.item_type === 'percent'
+                                            ? 'PERCENT'
+                                            : item.item_type === 'fixed'
+                                            ? 'FIXED'
+                                            : ''}
+                                        </span>
+                                      </div>
+                                      {item.item_value != null && (
+                                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                                          {item.item_type === 'percent'
+                                            ? `${item.item_value}%`
+                                            : `${invoice.currency} ${Number(item.item_value).toLocaleString()}`}
+                                        </div>
+                                      )}
+                                      {item.tax_amount != null && item.tax_amount > 0 && (
+                                        <div className="text-xs text-gray-700 dark:text-gray-300">
+                                          Tax amount: {invoice.currency}{' '}
+                                          {Number(item.tax_amount).toLocaleString()}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
+                                  )}
                                 </td>
                                 <td className="text-sm text-right px-[15px] py-[12px]">
                                   {formatCurrency(
@@ -1245,6 +1273,9 @@ export default function CustInvoiceDetailPage() {
                             Qty
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Tax
+                          </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Total
                           </th>
                         </tr>
@@ -1269,6 +1300,39 @@ export default function CustInvoiceDetailPage() {
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {item.quantity ?? 1}
                             </td>
+                            <td className="text-sm text-right px-[15px] py-[12px] align-top">
+                              {item.is_taxable ? (
+                                <div className="space-y-[4px] text-right">
+                                  <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
+                                    <span className="font-semibold">
+                                      {item.tax_item_name || 'Tax'}
+                                    </span>
+                                    <span className="text-[10px] uppercase tracking-wide">
+                                      {item.item_type === 'percent'
+                                        ? 'PERCENT'
+                                        : item.item_type === 'fixed'
+                                        ? 'FIXED'
+                                        : ''}
+                                    </span>
+                                  </div>
+                                  {item.item_value != null && (
+                                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                                      {item.item_type === 'percent'
+                                        ? `${item.item_value}%`
+                                        : `${invoice.currency} ${Number(item.item_value).toLocaleString()}`}
+                                    </div>
+                                  )}
+                                  {item.tax_amount != null && item.tax_amount > 0 && (
+                                    <div className="text-xs text-gray-700 dark:text-gray-300">
+                                      Tax amount: {invoice.currency}{' '}
+                                      {Number(item.tax_amount).toLocaleString()}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
+                              )}
+                            </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {formatCurrency(
                                 item.total ?? item.item_amount * (item.quantity ?? 1),
@@ -1285,80 +1349,8 @@ export default function CustInvoiceDetailPage() {
             </div>
           )}
 
-          {/* Tax Items Tab */}
-          {activeTab === 2 && (
-            <div className="pt-[20px]">
-              <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
-                <h6 className="text-black dark:text-white font-semibold mb-[15px]">
-                  Tax Items
-                </h6>
-
-                {(!invoice.taxitems || invoice.taxitems.length === 0) && (
-                  <p className="text-xs text-gray-500">No tax items on this invoice.</p>
-                )}
-
-                {invoice.taxitems && invoice.taxitems.length > 0 && (
-                  <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 dark:bg-[#15203c]">
-                        <tr>
-                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                            Name
-                          </th>
-                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                            Type
-                          </th>
-                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Value
-                          </th>
-                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Amount
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {invoice.taxitems.map((item) => (
-                          <tr
-                            key={item.id}
-                            className="border-b border-gray-100 dark:border-[#172036] align-middle"
-                          >
-                            <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              {item.item_name}
-                            </td>
-                            <td className="text-sm capitalize ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              {item.item_type}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {(() => {
-                                if (item.item_value == null) return '-'
-
-                                const numericValue =
-                                  typeof item.item_value === 'number'
-                                    ? item.item_value
-                                    : Number(item.item_value)
-
-                                if (Number.isNaN(numericValue)) return '-'
-
-                                return item.item_type === 'percent'
-                                  ? `${numericValue.toFixed(2)}%`
-                                  : formatCurrency(numericValue, invoice.currency)
-                              })()}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {formatCurrency(item.item_amount ?? 0, invoice.currency)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Credit Notes Tab */}
-          {activeTab === 3 && (
+          {activeTab === 2 && (
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <div className="flex items-center justify-between mb-[15px]">
@@ -1444,7 +1436,7 @@ export default function CustInvoiceDetailPage() {
           )}
 
           {/* Payments Tab */}
-          {activeTab === 4 && (
+          {activeTab === 3 && (
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <div className="flex items-center justify-between mb-[15px]">
@@ -1679,6 +1671,12 @@ export default function CustInvoiceDetailPage() {
 
               <div>
                 <label className="block text-xs font-medium mb-[5px]">Benefiting Account</label>
+                {/* Only show accounts whose currency matches the invoice currency */}
+                {invoice && (
+                  <p className="mb-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                    Showing accounts in currency <span className="font-medium">{invoice.currency}</span> only.
+                  </p>
+                )}
                 <select
                   value={selectedAccountId}
                   onChange={(e) => setSelectedAccountId(e.target.value)}
@@ -1686,12 +1684,20 @@ export default function CustInvoiceDetailPage() {
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">{accountsLoading ? 'Loading accounts…' : 'Select account'}</option>
-                  {accounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.code} - {account.name}
-                    </option>
-                  ))}
+                  {(accounts || [])
+                    .filter((account) => !invoice || account.currency === invoice.currency)
+                    .map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.code} - {account.name}
+                      </option>
+                    ))}
                 </select>
+                {(!accountsLoading && invoice &&
+                  (accounts || []).filter((a) => a.currency === invoice.currency).length === 0) && (
+                  <p className="mt-[4px] text-[11px] text-warning-600 dark:text-warning-400">
+                    No benefiting accounts are configured for currency {invoice.currency}. Please create one before recording payments.
+                  </p>
+                )}
               </div>
 
               <div>

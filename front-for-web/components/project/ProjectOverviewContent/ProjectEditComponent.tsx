@@ -340,8 +340,9 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                 <input
                   type="text"
                   value={editFormData.code || ""}
-                  onChange={(e) => handleFormChange("code", e.target.value)}
-                  className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                  readOnly
+                  disabled
+                  className="h-[55px] rounded-md text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-[#172036] bg-gray-100 dark:bg-[#111827] px-[17px] block w-full outline-0 cursor-not-allowed"
                 />
               </div>
 
@@ -517,9 +518,8 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                 </label>
                 <select
                   value={editFormData.currency || ""}
-                    onChange={(e) => handleFormChange("currency", e.target.value)}
-                  disabled={loadingData}
-                  className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
+                  disabled
+                  className="h-[55px] rounded-md text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-[#172036] bg-gray-100 dark:bg-[#111827] px-[17px] block w-full outline-0 cursor-not-allowed"
                 >
                   <option value="">{loadingData ? "Loading currencies..." : "Select a currency"}</option>
                   {currencies.map((currency) => (

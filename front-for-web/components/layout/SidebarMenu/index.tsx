@@ -32,24 +32,6 @@ interface SidebarSection {
 
 const SECTIONS: SidebarSection[] = [
   {
-    id: "projects",
-    label: "Projects",
-    icon: "description",
-    group: "main",
-    items: [
-      {
-        label: "All Projects",
-        href: "/project/project-list",
-        matchStrategy: "entity",
-      },
-      { label: "Add Project", href: "/project/create-project" },
-      { label: "Reports", href: "/project/report" },
-      { label: "Categories", href: "/project/category" },
-      { label: "Sources", href: "/project/source-origins" },
-      { label: "Locations", href: "/project/locations" },
-    ],
-  },
-  {
     id: "customers",
     label: "Customers",
     icon: "family_group",
@@ -105,6 +87,24 @@ const SECTIONS: SidebarSection[] = [
         href: "/orders/order-list",
         matchStrategy: "entity",
       },
+    ],
+  },
+  {
+    id: "projects",
+    label: "Projects",
+    icon: "description",
+    group: "main",
+    items: [
+      {
+        label: "All Projects",
+        href: "/project/project-list",
+        matchStrategy: "entity",
+      },
+      { label: "Add Project", href: "/project/create-project" },
+      { label: "Reports", href: "/project/report" },
+      { label: "Categories", href: "/project/category" },
+      { label: "Sources", href: "/project/source-origins" },
+      { label: "Locations", href: "/project/locations" },
     ],
   },
   {

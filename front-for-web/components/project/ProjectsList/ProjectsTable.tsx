@@ -320,7 +320,12 @@ const ProjectsList: React.FC = () => {
                     filteredProjects.map((project) => (
                       <tr key={project.id} className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors">
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
-                          <span className="font-medium text-sm">{project.code}</span>
+                          <Link
+                            href={`/project/${project.id}`}
+                            className="text-primary-500 hover:text-primary-600 hover:underline font-medium text-sm"
+                          >
+                            {project.code}
+                          </Link>
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px]">
                           <Link
