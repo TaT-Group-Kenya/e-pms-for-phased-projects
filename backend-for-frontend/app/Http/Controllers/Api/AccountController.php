@@ -235,8 +235,10 @@ class AccountController extends Controller
         $rows = collect();
 
         $customerLedgerQuery->get()->each(function ($row) use (&$rows, $accountId) {
-            $debitBase = $row->account_debit == $accountId ? ($row->converted_amount ?? $row->amount) : 0;
-            $creditBase = $row->account_credit == $accountId ? ($row->converted_amount ?? $row->amount) : 0;
+            // For account statements, always use the original amount in the
+            // account's currency; converted amounts are only for reporting.
+            $debitBase = $row->account_debit == $accountId ? $row->amount : 0;
+            $creditBase = $row->account_credit == $accountId ? $row->amount : 0;
 
             $rows->push([
                 'source' => 'customer_ledger',
@@ -263,8 +265,8 @@ class AccountController extends Controller
         });
 
         $companyLedgerQuery->get()->each(function ($row) use (&$rows, $accountId) {
-            $debitBase = $row->account_debit == $accountId ? ($row->converted_amount ?? $row->amount) : 0;
-            $creditBase = $row->account_credit == $accountId ? ($row->converted_amount ?? $row->amount) : 0;
+            $debitBase = $row->account_debit == $accountId ? $row->amount : 0;
+            $creditBase = $row->account_credit == $accountId ? $row->amount : 0;
 
             $rows->push([
                 'source' => 'company_ledger',
@@ -291,8 +293,8 @@ class AccountController extends Controller
         });
 
         $transactionsQuery->get()->each(function ($row) use (&$rows, $accountId) {
-            $debitBase = $row->account_debit == $accountId ? ($row->converted_amount ?? $row->amount) : 0;
-            $creditBase = $row->account_credit == $accountId ? ($row->converted_amount ?? $row->amount) : 0;
+            $debitBase = $row->account_debit == $accountId ? $row->amount : 0;
+            $creditBase = $row->account_credit == $accountId ? $row->amount : 0;
 
             $rows->push([
                 'source' => 'transaction',
