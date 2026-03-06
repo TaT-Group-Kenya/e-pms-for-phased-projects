@@ -6,6 +6,7 @@ import AuthenticatedLayout from '../../../components/authenticated/Authenticated
 import { ToastContainer } from '../../../components/common/Toast'
 import { useToast } from '../../../hooks/useToast'
 import { selectAccessToken } from '../../../store/auth/selectors'
+import Can from '../../../components/auth/Can'
 
 interface ProjectPhaseSummary {
   id: number
@@ -1238,39 +1239,40 @@ export default function CompanyInvoiceDetailPage() {
                           {invoice.status}
                         </span>
                       </div>
-
-                      <div className="pt-[5px] pb-[15px] border-b border-gray-100 dark:border-[#172036]">
-                        <span className="text-gray-600 dark:text-gray-400 block mb-[8px] text-xs">
-                          Change Status:
-                        </span>
-                        <div className="flex flex-wrap gap-[6px]">
-                          <button
-                            type="button"
-                            disabled={
-                              ['draft', 'paid', 'partially-paid'].includes(invoice.status) ||
-                              updatingStatus !== null ||
-                              (invoice.payments && invoice.payments.length > 0)
-                            }
-                            onClick={() => updateStatus('draft')}
-                            className="px-[10px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Mark Draft
-                          </button>
-                          <button
-                            type="button"
-                            disabled={
-                              ['sent', 'paid', 'partially-paid'].includes(invoice.status) ||
-                              updatingStatus !== null ||
-                              !invoice.invoiceItems ||
-                              invoice.invoiceItems.length === 0
-                            }
-                            onClick={() => updateStatus('sent')}
-                            className="px-[10px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Mark Sent
-                          </button>
+                      <Can any={["ROLE_EDIT_COMPANY_INVOICE"]}>
+                        <div className="pt-[5px] pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                          <span className="text-gray-600 dark:text-gray-400 block mb-[8px] text-xs">
+                            Change Status:
+                          </span>
+                          <div className="flex flex-wrap gap-[6px]">
+                            <button
+                              type="button"
+                              disabled={
+                                ['draft', 'paid', 'partially-paid'].includes(invoice.status) ||
+                                updatingStatus !== null ||
+                                (invoice.payments && invoice.payments.length > 0)
+                              }
+                              onClick={() => updateStatus('draft')}
+                              className="px-[10px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Mark Draft
+                            </button>
+                            <button
+                              type="button"
+                              disabled={
+                                ['sent', 'paid', 'partially-paid'].includes(invoice.status) ||
+                                updatingStatus !== null ||
+                                !invoice.invoiceItems ||
+                                invoice.invoiceItems.length === 0
+                              }
+                              onClick={() => updateStatus('sent')}
+                              className="px-[10px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Mark Sent
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      </Can>
 
                       <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
                         <span className="text-gray-600 dark:text-gray-400">Currency:</span>
@@ -1761,16 +1763,18 @@ export default function CompanyInvoiceDetailPage() {
                     </h6>
 
                     <div className="space-y-[10px]">
-                      <button
-                        type="button"
-                        onClick={handleStartEdit}
-                        className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900"
-                      >
-                        <i className="material-symbols-outlined mr-[8px] !text-[20px]">
-                          edit
-                        </i>
-                        Edit Header
-                      </button>
+                      <Can any={["ROLE_EDIT_COMPANY_INVOICE"]}>
+                        <button
+                          type="button"
+                          onClick={handleStartEdit}
+                          className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900"
+                        >
+                          <i className="material-symbols-outlined mr-[8px] !text-[20px]">
+                            edit
+                          </i>
+                          Edit Header
+                        </button>
+                      </Can>
 
                       <button
                         type="button"
@@ -1797,15 +1801,17 @@ export default function CompanyInvoiceDetailPage() {
                       </button>
 
                       <div>
-                        <button
-                          type="button"
-                          onClick={handleOpenAddPayment}
-                          disabled={['draft','paid'].includes(invoice.status)}
-                          className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-warning-50 dark:bg-warning-950 text-warning-500 hover:bg-warning-100 dark:hover:bg-warning-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <i className="material-symbols-outlined mr-[8px] !text-[20px]">payments</i>
-                          Make payment 
-                        </button>
+                        <Can any={["ROLE_ADD_COMPANY_PAYMENT"]}>
+                          <button
+                            type="button"
+                            onClick={handleOpenAddPayment}
+                            disabled={['draft','paid'].includes(invoice.status)}
+                            className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-warning-50 dark:bg-warning-950 text-warning-500 hover:bg-warning-100 dark:hover:bg-warning-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <i className="material-symbols-outlined mr-[8px] !text-[20px]">payments</i>
+                            Make payment 
+                          </button>
+                        </Can>
                         {['draft','paid'].includes(invoice.status) && (
                           <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
                             Payments can only be added when the invoice status is <span className="font-medium">sent</span> or <span className="font-medium">partially-paid</span>.
@@ -1828,30 +1834,32 @@ export default function CompanyInvoiceDetailPage() {
                     Invoice Items
                   </h6>
                   <div className="text-right">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (invoice.status !== 'draft') {
-                          addToast('Invoice items can only be modified while the invoice is in draft status.', 'error')
-                          return
-                        }
-                        setItemName(primaryPhase?.name || '')
-                        setItemDescription('')
-                        setItemAmount('')
-                        setItemTaxable(true)
-                        setItemProjectPhaseId(
-                          invoice.project_phase_id ??
-                            primaryPhase?.id ??
-                            (companyPhases.length === 1 ? companyPhases[0].id : null)
-                        )
-                        setIsAddingItem(true)
-                      }}
-                      disabled={invoice.status !== 'draft'}
-                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
-                      Add Item
-                    </button>
+                    <Can any={["ROLE_ADD_COMPANY_INVOICE_ITEM"]}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (invoice.status !== 'draft') {
+                            addToast('Invoice items can only be modified while the invoice is in draft status.', 'error')
+                            return
+                          }
+                          setItemName(primaryPhase?.name || '')
+                          setItemDescription('')
+                          setItemAmount('')
+                          setItemTaxable(true)
+                          setItemProjectPhaseId(
+                            invoice.project_phase_id ??
+                              primaryPhase?.id ??
+                              (companyPhases.length === 1 ? companyPhases[0].id : null)
+                          )
+                          setIsAddingItem(true)
+                        }}
+                        disabled={invoice.status !== 'draft'}
+                        className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
+                        Add Item
+                      </button>
+                    </Can>
                     {invoice.status !== 'draft' && (
                       <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
                         Items can only be added or changed while the invoice is <span className="font-medium">draft</span>.
@@ -1966,22 +1974,26 @@ export default function CompanyInvoiceDetailPage() {
                               )}
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px] space-x-2">
-                              <button
-                                type="button"
-                                onClick={() => handleStartEditItem(item)}
-                                disabled={invoice.status !== 'draft'}
-                                className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteItem(item)}
-                                disabled={invoice.status !== 'draft'}
-                                className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-danger-200 text-danger-600 hover:bg-danger-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Delete
-                              </button>
+                              <Can any={["ROLE_EDIT_COMPANY_INVOICE_ITEM"]}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEditItem(item)}
+                                  disabled={invoice.status !== 'draft'}
+                                  className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Edit
+                                </button>
+                              </Can>
+                              <Can any={["ROLE_DELETE_COMPANY_INVOICE_ITEM"]}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteItem(item)}
+                                  disabled={invoice.status !== 'draft'}
+                                  className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-danger-200 text-danger-600 hover:bg-danger-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Delete
+                                </button>
+                              </Can>
                             </td>
                           </tr>
                         ))}
@@ -2002,15 +2014,17 @@ export default function CompanyInvoiceDetailPage() {
                     Credit Notes
                   </h6>
                   <div className="text-right">
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingCreditNote(true)}
-                      disabled={invoice.status !== 'paid'}
-                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
-                      Add Credit Note
-                    </button>
+                    <Can any={["ROLE_ADD_COMPANY_CREDIT_NOTE"]}>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingCreditNote(true)}
+                        disabled={invoice.status !== 'paid'}
+                        className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
+                        Add Credit Note
+                      </button>
+                    </Can>
                     {invoice.status !== 'paid' && (
                       <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
                         Credit notes can only be created when the invoice status is <span className="font-medium">paid</span>.
@@ -2076,15 +2090,17 @@ export default function CompanyInvoiceDetailPage() {
                   </h6>
 
                   <div className="text-right">
-                    <button
-                      type="button"
-                      onClick={handleOpenAddPayment}
-                      disabled={!canAddPayment}
-                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
-                      Make payment 
-                    </button>
+                    <Can any={["ROLE_ADD_COMPANY_PAYMENT"]}>
+                      <button
+                        type="button"
+                        onClick={handleOpenAddPayment}
+                        disabled={!canAddPayment}
+                        className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
+                        Make payment 
+                      </button>
+                    </Can>
                     {!canAddPayment && (
                       <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
                         Payments cannot be added when the invoice status is <span className="font-medium">draft</span> or <span className="font-medium">paid</span>.
@@ -2141,22 +2157,26 @@ export default function CompanyInvoiceDetailPage() {
                               {formatCurrency(pmt.amount_paid, pmt.currency)}
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px] space-x-2">
-                              <button
-                                type="button"
-                                onClick={() => handleStartEditPayment(pmt)}
-                                className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={pmt.reconciled === true}
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeletePayment(pmt)}
-                                className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-danger-200 text-danger-600 hover:bg-danger-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={pmt.reconciled === true}
-                              >
-                                Delete
-                              </button>
+                              <Can any={["ROLE_EDIT_COMPANY_PAYMENT"]}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEditPayment(pmt)}
+                                  className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                                  disabled={pmt.reconciled === true}
+                                >
+                                  Edit
+                                </button>
+                              </Can>
+                              <Can any={["ROLE_DELETE_COMPANY_PAYMENT"]}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeletePayment(pmt)}
+                                  className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-danger-200 text-danger-600 hover:bg-danger-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  disabled={pmt.reconciled === true}
+                                >
+                                  Delete
+                                </button>
+                              </Can>
                             </td>
                           </tr>
                         ))}
@@ -2213,14 +2233,16 @@ export default function CompanyInvoiceDetailPage() {
                 />
               </div>
               <div className="flex gap-2 mt-2">
-                <button
-                  type="button"
-                  onClick={handleSaveHeader}
-                  disabled={saving}
-                  className="px-3 py-2 text-sm rounded bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
-                >
-                  {saving ? 'Saving…' : 'Save Changes'}
-                </button>
+                <Can any={["ROLE_EDIT_COMPANY_INVOICE"]}>
+                  <button
+                    type="button"
+                    onClick={handleSaveHeader}
+                    disabled={saving}
+                    className="px-3 py-2 text-sm rounded bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
+                  >
+                    {saving ? 'Saving…' : 'Save Changes'}
+                  </button>
+                </Can>
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
@@ -2357,14 +2379,16 @@ export default function CompanyInvoiceDetailPage() {
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={handleSavePayment}
-                disabled={savingPayment}
-                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {savingPayment ? 'Saving…' : 'Save Payment'}
-              </button>
+              <Can any={["ROLE_ADD_COMPANY_PAYMENT"]}>
+                <button
+                  type="button"
+                  onClick={handleSavePayment}
+                  disabled={savingPayment}
+                  className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingPayment ? 'Saving…' : 'Save Payment'}
+                </button>
+              </Can>
             </div>
           </div>
         </div>
@@ -2572,14 +2596,16 @@ export default function CompanyInvoiceDetailPage() {
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={handleSaveItem}
-                disabled={savingItem}
-                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {savingItem ? 'Saving…' : 'Save Item'}
-              </button>
+              <Can any={["ROLE_ADD_COMPANY_INVOICE_ITEM"]}>
+                <button
+                  type="button"
+                  onClick={handleSaveItem}
+                  disabled={savingItem}
+                  className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingItem ? 'Saving…' : 'Save Item'}
+                </button>
+              </Can>
             </div>
           </div>
         </div>
@@ -2781,14 +2807,16 @@ export default function CompanyInvoiceDetailPage() {
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={handleSaveItemEdit}
-                disabled={savingItemEdit}
-                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {savingItemEdit ? 'Saving…' : 'Save Changes'}
-              </button>
+              <Can any={["ROLE_EDIT_COMPANY_INVOICE_ITEM"]}>
+                <button
+                  type="button"
+                  onClick={handleSaveItemEdit}
+                  disabled={savingItemEdit}
+                  className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingItemEdit ? 'Saving…' : 'Save Changes'}
+                </button>
+              </Can>
             </div>
           </div>
         </div>
@@ -2832,14 +2860,16 @@ export default function CompanyInvoiceDetailPage() {
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                disabled={deletingItem}
-                onClick={handleConfirmDeleteItem}
-                className="px-[13px] py-[8px] rounded-md bg-danger-500 text-white text-xs font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {deletingItem ? 'Deleting…' : 'Delete Item'}
-              </button>
+              <Can any={["ROLE_DELETE_COMPANY_INVOICE_ITEM"]}>
+                <button
+                  type="button"
+                  disabled={deletingItem}
+                  onClick={handleConfirmDeleteItem}
+                  className="px-[13px] py-[8px] rounded-md bg-danger-500 text-white text-xs font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deletingItem ? 'Deleting…' : 'Delete Item'}
+                </button>
+              </Can>
             </div>
           </div>
         </div>
@@ -2909,14 +2939,16 @@ export default function CompanyInvoiceDetailPage() {
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={handleSavePaymentEdit}
-                disabled={savingPaymentEdit}
-                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {savingPaymentEdit ? 'Saving…' : 'Save Changes'}
-              </button>
+              <Can any={["ROLE_EDIT_COMPANY_PAYMENT"]}>
+                <button
+                  type="button"
+                  onClick={handleSavePaymentEdit}
+                  disabled={savingPaymentEdit}
+                  className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingPaymentEdit ? 'Saving…' : 'Save Changes'}
+                </button>
+              </Can>
             </div>
           </div>
         </div>
@@ -2977,49 +3009,51 @@ export default function CompanyInvoiceDetailPage() {
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                disabled={deletingPayment || !invoice}
-                onClick={async () => {
-                  if (!invoice || !paymentToDelete) return
-                  if (!accessToken) {
-                    addToast('You are not authenticated.', 'error')
-                    return
-                  }
-
-                  setDeletingPayment(true)
-                  try {
-                    const resp = await fetch('/api/company-invoices/delete-payment', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${accessToken}`,
-                      },
-                      body: JSON.stringify({
-                        id: invoice.id,
-                        paymentId: paymentToDelete.id,
-                      }),
-                    })
-
-                    const data = await resp.json().catch(() => null)
-                    if (!resp.ok) {
-                      throw new Error(data?.message || 'Failed to delete payment')
+              <Can any={["ROLE_DELETE_COMPANY_PAYMENT"]}>
+                <button
+                  type="button"
+                  disabled={deletingPayment || !invoice}
+                  onClick={async () => {
+                    if (!invoice || !paymentToDelete) return
+                    if (!accessToken) {
+                      addToast('You are not authenticated.', 'error')
+                      return
                     }
 
-                    const inv = (data?.data || data) as CompanyInvoice
-                    setInvoice(inv)
-                    setPaymentToDelete(null)
-                    addToast('Payment deleted successfully.', 'success')
-                  } catch (e: any) {
-                    addToast(e.message || 'Failed to delete payment', 'error')
-                  } finally {
-                    setDeletingPayment(false)
-                  }
-                }}
-                className="px-[13px] py-[8px] rounded-md bg-danger-500 text-white text-xs font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {deletingPayment ? 'Deleting…' : 'Delete Payment'}
-              </button>
+                    setDeletingPayment(true)
+                    try {
+                      const resp = await fetch('/api/company-invoices/delete-payment', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${accessToken}`,
+                        },
+                        body: JSON.stringify({
+                          id: invoice.id,
+                          paymentId: paymentToDelete.id,
+                        }),
+                      })
+
+                      const data = await resp.json().catch(() => null)
+                      if (!resp.ok) {
+                        throw new Error(data?.message || 'Failed to delete payment')
+                      }
+
+                      const inv = (data?.data || data) as CompanyInvoice
+                      setInvoice(inv)
+                      setPaymentToDelete(null)
+                      addToast('Payment deleted successfully.', 'success')
+                    } catch (e: any) {
+                      addToast(e.message || 'Failed to delete payment', 'error')
+                    } finally {
+                      setDeletingPayment(false)
+                    }
+                  }}
+                  className="px-[13px] py-[8px] rounded-md bg-danger-500 text-white text-xs font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deletingPayment ? 'Deleting…' : 'Delete Payment'}
+                </button>
+              </Can>
             </div>
           </div>
         </div>
@@ -3073,14 +3107,16 @@ export default function CompanyInvoiceDetailPage() {
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={handleCreateCreditNote}
-                disabled={savingCreditNote}
-                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {savingCreditNote ? 'Creating…' : 'Create Credit Note'}
-              </button>
+              <Can any={["ROLE_ADD_COMPANY_CREDIT_NOTE"]}>
+                <button
+                  type="button"
+                  onClick={handleCreateCreditNote}
+                  disabled={savingCreditNote}
+                  className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingCreditNote ? 'Creating…' : 'Create Credit Note'}
+                </button>
+              </Can>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import Can from "../../auth/Can";
 
 interface Project {
   id: string;
@@ -559,22 +560,26 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
               </h6>
               {!isEditMode && (
                 <div className="flex gap-[8px]">
-                  <button
-                    onClick={handleEdit}
-                    className="inline-flex items-center justify-center w-[36px] h-[36px] rounded-md border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Edit customer"
-                    disabled={isSubmitting}
-                  >
-                    <i className="material-symbols-outlined !text-[18px]">edit</i>
-                  </button>
-                  <button
-                    onClick={handleDeleteCustomer}
-                    className="inline-flex items-center justify-center w-[36px] h-[36px] rounded-md border border-danger-500 text-danger-500 hover:bg-danger-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Delete customer"
-                    disabled={isSubmitting}
-                  >
-                    <i className="material-symbols-outlined !text-[18px] text-danger-500">delete</i>
-                  </button>
+                  <Can any={["ROLE_EDIT_CUSTOMER"]}>
+                    <button
+                      onClick={handleEdit}
+                      className="inline-flex items-center justify-center w-[36px] h-[36px] rounded-md border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Edit customer"
+                      disabled={isSubmitting}
+                    >
+                      <i className="material-symbols-outlined !text-[18px]">edit</i>
+                    </button>
+                  </Can>
+                  <Can any={["ROLE_DELETE_CUSTOMER"]}>
+                    <button
+                      onClick={handleDeleteCustomer}
+                      className="inline-flex items-center justify-center w-[36px] h-[36px] rounded-md border border-danger-500 text-danger-500 hover:bg-danger-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Delete customer"
+                      disabled={isSubmitting}
+                    >
+                      <i className="material-symbols-outlined !text-[18px] text-danger-500">delete</i>
+                    </button>
+                  </Can>
                 </div>
               )}
             </div>
@@ -794,14 +799,16 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
                     Cancel
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={handleUpdateCustomer}
-                    className="font-medium inline-block transition-all rounded-md md:text-md py-[10px] md:py-[12px] px-[20px] md:px-[22px] bg-primary-500 text-white hover:bg-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Saving..." : "Save Changes"}
-                  </button>
+                  <Can any={["ROLE_EDIT_CUSTOMER"]}>
+                    <button
+                      type="button"
+                      onClick={handleUpdateCustomer}
+                      className="font-medium inline-block transition-all rounded-md md:text-md py-[10px] md:py-[12px] px-[20px] md:px-[22px] bg-primary-500 text-white hover:bg-primary-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Saving..." : "Save Changes"}
+                    </button>
+                  </Can>
                 </div>
               </div>
             ) : (
