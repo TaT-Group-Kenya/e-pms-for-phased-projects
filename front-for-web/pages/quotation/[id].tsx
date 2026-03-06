@@ -9,6 +9,7 @@ import { ToastContainer } from "../../components/common/Toast";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 import { formatApiError } from "../../utils/errorHandler";
 import { set } from "zod";
+import Can from "../../components/auth/Can";
 
 interface QuoteLineItem {
   id: number;
@@ -1054,27 +1055,31 @@ const QuotationDetail: React.FC = () => {
     <AuthenticatedLayout>
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
-      <DeleteConfirmationModal
-        isOpen={deleteItemModalOpen}
-        title="Delete Line Item"
-        message="Are you sure you want to delete this line item? This action cannot be undone."
-        itemName={deleteItem?.item_name || ""}
-        isDeleting={isDeletingItem}
-        error={deleteItemError}
-        onConfirm={handleConfirmDeleteItem}
-        onCancel={closeDeleteItemModal}
-      />
+      <Can any={["ROLE_DELETE_QUOTE_LINE_ITEM"]}>
+        <DeleteConfirmationModal
+          isOpen={deleteItemModalOpen}
+          title="Delete Line Item"
+          message="Are you sure you want to delete this line item? This action cannot be undone."
+          itemName={deleteItem?.item_name || ""}
+          isDeleting={isDeletingItem}
+          error={deleteItemError}
+          onConfirm={handleConfirmDeleteItem}
+          onCancel={closeDeleteItemModal}
+        />
+      </Can>
 
-      <DeleteConfirmationModal
-        isOpen={isDeleteOrderModalOpen}
-        title="Delete Order"
-        message="Are you sure you want to delete this order? This action cannot be undone."
-        itemName={quotation.order?.order_number || "Order"}
-        isDeleting={isDeletingOrder}
-        error={deleteOrderError}
-        onConfirm={handleConfirmDeleteOrder}
-        onCancel={closeDeleteOrderModal}
-      />
+      <Can any={["ROLE_DELETE_ORDER"]}>
+        <DeleteConfirmationModal
+          isOpen={isDeleteOrderModalOpen}
+          title="Delete Order"
+          message="Are you sure you want to delete this order? This action cannot be undone."
+          itemName={quotation.order?.order_number || "Order"}
+          isDeleting={isDeletingOrder}
+          error={deleteOrderError}
+          onConfirm={handleConfirmDeleteOrder}
+          onCancel={closeDeleteOrderModal}
+        />
+      </Can>
 
       <DeleteConfirmationModal
         isOpen={false}
@@ -1134,22 +1139,24 @@ const QuotationDetail: React.FC = () => {
             >
               Back
             </button>
-            {quotation.status === "draft" && (
-              <button
-                onClick={() => handleStatusChange("sent")}
-                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white"
-              >
-                Mark as Sent
-              </button>
-            )}
-            {quotation.status === "sent" && (
-              <button
-                onClick={() => handleStatusChange("draft")}
-                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-warning-500 border border-warning-500 hover:bg-warning-500 hover:text-white"
-              >
-                Revert to Draft
-              </button>
-            )}
+            <Can any={["ROLE_EDIT_QUOTATION"]}>
+              {quotation.status === "draft" && (
+                <button
+                  onClick={() => handleStatusChange("sent")}
+                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white"
+                >
+                  Mark as Sent
+                </button>
+              )}
+              {quotation.status === "sent" && (
+                <button
+                  onClick={() => handleStatusChange("draft")}
+                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-warning-500 border border-warning-500 hover:bg-warning-500 hover:text-white"
+                >
+                  Revert to Draft
+                </button>
+              )}
+            </Can>
           </div>
         </div>
       </div>
@@ -1441,15 +1448,17 @@ const QuotationDetail: React.FC = () => {
                     <h6 className="text-black dark:text-white font-semibold mb-[15px]">Actions</h6>
 
                     <div className="space-y-[10px]">
-                      <button
-                        type="button"
-                        onClick={openEditModal}
-                        disabled={!canEditHeaderFields}
-                        className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <i className="material-symbols-outlined mr-[8px] !text-[20px]">edit</i>
-                        Edit Quotation
-                      </button>
+                      <Can any={["ROLE_EDIT_QUOTATION"]}>
+                        <button
+                          type="button"
+                          onClick={openEditModal}
+                          disabled={!canEditHeaderFields}
+                          className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <i className="material-symbols-outlined mr-[8px] !text-[20px]">edit</i>
+                          Edit Quotation
+                        </button>
+                      </Can>
 
                       <button
                         type="button"
@@ -1472,10 +1481,12 @@ const QuotationDetail: React.FC = () => {
                       </button>
 
                       {quotation.status === "draft" && (
-                        <button className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-danger-50 dark:bg-danger-950 text-danger-500 hover:bg-danger-100 dark:hover:bg-danger-900">
-                          <i className="material-symbols-outlined mr-[8px] !text-[20px]">delete</i>
-                          Delete Quote
-                        </button>
+                        <Can any={["ROLE_DELETE_QUOTATION"]}>
+                          <button className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-danger-50 dark:bg-danger-950 text-danger-500 hover:bg-danger-100 dark:hover:bg-danger-900">
+                            <i className="material-symbols-outlined mr-[8px] !text-[20px]">delete</i>
+                            Delete Quote
+                          </button>
+                        </Can>
                       )}
                     </div>
                   </div>
@@ -1491,15 +1502,17 @@ const QuotationDetail: React.FC = () => {
                 <div className="flex items-center justify-between mb-[20px]">
                   <h6 className="text-black dark:text-white font-semibold">Quote Line Items</h6>
                   <div className="flex gap-[10px]">
-                    <button
-                      type="button"
-                      onClick={handleOpenAddItemModal}
-                      disabled={!canEditLineItems}
-                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <i className="material-symbols-outlined mr-[8px] !text-[18px]">add</i>
-                      Add Item
-                    </button>
+                    <Can any={["ROLE_ADD_QUOTE_LINE_ITEM"]}>
+                      <button
+                        type="button"
+                        onClick={handleOpenAddItemModal}
+                        disabled={!canEditLineItems}
+                        className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <i className="material-symbols-outlined mr-[8px] !text-[18px]">add</i>
+                        Add Item
+                      </button>
+                    </Can>
                   </div>
                 </div>
                 <div className="table-responsive overflow-x-auto">
@@ -1574,20 +1587,24 @@ const QuotationDetail: React.FC = () => {
                                 <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
                                   {canEditLineItems && (
                                     <div className="flex items-center gap-[8px]">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleOpenEditItemModal(item)}
-                                        className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[8px] py-[4px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white text-xs"
-                                      >
-                                        <i className="material-symbols-outlined !text-[16px]">edit</i>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => openDeleteItemModal(item)}
-                                        className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[8px] py-[4px] text-danger-500 border border-danger-500 hover:bg-danger-500 hover:text-white text-xs"
-                                      >
-                                        <i className="material-symbols-outlined !text-[16px]">delete</i>
-                                      </button>
+                                      <Can any={["ROLE_EDIT_QUOTE_LINE_ITEM"]}>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenEditItemModal(item)}
+                                          className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[8px] py-[4px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white text-xs"
+                                        >
+                                          <i className="material-symbols-outlined !text-[16px]">edit</i>
+                                        </button>
+                                      </Can>
+                                      <Can any={["ROLE_DELETE_QUOTE_LINE_ITEM"]}>
+                                        <button
+                                          type="button"
+                                          onClick={() => openDeleteItemModal(item)}
+                                          className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[8px] py-[4px] text-danger-500 border border-danger-500 hover:bg-danger-500 hover:text-white text-xs"
+                                        >
+                                          <i className="material-symbols-outlined !text-[16px]">delete</i>
+                                        </button>
+                                      </Can>
                                     </div>
                                   )}
                                 </td>
@@ -1616,28 +1633,30 @@ const QuotationDetail: React.FC = () => {
                 <div className="flex items-center justify-between mb-[20px]">
                   <h6 className="text-black dark:text-white font-semibold">Approvals</h6>
                   {quotation.status === "sent" && !hasCurrentUserApproval && (
-                    <div className="flex gap-[10px]">
-                      {getAvailableApprovalActions(quotation).includes("make") && (
-                        <button
-                          type="button"
-                          onClick={() => handleOpenApprovalModal("make")}
-                          className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap text-sm"
-                        >
-                          <i className="material-symbols-outlined mr-[8px] !text-[18px]">check_circle</i>
-                          Approve as Maker
-                        </button>
-                      )}
-                      {getAvailableApprovalActions(quotation).includes("check") && (
-                        <button
-                          type="button"
-                          onClick={() => handleOpenApprovalModal("check")}
-                          className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap text-sm"
-                        >
-                          <i className="material-symbols-outlined mr-[8px] !text-[18px]">check_circle</i>
-                          Approve as Checker
-                        </button>
-                      )}
-                    </div>
+                    <Can any={["ROLE_ADD_QUOTE_APPROVAL"]}>
+                      <div className="flex gap-[10px]">
+                        {getAvailableApprovalActions(quotation).includes("make") && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenApprovalModal("make")}
+                            className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap text-sm"
+                          >
+                            <i className="material-symbols-outlined mr-[8px] !text-[18px]">check_circle</i>
+                            Approve as Maker
+                          </button>
+                        )}
+                        {getAvailableApprovalActions(quotation).includes("check") && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenApprovalModal("check")}
+                            className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap text-sm"
+                          >
+                            <i className="material-symbols-outlined mr-[8px] !text-[18px]">check_circle</i>
+                            Approve as Checker
+                          </button>
+                        )}
+                      </div>
+                    </Can>
                   )}
                 </div>
                 <div className="table-responsive overflow-x-auto">
@@ -1707,24 +1726,26 @@ const QuotationDetail: React.FC = () => {
                 <div className="flex items-center justify-between mb-[20px]">
                   <h6 className="text-black dark:text-white font-semibold">Order</h6>
                   {!quotation.order && quotation.status === "approved" && (
-                    <button
-                      type="button"
-                      onClick={handleGenerateOrder}
-                      disabled={isGeneratingOrder}
-                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isGeneratingOrder ? (
-                        <>
-                          <span className="inline-block w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin mr-[8px]" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <i className="material-symbols-outlined mr-[8px] !text-[18px]">add</i>
-                          Generate Order
-                        </>
-                      )}
-                    </button>
+                    <Can any={["ROLE_ADD_ORDER"]}>
+                      <button
+                        type="button"
+                        onClick={handleGenerateOrder}
+                        disabled={isGeneratingOrder}
+                        className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isGeneratingOrder ? (
+                          <>
+                            <span className="inline-block w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin mr-[8px]" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <i className="material-symbols-outlined mr-[8px] !text-[18px]">add</i>
+                            Generate Order
+                          </>
+                        )}
+                      </button>
+                    </Can>
                   )}
                 </div>
                 {orderError && (
@@ -1826,14 +1847,16 @@ const QuotationDetail: React.FC = () => {
                     )}
 
                     <div className="pt-[10px] flex justify-end">
-                      <button
-                        type="button"
-                        onClick={openDeleteOrderModal}
-                        className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-danger-500 border border-danger-500 hover:bg-danger-500 hover:text-white text-sm"
-                      >
-                        <i className="material-symbols-outlined mr-[8px] !text-[18px]">delete</i>
-                        Delete Order
-                      </button>
+                      <Can any={["ROLE_DELETE_ORDER"]}>
+                        <button
+                          type="button"
+                          onClick={openDeleteOrderModal}
+                          className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-danger-500 border border-danger-500 hover:bg-danger-500 hover:text-white text-sm"
+                        >
+                          <i className="material-symbols-outlined mr-[8px] !text-[18px]">delete</i>
+                          Delete Order
+                        </button>
+                      </Can>
                     </div>
                   </div>
                 )}
@@ -1844,9 +1867,10 @@ const QuotationDetail: React.FC = () => {
       </div>
 
       {/* Approval Modal */}
-      {isApprovalModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <Can any={["ROLE_ADD_QUOTE_APPROVAL"]}>
+        {isApprovalModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[500px] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-[20px]">
               <h6 className="font-semibold text-black dark:text-white">Approve Quotation</h6>
               {isApprovalSubmitting && (
@@ -1868,7 +1892,7 @@ const QuotationDetail: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmitApproval} className="space-y-[20px]">
+              <form onSubmit={handleSubmitApproval} className="space-y-[20px]">
               <div>
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
                   Approval Type
@@ -1908,12 +1932,20 @@ const QuotationDetail: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
+        )}
+      </Can>
 
       {/* Add/Edit Line Item Modal */}
-      {isItemModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <Can
+        any={
+          editingItem
+            ? ["ROLE_EDIT_QUOTE_LINE_ITEM"]
+            : ["ROLE_ADD_QUOTE_LINE_ITEM"]
+        }
+      >
+        {isItemModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[600px] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-[20px]">
               <h6 className="font-semibold text-black dark:text-white">
                 {editingItem ? "Edit Line Item" : "Add Line Item"}
@@ -1937,7 +1969,7 @@ const QuotationDetail: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmitItem} className="space-y-[20px]">
+              <form onSubmit={handleSubmitItem} className="space-y-[20px]">
               <div>
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
                   Item Name <span className="text-danger-500">*</span>
@@ -2162,14 +2194,16 @@ const QuotationDetail: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
+        )}
+      </Can>
 
       {/* Tax Item Modal removed: quotation now uses inline per-item tax configuration only */}
 
       {/* Edit Quotation Header Modal */}
-      {isEditing && quotation && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <Can any={["ROLE_EDIT_QUOTATION"]}>
+        {isEditing && quotation && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[700px] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-[20px]">
               <h6 className="font-semibold text-black dark:text-white">Edit Quotation</h6>
               {isEditSubmitting && (
@@ -2195,7 +2229,7 @@ const QuotationDetail: React.FC = () => {
               Changing the customer will clear all existing quote line items and reset quote totals.
             </div>
 
-            <form onSubmit={handleSubmitEdit} className="space-y-[20px]">
+              <form onSubmit={handleSubmitEdit} className="space-y-[20px]">
               <div>
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
                   Title <span className="text-danger-500">*</span>
@@ -2395,7 +2429,8 @@ const QuotationDetail: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
+        )}
+      </Can>
     </AuthenticatedLayout>
   );
 };
