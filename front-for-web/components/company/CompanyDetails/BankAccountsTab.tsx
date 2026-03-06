@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "../../../hooks/useToast";
+import Can from "../../auth/Can";
 
 interface BankAccount {
   id: number;
@@ -315,14 +316,16 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
         <h6 className="font-semibold text-black dark:text-white">
           Bank Accounts
         </h6>
-        <button
-          type="button"
-          onClick={() => setShowAddBankAccountModal(true)}
-          className="inline-flex items-center gap-[8px] bg-primary-500 hover:bg-primary-600 text-white font-medium py-[8px] px-[16px] rounded-md transition-all"
-        >
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          Add Account
-        </button>
+        <Can any={["ROLE_ADD_COMPANY_BANK"]}>
+          <button
+            type="button"
+            onClick={() => setShowAddBankAccountModal(true)}
+            className="inline-flex items-center gap-[8px] bg-primary-500 hover:bg-primary-600 text-white font-medium py-[8px] px-[16px] rounded-md transition-all"
+          >
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            Add Account
+          </button>
+        </Can>
       </div>
 
       {bankAccountMessage && (
@@ -406,22 +409,26 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
                     <td className="py-3 px-4">{account.swiftcode || "N/A"}</td>
                     <td className="py-3 px-4">
                       <div className="flex gap-[8px]">
-                        <button
-                          onClick={() => handleEditBankAccount(account)}
-                          className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Edit account"
-                          disabled={submittingBankAccount}
-                        >
-                          <span className="material-symbols-outlined !text-[16px]">edit</span>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteBankAccountClick(account.id)}
-                          className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-danger-500 text-danger-500 hover:bg-danger-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Delete account"
-                          disabled={submittingBankAccount}
-                        >
-                          <span className="material-symbols-outlined !text-[16px] text-danger-500">delete</span>
-                        </button>
+                        <Can any={["ROLE_EDIT_COMPANY_BANK"]}>
+                          <button
+                            onClick={() => handleEditBankAccount(account)}
+                            className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Edit account"
+                            disabled={submittingBankAccount}
+                          >
+                            <span className="material-symbols-outlined !text-[16px]">edit</span>
+                          </button>
+                        </Can>
+                        <Can any={["ROLE_DELETE_COMPANY_BANK"]}>
+                          <button
+                            onClick={() => handleDeleteBankAccountClick(account.id)}
+                            className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-danger-500 text-danger-500 hover:bg-danger-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Delete account"
+                            disabled={submittingBankAccount}
+                          >
+                            <span className="material-symbols-outlined !text-[16px] text-danger-500">delete</span>
+                          </button>
+                        </Can>
                       </div>
                     </td>
                   </tr>
@@ -641,14 +648,16 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={handleUpdateBankAccount}
-                disabled={submittingBankAccount}
-                className="flex-1 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-400 text-white font-medium py-[10px] px-[15px] rounded-md transition-all"
-              >
-                {submittingBankAccount ? "Updating..." : "Update Account"}
-              </button>
+              <Can any={["ROLE_EDIT_COMPANY_BANK"]}>
+                <button
+                  type="button"
+                  onClick={handleUpdateBankAccount}
+                  disabled={submittingBankAccount}
+                  className="flex-1 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-400 text-white font-medium py-[10px] px-[15px] rounded-md transition-all"
+                >
+                  {submittingBankAccount ? "Updating..." : "Update Account"}
+                </button>
+              </Can>
             </div>
           </div>
         </div>
@@ -680,14 +689,16 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
                 disabled={submittingBankAccount}
               >
                 Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                className="flex-1 bg-danger-500 hover:bg-danger-600 disabled:bg-gray-400 text-white font-medium py-[10px] px-[15px] rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={submittingBankAccount}
-              >
-                {submittingBankAccount ? "Deleting..." : "Delete"}
+              <Can any={["ROLE_DELETE_COMPANY_BANK"]}>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="flex-1 bg-danger-500 hover:bg-danger-600 text-white font-medium py-[10px] px-[15px] rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={submittingBankAccount}
+                >
+                  {submittingBankAccount ? "Deleting..." : "Delete"}
+                </button>
+              </Can>
               </button>
             </div>
           </div>

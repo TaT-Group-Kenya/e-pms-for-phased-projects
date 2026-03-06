@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "../../../hooks/useToast";
+import Can from "../../auth/Can";
 
 interface User {
   id: number;
@@ -312,14 +313,16 @@ const UsersTab: React.FC<UsersTabProps> = ({
         <h6 className="font-semibold text-black dark:text-white">
           Users
         </h6>
-        <button
-          type="button"
-          onClick={() => setShowAddUserModal(true)}
-          className="inline-flex items-center gap-[8px] bg-primary-500 hover:bg-primary-600 text-white font-medium py-[8px] px-[16px] rounded-md transition-all"
-        >
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          Add User
-        </button>
+        <Can any={["ROLE_ADD_USER"]}>
+          <button
+            type="button"
+            onClick={() => setShowAddUserModal(true)}
+            className="inline-flex items-center gap-[8px] bg-primary-500 hover:bg-primary-600 text-white font-medium py-[8px] px-[16px] rounded-md transition-all"
+          >
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            Add User
+          </button>
+        </Can>
       </div>
 
       {userMessage && (
@@ -426,22 +429,26 @@ const UsersTab: React.FC<UsersTabProps> = ({
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex gap-[8px]">
-                        <button
-                          onClick={() => handleEditUser(user)}
-                          className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Edit user"
-                          disabled={submittingUser || editingUserId !== null}
-                        >
-                          <span className="material-symbols-outlined !text-[16px]">edit</span>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUserClick(user.id)}
-                          className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-danger-500 text-danger-500 hover:bg-danger-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Delete user"
-                          disabled={submittingUser}
-                        >
-                          <span className="material-symbols-outlined !text-[16px] text-danger-500">delete</span>
-                        </button>
+                        <Can any={["ROLE_EDIT_USER"]}>
+                          <button
+                            onClick={() => handleEditUser(user)}
+                            className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Edit user"
+                            disabled={submittingUser || editingUserId !== null}
+                          >
+                            <span className="material-symbols-outlined !text-[16px]">edit</span>
+                          </button>
+                        </Can>
+                        <Can any={["ROLE_DELETE_USER"]}>
+                          <button
+                            onClick={() => handleDeleteUserClick(user.id)}
+                            className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-danger-500 text-danger-500 hover:bg-danger-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Delete user"
+                            disabled={submittingUser}
+                          >
+                            <span className="material-symbols-outlined !text-[16px] text-danger-500">delete</span>
+                          </button>
+                        </Can>
                       </div>
                     </td>
                   </tr>
@@ -605,20 +612,22 @@ const UsersTab: React.FC<UsersTabProps> = ({
               )}
 
               <div className="flex gap-[10px] pt-[15px]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (editingUserId !== null) {
-                      handleUpdateUser();
-                    } else {
-                      handleCreateUser();
-                    }
-                  }}
-                  disabled={submittingUser}
-                  className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-medium py-[10px] px-[16px] rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submittingUser ? 'Processing...' : editingUserId !== null ? 'Update User' : 'Create User'}
-                </button>
+                <Can any={editingUserId !== null ? ["ROLE_EDIT_USER"] : ["ROLE_ADD_USER"]}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editingUserId !== null) {
+                        handleUpdateUser();
+                      } else {
+                        handleCreateUser();
+                      }
+                    }}
+                    disabled={submittingUser}
+                    className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-medium py-[10px] px-[16px] rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submittingUser ? 'Processing...' : editingUserId !== null ? 'Update User' : 'Create User'}
+                  </button>
+                </Can>
                 <button
                   type="button"
                   onClick={() => {
