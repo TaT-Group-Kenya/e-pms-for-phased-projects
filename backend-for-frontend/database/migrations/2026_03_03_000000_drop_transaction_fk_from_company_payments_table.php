@@ -8,10 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('company_payments', function (Blueprint $table) {
-            // Drop only the foreign key constraint, keep the transaction_id column
-            $table->dropForeign('company_payments_transaction_id_foreign');
-        });
+        // Drop the foreign key only if the transaction_id column exists
+        if (Schema::hasColumn('company_payments', 'transaction_id')) {
+            Schema::table('company_payments', function (Blueprint $table) {
+                // Drop only the foreign key constraint, keep the transaction_id column
+                $table->dropForeign('company_payments_transaction_id_foreign');
+            });
+        }
     }
 
     public function down(): void

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Project;
+use App\Models\Order;
 use App\Services\ProjectService;
 use App\Http\Resources\ProjectResource;
 use App\Services\CommonService;
@@ -36,6 +37,17 @@ class ProjectController extends Controller
         $this->authorize('create', Project::class);
         
         $validated = $request->validated();
+        
+        // Ensure the project customer matches the customer on the related order
+        $order = Order::findOrFail($validated['order_id']);
+        if ((int) $validated['customer_id'] !== (int) $order->customer_id) {
+            return response()->json([
+                'message' => 'The project customer must be the same as the order customer.',
+                'errors' => [
+                    'customer_id' => ['The selected customer does not match the order customer.'],
+                ],
+            ], 422);
+        }
         
         do {
             $commonService = new CommonService();
@@ -98,6 +110,20 @@ class ProjectController extends Controller
 
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
+        
+        // If this project is linked to an order, prevent changing the customer
+        // to anything other than the order's customer
+        $project->loadMissing('order');
+        if ($project->order && array_key_exists('customer_id', $validated)) {
+            if ((int) $validated['customer_id'] !== (int) $project->order->customer_id) {
+                return response()->json([
+                    'message' => 'The project customer must match the customer on the related order.',
+                    'errors' => [
+                        'customer_id' => ['The selected customer does not match the order customer.'],
+                    ],
+                ], 422);
+            }
+        }
         
         $updated = $this->service->update($project->id, $validated);
         

@@ -394,7 +394,7 @@ class CustInvoiceController extends Controller
 
             // Update benefiting account balance: credit increases balance
             $currentBalance = (float) $account->balance;
-            $account->balance = (string) number_format($currentBalance + $convertedAmount, 2, '.', '');
+            $account->balance = (string) number_format($currentBalance + $validated['amount_paid'], 2, '.', '');
             $account->updated_at = now();
             $account->updated_by = Auth::id();
             $account->save();
