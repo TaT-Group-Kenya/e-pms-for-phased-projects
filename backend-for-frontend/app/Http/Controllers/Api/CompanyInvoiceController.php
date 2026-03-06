@@ -271,7 +271,7 @@ class CompanyInvoiceController extends Controller
             $netPortion = $amountPaid - $taxPortion;
 
             // Determine base (account) currency and invoice currency
-            $accountCurrencyCode = $account->currency ?? 'KES';
+            $accountCurrencyCode = $account->currency;
             $invoiceCurrencyCode = $invoice->currency;
 
             // Enforce that the selected account uses the same currency as the invoice
@@ -368,7 +368,7 @@ class CompanyInvoiceController extends Controller
             $payment->save();
 
             // Update accounts account balance: debit decreases balance
-            $account->balance = (string) number_format($currentBalance - $convertedAmount, 2, '.', '');
+            $account->balance = (string) number_format($currentBalance - $amountPaid, 2, '.', '');
             $account->updated_at = now();
             $account->updated_by = Auth::id();
             $account->save();
