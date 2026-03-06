@@ -6523,12 +6523,12 @@
                 }
             }
         },
-        "/taxs": {
+        "/taxes": {
             "get": {
                 "tags": [
-                    "taxs"
+                    "taxes"
                 ],
-                "summary": "List taxs",
+                "summary": "List taxes",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -6547,7 +6547,7 @@
             },
             "post": {
                 "tags": [
-                    "taxs"
+                    "taxes"
                 ],
                 "summary": "Create Taxs",
                 "requestBody": {
@@ -6574,7 +6574,7 @@
                 }
             }
         },
-        "/taxs/{id}": {
+        "/taxes/{id}": {
             "parameters": [
                 {
                     "name": "id",
@@ -6587,7 +6587,7 @@
             ],
             "get": {
                 "tags": [
-                    "taxs"
+                    "taxes"
                 ],
                 "summary": "Get Taxs",
                 "responses": {
@@ -6605,7 +6605,7 @@
             },
             "put": {
                 "tags": [
-                    "taxs"
+                    "taxes"
                 ],
                 "summary": "Replace Taxs",
                 "requestBody": {
@@ -6633,7 +6633,7 @@
             },
             "patch": {
                 "tags": [
-                    "taxs"
+                    "taxes"
                 ],
                 "summary": "Update Taxs",
                 "requestBody": {
@@ -6661,7 +6661,7 @@
             },
             "delete": {
                 "tags": [
-                    "taxs"
+                    "taxes"
                 ],
                 "summary": "Delete Taxs",
                 "responses": {

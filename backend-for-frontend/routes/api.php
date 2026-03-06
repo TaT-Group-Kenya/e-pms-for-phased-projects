@@ -12,6 +12,8 @@ Route::prefix('/')->group(function () {
 	Route::middleware('auth:sanctum')->group(function () {
 		Route::post('logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
 		Route::get('me', [App\Http\Controllers\Api\AuthController::class, 'me']);
+		Route::put('me/profile', [App\Http\Controllers\Api\AuthController::class, 'updateProfile']);
+		Route::post('me/change-password', [App\Http\Controllers\Api\AuthController::class, 'changePassword']);
 
 		Route::get('accounts/{account}/statement', [App\Http\Controllers\Api\AccountController::class, 'statement']);
 		Route::get('accounts/{account}/statement-pdf', [App\Http\Controllers\Api\AccountController::class, 'downloadStatementPdf']);
@@ -89,6 +91,8 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('customer-transactions-ledger', App\Http\Controllers\Api\CustomerTransactionsLedgerController::class)
 			->parameter('customer-transactions-ledger', 'customer_transactions_ledger');
 		Route::get('transactions/{transaction}/download-pdf', [App\Http\Controllers\Api\TransactionController::class, 'downloadPdf']);
+		Route::get('company-payments/{companyPayment}/download-pdf', [App\Http\Controllers\Api\CompanyPaymentController::class, 'downloadPdf']);
+		Route::get('cust-payments/{custPayment}/download-pdf', [App\Http\Controllers\Api\CustPaymentController::class, 'downloadPdf']);
 		Route::get('company-transactions-ledger/{company_transactions_ledger}/download-pdf', [App\Http\Controllers\Api\CompanyTransactionsLedgerController::class, 'downloadPdf']);
 		Route::get('customer-transactions-ledger/{customer_transactions_ledger}/download-pdf', [App\Http\Controllers\Api\CustomerTransactionsLedgerController::class, 'downloadPdf']);
 	});

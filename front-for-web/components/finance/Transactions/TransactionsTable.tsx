@@ -12,10 +12,43 @@ interface TxnRow {
   transaction_number?: string | null;
   transaction_type?: string | null;
   transaction_date?: string | null;
+  posted_date?: string | null;
   amount: number;
+  transaction_currency?: string | null;
   base_currency?: string | null;
+  exchange_rate?: number | null;
+  converted_amount?: number | null;
+  tax_amount?: number | null;
+  net_amount?: number | null;
+  converted_tax_amount?: number | null;
+  converted_net_amount?: number | null;
+  customer_id?: number | null;
+  company_id?: number | null;
+  source_type?: string | null;
+  source_id?: number | null;
+  account_debit?: number | null;
+  account_credit?: number | null;
   category?: string | null;
+  payment_method?: string | null;
+  bank_account?: string | null;
+  check_number?: string | null;
   transaction_status?: string | null;
+  related_transaction_id?: number | null;
+  narration?: string | null;
+  is_recurring?: boolean | null;
+  fiscal_year?: number | null;
+  accounting_period?: string | null;
+  is_adjusting_entry?: boolean | null;
+  cost_center_id?: number | null;
+  customer?: any;
+  company?: any;
+  paymentMethod?: any;
+  costCenter?: any;
+  relatedTransaction?: any;
+  created_at?: string | null;
+  updated_at?: string | null;
+  created_by?: string | number | null;
+  updated_by?: string | number | null;
 }
 
 const TransactionsTable: React.FC = () => {
@@ -30,6 +63,7 @@ const TransactionsTable: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [currencyFilter, setCurrencyFilter] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -73,10 +107,68 @@ const TransactionsTable: React.FC = () => {
           transaction_number: r.transaction_number ?? null,
           transaction_type: r.transaction_type ?? null,
           transaction_date: r.transaction_date ?? null,
+          posted_date: r.posted_date ?? null,
           amount: Number(r.amount ?? 0),
+          transaction_currency: r.transaction_currency ?? null,
           base_currency: r.base_currency ?? null,
+          exchange_rate:
+            r.exchange_rate !== undefined && r.exchange_rate !== null
+              ? Number(r.exchange_rate)
+              : null,
+          converted_amount:
+            r.converted_amount !== undefined && r.converted_amount !== null
+              ? Number(r.converted_amount)
+              : null,
+          tax_amount:
+            r.tax_amount !== undefined && r.tax_amount !== null
+              ? Number(r.tax_amount)
+              : null,
+          net_amount:
+            r.net_amount !== undefined && r.net_amount !== null
+              ? Number(r.net_amount)
+              : null,
+          converted_tax_amount:
+            r.converted_tax_amount !== undefined && r.converted_tax_amount !== null
+              ? Number(r.converted_tax_amount)
+              : null,
+          converted_net_amount:
+            r.converted_net_amount !== undefined && r.converted_net_amount !== null
+              ? Number(r.converted_net_amount)
+              : null,
+          customer_id: r.customer_id != null ? Number(r.customer_id) : null,
+          company_id: r.company_id != null ? Number(r.company_id) : null,
+          source_type: r.source_type ?? null,
+          source_id: r.source_id != null ? Number(r.source_id) : null,
+          account_debit: r.account_debit != null ? Number(r.account_debit) : null,
+          account_credit: r.account_credit != null ? Number(r.account_credit) : null,
           category: r.category ?? null,
+          payment_method: r.payment_method ?? null,
+          bank_account: r.bank_account ?? null,
+          check_number: r.check_number ?? null,
           transaction_status: r.transaction_status ?? null,
+          related_transaction_id:
+            r.related_transaction_id != null ? Number(r.related_transaction_id) : null,
+          narration: r.narration ?? null,
+          is_recurring:
+            r.is_recurring !== undefined && r.is_recurring !== null
+              ? Boolean(r.is_recurring)
+              : null,
+          fiscal_year: r.fiscal_year != null ? Number(r.fiscal_year) : null,
+          accounting_period: r.accounting_period ?? null,
+          is_adjusting_entry:
+            r.is_adjusting_entry !== undefined && r.is_adjusting_entry !== null
+              ? Boolean(r.is_adjusting_entry)
+              : null,
+          cost_center_id: r.cost_center_id != null ? Number(r.cost_center_id) : null,
+          customer: r.customer ?? null,
+          company: r.company ?? null,
+          paymentMethod: r.paymentMethod ?? null,
+          costCenter: r.costCenter ?? null,
+          relatedTransaction: r.relatedTransaction ?? null,
+          created_at: r.created_at ?? null,
+          updated_at: r.updated_at ?? null,
+          created_by: r.created_by ?? null,
+          updated_by: r.updated_by ?? null,
         }));
 
         setRows(mapped);
@@ -133,14 +225,19 @@ const TransactionsTable: React.FC = () => {
       if (statusFilter && (r.transaction_status || "") !== statusFilter) {
         return false;
       }
+      if (currencyFilter && (r.base_currency || "") !== currencyFilter) {
+        return false;
+      }
       return (
         (r.transaction_number || "").toLowerCase().includes(term) ||
         (r.transaction_type || "").toLowerCase().includes(term) ||
         (r.category || "").toLowerCase().includes(term) ||
-        (r.transaction_status || "").toLowerCase().includes(term)
+        (r.transaction_status || "").toLowerCase().includes(term) ||
+        (r.narration || "").toLowerCase().includes(term) ||
+        (r.payment_method || "").toLowerCase().includes(term)
       );
     });
-  }, [rows, searchTerm, typeFilter, statusFilter]);
+  }, [rows, searchTerm, typeFilter, statusFilter, currencyFilter]);
 
   const typeOptions = useMemo(() => {
     const set = new Set<string>();
@@ -157,6 +254,16 @@ const TransactionsTable: React.FC = () => {
     rows.forEach((r) => {
       if (r.transaction_status) {
         set.add(r.transaction_status);
+      }
+    });
+    return Array.from(set.values());
+  }, [rows]);
+
+  const currencyOptions = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((r) => {
+      if (r.base_currency) {
+        set.add(r.base_currency);
       }
     });
     return Array.from(set.values());
@@ -180,6 +287,7 @@ const TransactionsTable: React.FC = () => {
     setSearchTerm("");
     setTypeFilter("");
     setStatusFilter("");
+    setCurrencyFilter("");
     setPerPage(20);
     setPage(1);
   };
@@ -195,10 +303,38 @@ const TransactionsTable: React.FC = () => {
       "TransactionNumber",
       "Type",
       "Date",
+      "PostedDate",
       "Amount",
-      "Currency",
+      "TransactionCurrency",
+      "BaseCurrency",
+      "ExchangeRate",
+      "ConvertedAmount",
+      "TaxAmount",
+      "NetAmount",
+      "ConvertedTaxAmount",
+      "ConvertedNetAmount",
+      "CustomerId",
+      "CompanyId",
+      "SourceType",
+      "SourceId",
+      "AccountDebit",
+      "AccountCredit",
       "Category",
+      "PaymentMethod",
+      "BankAccount",
+      "CheckNumber",
       "Status",
+      "RelatedTransactionId",
+      "Narration",
+      "IsRecurring",
+      "FiscalYear",
+      "AccountingPeriod",
+      "IsAdjustingEntry",
+      "CostCenterId",
+      "CreatedAt",
+      "UpdatedAt",
+      "CreatedBy",
+      "UpdatedBy",
     ];
 
     const dataRows = rows.map((r) => [
@@ -206,10 +342,38 @@ const TransactionsTable: React.FC = () => {
       r.transaction_number ?? "",
       r.transaction_type ?? "",
       r.transaction_date ?? "",
+      r.posted_date ?? "",
       r.amount,
+      r.transaction_currency ?? "",
       r.base_currency ?? "",
+      r.exchange_rate ?? "",
+      r.converted_amount ?? "",
+      r.tax_amount ?? "",
+      r.net_amount ?? "",
+      r.converted_tax_amount ?? "",
+      r.converted_net_amount ?? "",
+      r.customer_id ?? "",
+      r.company_id ?? "",
+      r.source_type ?? "",
+      r.source_id ?? "",
+      r.account_debit ?? "",
+      r.account_credit ?? "",
       r.category ?? "",
+      r.payment_method ?? "",
+      r.bank_account ?? "",
+      r.check_number ?? "",
       r.transaction_status ?? "",
+      r.related_transaction_id ?? "",
+      r.narration ?? "",
+      r.is_recurring != null ? (r.is_recurring ? "Yes" : "No") : "",
+      r.fiscal_year ?? "",
+      r.accounting_period ?? "",
+      r.is_adjusting_entry != null ? (r.is_adjusting_entry ? "Yes" : "No") : "",
+      r.cost_center_id ?? "",
+      r.created_at ?? "",
+      r.updated_at ?? "",
+      r.created_by ?? "",
+      r.updated_by ?? "",
     ]);
 
     const csv = [headers, ...dataRows]
@@ -236,7 +400,7 @@ const TransactionsTable: React.FC = () => {
         <div className="flex-1 flex flex-wrap gap-3 w-full md:w-auto">
           <input
             type="text"
-            placeholder="Search by number, type, category, status..."
+            placeholder="Search by number, type, category, status, narration..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full md:max-w-xs px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -282,6 +446,26 @@ const TransactionsTable: React.FC = () => {
             </select>
           </div>
 
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Currency:</span>
+            <select
+              value={currencyFilter}
+              onChange={(e) => {
+                setCurrencyFilter(e.target.value);
+                setPage(1);
+              }}
+              disabled={loading}
+              className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[120px]"
+            >
+              <option value="">All currencies</option>
+              {currencyOptions.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button
             type="button"
             onClick={handleClearFilters}
@@ -320,23 +504,100 @@ const TransactionsTable: React.FC = () => {
 
       <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md overflow-hidden">
         <div className="table-responsive overflow-x-auto">
-          <table className="w-full min-w-[1000px]">
+          <table className="w-full min-w-[1800px]">
             <thead className="text-black dark:text-white">
               <tr>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Date</th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Number</th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Type</th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Category</th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Status</th>
-                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Amount</th>
-                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Actions</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Date
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Posted
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Number
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Type
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Category
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Status
+                </th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Amount
+                </th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Tax (Trans)
+                </th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Net (Trans)
+                </th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Converted Amount
+                </th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Tax (Base)
+                </th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Net (Base)
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Txn Currency
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Base Currency
+                </th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Exchange Rate
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Customer
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Company
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Source
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Accounts (Dr/Cr)
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Payment
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Bank / Check
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Related Txn
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Recurring / Adj.
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  FY / Period
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Cost Center
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Narration
+                </th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Audit
+                </th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="text-black dark:text-white">
               {loading && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={28}
                     className="text-center text-sm px-[10px] py-[8px] text-gray-500 dark:text-gray-400"
                   >
                     Loading transactions...
@@ -347,7 +608,7 @@ const TransactionsTable: React.FC = () => {
               {!loading && filteredRows.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={28}
                     className="text-center text-sm px-[10px] py-[16px] text-gray-500 dark:text-gray-400"
                   >
                     No transactions found.
@@ -366,9 +627,20 @@ const TransactionsTable: React.FC = () => {
                         ? new Date(r.transaction_date).toLocaleDateString()
                         : "-"}
                     </td>
-                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">{r.transaction_number || "-"}</td>
-                    <td className="text-sm px-[10px] py-[6px] capitalize whitespace-nowrap">{r.transaction_type || "-"}</td>
-                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">{r.category || "-"}</td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.posted_date
+                        ? new Date(r.posted_date).toLocaleDateString()
+                        : "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.transaction_number || "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] capitalize whitespace-nowrap">
+                      {r.transaction_type || "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.category || "-"}
+                    </td>
                     <td className="text-sm px-[10px] py-[6px] capitalize whitespace-nowrap">
                       {r.transaction_status || "-"}
                     </td>
@@ -377,11 +649,129 @@ const TransactionsTable: React.FC = () => {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}{" "}
+                      {r.transaction_currency || ""}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
+                      {r.tax_amount != null
+                        ? `${r.tax_amount.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })} ${r.transaction_currency || ""}`
+                        : "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
+                      {r.net_amount != null
+                        ? `${r.net_amount.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })} ${r.transaction_currency || ""}`
+                        : "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
+                      {r.converted_amount != null
+                        ? `${r.converted_amount.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })} ${r.base_currency || ""}`
+                        : r.base_currency || ""}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
+                      {r.converted_tax_amount != null
+                        ? `${r.converted_tax_amount.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })} ${r.base_currency || ""}`
+                        : "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
+                      {r.converted_net_amount != null
+                        ? `${r.converted_net_amount.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })} ${r.base_currency || ""}`
+                        : "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.transaction_currency || ""}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
                       {r.base_currency || ""}
                     </td>
                     <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
+                      {r.exchange_rate != null
+                        ? r.exchange_rate.toLocaleString(undefined, {
+                            minimumFractionDigits: 4,
+                            maximumFractionDigits: 4,
+                          })
+                        : "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.customer && typeof r.customer === "object" && (r.customer as any).name
+                        ? String((r.customer as any).name)
+                        : r.customer_id ?? "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.company && typeof r.company === "object" && (r.company as any).name
+                        ? String((r.company as any).name)
+                        : r.company_id ?? "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.source_type || "-"} {r.source_id ? `#${r.source_id}` : ""}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.account_debit != null || r.account_credit != null
+                        ? `Dr ${r.account_debit ?? "-"} / Cr ${r.account_credit ?? "-"}`
+                        : "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.payment_method || "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.bank_account || r.check_number
+                        ? `${r.bank_account || "-"} / ${r.check_number || "-"}`
+                        : "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.related_transaction_id ?? "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.is_recurring != null || r.is_adjusting_entry != null
+                        ? [
+                            r.is_recurring != null
+                              ? `Recurring: ${r.is_recurring ? "Yes" : "No"}`
+                              : null,
+                            r.is_adjusting_entry != null
+                              ? `Adj: ${r.is_adjusting_entry ? "Yes" : "No"}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" | ")
+                        : "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.fiscal_year || r.accounting_period
+                        ? `${r.fiscal_year ?? "-"} / ${r.accounting_period ?? "-"}`
+                        : "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.cost_center_id ?? "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {r.narration || "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      <div className="flex flex-col gap-[2px] text-xs">
+                        <span>
+                          C: {r.created_at || "-"} {r.created_by ? `(${r.created_by})` : ""}
+                        </span>
+                        <span>
+                          U: {r.updated_at || "-"} {r.updated_by ? `(${r.updated_by})` : ""}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
                       <Link
-                        href={`/finance/transactions-log/${r.id}`}
+                        href={`/finance/expenses-and-others/${r.id}`}
                         className="inline-flex items-center px-[10px] py-[5px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827]"
                       >
                         View

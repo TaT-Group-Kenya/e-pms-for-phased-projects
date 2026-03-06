@@ -28,7 +28,6 @@ class CompanyPaymentResource extends BaseResource
             'updated_by' => $this->updated_by,
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
-            'transaction_id' => $this->transaction_id,
             'invoice' => new CompanyInvoiceResource($this->whenLoaded('invoice')),
             'ledger_entries' => CompanyTransactionsLedgerResource::collection($this->whenLoaded('companyLedgerEntries')),
         ];

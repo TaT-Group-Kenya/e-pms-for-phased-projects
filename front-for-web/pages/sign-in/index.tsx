@@ -3,7 +3,7 @@ import Seo from '../../components/common/Seo'
 import type { NextPage } from 'next'
 import { useEffect } from 'react'
 import { useAppDispatch } from '../../store/hooks'
-import { setCredentials } from '../../store/auth/slice'
+import { setCredentials, type UserProfile } from '../../store/auth/slice'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { TOKEN_EXPIRY_BUFFER } from '../../constants'
@@ -48,6 +48,13 @@ const SignIn: NextPage = () => {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
+    type LoginResponse = {
+        access_token: string
+        token_type: string
+        user: UserProfile
+        [key: string]: any
+    }
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         setError(null)
@@ -72,7 +79,7 @@ const SignIn: NextPage = () => {
                 body: JSON.stringify({ email, password }),
             })
 
-            const data = await res.json()
+            const data: LoginResponse = await res.json()
             if (!res.ok) {
                 setError(data?.message || (data?.errors && JSON.stringify(data.errors)) || 'Login failed')
                 setLoading(false)
@@ -80,11 +87,11 @@ const SignIn: NextPage = () => {
             }
 
             const expiry = Date.now() + TOKEN_EXPIRY_BUFFER
-            dispatch(setCredentials({ user: data.user, accessToken: data.access_token, expiry }))
+            dispatch(setCredentials({ user: data.user, accessToken: data.access_token, tokenType: data.token_type, expiry }))
 
             try {
                 if (remember) {
-                    localStorage.setItem('auth', JSON.stringify({ user: data.user, accessToken: data.access_token, expiry }))
+                    localStorage.setItem('auth', JSON.stringify({ user: data.user, accessToken: data.access_token, tokenType: data.token_type, expiry }))
                 }
             } catch { }
 

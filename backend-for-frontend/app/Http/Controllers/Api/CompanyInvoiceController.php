@@ -273,6 +273,15 @@ class CompanyInvoiceController extends Controller
             $accountCurrencyCode = $account->currency ?? 'KES';
             $invoiceCurrencyCode = $invoice->currency;
 
+            // Enforce that the selected account uses the same currency as the invoice
+            if ($accountCurrencyCode !== $invoiceCurrencyCode) {
+                throw ValidationException::withMessages([
+                    'account_id' => [
+                        'Selected account currency (' . $accountCurrencyCode . ') must match the invoice currency (' . $invoiceCurrencyCode . ').',
+                    ],
+                ]);
+            }
+
             // Use shared conversion helper: 1 invoice currency unit = exchange_rate * base currency units
             $conversionService = new CurrencyConversionService();
             $conversion = $conversionService->convertToBaseFromInvoice($amountPaid, $invoiceCurrencyCode, $accountCurrencyCode);
@@ -353,9 +362,6 @@ class CompanyInvoiceController extends Controller
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]);
-
-            $payment->transaction_id = $trxn->id;
-            $payment->save();
 
             // Update accounts account balance: debit decreases balance
             $account->balance = (string) number_format($currentBalance - $convertedAmount, 2, '.', '');
@@ -750,6 +756,12 @@ class CompanyInvoiceController extends Controller
             'company.bankAccounts',
             'invoiceItems',
             'documents',
+            'payments' => function ($query) {
+                // Filter out logically deleted company payments; table is company_payments.
+                $query->where('company_payments.is_deleted', false)
+                    ->orderBy('payment_date', 'asc')
+                    ->orderBy('created_at', 'asc');
+            },
         ]);
 
         $configValues = SysConfig::whereIn('name', [
@@ -767,8 +779,17 @@ class CompanyInvoiceController extends Controller
         $senderEmail = $configValues['EMAIL'] ?? config('mail.from.address', 'no-reply@example.com');
         $generatedAt = now();
 
+        // Pre-compute payment summary in invoice currency for the PDF.
+        $payments = $companyInvoice->payments ?? collect();
+        $paymentsTotal = (float) $payments->sum('amount_paid');
+        $invoiceTotal = (float) $companyInvoice->total_amount;
+        $outstandingBalance = max($invoiceTotal - $paymentsTotal, 0.0);
+
         $data = [
             'invoice'            => $companyInvoice,
+            'payments'           => $payments,
+            'paymentsTotal'      => $paymentsTotal,
+            'outstandingBalance' => $outstandingBalance,
             'senderName'         => $senderName,
             'senderEmail'        => $senderEmail,
             'senderPhone'        => $configValues['PHONE']   ?? null,

@@ -519,7 +519,6 @@ class OrderController extends Controller
             'project',
             'customer',
             'orderItems',
-            'taxitems',
             'documents',
             'quotation',
         ]);

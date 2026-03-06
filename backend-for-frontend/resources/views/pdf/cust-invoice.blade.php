@@ -325,8 +325,63 @@
                 <span class="summary-total">Total</span>
                 <span class="summary-total" style="float: right;">{{ $invoice->currency }} {{ number_format($effectiveTotal, 2) }}</span>
             </div>
+
+            @if(isset($paymentsTotal) && $paymentsTotal > 0)
+                <div class="summary-row" style="margin-top: 6px;">
+                    <span class="summary-label">Payments Made</span>
+                    <span class="summary-label" style="float: right;">- {{ $invoice->currency }} {{ number_format($paymentsTotal, 2) }}</span>
+                </div>
+
+                <div class="summary-row">
+                    <span class="summary-total">Outstanding Balance</span>
+                    <span class="summary-total" style="float: right;">{{ $invoice->currency }} {{ number_format($outstandingBalance ?? max($effectiveTotal - $paymentsTotal, 0), 2) }}</span>
+                </div>
+            @endif
         </div>
     </div>
+
+    @if(isset($payments) && $payments->count() > 0)
+        <div class="section card" style="margin-top: 8px;">
+            <h3>Payments / Installments</h3>
+            <table style="margin-top: 8px;">
+                <thead>
+                    <tr>
+                        <th style="width: 18%;">Date</th>
+                        <th style="width: 20%;">Method</th>
+                        <th style="width: 25%;">Reference</th>
+                        <th style="width: 17%;" class="text-right">Amount</th>
+                        <th style="width: 20%;" class="text-right">Running Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php
+                        $runningTotal = (float) ($invoice->total_amount ?? $effectiveTotal);
+                    @endphp
+                    @foreach($payments as $payment)
+                        @php
+                            $amount = (float) $payment->amount_paid;
+                            $runningTotal = max($runningTotal - $amount, 0);
+                        @endphp
+                        <tr>
+                            <td class="text-sm">{{ optional($payment->payment_date)->format('d M Y') }}</td>
+                            <td class="text-sm">{{ ucfirst($payment->payment_method ?? '-') }}</td>
+                            <td class="text-sm">
+                                @if(!empty($payment->receipt_number))
+                                    Receipt: {{ $payment->receipt_number }}
+                                @elseif(!empty($payment->transaction_reference))
+                                    Ref: {{ $payment->transaction_reference }}
+                                @else
+                                    &mdash;
+                                @endif
+                            </td>
+                            <td class="text-right text-sm">{{ $invoice->currency }} {{ number_format($amount, 2) }}</td>
+                            <td class="text-right text-sm">{{ $invoice->currency }} {{ number_format($runningTotal, 2) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
 
     @if($invoice->payment_terms || $invoice->notes_to_customer)
         <div class="section card" style="margin-top: 8px;">

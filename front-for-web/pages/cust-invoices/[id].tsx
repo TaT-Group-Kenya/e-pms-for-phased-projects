@@ -444,7 +444,7 @@ export default function CustInvoiceDetailPage() {
 
       const data = await resp.json().catch(() => null)
       if (!resp.ok) {
-        throw new Error(data?.message || 'Failed to add payment')
+        throw new Error(data?.message || 'Failed to receive payment')
       }
 
       const inv = (data?.data || data) as CustInvoice
@@ -452,7 +452,7 @@ export default function CustInvoiceDetailPage() {
       setIsAddingPayment(false)
       addToast('Payment recorded successfully.', 'success')
     } catch (e: any) {
-      addToast(e.message || 'Failed to add payment', 'error')
+      addToast(e.message || 'Failed to receive payment', 'error')
     } finally {
       setSavingPayment(false)
     }
@@ -977,21 +977,95 @@ export default function CustInvoiceDetailPage() {
                         </span>
                       </div>
 
-                      {invoice.status === 'partial-paid' && invoice.payments && invoice.payments.length > 0 && (
-                        <div className="mt-[10px] pt-[10px] border-t border-dashed border-gray-200 dark:border-[#172036] space-y-[8px] text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Payments so far</span>
-                            <span className="font-medium">
-                              {formatCurrency(totalPayments, invoice.currency)}
-                            </span>
+                      {invoice.payments && invoice.payments.length > 0 && (
+                        <>
+                          <div className="mt-[10px] pt-[10px] border-t border-dashed border-gray-200 dark:border-[#172036] space-y-[8px] text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">Payments so far</span>
+                              <span className="font-medium">
+                                {formatCurrency(totalPayments, invoice.currency)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">Outstanding balance</span>
+                              <span className="font-semibold text-warning-500">
+                                {formatCurrency(outstandingBalance, invoice.currency)}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Outstanding balance</span>
-                            <span className="font-semibold text-warning-500">
-                              {formatCurrency(outstandingBalance, invoice.currency)}
-                            </span>
+
+                          {/* Payments / Installments with running balance */}
+                          <div className="mt-[12px] pt-[12px] border-t border-gray-100 dark:border-[#172036] text-xs">
+                            <h6 className="text-black dark:text-white font-semibold mb-[10px] text-xs uppercase tracking-wide">
+                              Payments / Installments
+                            </h6>
+
+                            <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md">
+                              <table className="w-full">
+                                <thead className="bg-gray-50 dark:bg-[#15203c]">
+                                  <tr>
+                                    <th className="text-[11px] font-semibold ltr:text-left rtl:text-right px-[10px] py-[8px]">
+                                      Date
+                                    </th>
+                                    <th className="text-[11px] font-semibold ltr:text-left rtl:text-right px-[10px] py-[8px]">
+                                      Method
+                                    </th>
+                                    <th className="text-[11px] font-semibold ltr:text-left rtl:text-right px-[10px] py-[8px]">
+                                      Reference
+                                    </th>
+                                    <th className="text-[11px] font-semibold text-right px-[10px] py-[8px]">
+                                      Amount
+                                    </th>
+                                    <th className="text-[11px] font-semibold text-right px-[10px] py-[8px]">
+                                      Running Balance
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(() => {
+                                    let runningBalance = invoice.total_amount
+                                    const sorted = [...(invoice.payments || [])].sort((a, b) => {
+                                      const aDate = a.payment_date || ''
+                                      const bDate = b.payment_date || ''
+                                      if (aDate === bDate) {
+                                        return (a.id || 0) - (b.id || 0)
+                                      }
+                                      return aDate < bDate ? -1 : 1
+                                    })
+
+                                    return sorted.map((payment) => {
+                                      const amount = payment.amount_paid || 0
+                                      runningBalance = Math.max(runningBalance - amount, 0)
+
+                                      return (
+                                        <tr
+                                          key={payment.id}
+                                          className="border-t border-gray-100 dark:border-[#172036] align-middle"
+                                        >
+                                          <td className="px-[10px] py-[8px] text-[11px] text-gray-700 dark:text-gray-300">
+                                            {payment.payment_date || '-'}
+                                          </td>
+                                          <td className="px-[10px] py-[8px] text-[11px] text-gray-700 dark:text-gray-300">
+                                            {payment.payment_method || '-'}
+                                          </td>
+                                          <td className="px-[10px] py-[8px] text-[11px] text-gray-700 dark:text-gray-300">
+                                            {payment.receipt_number || payment.transaction_reference || '-'}
+                                          </td>
+                                          <td className="px-[10px] py-[8px] text-[11px] text-right text-gray-900 dark:text-gray-100">
+                                            {formatCurrency(amount, invoice.currency)}
+                                          </td>
+                                          <td className="px-[10px] py-[8px] text-[11px] text-right font-medium text-gray-900 dark:text-gray-100">
+                                            {formatCurrency(runningBalance, invoice.currency)}
+                                          </td>
+                                        </tr>
+                                      )
+                                    })
+                                  })()}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
-                        </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -1231,7 +1305,7 @@ export default function CustInvoiceDetailPage() {
                           className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-warning-50 dark:bg-warning-950 text-warning-500 hover:bg-warning-100 dark:hover:bg-warning-900 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <i className="material-symbols-outlined mr-[8px] !text-[20px]">payments</i>
-                          Add Payment
+                          Receive Payment
                         </button>
                         {['draft','paid'].includes(invoice.status) && (
                           <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
@@ -1452,7 +1526,7 @@ export default function CustInvoiceDetailPage() {
                       className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
-                      Add Payment
+                      Receive Payment
                     </button>
                     {!canAddPayment && (
                       <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
@@ -1608,7 +1682,7 @@ export default function CustInvoiceDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
             <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
-              Add Payment
+              Receive Payment
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">

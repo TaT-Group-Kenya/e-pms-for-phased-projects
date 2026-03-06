@@ -15,7 +15,7 @@ class TaxUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('taxs')->ignore(
+            'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('taxes')->ignore(
                     $this->route('tax')
                 )],
             'name' => ['sometimes', 'required', 'string', 'max:255'],

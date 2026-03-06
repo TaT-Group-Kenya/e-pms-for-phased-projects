@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
@@ -54,6 +55,7 @@ const AccountReceivablesReportTable: React.FC = () => {
   const [customerFilterId, setCustomerFilterId] = useState("");
   const [projectFilterId, setProjectFilterId] = useState("");
   const [invoiceFilterId, setInvoiceFilterId] = useState("");
+  const [currencyFilter, setCurrencyFilter] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -66,7 +68,7 @@ const AccountReceivablesReportTable: React.FC = () => {
       setLoading(true);
       try {
         const resp = await fetch(
-          `/api/finance/customer-receipts/list?page=${page}&per_page=${perPage}`,
+          `/api/finance/customer-payments/list?page=${page}&per_page=${perPage}`,
           {
             method: "GET",
             headers: {
@@ -227,6 +229,12 @@ const AccountReceivablesReportTable: React.FC = () => {
         if (!match) return false;
       }
 
+      if (currencyFilter) {
+        if ((p.currency || "") !== currencyFilter) {
+          return false;
+        }
+      }
+
       return (
         (p.transaction_number || "").toLowerCase().includes(term) ||
         (p.payment_method || "").toLowerCase().includes(term) ||
@@ -281,6 +289,16 @@ const AccountReceivablesReportTable: React.FC = () => {
     return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
   }, [rows]);
 
+  const currencyOptions = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((p) => {
+      if (p.currency) {
+        set.add(p.currency);
+      }
+    });
+    return Array.from(set.values()).sort();
+  }, [rows]);
+
   const handleClearFilters = () => {
     setSearchTerm("");
     setFromDate("");
@@ -288,6 +306,7 @@ const AccountReceivablesReportTable: React.FC = () => {
     setCustomerFilterId("");
     setProjectFilterId("");
     setInvoiceFilterId("");
+    setCurrencyFilter("");
   };
 
   const totalPages = perPage > 0 ? Math.max(1, Math.ceil(total / perPage)) : 1;
@@ -453,6 +472,21 @@ const AccountReceivablesReportTable: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
+              <select
+                value={currencyFilter}
+                onChange={(e) => setCurrencyFilter(e.target.value)}
+                className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[120px]"
+              >
+                <option value="">All currencies</option>
+                {currencyOptions.map((cur) => (
+                  <option key={cur} value={cur}>
+                    {cur}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500 dark:text-gray-400">Date from:</span>
               <input
                 type="date"
@@ -505,7 +539,7 @@ const AccountReceivablesReportTable: React.FC = () => {
         </div>
 
         <div className="table-responsive overflow-x-auto">
-          <table className="min-w-[1400px] w-full text-sm">
+          <table className="min-w-[1500px] w-full text-sm">
             <thead className="bg-gray-50 dark:bg-[#15203c]">
               <tr>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">ID</th>
@@ -534,6 +568,7 @@ const AccountReceivablesReportTable: React.FC = () => {
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Created By</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Updated At</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Updated By</th>
+                <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -646,6 +681,18 @@ const AccountReceivablesReportTable: React.FC = () => {
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
                       {p.updated_by || "-"}
+                    </td>
+                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
+                      {p.id != null ? (
+                        <Link
+                          href={`/finance/payments/receivables/${p.id}`}
+                          className="inline-flex items-center px-[10px] py-[5px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827]"
+                        >
+                          View
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-gray-400">-</span>
+                      )}
                     </td>
                   </tr>
                 ))}

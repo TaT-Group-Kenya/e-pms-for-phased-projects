@@ -156,7 +156,7 @@ const SECTIONS: SidebarSection[] = [
       },
       {
         label: "Payments",
-        href: "/finance/transactions/",
+        href: "/finance/payments/",
         matchStrategy: "startsWith",
       },
       {
@@ -170,7 +170,7 @@ const SECTIONS: SidebarSection[] = [
         matchStrategy: "startsWith",
       },
       {
-        label: "Expenses & Others",
+        label: "Internal Transactions",
         href: "/finance/expenses-and-others/",
         matchStrategy: "startsWith",
       },
@@ -215,12 +215,7 @@ const SECTIONS: SidebarSection[] = [
         label: "Account Settings",
         href: "/settings/",
         matchStrategy: "startsWith",
-      },
-      {
-        label: "Change Password",
-        href: "/settings/change-password/",
-        matchStrategy: "startsWith",
-      },
+      }
     ],
   },
 ];

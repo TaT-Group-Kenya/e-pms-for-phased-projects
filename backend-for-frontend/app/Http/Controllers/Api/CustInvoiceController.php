@@ -857,6 +857,13 @@ class CustInvoiceController extends Controller
             'invoiceItems',
             'documents',
             'order',
+            'payments' => function ($query) {
+                // Qualify both payment and pivot deletion flags to avoid ambiguity.
+                $query->where('cust_payments.is_deleted', false)
+                    ->wherePivot('is_deleted', false)
+                    ->orderBy('payment_date', 'asc')
+                    ->orderBy('created_at', 'asc');
+            },
         ]);
 
         $configValues = SysConfig::whereIn('name', [
@@ -874,8 +881,17 @@ class CustInvoiceController extends Controller
         $senderEmail = $configValues['EMAIL'] ?? config('mail.from.address', 'no-reply@example.com');
         $generatedAt = now();
 
+        // Pre-compute payment summary in invoice currency for the PDF.
+        $payments = $custInvoice->payments ?? collect();
+        $paymentsTotal = (float) $payments->sum('amount_paid');
+        $invoiceTotal = (float) $custInvoice->total_amount;
+        $outstandingBalance = max($invoiceTotal - $paymentsTotal, 0.0);
+
         $data = [
             'invoice'            => $custInvoice,
+            'payments'           => $payments,
+            'paymentsTotal'      => $paymentsTotal,
+            'outstandingBalance' => $outstandingBalance,
             'senderName'         => $senderName,
             'senderEmail'        => $senderEmail,
             'senderPhone'        => $configValues['PHONE']   ?? null,
