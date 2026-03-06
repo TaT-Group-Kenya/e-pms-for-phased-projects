@@ -1,11 +1,13 @@
 import Link from "next/link";
 import CreateProjectForm from "../../../components/project/CreateProjectForm/FormComponent";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
+import Can from "../../../components/auth/Can";
 
 export default function Page() {
   return (
     <AuthenticatedLayout>
-      <div className="mb-[25px] md:flex items-center justify-between">
+      <Can any={["ROLE_ADD_PROJECT"]} fallback={<div>You do not have permission to create projects.</div>}>
+        <div className="mb-[25px] md:flex items-center justify-between">
         <h5 className="!mb-0">Create Project</h5>
 
         <ol className="breadcrumb mt-[12px] md:mt-0">
@@ -29,9 +31,10 @@ export default function Page() {
             Create Project
           </li>
         </ol>
-      </div>
+        </div>
 
-      <CreateProjectForm />
+        <CreateProjectForm />
+      </Can>
     </AuthenticatedLayout>
   );
 }

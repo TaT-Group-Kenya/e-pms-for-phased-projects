@@ -7,6 +7,7 @@ import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal";
+import Can from "../../auth/Can";
 
 interface Project {
   id: number;
@@ -253,18 +254,19 @@ const ProjectsList: React.FC = () => {
               className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
             />
           </div>
-
-          <Link
-            href="/project/create-project"
-            className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
-          >
-            <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
-              <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
-                add
-              </i>
-              Create Project
-            </span>
-          </Link>
+          <Can any={["ROLE_ADD_PROJECT"]}>
+            <Link
+              href="/project/create-project"
+              className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
+            >
+              <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
+                <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
+                  add
+                </i>
+                Create Project
+              </span>
+            </Link>
+          </Can>
         </div>
       </div>
 
@@ -363,13 +365,15 @@ const ProjectsList: React.FC = () => {
                             >
                               <i className="material-symbols-outlined !text-[18px]">visibility</i>
                             </Link>
-                            <button
-                              onClick={() => openDeleteModal(project.id, project.name)}
-                              className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-danger-500 hover:text-white hover:border-danger-500 transition-all"
-                              title="Delete Project"
-                            >
-                              <i className="material-symbols-outlined !text-[18px]">delete</i>
-                            </button>
+                            <Can any={["ROLE_DELETE_PROJECT"]}>
+                              <button
+                                onClick={() => openDeleteModal(project.id, project.name)}
+                                className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-danger-500 hover:text-white hover:border-danger-500 transition-all"
+                                title="Delete Project"
+                              >
+                                <i className="material-symbols-outlined !text-[18px]">delete</i>
+                              </button>
+                            </Can>
                           </div>
                         </td>
                       </tr>

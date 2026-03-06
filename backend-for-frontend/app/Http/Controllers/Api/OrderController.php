@@ -54,6 +54,8 @@ class OrderController extends Controller
 
     public function store(OrderStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\Order::class);
+        
         $model = DB::transaction(function () use ($request) {
             $validated = $request->validated();
 

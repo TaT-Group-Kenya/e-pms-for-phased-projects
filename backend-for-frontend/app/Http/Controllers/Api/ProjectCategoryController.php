@@ -29,6 +29,7 @@ class ProjectCategoryController extends Controller
 
     public function store(ProjectCategoryStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\ProjectCategory::class);
         $model = $this->service->create($request->validated());
         return new ProjectCategoryResource($model);
     }

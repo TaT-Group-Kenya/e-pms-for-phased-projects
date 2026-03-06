@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import { useToast } from '../../../hooks/useToast'
 import { selectAccessToken } from '../../../store/auth/selectors'
 import { ToastContainer } from '../../common/Toast'
+import Can from '../../auth/Can'
 
 interface CompanyCreditNoteSummary {
   id: number
@@ -312,18 +313,20 @@ const CompanyCreditNotesTable: React.FC = () => {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={handleOpenCreateModal}
-            className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
-          >
-            <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
-              <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
-                add
-              </i>
-              Create Company Credit Note
-            </span>
-          </button>
+          <Can any={["ROLE_ADD_COMPANY_CREDIT_NOTE"]}>
+            <button
+              type="button"
+              onClick={handleOpenCreateModal}
+              className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
+            >
+              <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
+                <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
+                  add
+                </i>
+                Create Company Credit Note
+              </span>
+            </button>
+          </Can>
         </div>
       </div>
 

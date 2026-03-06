@@ -29,6 +29,7 @@ class CompanyInvoiceItemController extends Controller
 
     public function store(CompanyInvoiceItemStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\CompanyInvoiceItem::class);
         $model = $this->service->create($request->validated());
         return new CompanyInvoiceItemResource($model);
     }

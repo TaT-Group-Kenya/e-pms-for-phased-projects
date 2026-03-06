@@ -1,11 +1,12 @@
 import Link from "next/link";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 import SetupListTable from "../../../components/setup/SetupListTable";
+import Can from "../../../components/auth/Can";
 
 const Page = () => {
   return (
     <AuthenticatedLayout>
-      <>
+      <Can any={["ROLE_VIEW_DEPARTMENT"]} fallback={<div>You do not have permission to view departments.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
           <h5 className="!mb-0">Departments</h5>
 
@@ -39,8 +40,11 @@ const Page = () => {
             { key: "description", label: "Description" },
           ]}
           searchableKeys={["name", "description"]}
+          canCreateRoles={["ROLE_ADD_DEPARTMENT"]}
+          canEditRoles={["ROLE_EDIT_DEPARTMENT"]}
+          canDeleteRoles={["ROLE_DELETE_DEPARTMENT"]}
         />
-      </>
+      </Can>
     </AuthenticatedLayout>
   );
 };

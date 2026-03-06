@@ -1,11 +1,12 @@
 import Link from "next/link";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 import SetupListTable from "../../../components/setup/SetupListTable";
+import Can from "../../../components/auth/Can";
 
 const Page = () => {
   return (
     <AuthenticatedLayout>
-      <>
+      <Can any={["ROLE_VIEW_SYS_CONFIG"]} fallback={<div>You do not have permission to view configurations.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
           <h5 className="!mb-0">Configurations</h5>
 
@@ -39,8 +40,11 @@ const Page = () => {
             { key: "value", label: "Value" },
           ]}
           searchableKeys={["name", "value"]}
+          canCreateRoles={["ROLE_ADD_SYS_CONFIG"]}
+          canEditRoles={["ROLE_EDIT_SYS_CONFIG"]}
+          canDeleteRoles={["ROLE_DELETE_SYS_CONFIG"]}
         />
-      </>
+      </Can>
     </AuthenticatedLayout>
   );
 };

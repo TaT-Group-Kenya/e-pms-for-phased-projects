@@ -37,6 +37,7 @@ class GroupRoleController extends Controller
 
     public function store(GroupRoleStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\GroupRole::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);

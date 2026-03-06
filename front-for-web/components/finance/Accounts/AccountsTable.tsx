@@ -7,6 +7,7 @@ import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal/DeleteConfirmationModal";
+import Can from "../../auth/Can";
 
 interface AccountSummary {
   id: number;
@@ -414,13 +415,15 @@ const AccountsTable: React.FC = () => {
           >
             Export CSV
           </button>
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600"
-          >
-            Add Account
-          </button>
+          <Can any={["ROLE_ADD_ACCOUNT"]}>
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600"
+            >
+              Add Account
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -492,20 +495,24 @@ const AccountsTable: React.FC = () => {
                       >
                         View Account Detail
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEdit(acc)}
-                        className="inline-flex items-center px-[10px] py-[5px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827]"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRequestDelete(acc)}
-                        className="inline-flex items-center px-[10px] py-[5px] rounded-md border border-danger-200 text-xs font-medium text-danger-600 hover:bg-danger-50"
-                      >
-                        Delete
-                      </button>
+                      <Can any={["ROLE_EDIT_ACCOUNT"]}>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(acc)}
+                          className="inline-flex items-center px-[10px] py-[5px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827]"
+                        >
+                          Edit
+                        </button>
+                      </Can>
+                      <Can any={["ROLE_DELETE_ACCOUNT"]}>
+                        <button
+                          type="button"
+                          onClick={() => handleRequestDelete(acc)}
+                          className="inline-flex items-center px-[10px] py-[5px] rounded-md border border-danger-200 text-xs font-medium text-danger-600 hover:bg-danger-50"
+                        >
+                          Delete
+                        </button>
+                      </Can>
                     </td>
                   </tr>
                 ))}

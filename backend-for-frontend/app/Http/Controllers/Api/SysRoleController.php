@@ -35,6 +35,8 @@ class SysRoleController extends Controller
 
     public function store(SysRoleStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\SysRole::class);
+        
         $model = $this->service->create($request->validated());
         return new SysRoleResource($model);
     }

@@ -32,6 +32,8 @@ class OrderDocumentController extends Controller
 
     public function store(OrderDocumentStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\OrderDocument::class);
+        
         $validated = $request->validated();
 
         if (!empty($validated['order_id'])) {

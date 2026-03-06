@@ -30,6 +30,7 @@ class PaymentMethodController extends Controller
 
     public function store(PaymentMethodStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\PaymentMethod::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);

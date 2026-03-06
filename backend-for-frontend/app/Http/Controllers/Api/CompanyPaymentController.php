@@ -40,6 +40,7 @@ class CompanyPaymentController extends Controller
 
     public function store(CompanyPaymentStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\CompanyPayment::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);

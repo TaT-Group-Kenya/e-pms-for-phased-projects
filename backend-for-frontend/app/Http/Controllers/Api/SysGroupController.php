@@ -36,6 +36,7 @@ class SysGroupController extends Controller
 
     public function store(SysGroupStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\SysGroup::class);
         $model = $this->service->create($request->validated());
         return new SysGroupResource($model);
     }

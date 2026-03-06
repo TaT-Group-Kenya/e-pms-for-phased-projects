@@ -7,6 +7,7 @@ import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal";
+import Can from "../../auth/Can";
 
 const internalImages = process.env.NEXT_PUBLIC_EPMS_API_BASE + '/images/logos/';
 
@@ -229,17 +230,19 @@ const CustomersList: React.FC = () => {
         </div>
 
         <div className="trezo-card-subtitle mt-[15px] sm:mt-0">
-          <Link
-            href="/customer/create-customer"
-            className="inline-block transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white"
-          >
-            <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
-              <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
-                add
-              </i>
-              Create New Customer
-            </span>
-          </Link>
+          <Can any={["ROLE_ADD_CUSTOMER"]}>
+            <Link
+              href="/customer/create-customer"
+              className="inline-block transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white"
+            >
+              <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
+                <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
+                  add
+                </i>
+                Create New Customer
+              </span>
+            </Link>
+          </Can>
         </div>
       </div>
 
@@ -319,13 +322,14 @@ const CustomersList: React.FC = () => {
                   >
                     View Customer
                   </Link>
-
-                  <button
-                    onClick={() => openDeleteModal(customer.id, customer.name)}
-                    className="inline-block rounded-md font-medium border border-danger-500 text-white bg-danger-500 py-[4.5px] px-[15.5px] transition-all hover:bg-danger-600 hover:border-danger-600"
-                  >
-                    Delete
-                  </button>
+                  <Can any={["ROLE_DELETE_CUSTOMER"]}>
+                    <button
+                      onClick={() => openDeleteModal(customer.id, customer.name)}
+                      className="inline-block rounded-md font-medium border border-danger-500 text-white bg-danger-500 py-[4.5px] px-[15.5px] transition-all hover:bg-danger-600 hover:border-danger-600"
+                    >
+                      Delete
+                    </button>
+                  </Can>
                 </div>
               </div>
             </div>

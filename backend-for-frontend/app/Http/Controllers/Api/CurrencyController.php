@@ -8,6 +8,7 @@ use App\Services\CurrencyService;
 use App\Http\Resources\CurrencyResource;
 use App\Http\Requests\CurrencyStoreRequest;
 use App\Http\Requests\CurrencyUpdateRequest;
+use Illuminate\Support\Facades\Auth;
 
 class CurrencyController extends Controller
 {
@@ -29,7 +30,10 @@ class CurrencyController extends Controller
 
     public function store(CurrencyStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $this->authorize('create', \App\Models\Currency::class);
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new CurrencyResource($model);
     }
 

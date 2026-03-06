@@ -8,6 +8,7 @@ use App\Services\CustInvoiceItemService;
 use App\Http\Resources\CustInvoiceItemResource;
 use App\Http\Requests\CustInvoiceItemStoreRequest;
 use App\Http\Requests\CustInvoiceItemUpdateRequest;
+use Illuminate\Support\Facades\Auth;
 
 class CustInvoiceItemController extends Controller
 {
@@ -29,7 +30,10 @@ class CustInvoiceItemController extends Controller
 
     public function store(CustInvoiceItemStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $this->authorize('create', \App\Models\CustInvoiceItem::class);
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new CustInvoiceItemResource($model);
     }
 
@@ -44,7 +48,9 @@ class CustInvoiceItemController extends Controller
     {
         $this->authorize('update', $custInvoiceItem);
 
-        $updated = $this->service->update($custInvoiceItem->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($custInvoiceItem->id, $validated);
         return new CustInvoiceItemResource($updated);
     }
 

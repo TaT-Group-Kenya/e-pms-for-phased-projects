@@ -1,9 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-
-type UserRole = {
-  id: number | string
-  name: string
-}
+import type { UserRole } from './roles'
 
 type UserGroup = {
   id: number | string

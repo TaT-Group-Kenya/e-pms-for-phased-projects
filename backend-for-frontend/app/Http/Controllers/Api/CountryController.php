@@ -30,6 +30,7 @@ class CountryController extends Controller
 
     public function store(CountryStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\Country::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);

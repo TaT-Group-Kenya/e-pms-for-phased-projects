@@ -1,11 +1,13 @@
 import Link from "next/link";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 import CreateCompanyForm from "../../../components/company/CreateCompanyForm";
+import Can from "../../../components/auth/Can";
 
 export default function Page() {
   return (
     <AuthenticatedLayout>
-      <div className="mb-[25px] md:flex items-center justify-between">
+      <Can any={["ROLE_ADD_COMPANY"]} fallback={<div>You do not have permission to add companies.</div>}>
+        <div className="mb-[25px] md:flex items-center justify-between">
         <h5 className="!mb-0">Add Company</h5>
 
         <ol className="breadcrumb mt-[12px] md:mt-0">
@@ -29,9 +31,10 @@ export default function Page() {
             Create Company
           </li>
         </ol>
-      </div>
+        </div>
 
-      <CreateCompanyForm />
+        <CreateCompanyForm />
+      </Can>
     </AuthenticatedLayout>
   );
 }

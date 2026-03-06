@@ -1,11 +1,12 @@
 import Link from "next/link";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 import TransactionsTable from "../../../components/finance/Transactions/TransactionsTable";
+import Can from "../../../components/auth/Can";
 
 export default function TransactionsLogPage() {
   return (
     <AuthenticatedLayout>
-      <>
+      <Can any={["ROLE_VIEW_TRANSACTION"]} fallback={<div>You do not have permission to view internal transactions.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
           <div>
             <h5 className="!mb-1">Internal Transactions</h5>
@@ -35,7 +36,7 @@ export default function TransactionsLogPage() {
         </div>
 
         <TransactionsTable />
-      </>
+      </Can>
     </AuthenticatedLayout>
   );
 }

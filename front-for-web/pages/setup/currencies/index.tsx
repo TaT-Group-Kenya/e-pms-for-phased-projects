@@ -1,11 +1,12 @@
 import Link from "next/link";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 import SetupListTable from "../../../components/setup/SetupListTable";
+import Can from "../../../components/auth/Can";
 
 const Page = () => {
   return (
     <AuthenticatedLayout>
-      <>
+      <Can any={["ROLE_VIEW_CURRENCY"]} fallback={<div>You do not have permission to view currencies.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
           <h5 className="!mb-0">Currencies</h5>
 
@@ -41,8 +42,11 @@ const Page = () => {
             { key: "current_forex_rate", label: "Forex Rate to KES" },
           ]}
           searchableKeys={["code", "name", "description", "current_forex_rate"]}
+          canCreateRoles={["ROLE_ADD_CURRENCY"]}
+          canEditRoles={["ROLE_EDIT_CURRENCY"]}
+          canDeleteRoles={["ROLE_DELETE_CURRENCY"]}
         />
-      </>
+      </Can>
     </AuthenticatedLayout>
   );
 };
