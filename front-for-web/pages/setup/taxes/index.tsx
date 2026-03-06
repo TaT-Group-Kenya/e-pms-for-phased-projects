@@ -43,6 +43,9 @@ const Page = () => {
             { key: "description", label: "Description" },
           ]}
           searchableKeys={["code", "name", "description"]}
+          canCreateRoles={["ROLE_ADD_TAX"]}
+          canEditRoles={["ROLE_EDIT_TAX"]}
+          canDeleteRoles={["ROLE_DELETE_TAX"]}
         />
       </Can>
     </AuthenticatedLayout>

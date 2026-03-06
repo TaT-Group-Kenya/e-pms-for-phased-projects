@@ -6,6 +6,7 @@ import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal";
+import Can from "../../auth/Can";
 
 interface SysGroup {
   id: number;
@@ -758,18 +759,20 @@ const UsersTable: React.FC = () => {
               )}
 
               <div className="flex gap-[10px] pt-[15px]">
-                <button
-                  type="button"
-                  onClick={handleSaveUser}
-                  disabled={savingUser}
-                  className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-medium py-[10px] px-[16px] rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {savingUser
-                    ? "Processing..."
-                    : editingUser
-                    ? "Update User"
-                    : "Create User"}
-                </button>
+                <Can any={editingUser ? ["ROLE_EDIT_USER"] : ["ROLE_ADD_USER"]}>
+                  <button
+                    type="button"
+                    onClick={handleSaveUser}
+                    disabled={savingUser}
+                    className="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-medium py-[10px] px-[16px] rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {savingUser
+                      ? "Processing..."
+                      : editingUser
+                      ? "Update User"
+                      : "Create User"}
+                  </button>
+                </Can>
                 <button
                   type="button"
                   onClick={closeUserModal}
@@ -842,19 +845,21 @@ const UsersTable: React.FC = () => {
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={handleSaveGroups}
-                className="px-4 py-2 rounded-md bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
-                disabled={savingGroups}
-              >
-                {savingGroups && (
-                  <span className="material-symbols-outlined animate-spin text-[18px]">
-                    progress_activity
-                  </span>
-                )}
-                Save Changes
-              </button>
+              <Can any={["ROLE_EDIT_USER"]}>
+                <button
+                  type="button"
+                  onClick={handleSaveGroups}
+                  className="px-4 py-2 rounded-md bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                  disabled={savingGroups}
+                >
+                  {savingGroups && (
+                    <span className="material-symbols-outlined animate-spin text-[18px]">
+                      progress_activity
+                    </span>
+                  )}
+                  Save Changes
+                </button>
+              </Can>
             </div>
           </div>
         </div>
@@ -886,14 +891,16 @@ const UsersTable: React.FC = () => {
               />
             </div>
 
-            <button
-              type="button"
-              onClick={startCreateUser}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-primary-500 hover:bg-primary-600 text-white text-xs font-medium"
-            >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              Add User
-            </button>
+            <Can any={["ROLE_ADD_USER"]}>
+              <button
+                type="button"
+                onClick={startCreateUser}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-primary-500 hover:bg-primary-600 text-white text-xs font-medium"
+              >
+                <span className="material-symbols-outlined text-[16px]">add</span>
+                Add User
+              </button>
+            </Can>
           </div>
         </div>
 
@@ -955,36 +962,42 @@ const UsersTable: React.FC = () => {
                       </td>
                       <td className="py-3 px-3 align-top text-right text-xs">
                         <div className="inline-flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => startEditUser(user)}
-                            className="px-2.5 py-1 rounded-md border border-gray-200 dark:border-[#1f2937] text-gray-600 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#111827] flex items-center gap-1"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">
-                              edit
-                            </span>
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openGroupModal(user)}
-                            className="px-2.5 py-1 rounded-md border border-primary-100 text-primary-600 hover:bg-primary-50 dark:border-primary-500/40 dark:text-primary-200 dark:hover:bg-primary-500/10 flex items-center gap-1"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">
-                              group
-                            </span>
-                            Groups
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openDeleteModal(user)}
-                            className="px-2.5 py-1 rounded-md border border-red-100 text-red-600 hover:bg-red-50 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10 flex items-center gap-1"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">
-                              delete
-                            </span>
-                            Delete
-                          </button>
+                          <Can any={["ROLE_EDIT_USER"]}>
+                            <button
+                              type="button"
+                              onClick={() => startEditUser(user)}
+                              className="px-2.5 py-1 rounded-md border border-gray-200 dark:border-[#1f2937] text-gray-600 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#111827] flex items-center gap-1"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                edit
+                              </span>
+                              Edit
+                            </button>
+                          </Can>
+                          <Can any={["ROLE_EDIT_USER"]}>
+                            <button
+                              type="button"
+                              onClick={() => openGroupModal(user)}
+                              className="px-2.5 py-1 rounded-md border border-primary-100 text-primary-600 hover:bg-primary-50 dark:border-primary-500/40 dark:text-primary-200 dark:hover:bg-primary-500/10 flex items-center gap-1"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                group
+                              </span>
+                              Groups
+                            </button>
+                          </Can>
+                          <Can any={["ROLE_DELETE_USER"]}>
+                            <button
+                              type="button"
+                              onClick={() => openDeleteModal(user)}
+                              className="px-2.5 py-1 rounded-md border border-red-100 text-red-600 hover:bg-red-50 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10 flex items-center gap-1"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                delete
+                              </span>
+                              Delete
+                            </button>
+                          </Can>
                         </div>
                       </td>
                     </tr>

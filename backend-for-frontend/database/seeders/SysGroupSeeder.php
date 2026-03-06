@@ -23,6 +23,30 @@ class SysGroupSeeder extends Seeder
                 'created_by' => 1,
                 'updated_by' => 1,
             ],
+            [
+                'name' => 'Finance Admins',
+                'description' => 'Finance administrators',
+                'created_at' => now(),
+                'updated_at' => now(),
+                'created_by' => 1,
+                'updated_by' => 1,
+            ],
+            [
+                'name' => 'Project Admins',
+                'description' => 'Project administrators',
+                'created_at' => now(),
+                'updated_at' => now(),
+                'created_by' => 1,
+                'updated_by' => 1,
+            ],
+            [
+                'name' => 'Account Admins',
+                'description' => 'Account administrators',
+                'created_at' => now(),
+                'updated_at' => now(),
+                'created_by' => 1,
+                'updated_by' => 1,
+            ],
         ]);
     }
 }

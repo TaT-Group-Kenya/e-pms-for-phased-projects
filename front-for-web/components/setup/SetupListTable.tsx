@@ -6,6 +6,8 @@ import { selectAccessToken } from "../../store/auth/selectors";
 import { useToast } from "../../hooks/useToast";
 import { ToastContainer } from "../common/Toast";
 import DeleteConfirmationModal from "../common/DeleteConfirmationModal";
+import Can from "../auth/Can";
+import type { RoleName } from "../../store/auth/roles";
 
 export interface SetupItemBase {
   id: number;
@@ -29,6 +31,10 @@ export interface SetupListTableProps<T extends SetupItemBase> {
   searchableKeys?: (keyof T | string)[];
   /** Optional form field order; defaults to columns minus id */
   formFields?: string[];
+  /** Optional roles required to create, edit, delete items */
+  canCreateRoles?: RoleName[];
+  canEditRoles?: RoleName[];
+  canDeleteRoles?: RoleName[];
 }
 
 function toCsv<T extends SetupItemBase>(columns: SetupColumn<T>[], rows: T[]): string {
@@ -56,6 +62,9 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
     columns,
     searchableKeys,
     formFields,
+    canCreateRoles,
+    canEditRoles,
+    canDeleteRoles,
   } = props;
 
   const accessToken = useSelector(selectAccessToken);
@@ -358,18 +367,20 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
             </span>
           </button>
 
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
-          >
-            <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
-              <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
-                add
-              </i>
-              {`Create ${entityName}`}
-            </span>
-          </button>
+          <Can any={canCreateRoles}>
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
+            >
+              <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
+                <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
+                  add
+                </i>
+                {`Create ${entityName}`}
+              </span>
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -422,22 +433,26 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
                         ))}
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <div className="flex items-center gap-[10px]">
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(item)}
-                              className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-primary-500 hover:text-white hover:border-primary-500 transition-all"
-                              title={`Edit ${entityName}`}
-                            >
-                              <i className="material-symbols-outlined !text-[18px]">edit</i>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => openDeleteModal(item)}
-                              className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-danger-500 hover:text-white hover:border-danger-500 transition-all"
-                              title={`Delete ${entityName}`}
-                            >
-                              <i className="material-symbols-outlined !text-[18px]">delete</i>
-                            </button>
+                            <Can any={canEditRoles}>
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(item)}
+                                className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-primary-500 hover:text-white hover:border-primary-500 transition-all"
+                                title={`Edit ${entityName}`}
+                              >
+                                <i className="material-symbols-outlined !text-[18px]">edit</i>
+                              </button>
+                            </Can>
+                            <Can any={canDeleteRoles}>
+                              <button
+                                type="button"
+                                onClick={() => openDeleteModal(item)}
+                                className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-danger-500 hover:text-white hover:border-danger-500 transition-all"
+                                title={`Delete ${entityName}`}
+                              >
+                                <i className="material-symbols-outlined !text-[18px]">delete</i>
+                              </button>
+                            </Can>
                           </div>
                         </td>
                       </tr>

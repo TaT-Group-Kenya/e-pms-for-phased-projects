@@ -42,6 +42,9 @@ const Page = () => {
             { key: "current_forex_rate", label: "Forex Rate to KES" },
           ]}
           searchableKeys={["code", "name", "description", "current_forex_rate"]}
+          canCreateRoles={["ROLE_ADD_CURRENCY"]}
+          canEditRoles={["ROLE_EDIT_CURRENCY"]}
+          canDeleteRoles={["ROLE_DELETE_CURRENCY"]}
         />
       </Can>
     </AuthenticatedLayout>
