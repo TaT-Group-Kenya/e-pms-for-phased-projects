@@ -6,6 +6,8 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppDispatch } from "../../../store/hooks";
 import { clearAuth } from "../../../store/auth/slice";
+import type { RoleName } from "../../../store/auth/roles";
+import { useAuthorization } from "../../../store/auth/permissions";
 
 interface SidebarMenuProps {
   toggleActive: () => void;
@@ -18,6 +20,8 @@ interface SidebarSubItem {
   href: string;
   /** How to determine if this item is active for a given pathname */
   matchStrategy?: MatchStrategy;
+  /** Roles that can see this item; if omitted, visible to any authenticated user */
+  requiredRoles?: RoleName[];
 }
 
 type SidebarSectionGroup = "main" | "others";
@@ -41,9 +45,18 @@ const SECTIONS: SidebarSection[] = [
         label: "All Customers",
         href: "/customer/customer-list",
         matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_CUSTOMER"],
       },
-      { label: "Add Customer", href: "/customer/create-customer" },
-      { label: "Reports", href: "/customer/report" },
+      {
+        label: "Add Customer",
+        href: "/customer/create-customer",
+        requiredRoles: ["ROLE_ADD_CUSTOMER"],
+      },
+      {
+        label: "Reports",
+        href: "/customer/report",
+        requiredRoles: ["ROLE_VIEW_CUSTOMER"],
+      },
     ],
   },
   {
@@ -56,9 +69,18 @@ const SECTIONS: SidebarSection[] = [
         label: "All Companies",
         href: "/company/company-list",
         matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_COMPANY"],
       },
-      { label: "Add Company", href: "/company/create-company" },
-      { label: "Reports", href: "/company/report" },
+      {
+        label: "Add Company",
+        href: "/company/create-company",
+        requiredRoles: ["ROLE_ADD_COMPANY"],
+      },
+      {
+        label: "Reports",
+        href: "/company/report",
+        requiredRoles: ["ROLE_VIEW_COMPANY"],
+      },
     ],
   },
   {
@@ -71,9 +93,18 @@ const SECTIONS: SidebarSection[] = [
         label: "All Quotations",
         href: "/quotation/quotation-list",
         matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_QUOTATION"],
       },
-      { label: "Create Quotation", href: "/quotation/create-quotation" },
-      { label: "Reports", href: "/quotation/report" },
+      {
+        label: "Create Quotation",
+        href: "/quotation/create-quotation",
+        requiredRoles: ["ROLE_ADD_QUOTATION"],
+      },
+      {
+        label: "Reports",
+        href: "/quotation/report",
+        requiredRoles: ["ROLE_VIEW_QUOTATION"],
+      },
     ],
   },
   {
@@ -86,6 +117,7 @@ const SECTIONS: SidebarSection[] = [
         label: "All Orders",
         href: "/orders/order-list",
         matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_ORDER"],
       },
     ],
   },
@@ -99,12 +131,33 @@ const SECTIONS: SidebarSection[] = [
         label: "All Projects",
         href: "/project/project-list",
         matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_PROJECT"],
       },
-      { label: "Add Project", href: "/project/create-project" },
-      { label: "Reports", href: "/project/report" },
-      { label: "Categories", href: "/project/category" },
-      { label: "Sources", href: "/project/source-origins" },
-      { label: "Locations", href: "/project/locations" },
+      {
+        label: "Add Project",
+        href: "/project/create-project",
+        requiredRoles: ["ROLE_ADD_PROJECT"],
+      },
+      {
+        label: "Reports",
+        href: "/project/report",
+        requiredRoles: ["ROLE_VIEW_PROJECT"],
+      },
+      {
+        label: "Categories",
+        href: "/project/category",
+        requiredRoles: ["ROLE_VIEW_PROJECT_CATEGORY"],
+      },
+      {
+        label: "Sources",
+        href: "/project/source-origins",
+        requiredRoles: ["ROLE_VIEW_PROJECT_SOURCE_ORIGIN"],
+      },
+      {
+        label: "Locations",
+        href: "/project/locations",
+        requiredRoles: ["ROLE_VIEW_PROJECT_LOCATION"],
+      },
     ],
   },
   {
@@ -117,11 +170,13 @@ const SECTIONS: SidebarSection[] = [
         label: "All Invoices",
         href: "/cust-invoices/invoice-list",
         matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_CUST_INVOICE"],
       },
       {
         label: "Credit Notes",
         href: "/cust/credit-notes",
         matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_CUST_CREDIT_NOTE"],
       },
     ],
   },
@@ -135,11 +190,13 @@ const SECTIONS: SidebarSection[] = [
         label: "All Invoices",
         href: "/company/invoices",
         matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_COMPANY_INVOICE"],
       },
       {
         label: "Credit Notes",
         href: "/company/credit-notes",
         matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_COMPANY_CREDIT_NOTE"],
       },
     ],
   },
@@ -153,26 +210,31 @@ const SECTIONS: SidebarSection[] = [
         label: "Accounts",
         href: "/finance/accounts/",
         matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_ACCOUNT"],
       },
       {
         label: "Payments",
         href: "/finance/payments/",
         matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_CUST_PAYMENT", "ROLE_VIEW_COMPANY_PAYMENT"],
       },
       {
         label: "Customer Trxns Ledger",
         href: "/finance/customer-ledger/",
         matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_CUSTOMER_TRANSACTIONS_LEDGER"],
       },
       {
         label: "Company Trxns Ledger",
         href: "/finance/company-ledger/",
         matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_COMPANY_TRANSACTIONS_LEDGER"],
       },
       {
         label: "Internal Transactions",
         href: "/finance/expenses-and-others/",
         matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_TRANSACTION"],
       },
     ],
   },
@@ -186,6 +248,7 @@ const SECTIONS: SidebarSection[] = [
         label: "Users Management",
         href: "/users/users-list/",
         matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_USER"],
       },
     ],
   },
@@ -195,14 +258,46 @@ const SECTIONS: SidebarSection[] = [
     icon: "dashboard_customize",
     group: "main",
     items: [
-      { label: "Departments", href: "/setup/departments" },
-      { label: "Configurations", href: "/setup/configurations" },
-      { label: "Account Types", href: "/setup/account-types" },
-      { label: "Account Groups", href: "/setup/account-groups" },
-      { label: "Currencies", href: "/setup/currencies" },
-      { label: "Countries", href: "/setup/countries" },
-      { label: "Taxes", href: "/setup/taxes" },
-      { label: "Languages", href: "/setup/languages" },
+      {
+        label: "Departments",
+        href: "/setup/departments",
+        requiredRoles: ["ROLE_VIEW_DEPARTMENT"],
+      },
+      {
+        label: "Configurations",
+        href: "/setup/configurations",
+        requiredRoles: ["ROLE_VIEW_SYS_CONFIG"],
+      },
+      {
+        label: "Account Types",
+        href: "/setup/account-types",
+        requiredRoles: ["ROLE_VIEW_ACCOUNT_TYPE"],
+      },
+      {
+        label: "Account Groups",
+        href: "/setup/account-groups",
+        requiredRoles: ["ROLE_VIEW_ACCOUNT_GROUP"],
+      },
+      {
+        label: "Currencies",
+        href: "/setup/currencies",
+        requiredRoles: ["ROLE_VIEW_CURRENCY"],
+      },
+      {
+        label: "Countries",
+        href: "/setup/countries",
+        requiredRoles: ["ROLE_VIEW_COUNTRY"],
+      },
+      {
+        label: "Taxes",
+        href: "/setup/taxes",
+        requiredRoles: ["ROLE_VIEW_TAX"],
+      },
+      {
+        label: "Languages",
+        href: "/setup/languages",
+        requiredRoles: ["ROLE_VIEW_LANGUAGE"],
+      },
     ],
   },
   {
@@ -278,22 +373,52 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { hasAnyRole } = useAuthorization();
 
   const [openSectionId, setOpenSectionId] = React.useState<string | null>(null);
   const [shouldScrollToActive, setShouldScrollToActive] = React.useState(false);
   const activeItemRef = React.useRef<HTMLLIElement | null>(null);
 
+  const allSections = React.useMemo(() => {
+    const main: SidebarSection[] = [];
+    const others: SidebarSection[] = [];
+
+    for (const section of SECTIONS) {
+      const visibleItems = section.items.filter((item) => {
+        if (!item.requiredRoles || item.requiredRoles.length === 0) return true;
+        return hasAnyRole(item.requiredRoles);
+      });
+
+      if (visibleItems.length === 0) continue;
+
+      const visibleSection: SidebarSection = {
+        ...section,
+        items: visibleItems,
+      };
+
+      if (section.group === "main") {
+        main.push(visibleSection);
+      } else {
+        others.push(visibleSection);
+      }
+    }
+
+    return { main, others };
+  }, [hasAnyRole]);
+
+  const { main: mainSections, others: otherSections } = allSections;
+
   const activeSectionId = React.useMemo(() => {
     if (!pathname) return null;
 
-    for (const section of SECTIONS) {
+    for (const section of [...mainSections, ...otherSections]) {
       if (section.items.some((item) => isSubItemActive(item, pathname))) {
         return section.id;
       }
     }
 
     return null;
-  }, [pathname]);
+  }, [pathname, mainSections, otherSections]);
 
   // Keep accordion in sync with current route
   React.useEffect(() => {
@@ -325,10 +450,6 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
       return null; // collapse when clicking the already open section
     });
   };
-
-  const mainSections = SECTIONS.filter((s) => s.group === "main");
-  const otherSections = SECTIONS.filter((s) => s.group === "others");
-
   const normalizedPath = normalizePath(pathname);
   const isDashboardActive =
     normalizedPath === "/dashboard" || normalizedPath.startsWith("/dashboard/");

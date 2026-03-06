@@ -7,6 +7,7 @@ import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal";
+import Can from "../../auth/Can";
 
 interface Quotation {
   id: number;
@@ -259,17 +260,19 @@ const QuotationsList: React.FC = () => {
             />
           </div>
 
-          <Link
-            href="/quotation/create-quotation"
-            className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
-          >
-            <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
-              <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
-                add
-              </i>
-              Create Quotation
-            </span>
-          </Link>
+          <Can any={["ROLE_ADD_QUOTATION"]}>
+            <Link
+              href="/quotation/create-quotation"
+              className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
+            >
+              <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
+                <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
+                  add
+                </i>
+                Create Quotation
+              </span>
+            </Link>
+          </Can>
         </div>
       </div>
 
@@ -380,13 +383,15 @@ const QuotationsList: React.FC = () => {
                             >
                               <i className="material-symbols-outlined !text-[18px]">visibility</i>
                             </Link>
-                            <button
-                              onClick={() => openDeleteModal(quotation.id, quotation.title)}
-                              className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-danger-500 hover:text-white hover:border-danger-500 transition-all"
-                              title="Delete Quotation"
-                            >
-                              <i className="material-symbols-outlined !text-[18px]">delete</i>
-                            </button>
+                            <Can any={["ROLE_DELETE_QUOTATION"]}>
+                              <button
+                                onClick={() => openDeleteModal(quotation.id, quotation.title)}
+                                className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-danger-500 hover:text-white hover:border-danger-500 transition-all"
+                                title="Delete Quotation"
+                              >
+                                <i className="material-symbols-outlined !text-[18px]">delete</i>
+                              </button>
+                            </Can>
                           </div>
                         </td>
                       </tr>

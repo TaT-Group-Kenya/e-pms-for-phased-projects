@@ -1,11 +1,12 @@
 import Link from "next/link";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 import AccountsTable from "../../../components/finance/Accounts/AccountsTable";
+import Can from "../../../components/auth/Can";
 
 export default function AccountsPage() {
   return (
     <AuthenticatedLayout>
-      <>
+      <Can any={["ROLE_VIEW_ACCOUNT"]} fallback={<div>You do not have permission to view accounts.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
           <div>
             <h5 className="!mb-1">Accounts</h5>
@@ -38,7 +39,7 @@ export default function AccountsPage() {
         </div>
 
         <AccountsTable />
-      </>
+      </Can>
     </AuthenticatedLayout>
   );
 }

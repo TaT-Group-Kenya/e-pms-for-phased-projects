@@ -1,11 +1,12 @@
 import Link from "next/link";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 import FinancePaymentsPage from "../../../components/finance/Payments/FinancePaymentsPage";
+import Can from "../../../components/auth/Can";
 
 export default function FinancePaymentsIndexPage() {
   return (
     <AuthenticatedLayout>
-      <>
+      <Can any={["ROLE_VIEW_CUST_PAYMENT", "ROLE_VIEW_COMPANY_PAYMENT"]} fallback={<div>You do not have permission to view payments.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
           <div>
             <h5 className="!mb-1">Payments</h5>
@@ -38,7 +39,7 @@ export default function FinancePaymentsIndexPage() {
         </div>
 
         <FinancePaymentsPage />
-      </>
+      </Can>
     </AuthenticatedLayout>
   );
 }

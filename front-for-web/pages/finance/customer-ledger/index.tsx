@@ -1,11 +1,12 @@
 import Link from "next/link";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 import CustomerLedgerTable from "../../../components/finance/Ledger/CustomerLedgerTable";
+import Can from "../../../components/auth/Can";
 
 export default function CustomerLedgerPage() {
   return (
     <AuthenticatedLayout>
-      <>
+      <Can any={["ROLE_VIEW_CUSTOMER_TRANSACTIONS_LEDGER"]} fallback={<div>You do not have permission to view the customer ledger.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
           <div>
             <h5 className="!mb-1">Customer Ledger</h5>
@@ -35,7 +36,7 @@ export default function CustomerLedgerPage() {
         </div>
 
         <CustomerLedgerTable />
-      </>
+      </Can>
     </AuthenticatedLayout>
   );
 }

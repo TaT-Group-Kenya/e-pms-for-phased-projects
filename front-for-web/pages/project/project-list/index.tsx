@@ -1,11 +1,12 @@
 import Link from "next/link";
 import ProjectsList from "../../../components/project/ProjectsList/ProjectsTable";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
+import Can from "../../../components/auth/Can";
 
 export default function Page() {
   return (
     <AuthenticatedLayout>
-      <>
+      <Can any={["ROLE_VIEW_PROJECT"]} fallback={<div>You do not have permission to view projects.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
           <h5 className="!mb-0">Projects</h5>
 
@@ -33,7 +34,7 @@ export default function Page() {
         </div>
 
         <ProjectsList />
-      </>
+      </Can>
     </AuthenticatedLayout>
   );
 }

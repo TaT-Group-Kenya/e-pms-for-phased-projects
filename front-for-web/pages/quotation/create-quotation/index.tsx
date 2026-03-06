@@ -1,11 +1,13 @@
 import Link from "next/link";
 import CreateQuotationForm from "../../../components/quotation/CreateQuotationForm/FormComponent";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
+import Can from "../../../components/auth/Can";
 
 export default function Page() {
   return (
     <AuthenticatedLayout>
-      <div className="mb-[25px] md:flex items-center justify-between">
+      <Can any={["ROLE_ADD_QUOTATION"]} fallback={<div>You do not have permission to create quotations.</div>}>
+        <div className="mb-[25px] md:flex items-center justify-between">
         <h5 className="!mb-0">Create Quotation</h5>
 
         <ol className="breadcrumb mt-[12px] md:mt-0">
@@ -29,9 +31,10 @@ export default function Page() {
             Create Quotation
           </li>
         </ol>
-      </div>
+        </div>
 
-      <CreateQuotationForm />
+        <CreateQuotationForm />
+      </Can>
     </AuthenticatedLayout>
   );
 }

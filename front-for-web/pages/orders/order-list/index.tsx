@@ -1,11 +1,12 @@
 import Link from "next/link";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 import OrdersTable from "../../../components/order/OrdersList/OrdersTable";
+import Can from "../../../components/auth/Can";
 
 export default function Page() {
   return (
     <AuthenticatedLayout>
-      <>
+      <Can any={["ROLE_VIEW_ORDER"]} fallback={<div>You do not have permission to view orders.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
           <h5 className="!mb-0">Orders</h5>
 
@@ -33,7 +34,7 @@ export default function Page() {
         </div>
 
         <OrdersTable />
-      </>
+      </Can>
     </AuthenticatedLayout>
   );
 }

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import CategoryList from "../../../components/project/CategoryList/CategoryList";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
+import Can from "../../../components/auth/Can";
 
 export default function Page() {
   return (
     <AuthenticatedLayout>
-      <div className="mb-[25px] md:flex items-center justify-between">
+      <Can any={["ROLE_VIEW_PROJECT_CATEGORY"]} fallback={<div>You do not have permission to view project categories.</div>}>
+        <div className="mb-[25px] md:flex items-center justify-between">
         <h5 className="!mb-0">Project Categories</h5>
 
         <ol className="breadcrumb mt-[12px] md:mt-0">
@@ -29,9 +31,10 @@ export default function Page() {
             Categories
           </li>
         </ol>
-      </div>
+        </div>
 
-      <CategoryList />
+        <CategoryList />
+      </Can>
     </AuthenticatedLayout>
   );
 }

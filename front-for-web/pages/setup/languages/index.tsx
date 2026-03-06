@@ -1,11 +1,12 @@
 import Link from "next/link";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 import SetupListTable from "../../../components/setup/SetupListTable";
+import Can from "../../../components/auth/Can";
 
 const Page = () => {
   return (
     <AuthenticatedLayout>
-      <>
+      <Can any={["ROLE_VIEW_LANGUAGE"]} fallback={<div>You do not have permission to view languages.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
           <h5 className="!mb-0">Languages</h5>
 
@@ -41,7 +42,7 @@ const Page = () => {
           ]}
           searchableKeys={["code", "name", "description"]}
         />
-      </>
+      </Can>
     </AuthenticatedLayout>
   );
 };

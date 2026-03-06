@@ -6,6 +6,7 @@ import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
+import Can from "../../auth/Can";
 
 interface OrderSummary {
   id: number;
@@ -196,17 +197,19 @@ const OrdersTable: React.FC = () => {
               className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
             />
           </div>
-          <Link
-            href="/orders/create-order"
-            className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
-          >
-            <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
-              <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
-                add
-              </i>
-              Create Order
-            </span>
-          </Link>
+          <Can any={["ROLE_ADD_ORDER"]}>
+            <Link
+              href="/orders/create-order"
+              className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
+            >
+              <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
+                <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
+                  add
+                </i>
+                Create Order
+              </span>
+            </Link>
+          </Can>
         </div>
       </div>
 

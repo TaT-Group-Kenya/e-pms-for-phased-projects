@@ -1,10 +1,12 @@
 import AuthenticatedLayout from '../../../components/authenticated/AuthenticatedLayout'
 import CompanyInvoicesTable from '../../../components/company/CompanyInvoicesList/CompanyInvoicesTable'
+import Can from '../../../components/auth/Can'
 
 export default function CompanyInvoiceListPage() {
   return (
     <AuthenticatedLayout>
-      <div className="mb-[25px] md:flex items-center justify-between">
+      <Can any={["ROLE_VIEW_COMPANY_INVOICE"]} fallback={<div>You do not have permission to view company invoices.</div>}>
+        <div className="mb-[25px] md:flex items-center justify-between">
         <div>
           <h5 className="!mb-1">Company Invoices</h5>
           <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -29,9 +31,10 @@ export default function CompanyInvoiceListPage() {
             Company Invoices
           </li>
         </ol>
-      </div>
+        </div>
 
-      <CompanyInvoicesTable />
+        <CompanyInvoicesTable />
+      </Can>
     </AuthenticatedLayout>
   )
 }

@@ -1,11 +1,12 @@
 import Link from "next/link";
 import CustomersList from "../../../components/customer/CustomerList/CustomersList";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
+import Can from "../../../components/auth/Can";
 
 export default function Page() {
   return (
     <AuthenticatedLayout>
-      <>
+      <Can any={["ROLE_VIEW_CUSTOMER"]} fallback={<div>You do not have permission to view customers.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
           <h5 className="!mb-0">Customers</h5>
 
@@ -33,7 +34,7 @@ export default function Page() {
         </div>
 
         <CustomersList />
-      </>
+      </Can>
     </AuthenticatedLayout>
   );
 }
