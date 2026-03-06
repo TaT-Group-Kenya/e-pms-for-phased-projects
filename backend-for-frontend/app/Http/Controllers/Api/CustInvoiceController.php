@@ -325,7 +325,7 @@ class CustInvoiceController extends Controller
                 'net_amount' => $netPortion,
                 'payment_date' => $validated['payment_date'],
                 'payment_method' => $validated['payment_method'],
-                'payment_status' => $validated['payment_status'],
+                'payment_status' => 'complete',
                 'currency' => $invoiceCurrencyCode,
                 'bank_name' => $validated['bank_name'] ?? null,
                 'check_number' => $validated['check_number'] ?? null,

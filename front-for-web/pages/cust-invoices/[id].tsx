@@ -1754,7 +1754,7 @@ export default function CustInvoiceDetailPage() {
                   onChange={(e) => setPaymentStatus(e.target.value as 'pending' | 'complete')}
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
-                  <option value="pending">Pending</option>
+                  <option disabled value="pending">Pending</option>
                   <option value="complete">Complete</option>
                 </select>
               </div>
