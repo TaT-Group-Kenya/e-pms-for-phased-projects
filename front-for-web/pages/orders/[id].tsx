@@ -7,6 +7,7 @@ import { ToastContainer } from "../../components/common/Toast";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 import { useToast } from "../../hooks/useToast";
 import { selectAccessToken } from "../../store/auth/selectors";
+import Can from "../../components/auth/Can";
 
 interface OrderItem {
   id: number;
@@ -1107,38 +1108,44 @@ const OrderDetailPage: React.FC = () => {
     <AuthenticatedLayout>
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
-      <DeleteConfirmationModal
-        isOpen={isDeleteOrderItemModalOpen}
-        title="Delete Order Item"
-        message="Are you sure you want to delete this order item? This action cannot be undone."
-        itemName={orderItemToDelete?.item_name || ""}
-        isDeleting={isDeletingOrderItem}
-        error={deleteOrderItemError}
-        onConfirm={handleDeleteItem}
-        onCancel={closeDeleteOrderItemModal}
-      />
+      <Can any={["ROLE_DELETE_ORDER_ITEM"]}>
+        <DeleteConfirmationModal
+          isOpen={isDeleteOrderItemModalOpen}
+          title="Delete Order Item"
+          message="Are you sure you want to delete this order item? This action cannot be undone."
+          itemName={orderItemToDelete?.item_name || ""}
+          isDeleting={isDeletingOrderItem}
+          error={deleteOrderItemError}
+          onConfirm={handleDeleteItem}
+          onCancel={closeDeleteOrderItemModal}
+        />
+      </Can>
 
-      <DeleteConfirmationModal
-        isOpen={isDeleteTaxItemModalOpen}
-        title="Delete Tax Item"
-        message="Are you sure you want to delete this tax item? This action cannot be undone."
-        itemName={taxItemToDelete?.item_name || "Tax item"}
-        isDeleting={isDeletingTaxItem}
-        error={deleteTaxItemError}
-        onConfirm={handleDeleteTaxItem}
-        onCancel={closeDeleteTaxItemModal}
-      />
+      <Can any={["ROLE_DELETE_ORDER_TAX_ITEM"]}>
+        <DeleteConfirmationModal
+          isOpen={isDeleteTaxItemModalOpen}
+          title="Delete Tax Item"
+          message="Are you sure you want to delete this tax item? This action cannot be undone."
+          itemName={taxItemToDelete?.item_name || "Tax item"}
+          isDeleting={isDeletingTaxItem}
+          error={deleteTaxItemError}
+          onConfirm={handleDeleteTaxItem}
+          onCancel={closeDeleteTaxItemModal}
+        />
+      </Can>
 
-      <DeleteConfirmationModal
-        isOpen={isDeleteDocumentModalOpen}
-        title="Delete Document"
-        message="Are you sure you want to delete this document? This action cannot be undone."
-        itemName={documentToDelete?.document_type || "Document"}
-        isDeleting={isDeletingDocument}
-        error={deleteDocumentError}
-        onConfirm={handleDeleteDocument}
-        onCancel={closeDeleteDocumentModal}
-      />
+      <Can any={["ROLE_DELETE_ORDER_DOCUMENT"]}>
+        <DeleteConfirmationModal
+          isOpen={isDeleteDocumentModalOpen}
+          title="Delete Document"
+          message="Are you sure you want to delete this document? This action cannot be undone."
+          itemName={documentToDelete?.document_type || "Document"}
+          isDeleting={isDeletingDocument}
+          error={deleteDocumentError}
+          onConfirm={handleDeleteDocument}
+          onCancel={closeDeleteDocumentModal}
+        />
+      </Can>
 
       <div className="mb-[25px] md:flex items-center justify-between">
         <div>
@@ -1675,34 +1682,36 @@ const OrderDetailPage: React.FC = () => {
                     </h6>
 
                     <div className="space-y-[10px]">
-                      {!isApproved && (
-                        <button
-                          type="button"
-                          onClick={handleGenerateCustInvoice}
-                          disabled={isGeneratingInvoice}
-                          className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-info-50 dark:bg-info-950 text-info-500 hover:bg-info-100 dark:hover:bg-info-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <i className="material-symbols-outlined mr-[8px] !text-[20px]">
-                            receipt_long
-                          </i>
-                          {isGeneratingInvoice
-                            ? "Generating Invoice..."
-                            : "Generate Invoice & Project"}
-                        </button>
-                      )}
+                      <Can any={["ROLE_EDIT_ORDER"]}>
+                        {!isApproved && (
+                          <button
+                            type="button"
+                            onClick={handleGenerateCustInvoice}
+                            disabled={isGeneratingInvoice}
+                            className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-info-50 dark:bg-info-950 text-info-500 hover:bg-info-100 dark:hover:bg-info-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <i className="material-symbols-outlined mr-[8px] !text-[20px]">
+                              receipt_long
+                            </i>
+                            {isGeneratingInvoice
+                              ? "Generating Invoice..."
+                              : "Generate Invoice & Project"}
+                          </button>
+                        )}
 
-                      {!isApproved && (
-                        <button
-                          type="button"
-                          onClick={openEditModal}
-                          className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900"
-                        >
-                          <i className="material-symbols-outlined mr-[8px] !text-[20px]">
-                            edit
-                          </i>
-                          Edit Order
-                        </button>
-                      )}
+                        {!isApproved && (
+                          <button
+                            type="button"
+                            onClick={openEditModal}
+                            className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900"
+                          >
+                            <i className="material-symbols-outlined mr-[8px] !text-[20px]">
+                              edit
+                            </i>
+                            Edit Order
+                          </button>
+                        )}
+                      </Can>
 
                       <button
                         type="button"
@@ -1863,17 +1872,19 @@ const OrderDetailPage: React.FC = () => {
                   <h6 className="text-black dark:text-white font-semibold">
                     Documents
                   </h6>
-                  <button
-                    type="button"
-                    onClick={openAddDocumentModal}
-                    disabled={isApproved}
-                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-500 text-white hover:bg-primary-600 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <i className="material-symbols-outlined mr-[6px] !text-[18px]">
-                      add
-                    </i>
-                    Add Document
-                  </button>
+                  <Can any={["ROLE_ADD_ORDER_DOCUMENT"]}>
+                    <button
+                      type="button"
+                      onClick={openAddDocumentModal}
+                      disabled={isApproved}
+                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-500 text-white hover:bg-primary-600 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <i className="material-symbols-outlined mr-[6px] !text-[18px]">
+                        add
+                      </i>
+                      Add Document
+                    </button>
+                  </Can>
                 </div>
 
                 {(!order.documents || order.documents.length === 0) && (
@@ -1919,38 +1930,42 @@ const OrderDetailPage: React.FC = () => {
                                 : "-"}
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px] whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadDocument(doc)}
+                                disabled={downloadingDocumentId === doc.id}
+                                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-info-50 dark:bg-info-950 text-info-500 hover:bg-info-100 dark:hover:bg-info-900 disabled:opacity-50 disabled:cursor-not-allowed mr-[6px]"
+                              >
+                                {downloadingDocumentId === doc.id
+                                  ? "Downloading..."
+                                  : "Download"}
+                              </button>
+                              <Can any={["ROLE_EDIT_ORDER_DOCUMENT"]}>
                                 <button
                                   type="button"
-                                  onClick={() => handleDownloadDocument(doc)}
-                                  disabled={downloadingDocumentId === doc.id}
-                                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-info-50 dark:bg-info-950 text-info-500 hover:bg-info-100 dark:hover:bg-info-900 disabled:opacity-50 disabled:cursor-not-allowed mr-[6px]"
+                                  onClick={() => openEditDocumentModal(doc)}
+                                  disabled={isApproved}
+                                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 mr-[6px] disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  {downloadingDocumentId === doc.id
-                                    ? "Downloading..."
-                                    : "Download"}
+                                  Edit
                                 </button>
-                              <button
-                                type="button"
-                                onClick={() => openEditDocumentModal(doc)}
-                                disabled={isApproved}
-                                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 mr-[6px] disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => openDeleteDocumentModal(doc)}
-                                disabled={
-                                  isApproved ||
-                                  (isDeletingDocument &&
-                                    documentToDelete?.id === doc.id)
-                                }
-                                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-danger-50 dark:bg-danger-950 text-danger-500 hover:bg-danger-100 dark:hover:bg-danger-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {isDeletingDocument && documentToDelete?.id === doc.id
-                                  ? "Deleting..."
-                                  : "Delete"}
-                              </button>
+                              </Can>
+                              <Can any={["ROLE_DELETE_ORDER_DOCUMENT"]}>
+                                <button
+                                  type="button"
+                                  onClick={() => openDeleteDocumentModal(doc)}
+                                  disabled={
+                                    isApproved ||
+                                    (isDeletingDocument &&
+                                      documentToDelete?.id === doc.id)
+                                  }
+                                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-danger-50 dark:bg-danger-950 text-danger-500 hover:bg-danger-100 dark:hover:bg-danger-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {isDeletingDocument && documentToDelete?.id === doc.id
+                                    ? "Deleting..."
+                                    : "Delete"}
+                                </button>
+                              </Can>
                             </td>
                           </tr>
                         ))}
@@ -2048,9 +2063,10 @@ const OrderDetailPage: React.FC = () => {
       </div>
 
       {/* Edit Order Modal */}
-      {isEditing && order && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <Can any={["ROLE_EDIT_ORDER"]}>
+        {isEditing && order && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[700px] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-[20px]">
               <h6 className="font-semibold text-black dark:text-white">Edit Order</h6>
               {isEditSubmitting && (
@@ -2197,12 +2213,14 @@ const OrderDetailPage: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
+        )}
+      </Can>
 
       {/* Edit Order Item Modal */}
-      {editingItem && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[650px] max-h-[90vh] overflow-y-auto">
+      <Can any={["ROLE_EDIT_ORDER_ITEM"]}>
+        {editingItem && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[650px] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-[20px]">
               <h6 className="font-semibold text-black dark:text-white">Edit Order Item</h6>
               {isItemSubmitting && (
@@ -2342,12 +2360,20 @@ const OrderDetailPage: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
+        )}
+      </Can>
 
       {/* Tax Item Modal */}
-      {isTaxModalOpen && order && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[520px] max-h-[90vh] overflow-y-auto shadow-xl shadow-black/10 dark:shadow-black/40">
+      <Can
+        any={
+          editingTaxItem
+            ? ["ROLE_EDIT_ORDER_TAX_ITEM"]
+            : ["ROLE_ADD_ORDER_TAX_ITEM"]
+        }
+      >
+        {isTaxModalOpen && order && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[520px] max-h-[90vh] overflow-y-auto shadow-xl shadow-black/10 dark:shadow-black/40">
             <h5 className="mb-[8px] text-black dark:text-white font-semibold">
               {editingTaxItem ? "Edit Tax Item" : "Add Tax Item"}
             </h5>
@@ -2488,12 +2514,20 @@ const OrderDetailPage: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
+        )}
+      </Can>
 
       {/* Document Modal */}
-      {isDocumentModalOpen && order && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[520px] max-h-[90vh] overflow-y-auto shadow-xl shadow-black/10 dark:shadow-black/40">
+      <Can
+        any={
+          editingDocument
+            ? ["ROLE_EDIT_ORDER_DOCUMENT"]
+            : ["ROLE_ADD_ORDER_DOCUMENT"]
+        }
+      >
+        {isDocumentModalOpen && order && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[520px] max-h-[90vh] overflow-y-auto shadow-xl shadow-black/10 dark:shadow-black/40">
             <h5 className="mb-[8px] text-black dark:text-white font-semibold">
               {editingDocument ? "Edit Document" : "Add Document"}
             </h5>
@@ -2575,7 +2609,8 @@ const OrderDetailPage: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
+        )}
+      </Can>
     </AuthenticatedLayout>
   );
 };
