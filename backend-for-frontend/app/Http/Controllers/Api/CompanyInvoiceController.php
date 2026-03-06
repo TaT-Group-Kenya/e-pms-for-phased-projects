@@ -363,6 +363,9 @@ class CompanyInvoiceController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
+            $payment->transaction_id = $trxn->id;
+            $payment->save();
+
             // Update accounts account balance: debit decreases balance
             $account->balance = (string) number_format($currentBalance - $convertedAmount, 2, '.', '');
             $account->updated_at = now();

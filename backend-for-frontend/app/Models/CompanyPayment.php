@@ -13,6 +13,7 @@ class CompanyPayment extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'transaction_id',
         'transaction_number',
         'invoice_id',
         'amount_paid',
