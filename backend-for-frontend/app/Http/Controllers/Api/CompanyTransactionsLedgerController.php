@@ -47,6 +47,7 @@ class CompanyTransactionsLedgerController extends Controller
 
     public function store(CompanyTransactionsLedgerStoreRequest $request)
     {
+        $this->authorize('create', CompanyTransactionsLedger::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
 

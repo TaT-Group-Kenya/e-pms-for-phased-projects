@@ -47,8 +47,8 @@ class LanguageService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, int $deletedBy)
     {
-        return Language::destroy($id);
+        return Language::softDelete($id, $deletedBy);
     }
 }

@@ -30,6 +30,8 @@ class SysConfigController extends Controller
 
     public function store(SysConfigStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\SysConfig::class);
+        
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);

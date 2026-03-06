@@ -41,6 +41,7 @@ class AccountController extends Controller
 
     public function store(AccountStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\Account::class);
         $validated = $request->validated();
 
         // Generate account code in backend using CommonService

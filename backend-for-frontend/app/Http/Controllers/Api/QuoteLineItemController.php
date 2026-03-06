@@ -34,6 +34,8 @@ class QuoteLineItemController extends Controller
 
     public function store(QuoteLineItemStoreRequest $request)
     {
+        $this->authorize('create', QuoteLineItem::class);
+        
         $validated = $request->validated();
         
         // Prevent creating line items when quotation is not in draft status

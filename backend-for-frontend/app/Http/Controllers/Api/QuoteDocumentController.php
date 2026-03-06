@@ -30,6 +30,7 @@ class QuoteDocumentController extends Controller
 
     public function store(QuoteDocumentStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\QuoteDocument::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);

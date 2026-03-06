@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\CompanyInvoiceDucoment;
+use App\Models\CompanyInvoiceDocument;
 
-class CompanyInvoiceDucomentService
+class CompanyInvoiceDocumentService
 {
     public function index(
         array $filters = [],
@@ -14,7 +14,7 @@ class CompanyInvoiceDucomentService
         array $with = []
     ) {
         // optimized query: apply eager loading and simple filters
-        $query = CompanyInvoiceDucoment::query();
+        $query = CompanyInvoiceDocument::query();
         if (!empty($with)) {
             $query->with($with);
         }
@@ -30,25 +30,25 @@ class CompanyInvoiceDucomentService
 
     public function find(int $id, array $with = [])
     {
-        $query = CompanyInvoiceDucoment::query();
+        $query = CompanyInvoiceDocument::query();
         if (!empty($with)) $query->with($with);
         return $query->findOrFail($id);
     }
 
     public function create(array $data)
     {
-        return CompanyInvoiceDucoment::create($data);
+        return CompanyInvoiceDocument::create($data);
     }
 
     public function update(int $id, array $data)
     {
-        $model = CompanyInvoiceDucoment::findOrFail($id);
+        $model = CompanyInvoiceDocument::findOrFail($id);
         $model->update($data);
         return $model;
     }
 
     public function delete(int $id)
     {
-        return CompanyInvoiceDucoment::destroy($id);
+        return CompanyInvoiceDocument::destroy($id);
     }
 }

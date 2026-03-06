@@ -29,6 +29,7 @@ class AccountGroupController extends Controller
 
     public function store(AccountGroupStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\AccountGroup::class);
         $model = $this->service->create($request->validated());
         return new AccountGroupResource($model);
     }

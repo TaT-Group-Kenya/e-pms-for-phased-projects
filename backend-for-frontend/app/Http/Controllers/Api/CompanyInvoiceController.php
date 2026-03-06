@@ -45,6 +45,7 @@ class CompanyInvoiceController extends Controller
 
     public function store(CompanyInvoiceStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\CompanyInvoice::class);
         $validated = $request->validated();
 
         // Ensure the selected company has at least one configured bank/payment method

@@ -32,6 +32,7 @@ class CompanyCreditNoteController extends Controller
 
     public function store(CompanyCreditNoteStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\CompanyCreditNote::class);
         $validated = $request->validated();
 
         if (!empty($validated['invoice_id'])) {

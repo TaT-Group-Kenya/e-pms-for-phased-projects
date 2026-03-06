@@ -30,6 +30,7 @@ class ProjectSourceOriginController extends Controller
 
     public function store(ProjectSourceOriginStoreRequest $request)
     {
+        $this->authorize('create', ProjectSourceOrigin::class);
         $model = $this->service->create($request->validated());
         return new ProjectSourceOriginResource($model);
     }

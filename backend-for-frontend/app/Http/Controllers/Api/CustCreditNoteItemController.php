@@ -30,6 +30,7 @@ class CustCreditNoteItemController extends Controller
 
     public function store(CustCreditNoteItemStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\CustCreditNoteItem::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);

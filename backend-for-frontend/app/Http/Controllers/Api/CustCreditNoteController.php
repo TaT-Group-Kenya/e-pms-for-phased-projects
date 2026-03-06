@@ -31,6 +31,7 @@ class CustCreditNoteController extends Controller
 
     public function store(CustCreditNoteStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\CustCreditNote::class);
         $validated = $request->validated();
         if (!empty($validated['invoice_id'])) {
             $invoice = CustInvoice::find($validated['invoice_id']);

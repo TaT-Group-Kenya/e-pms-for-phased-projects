@@ -30,6 +30,7 @@ class CustomerController extends Controller
 
     public function store(CustomerStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\Customer::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         

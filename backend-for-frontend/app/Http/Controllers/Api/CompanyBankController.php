@@ -29,6 +29,7 @@ class CompanyBankController extends Controller
 
     public function store(CompanyBankStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\CompanyBank::class);
         $model = $this->service->create($request->validated());
         return new CompanyBankResource($model);
     }

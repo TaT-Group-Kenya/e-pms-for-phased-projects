@@ -30,6 +30,7 @@ class LanguageController extends Controller
 
     public function store(LanguageStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\Language::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
@@ -57,7 +58,7 @@ class LanguageController extends Controller
     {
         $this->authorize('delete', $language);
 
-        $this->service->delete($language->id);
+        $this->service->delete($language->id, Auth::id());
         return response()->noContent();
     }
 }

@@ -30,6 +30,8 @@ class TaxController extends Controller
 
     public function store(TaxStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\Tax::class);
+        
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);

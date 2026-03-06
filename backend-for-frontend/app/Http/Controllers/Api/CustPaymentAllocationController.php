@@ -29,6 +29,7 @@ class CustPaymentAllocationController extends Controller
 
     public function store(CustPaymentAllocationStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\CustPaymentAllocation::class);
         $model = $this->service->create($request->validated());
         return new CustPaymentAllocationResource($model);
     }

@@ -30,6 +30,7 @@ class AccountTypeController extends Controller
 
     public function store(AccountTypeStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\AccountType::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);

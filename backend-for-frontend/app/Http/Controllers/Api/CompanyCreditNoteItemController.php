@@ -30,6 +30,7 @@ class CompanyCreditNoteItemController extends Controller
 
     public function store(CompanyCreditNoteItemStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\CompanyCreditNoteItem::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);

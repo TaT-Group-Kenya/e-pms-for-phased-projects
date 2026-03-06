@@ -30,6 +30,7 @@ class DownloadController extends Controller
 
     public function store(DownloadStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\Download::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);

@@ -30,6 +30,7 @@ class ProjectLocationController extends Controller
 
     public function store(ProjectLocationStoreRequest $request)
     {
+        $this->authorize('create', ProjectLocation::class); 
         $model = $this->service->create($request->validated());
         return new ProjectLocationResource($model);
     }

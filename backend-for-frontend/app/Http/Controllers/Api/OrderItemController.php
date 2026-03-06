@@ -31,6 +31,8 @@ class OrderItemController extends Controller
 
     public function store(OrderItemStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\OrderItem::class);
+        
         $validated = $request->validated();
 
         if (!empty($validated['order_id'])) {

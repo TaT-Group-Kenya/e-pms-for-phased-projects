@@ -37,6 +37,8 @@ class UserGroupController extends Controller
 
     public function store(UserGroupStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\UserGroup::class);
+        
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);

@@ -8,6 +8,7 @@ use App\Services\DepartmentService;
 use App\Http\Resources\DepartmentResource;
 use App\Http\Requests\DepartmentStoreRequest;
 use App\Http\Requests\DepartmentUpdateRequest;
+use Illuminate\Support\Facades\Auth;
 
 class DepartmentController extends Controller
 {
@@ -29,7 +30,10 @@ class DepartmentController extends Controller
 
     public function store(DepartmentStoreRequest $request)
     {
-        $model = $this->service->create($request->validated());
+        $this->authorize('create', \App\Models\Department::class);
+        $validated = $request->validated();
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new DepartmentResource($model);
     }
 
@@ -44,7 +48,9 @@ class DepartmentController extends Controller
     {
         $this->authorize('update', $department);
 
-        $updated = $this->service->update($department->id, $request->validated());
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($department->id, $validated);
         return new DepartmentResource($updated);
     }
 

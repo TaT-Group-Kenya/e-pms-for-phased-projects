@@ -61,6 +61,8 @@ class UserController extends Controller
 
     public function store(UserStoreRequest $request)
     {
+        $this->authorize('create', \App\Models\User::class);
+        
         $validated = $request->validated();
 
         // Generate random password if not provided
