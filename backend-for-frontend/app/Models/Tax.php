@@ -13,6 +13,8 @@ class Tax extends Model
     protected $fillable = [
         'code',
         'name',
+        'rate',
+        'is_default',
         'description',
         'updated_at',
         'updated_by',

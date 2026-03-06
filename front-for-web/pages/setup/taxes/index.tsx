@@ -37,6 +37,8 @@ const Page = () => {
             { key: "id", label: "ID" },
             { key: "code", label: "Code" },
             { key: "name", label: "Name" },
+            { key: "rate", label: "Rate" },
+            { key: "is_default", label: "Default" },
             { key: "description", label: "Description" },
           ]}
           searchableKeys={["code", "name", "description"]}

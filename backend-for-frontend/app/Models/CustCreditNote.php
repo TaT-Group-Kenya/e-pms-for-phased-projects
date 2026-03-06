@@ -31,4 +31,9 @@ class CustCreditNote extends Model
     {
         return $this->belongsTo(CustInvoice::class, 'invoice_id');
     }
+
+    public function items()
+    {
+        return $this->hasMany(CustCreditNoteItem::class, 'credit_note_id');
+    }
 }

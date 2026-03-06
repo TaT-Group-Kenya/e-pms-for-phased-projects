@@ -98,7 +98,6 @@ class CustInvoiceController extends Controller
             'project',
             'customer',
             'invoiceItems',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -124,6 +123,15 @@ class CustInvoiceController extends Controller
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($custInvoice->id, $validated);
+        $updated->loadMissing([
+            'order',
+            'project',
+            'customer',
+            'invoiceItems',
+            'payments',
+            'creditnotes',
+            'documents',
+        ]);
         return new CustInvoiceResource($updated);
     }
 
@@ -180,7 +188,6 @@ class CustInvoiceController extends Controller
             'project',
             'customer',
             'invoiceItems',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -230,14 +237,25 @@ class CustInvoiceController extends Controller
 
         $invoice = $custInvoice;
 
-        $invoice = DB::transaction(function () use ($invoice, $validated) {
-            $commonService = new CommonService();
+        // Ensure the benefiting account currency matches the invoice currency
+        $account = Account::findOrFail($validated['account_id']);
+        if ($account->currency !== $invoice->currency) {
+            return response()->json([
+                'message' => 'Benefiting account currency must match invoice currency.',
+                'errors'  => [
+                    'account_id' => [
+                        'Selected account currency (' . $account->currency . ') does not match invoice currency (' . $invoice->currency . ').',
+                    ],
+                ],
+            ], 422);
+        }
 
-            $account = Account::findOrFail($validated['account_id']);
+        $invoice = DB::transaction(function () use ($invoice, $validated, $account) {
+            $commonService = new CommonService();
 
             // Generate a unique transaction number for the payment, similar to order numbers
             do {
-                $transactionNumber = $commonService->generateUniqueCode('CPM-');
+                $transactionNumber = $commonService->generateUniqueCode('CUSTPM-');
             } while (CustPayment::where('transaction_number', $transactionNumber)->exists());
 
             // Only consider active (non-deleted) allocations when computing the
@@ -284,13 +302,17 @@ class CustInvoiceController extends Controller
 
             $netPortion = (float) $validated['amount_paid'] - $taxPortion;
 
-            // Determine base (account) currency and invoice currency
-            $accountCurrencyCode = $account->currency ?? 'KES';
+            // Determine base currency and invoice currency
+            $baseCurrencyForLocalTaxationCode = 'KES'; // KES is the base currency for tax purposes
             $invoiceCurrencyCode = $invoice->currency;
 
             // Use shared conversion helper: 1 invoice currency unit = exchange_rate * base currency units
             $conversionService = new CurrencyConversionService();
-            $conversion = $conversionService->convertToBaseFromInvoice((float) $validated['amount_paid'], $invoiceCurrencyCode, $accountCurrencyCode);
+            $conversion = $conversionService->convertToBaseFromInvoice(
+                (float) $validated['amount_paid'],
+                $invoiceCurrencyCode,
+                $baseCurrencyForLocalTaxationCode
+            );
             $exchangeRate = $conversion['exchange_rate'];
             $convertedAmount = $conversion['converted_amount'];
 
@@ -339,7 +361,7 @@ class CustInvoiceController extends Controller
                 'posted_date' => now(),
                 'amount' => $validated['amount_paid'],
                 'transaction_currency' => $invoiceCurrencyCode,
-                'base_currency' => $accountCurrencyCode,
+                'base_currency' => $baseCurrencyForLocalTaxationCode,
                 'exchange_rate' => $exchangeRate,
                 'converted_amount' => $convertedAmount,
                 'converted_tax_amount' => $taxPortion * $exchangeRate,
@@ -397,7 +419,6 @@ class CustInvoiceController extends Controller
             'project',
             'customer',
             'invoiceItems',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -534,7 +555,6 @@ class CustInvoiceController extends Controller
             'project',
             'customer',
             'invoiceItems',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -669,7 +689,6 @@ class CustInvoiceController extends Controller
             'project',
             'customer',
             'invoiceItems',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -836,9 +855,15 @@ class CustInvoiceController extends Controller
             'project',
             'customer',
             'invoiceItems',
-            'taxitems',
             'documents',
             'order',
+            'payments' => function ($query) {
+                // Qualify both payment and pivot deletion flags to avoid ambiguity.
+                $query->where('cust_payments.is_deleted', false)
+                    ->wherePivot('is_deleted', false)
+                    ->orderBy('payment_date', 'asc')
+                    ->orderBy('created_at', 'asc');
+            },
         ]);
 
         $configValues = SysConfig::whereIn('name', [
@@ -856,8 +881,17 @@ class CustInvoiceController extends Controller
         $senderEmail = $configValues['EMAIL'] ?? config('mail.from.address', 'no-reply@example.com');
         $generatedAt = now();
 
+        // Pre-compute payment summary in invoice currency for the PDF.
+        $payments = $custInvoice->payments ?? collect();
+        $paymentsTotal = (float) $payments->sum('amount_paid');
+        $invoiceTotal = (float) $custInvoice->total_amount;
+        $outstandingBalance = max($invoiceTotal - $paymentsTotal, 0.0);
+
         $data = [
             'invoice'            => $custInvoice,
+            'payments'           => $payments,
+            'paymentsTotal'      => $paymentsTotal,
+            'outstandingBalance' => $outstandingBalance,
             'senderName'         => $senderName,
             'senderEmail'        => $senderEmail,
             'senderPhone'        => $configValues['PHONE']   ?? null,

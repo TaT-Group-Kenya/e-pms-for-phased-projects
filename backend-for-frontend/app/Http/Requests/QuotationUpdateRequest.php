@@ -15,7 +15,6 @@ class QuotationUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'project_id' => ['nullable', 'exists:projects,id'],
             'customer_id' => ['nullable', 'exists:customers,id'],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:255'],

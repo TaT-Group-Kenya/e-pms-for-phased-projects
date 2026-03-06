@@ -3,11 +3,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useAppSelector } from "../../../store/hooks";
+import { usePathname, useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { selectUser } from "../../../store/auth/selectors";
+import { clearAuth } from "../../../store/auth/slice";
 
 const ProfileMenu: React.FC = () => {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser)
   const pathname = usePathname();
 
@@ -37,6 +40,20 @@ const ProfileMenu: React.FC = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+
+    const handleLogout = React.useCallback(() => {
+      try {
+        dispatch(clearAuth());
+        if (typeof window !== "undefined") {
+          try {
+            window.localStorage.removeItem("auth");
+          } catch {}
+        }
+      } finally {
+        router.replace("/sign-in");
+      }
+    }, [dispatch, router]);
 
   return (
     <div
@@ -77,7 +94,7 @@ const ProfileMenu: React.FC = () => {
               <span className="block text-black dark:text-white font-medium">
                 {user?.first_name || ""} {user?.last_name || ""}
               </span>
-              <span className="block text-xs">{user?.role || ""}</span>
+              <span className="block text-xs">{user?.category || ""}</span>
             </div>
           </div>
           <ul>
@@ -95,8 +112,9 @@ const ProfileMenu: React.FC = () => {
               </Link>
             </li>
             <li>
-              <Link
-                href="/authentication/logout/"
+              <button
+                type="button"
+                onClick={handleLogout}
                 className={`block relative py-[7px] ltr:pl-[50px] ltr:pr-[20px] rtl:pr-[50px] rtl:pl-[20px] text-black dark:text-white transition-all hover:text-primary-500 ${
                   pathname === "/authentication/logout/" ? "text-primary-500" : ""
                 }`}
@@ -105,7 +123,7 @@ const ProfileMenu: React.FC = () => {
                   logout
                 </i>
                 Logout
-              </Link>
+              </button>
             </li>
           </ul>
         </div>

@@ -33,6 +33,24 @@ interface Assignment {
   created_at: string;
   created_by: number;
   project: Project;
+  phase: ProjectPhase;
+}
+
+interface ProjectPhase {
+  id: number;
+  code: string;
+  project_id: number;
+  name: string;
+  description: string;
+  phase_order: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  progress_percentage: string;
+  updated_at: string;
+  updated_by: number;
+  created_at: string;
+  created_by: number;
 }
 
 interface CompanyDetailsData {
@@ -387,7 +405,7 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
                     <td className="py-3 px-4">{assignment.project.name}</td>
                     <td className="py-3 px-4">
                       <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                        Phase {assignment.phase_id}
+                        Phase {assignment.phase?.phase_order || ""}
                       </span>
                     </td>
                     <td className="py-3 px-4">
@@ -473,7 +491,7 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
                     <strong>Project:</strong> {selectedAssignment.project.code} - {selectedAssignment.project.name}
                   </p>
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    <strong>Phase:</strong> Phase {selectedAssignment.phase_id}
+                    <strong>Phase:</strong> Phase {selectedAssignment.phase?.phase_order || ""}
                   </p>
                 </div>
               )}
@@ -583,7 +601,7 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
                 </h3>
                 {timelineAssignment && (
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    {timelineAssignment.project.code} - Phase {timelineAssignment.phase_id}
+                    {timelineAssignment.project.code} - Phase {timelineAssignment.phase?.phase_order || ""}
                   </p>
                 )}
               </div>

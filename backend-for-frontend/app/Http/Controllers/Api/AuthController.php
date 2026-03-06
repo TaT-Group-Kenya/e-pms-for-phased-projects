@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -28,7 +29,9 @@ class AuthController extends Controller
                 'device_name' => ['nullable','string']
             ]);
 
-            $user = User::where('email', $data['email'])->with('groups.roles')->first();
+            $user = User::where('email', $data['email'])
+                ->with(['company', 'customer', 'groups.roles'])
+                ->first();
 
             if (! $user || ! Hash::check($data['password'], $user->password)) {
                 return response()->json(['message' => 'Invalid credentials'], 401);
@@ -37,10 +40,23 @@ class AuthController extends Controller
             $device = $data['device_name'] ?? 'api-client';
             $token = $user->createToken($device)->plainTextToken;
 
+            // Attach a synthetic "roles" relation based on the user's groups,
+            // mirroring the logic in UserController so UserResource can expose roles.
+            $roles = $user->groups
+                ? $user->groups
+                    ->flatMap(function ($group) {
+                        return $group->roles;
+                    })
+                    ->unique('id')
+                    ->values()
+                : collect();
+
+            $user->setRelation('roles', $roles);
+
             return response()->json([
                 'access_token' => $token,
                 'token_type' => 'Bearer',
-                'user' => $user,
+                'user' => new UserResource($user),
             ]);
         } catch (QueryException $e) {
             if ($this->isConnectionError($e)) {
@@ -195,12 +211,82 @@ class AuthController extends Controller
         DB::table($table)->where('email', $email)->delete();
 
         $token = $user->createToken('api-client')->plainTextToken;
-        $user->load('groups.roles');
+
+        // Ensure related data and synthetic roles are available for the resource.
+        $user->loadMissing(['company', 'customer', 'groups.roles']);
+        $roles = $user->groups
+            ? $user->groups
+                ->flatMap(function ($group) {
+                    return $group->roles;
+                })
+                ->unique('id')
+                ->values()
+            : collect();
+
+        $user->setRelation('roles', $roles);
+
         return response()->json([
             'message' => 'Password has been reset',
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'user' => $user,
+            'user' => new UserResource($user),
         ]);
+    }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'first_name' => ['nullable', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
+        ]);
+
+        $user->fill($data);
+        $user->save();
+
+        $user->loadMissing(['company', 'customer', 'groups.roles']);
+        $roles = $user->groups
+            ? $user->groups
+                ->flatMap(function ($group) {
+                    return $group->roles;
+                })
+                ->unique('id')
+                ->values()
+            : collect();
+
+        $user->setRelation('roles', $roles);
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => new UserResource($user),
+        ]);
+    }
+
+    public function changePassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        if (! Hash::check($data['current_password'], $user->password)) {
+            return response()->json(['message' => 'Current password is incorrect'], 422);
+        }
+
+        $user->password = Hash::make($data['new_password']);
+        $user->setRememberToken(Str::random(60));
+        $user->save();
+
+        return response()->json(['message' => 'Password updated successfully']);
     }
 }

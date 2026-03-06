@@ -16,7 +16,6 @@ class OrderUpdateRequest extends FormRequest
     {
         return [
             'quotation_id' => ['sometimes', 'required', 'exists:quotations,id'],
-            'project_id' => ['sometimes', 'required', 'exists:projects,id'],
             'customer_id' => ['sometimes', 'required', 'exists:customers,id'],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:255'],

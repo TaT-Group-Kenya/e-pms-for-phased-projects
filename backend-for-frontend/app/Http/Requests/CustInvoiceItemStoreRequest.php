@@ -22,6 +22,11 @@ class CustInvoiceItemStoreRequest extends FormRequest
             'item_amount' => ['required', 'numeric', 'min:0'],
             'quantity' => ['sometimes', 'integer', 'min:1'],
             'is_taxable' => ['required', 'boolean'],
+            'tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
+            'tax_item_name' => ['nullable', 'string', 'max:255'],
+            'item_type' => ['nullable', 'string', 'max:255', Rule::in(['fixed', 'percent'])],
+            'item_value' => ['nullable', 'numeric', 'min:0'],
+            'tax_amount' => ['nullable', 'numeric', 'min:0'],
             'custom_note' => ['required', 'string', 'max:255'],
         ];
     }

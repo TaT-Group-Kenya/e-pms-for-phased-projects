@@ -24,14 +24,11 @@ interface CompanyInvoiceItem {
   project_phase_id?: number | null
   projectPhase?: ProjectPhaseSummary | null
   is_taxable?: boolean | null
-}
-
-interface CompanyInvoiceTaxItem {
-  id: number
-  item_name: string
-  item_type: string
+  tax_id?: number | null
+  tax_item_name?: string | null
+  item_type?: 'fixed' | 'percent' | string | null
   item_value?: number | null
-  item_amount?: number | null
+  tax_amount?: number | null
 }
 
 interface CompanyBankAccountSummary {
@@ -48,6 +45,22 @@ interface TaxSummary {
   name: string
   code: string
   description?: string | null
+  rate?: number | null
+  is_default?: boolean | number | null
+}
+
+interface CompanyAssignmentSummary {
+  id: number
+  project_id: number
+  phase_id: number
+  company_id: number
+  is_complete?: boolean | null
+  updated_at?: string | null
+  updated_by?: number | null
+  created_at?: string | null
+  created_by?: number | null
+  project?: ProjectSummary | null
+  phase?: ProjectPhaseSummary | null
 }
 
 interface CompanyPaymentSummary {
@@ -92,13 +105,15 @@ interface CompanySummary {
   address?: string | null
   city?: string | null
   country?: string | null
-   bank_accounts?: CompanyBankAccountSummary[]
+  bank_accounts?: CompanyBankAccountSummary[]
+  assignments?: CompanyAssignmentSummary[]
 }
 
 interface AccountSummary {
   id: number
   code: string
-  name: string
+  name: string,
+  currency: string
 }
 
 type CompanyInvoiceStatus =
@@ -125,7 +140,6 @@ interface CompanyInvoice {
   payment_terms?: string | null
   notes_to_customer?: string | null
   invoiceItems?: CompanyInvoiceItem[]
-  taxitems?: CompanyInvoiceTaxItem[]
   payments?: CompanyPaymentSummary[]
   creditnotes?: CompanyCreditNoteSummary[]
   project?: ProjectWithPhasesSummary
@@ -178,6 +192,10 @@ export default function CompanyInvoiceDetailPage() {
   const [creditNoteNotes, setCreditNoteNotes] = useState('')
   const [savingCreditNote, setSavingCreditNote] = useState(false)
 
+  const [taxes, setTaxes] = useState<TaxSummary[]>([])
+  const [loadingTaxes, setLoadingTaxes] = useState(false)
+  const [taxesError, setTaxesError] = useState<string | null>(null)
+
   const [updatingStatus, setUpdatingStatus] = useState<CompanyInvoiceStatus | null>(null)
 
   const [company, setCompany] = useState<CompanySummary | null>(null)
@@ -187,6 +205,11 @@ export default function CompanyInvoiceDetailPage() {
   const [itemDescription, setItemDescription] = useState('')
   const [itemAmount, setItemAmount] = useState('')
   const [itemTaxable, setItemTaxable] = useState(true)
+  const [itemTaxId, setItemTaxId] = useState('')
+  const [itemTaxItemName, setItemTaxItemName] = useState('')
+  const [itemTaxType, setItemTaxType] = useState<'fixed' | 'percent'>('percent')
+  const [itemTaxValue, setItemTaxValue] = useState('')
+  const [itemProjectPhaseId, setItemProjectPhaseId] = useState<number | null>(null)
   const [savingItem, setSavingItem] = useState(false)
 
   const [isEditingItem, setIsEditingItem] = useState(false)
@@ -195,63 +218,43 @@ export default function CompanyInvoiceDetailPage() {
   const [editItemDescription, setEditItemDescription] = useState('')
   const [editItemAmount, setEditItemAmount] = useState('')
   const [editItemTaxable, setEditItemTaxable] = useState(true)
+  const [editItemTaxId, setEditItemTaxId] = useState('')
+  const [editItemTaxItemName, setEditItemTaxItemName] = useState('')
+  const [editItemTaxType, setEditItemTaxType] = useState<'fixed' | 'percent'>('percent')
+  const [editItemTaxValue, setEditItemTaxValue] = useState('')
   const [savingItemEdit, setSavingItemEdit] = useState(false)
+
+  const [editItemProjectPhaseId, setEditItemProjectPhaseId] = useState<number | null>(null)
 
   const [itemToDelete, setItemToDelete] = useState<CompanyInvoiceItem | null>(null)
   const [deletingItem, setDeletingItem] = useState(false)
 
-  const [isAddingTaxItem, setIsAddingTaxItem] = useState(false)
-  const [taxItemName, setTaxItemName] = useState('')
-  const [taxItemType, setTaxItemType] = useState<'fixed' | 'percent'>('percent')
-  const [taxItemValue, setTaxItemValue] = useState('')
-  const [savingTaxItem, setSavingTaxItem] = useState(false)
-
-  const [taxes, setTaxes] = useState<TaxSummary[]>([])
-  const [loadingTaxes, setLoadingTaxes] = useState(false)
-  const [taxesError, setTaxesError] = useState<string | null>(null)
-  const [selectedTaxId, setSelectedTaxId] = useState<number | null>(null)
-
-  const [isEditingTaxItem, setIsEditingTaxItem] = useState(false)
-  const [editingTaxItemId, setEditingTaxItemId] = useState<number | null>(null)
-  const [editTaxItemName, setEditTaxItemName] = useState('')
-  const [editTaxItemType, setEditTaxItemType] = useState<'fixed' | 'percent'>('percent')
-  const [editTaxItemValue, setEditTaxItemValue] = useState('')
-  const [savingTaxItemEdit, setSavingTaxItemEdit] = useState(false)
-
-  const [taxItemToDelete, setTaxItemToDelete] = useState<CompanyInvoiceTaxItem | null>(null)
-  const [deletingTaxItem, setDeletingTaxItem] = useState(false)
-
   const { toasts, addToast, removeToast } = useToast()
   const accessToken = useSelector(selectAccessToken)
 
-  const previewTaxAmount = useMemo(() => {
-    if (!invoice) return null
+  const companyPhases = useMemo<ProjectPhaseSummary[]>(() => {
+    if (!company?.assignments) return []
+    const map = new Map<number, ProjectPhaseSummary>()
 
-    const rawValue = taxItemValue
-    if (rawValue === '') return null
+    company.assignments.forEach((assignment) => {
+      if (assignment.phase && !map.has(assignment.phase.id)) {
+        map.set(assignment.phase.id, {
+          id: assignment.phase.id,
+          code: assignment.phase.code,
+          name: assignment.phase.name,
+          status: assignment.phase.status ?? null,
+        })
+      }
+    })
 
-    const numericValue = Number(rawValue)
-    if (Number.isNaN(numericValue)) return null
+    return Array.from(map.values())
+  }, [company])
 
-    const baseAmount = (invoice.invoiceItems || []).reduce((sum, item) => {
-      const quantity = item.quantity ?? 1
-      const unitAmount = item.item_amount ?? 0
-      const lineTotal = item.total ?? unitAmount * quantity
-      const numericTotal =
-        typeof lineTotal === 'number' ? lineTotal : Number(lineTotal)
-      return sum + (Number.isNaN(numericTotal) ? 0 : numericTotal)
-    }, 0)
-
-    if (taxItemType === 'fixed') {
-      return numericValue
-    }
-
-    if (taxItemType === 'percent') {
-      return baseAmount * (numericValue / 100)
-    }
-
-    return null
-  }, [invoice, taxItemType, taxItemValue])
+  const defaultTax = useMemo(() => {
+    if (!taxes || taxes.length === 0) return null
+    const byDefaultFlag = taxes.find((t) => t.is_default === true || t.is_default === 1)
+    return byDefaultFlag || taxes[0]
+  }, [taxes])
 
   const fetchInvoice = useCallback(async () => {
     if (!id) return
@@ -279,50 +282,6 @@ export default function CompanyInvoiceDetailPage() {
       setLoading(false)
     }
   }, [id, accessToken, addToast])
-
-  useEffect(() => {
-    if (!accessToken) return
-
-    const controller = new AbortController()
-
-    const fetchTaxes = async () => {
-      setLoadingTaxes(true)
-      setTaxesError(null)
-
-      try {
-        const resp = await fetch('/api/taxes/list?per_page=1000', {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          signal: controller.signal,
-        })
-
-        const data = await resp.json().catch(() => null)
-
-        if (!resp.ok) {
-          const message = data?.message || 'Failed to load taxes'
-          setTaxesError(message)
-          addToast(message, 'error')
-          return
-        }
-
-        const list = (data?.data || data) as TaxSummary[]
-        setTaxes(Array.isArray(list) ? list : [])
-      } catch (err: any) {
-        if (err instanceof DOMException && err.name === 'AbortError') return
-        // eslint-disable-next-line no-console
-        console.error('fetch taxes error', err)
-        setTaxesError('Error loading taxes')
-      } finally {
-        setLoadingTaxes(false)
-      }
-    }
-
-    fetchTaxes()
-
-    return () => controller.abort()
-  }, [accessToken, addToast])
 
   useEffect(() => {
     fetchInvoice()
@@ -354,6 +313,48 @@ export default function CompanyInvoiceDetailPage() {
     loadCompany()
   }, [invoice?.company_id, accessToken])
 
+  useEffect(() => {
+    if (!accessToken) return
+
+    const controller = new AbortController()
+
+    const fetchTaxes = async () => {
+      setLoadingTaxes(true)
+      setTaxesError(null)
+
+      try {
+        const resp = await fetch('/api/taxes/list?per_page=1000', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
+        })
+
+        const data = await resp.json().catch(() => null)
+
+        if (!resp.ok) {
+          const message = data?.message || 'Failed to load taxes'
+          setTaxesError(message)
+          addToast(message, 'error')
+          return
+        }
+
+        const list = (data?.data || data) as TaxSummary[]
+        setTaxes(Array.isArray(list) ? list : [])
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setTaxesError('Error loading taxes')
+      } finally {
+        setLoadingTaxes(false)
+      }
+    }
+
+    fetchTaxes()
+
+    return () => controller.abort()
+  }, [accessToken, addToast])
+
   const fetchAccounts = useCallback(async () => {
     if (!accessToken) return
 
@@ -376,6 +377,7 @@ export default function CompanyInvoiceDetailPage() {
         id: Number(item.id),
         code: String(item.code ?? ''),
         name: String(item.name ?? ''),
+        currency: String(item.currency ?? ''),
       }))
       setAccounts(mapped)
     } catch (e: any) {
@@ -573,20 +575,37 @@ export default function CompanyInvoiceDetailPage() {
 
     setSavingItem(true)
     try {
+      const payload: any = {
+        invoice_id: invoice.id,
+        project_phase_id:
+          itemProjectPhaseId != null
+            ? itemProjectPhaseId
+            : invoice.project_phase_id ?? null,
+        item_name: itemName.trim(),
+        item_description: itemDescription.trim() || null,
+        item_amount: amount,
+        is_taxable: itemTaxable,
+      }
+
+      if (itemTaxable) {
+        payload.tax_id = itemTaxId ? Number(itemTaxId) : null
+        payload.tax_item_name = itemTaxItemName || null
+        payload.item_type = itemTaxType || null
+        payload.item_value = itemTaxValue ? Number(itemTaxValue) : null
+      } else {
+        payload.tax_id = null
+        payload.tax_item_name = null
+        payload.item_type = null
+        payload.item_value = null
+      }
+
       const resp = await fetch('/api/company-invoice-items', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({
-          invoice_id: invoice.id,
-          project_phase_id: invoice.project_phase_id ?? null,
-          item_name: itemName.trim(),
-          item_description: itemDescription.trim() || null,
-          item_amount: amount,
-          is_taxable: itemTaxable,
-        }),
+        body: JSON.stringify(payload),
       })
 
       const data = await resp.json().catch(() => null)
@@ -596,6 +615,11 @@ export default function CompanyInvoiceDetailPage() {
 
       await fetchInvoice()
       setIsAddingItem(false)
+  setItemTaxId('')
+  setItemTaxItemName('')
+  setItemTaxType('percent')
+  setItemTaxValue('')
+      setItemProjectPhaseId(null)
       addToast('Invoice item added successfully.', 'success')
     } catch (e: any) {
       addToast(e.message || 'Failed to add invoice item', 'error')
@@ -610,6 +634,11 @@ export default function CompanyInvoiceDetailPage() {
     setEditItemDescription(item.item_description || '')
     setEditItemAmount(String(item.item_amount))
     setEditItemTaxable(item.is_taxable ?? true)
+     setEditItemTaxId(item.tax_id != null ? String(item.tax_id) : '')
+     setEditItemTaxItemName(item.tax_item_name || '')
+     setEditItemTaxType((item.item_type as 'fixed' | 'percent' | undefined) ?? 'percent')
+     setEditItemTaxValue(item.item_value != null ? String(item.item_value) : '')
+    setEditItemProjectPhaseId(item.project_phase_id ?? item.projectPhase?.id ?? null)
     setIsEditingItem(true)
   }
 
@@ -637,18 +666,36 @@ export default function CompanyInvoiceDetailPage() {
 
     setSavingItemEdit(true)
     try {
+      const payload: any = {
+        item_name: editItemName.trim(),
+        item_description: editItemDescription.trim() || null,
+        item_amount: amount,
+        is_taxable: editItemTaxable,
+        project_phase_id:
+          editItemProjectPhaseId != null
+            ? editItemProjectPhaseId
+            : invoice.project_phase_id ?? null,
+      }
+
+      if (editItemTaxable) {
+        payload.tax_id = editItemTaxId ? Number(editItemTaxId) : null
+        payload.tax_item_name = editItemTaxItemName || null
+        payload.item_type = editItemTaxType || null
+        payload.item_value = editItemTaxValue ? Number(editItemTaxValue) : null
+      } else {
+        payload.tax_id = null
+        payload.tax_item_name = null
+        payload.item_type = null
+        payload.item_value = null
+      }
+
       const resp = await fetch(`/api/company-invoice-items/${editingItemId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({
-          item_name: editItemName.trim(),
-          item_description: editItemDescription.trim() || null,
-          item_amount: amount,
-          is_taxable: editItemTaxable,
-        }),
+        body: JSON.stringify(payload),
       })
 
       const data = await resp.json().catch(() => null)
@@ -659,6 +706,11 @@ export default function CompanyInvoiceDetailPage() {
       await fetchInvoice()
       setIsEditingItem(false)
       setEditingItemId(null)
+  setEditItemTaxId('')
+  setEditItemTaxItemName('')
+  setEditItemTaxType('percent')
+  setEditItemTaxValue('')
+      setEditItemProjectPhaseId(null)
       addToast('Invoice item updated successfully.', 'success')
     } catch (e: any) {
       addToast(e.message || 'Failed to update invoice item', 'error')
@@ -708,171 +760,7 @@ export default function CompanyInvoiceDetailPage() {
     }
   }
 
-  const handleSaveTaxItem = async () => {
-    if (!invoice) return
-    if (!accessToken) {
-      addToast('You are not authenticated.', 'error')
-      return
-    }
-
-    if (invoice.status !== 'draft') {
-      addToast('Tax items can only be modified while the invoice is in draft status.', 'error')
-      return
-    }
-
-    if (!selectedTaxId && !taxItemName.trim()) {
-      addToast('Tax item name is required.', 'error')
-      return
-    }
-
-    const valueNum = Number(taxItemValue)
-    if (!taxItemValue || Number.isNaN(valueNum) || valueNum < 0) {
-      addToast('Enter a valid tax value.', 'error')
-      return
-    }
-
-    setSavingTaxItem(true)
-    try {
-      const payload: any = {
-        invoice_id: invoice.id,
-        tax_id: selectedTaxId ?? null,
-        item_name: (taxItemName || '').trim(),
-        item_type: taxItemType,
-        item_value: String(valueNum),
-      }
-
-      const resp = await fetch('/api/company-invoice-tax-items', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(payload),
-      })
-
-      const data = await resp.json().catch(() => null)
-      if (!resp.ok) {
-        throw new Error(data?.message || 'Failed to add tax item')
-      }
-
-      await fetchInvoice()
-      setIsAddingTaxItem(false)
-      setSelectedTaxId(null)
-      addToast('Tax item added successfully.', 'success')
-    } catch (e: any) {
-      addToast(e.message || 'Failed to add tax item', 'error')
-    } finally {
-      setSavingTaxItem(false)
-    }
-  }
-
-  const handleStartEditTaxItem = (item: CompanyInvoiceTaxItem) => {
-    setEditingTaxItemId(item.id)
-    setEditTaxItemName(item.item_name)
-    setEditTaxItemType(item.item_type as 'fixed' | 'percent')
-
-    const rawValue = item.item_value
-    const numericValue =
-      typeof rawValue === 'number' ? rawValue : rawValue != null ? Number(rawValue) : 0
-    setEditTaxItemValue(Number.isNaN(numericValue) ? '' : String(numericValue))
-
-    setIsEditingTaxItem(true)
-  }
-
-  const handleSaveTaxItemEdit = async () => {
-    if (!invoice || editingTaxItemId == null) return
-    if (!accessToken) {
-      addToast('You are not authenticated.', 'error')
-      return
-    }
-
-    if (invoice.status !== 'draft') {
-      addToast('Tax items can only be modified while the invoice is in draft status.', 'error')
-      return
-    }
-
-    if (!editTaxItemName.trim()) {
-      addToast('Tax item name is required.', 'error')
-      return
-    }
-
-    const valueNum = Number(editTaxItemValue)
-    if (!editTaxItemValue || Number.isNaN(valueNum) || valueNum < 0) {
-      addToast('Enter a valid tax value.', 'error')
-      return
-    }
-
-    setSavingTaxItemEdit(true)
-    try {
-      const resp = await fetch(`/api/company-invoice-tax-items/${editingTaxItemId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          item_name: editTaxItemName.trim(),
-          item_type: editTaxItemType,
-          item_value: String(valueNum),
-        }),
-      })
-
-      const data = await resp.json().catch(() => null)
-      if (!resp.ok) {
-        throw new Error(data?.message || 'Failed to update tax item')
-      }
-
-      await fetchInvoice()
-      setIsEditingTaxItem(false)
-      setEditingTaxItemId(null)
-      addToast('Tax item updated successfully.', 'success')
-    } catch (e: any) {
-      addToast(e.message || 'Failed to update tax item', 'error')
-    } finally {
-      setSavingTaxItemEdit(false)
-    }
-  }
-
-  const handleDeleteTaxItem = (item: CompanyInvoiceTaxItem) => {
-    setTaxItemToDelete(item)
-  }
-
-  const handleConfirmDeleteTaxItem = async () => {
-    if (!invoice || !taxItemToDelete) return
-    if (!accessToken) {
-      addToast('You are not authenticated.', 'error')
-      return
-    }
-
-    if (invoice.status !== 'draft') {
-      addToast('Tax items can only be deleted while the invoice is in draft status.', 'error')
-      return
-    }
-
-    setDeletingTaxItem(true)
-    try {
-      const resp = await fetch(`/api/company-invoice-tax-items/${taxItemToDelete.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
-
-      const data = await resp.json().catch(() => null)
-      if (!resp.ok) {
-        throw new Error(data?.message || 'Failed to delete tax item')
-      }
-
-      await fetchInvoice()
-      setTaxItemToDelete(null)
-      addToast('Tax item deleted successfully.', 'success')
-    } catch (e: any) {
-      addToast(e.message || 'Failed to delete tax item', 'error')
-    } finally {
-      setDeletingTaxItem(false)
-    }
-  }
+  
 
   const handleOpenAddPayment = () => {
     if (!invoice) return
@@ -920,7 +808,7 @@ export default function CompanyInvoiceDetailPage() {
     }
 
     if (!selectedAccountId) {
-      addToast('Please select an accounts account.', 'error')
+      addToast('Please select an funding account.', 'error')
       return
     }
 
@@ -947,7 +835,7 @@ export default function CompanyInvoiceDetailPage() {
 
       const data = await resp.json().catch(() => null)
       if (!resp.ok) {
-        throw new Error(data?.message || 'Failed to add payment')
+        throw new Error(data?.message || 'Failed to make payment')
       }
 
       const inv = (data?.data || data) as CompanyInvoice
@@ -955,7 +843,7 @@ export default function CompanyInvoiceDetailPage() {
       setIsAddingPayment(false)
       addToast('Payment recorded successfully.', 'success')
     } catch (e: any) {
-      addToast(e.message || 'Failed to add payment', 'error')
+      addToast(e.message || 'Failed to make payment', 'error')
     } finally {
       setSavingPayment(false)
     }
@@ -1131,21 +1019,12 @@ export default function CompanyInvoiceDetailPage() {
     return sum + (Number.isNaN(numericTotal) ? 0 : numericTotal)
   }, 0)
 
-  const computedTaxTotal = (invoice.taxitems || []).reduce((sum, item) => {
-    const amount = item.item_amount ?? 0
-    const numericAmount = typeof amount === 'number' ? amount : Number(amount)
-    return sum + (Number.isNaN(numericAmount) ? 0 : numericAmount)
-  }, 0)
-
-  const hasTaxItems = !!invoice && Array.isArray(invoice.taxitems) && invoice.taxitems.length > 0
-
   const effectiveSubtotal =
     invoice.subtotal_amount && invoice.subtotal_amount !== 0
       ? invoice.subtotal_amount
       : computedItemsSubtotal
 
-  const effectiveTax =
-    invoice.tax_amount && invoice.tax_amount !== 0 ? invoice.tax_amount : computedTaxTotal
+  const effectiveTax = invoice.tax_amount ?? 0
 
   const effectiveDiscount = invoice.discount_amount ?? 0
 
@@ -1304,28 +1183,12 @@ export default function CompanyInvoiceDetailPage() {
                   Invoice Items
                 </button>
               </li>
-
               <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
                 <button
                   type="button"
                   onClick={() => setActiveTab(2)}
                   className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
                     activeTab === 2
-                      ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                  }`}
-                >
-                  <i className="material-symbols-outlined !text-[20px]">percent</i>
-                  Tax Items
-                </button>
-              </li>
-
-              <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab(3)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 3
                       ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
                       : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
                   }`}
@@ -1338,9 +1201,9 @@ export default function CompanyInvoiceDetailPage() {
               <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
                 <button
                   type="button"
-                  onClick={() => setActiveTab(4)}
+                  onClick={() => setActiveTab(3)}
                   className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 4
+                    activeTab === 3
                       ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
                       : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
                   }`}
@@ -1384,7 +1247,7 @@ export default function CompanyInvoiceDetailPage() {
                           <button
                             type="button"
                             disabled={
-                              invoice.status === 'draft' ||
+                              ['draft', 'paid', 'partially-paid'].includes(invoice.status) ||
                               updatingStatus !== null ||
                               (invoice.payments && invoice.payments.length > 0)
                             }
@@ -1396,7 +1259,7 @@ export default function CompanyInvoiceDetailPage() {
                           <button
                             type="button"
                             disabled={
-                              invoice.status === 'sent' ||
+                              ['sent', 'paid', 'partially-paid'].includes(invoice.status) ||
                               updatingStatus !== null ||
                               !invoice.invoiceItems ||
                               invoice.invoiceItems.length === 0
@@ -1467,6 +1330,9 @@ export default function CompanyInvoiceDetailPage() {
                                 Qty
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                                Tax
+                              </th>
+                              <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                                 Total
                               </th>
                             </tr>
@@ -1505,6 +1371,39 @@ export default function CompanyInvoiceDetailPage() {
                                 <td className="text-sm text-right px-[15px] py-[12px]">
                                   {item.quantity ?? 1}
                                 </td>
+                                <td className="text-sm text-right px-[15px] py-[12px] align-top">
+                                  {item.is_taxable ? (
+                                    <div className="space-y-[4px] text-right">
+                                      <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
+                                        <span className="font-semibold">
+                                          {item.tax_item_name || 'Tax'}
+                                        </span>
+                                        <span className="text-[10px] uppercase tracking-wide">
+                                          {item.item_type === 'percent'
+                                            ? 'PERCENT'
+                                            : item.item_type === 'fixed'
+                                            ? 'FIXED'
+                                            : ''}
+                                        </span>
+                                      </div>
+                                      {item.item_value != null && (
+                                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                                          {item.item_type === 'percent'
+                                            ? `${item.item_value}%`
+                                            : `${invoice.currency} ${Number(item.item_value).toLocaleString()}`}
+                                        </div>
+                                      )}
+                                      {item.tax_amount != null && item.tax_amount > 0 && (
+                                        <div className="text-xs text-gray-700 dark:text-gray-300">
+                                          Tax amount: {invoice.currency}{' '}
+                                          {Number(item.tax_amount).toLocaleString()}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
+                                  )}
+                                </td>
                                 <td className="text-sm text-right px-[15px] py-[12px]">
                                   {formatCurrency(
                                     item.total ?? item.item_amount * (item.quantity ?? 1),
@@ -1533,14 +1432,7 @@ export default function CompanyInvoiceDetailPage() {
                         </span>
                       </div>
 
-                      {hasTaxItems ? (
-                        <div className="flex items-center justify-between pb-[15px] border-b border-gray-100 dark:border-[#172036]">
-                          <span className="text-gray-600 dark:text-gray-400">Tax (from items)</span>
-                          <span className="font-medium">
-                            {formatCurrency(computedTaxTotal, invoice.currency)}
-                          </span>
-                        </div>
-                      ) : (
+                      {effectiveTax > 0 && (
                         <div className="flex items-center justify-between pb-[15px] border-b border-gray-100 dark:border-[#172036]">
                           <span className="text-gray-600 dark:text-gray-400">Tax</span>
                           <span className="font-medium">
@@ -1549,40 +1441,111 @@ export default function CompanyInvoiceDetailPage() {
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between pb-[15px] border-b border-gray-100 dark:border-[#172036]">
-                        <span className="text-gray-600 dark:text-gray-400">Discount</span>
-                        <span className="font-medium">
-                          {formatCurrency(effectiveDiscount, invoice.currency)}
-                        </span>
-                      </div>
+                      {effectiveDiscount > 0 && (
+                        <div className="flex items-center justify-between pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                          <span className="text-gray-600 dark:text-gray-400">Discount</span>
+                          <span className="font-medium">
+                            {formatCurrency(effectiveDiscount, invoice.currency)}
+                          </span>
+                        </div>
+                      )}
 
                       <div className="flex items-center justify-between pt-[15px] border-t-2 border-gray-200 dark:border-[#172036] text-base">
                         <span className="font-semibold">Total</span>
                         <span className="font-semibold text-primary-500 text-lg">
-                          {formatCurrency(
-                            hasTaxItems
-                              ? effectiveSubtotal + computedTaxTotal - effectiveDiscount
-                              : effectiveTotal,
-                            invoice.currency
-                          )}
+                          {formatCurrency(effectiveTotal, invoice.currency)}
                         </span>
                       </div>
 
-                      {invoice.status === 'partially-paid' && invoice.payments && invoice.payments.length > 0 && (
-                        <div className="mt-[10px] pt-[10px] border-t border-dashed border-gray-200 dark:border-[#172036] space-y-[8px] text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Payments so far</span>
-                            <span className="font-medium">
-                              {formatCurrency(totalPayments, invoice.currency)}
-                            </span>
+                      {invoice.payments && invoice.payments.length > 0 && (
+                        <>
+                          <div className="mt-[10px] pt-[10px] border-t border-dashed border-gray-200 dark:border-[#172036] space-y-[8px] text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">Payments so far</span>
+                              <span className="font-medium">
+                                {formatCurrency(totalPayments, invoice.currency)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">Outstanding balance</span>
+                              <span className="font-semibold text-warning-500">
+                                {formatCurrency(outstandingBalance, invoice.currency)}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Outstanding balance</span>
-                            <span className="font-semibold text-warning-500">
-                              {formatCurrency(outstandingBalance, invoice.currency)}
-                            </span>
+
+                          {/* Payments / Installments with running balance */}
+                          <div className="mt-[12px] pt-[12px] border-t border-gray-100 dark:border-[#172036] text-xs">
+                            <h6 className="text-black dark:text-white font-semibold mb-[10px] text-xs uppercase tracking-wide">
+                              Payments / Installments
+                            </h6>
+
+                            <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md">
+                              <table className="w-full">
+                                <thead className="bg-gray-50 dark:bg-[#15203c]">
+                                  <tr>
+                                    <th className="text-[11px] font-semibold ltr:text-left rtl:text-right px-[10px] py-[8px]">
+                                      Date
+                                    </th>
+                                    <th className="text-[11px] font-semibold ltr:text-left rtl:text-right px-[10px] py-[8px]">
+                                      Method
+                                    </th>
+                                    <th className="text-[11px] font-semibold ltr:text-left rtl:text-right px-[10px] py-[8px]">
+                                      Reference
+                                    </th>
+                                    <th className="text-[11px] font-semibold text-right px-[10px] py-[8px]">
+                                      Amount
+                                    </th>
+                                    <th className="text-[11px] font-semibold text-right px-[10px] py-[8px]">
+                                      Running Balance
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(() => {
+                                    let runningBalance = effectiveTotal
+                                    const sorted = [...(invoice.payments || [])].sort((a, b) => {
+                                      const aDate = a.payment_date || ''
+                                      const bDate = b.payment_date || ''
+                                      if (aDate === bDate) {
+                                        return (a.id || 0) - (b.id || 0)
+                                      }
+                                      return aDate < bDate ? -1 : 1
+                                    })
+
+                                    return sorted.map((payment) => {
+                                      const amount = payment.amount_paid || 0
+                                      runningBalance = Math.max(runningBalance - amount, 0)
+
+                                      return (
+                                        <tr
+                                          key={payment.id}
+                                          className="border-t border-gray-100 dark:border-[#172036] align-middle"
+                                        >
+                                          <td className="px-[10px] py-[8px] text-[11px] text-gray-700 dark:text-gray-300">
+                                            {payment.payment_date || '-'}
+                                          </td>
+                                          <td className="px-[10px] py-[8px] text-[11px] text-gray-700 dark:text-gray-300">
+                                            {payment.payment_method || '-'}
+                                          </td>
+                                          <td className="px-[10px] py-[8px] text-[11px] text-gray-700 dark:text-gray-300">
+                                            {payment.receipt_number || payment.transaction_reference || '-'}
+                                          </td>
+                                          <td className="px-[10px] py-[8px] text-[11px] text-right text-gray-900 dark:text-gray-100">
+                                            {formatCurrency(amount, invoice.currency)}
+                                          </td>
+                                          <td className="px-[10px] py-[8px] text-[11px] text-right font-medium text-gray-900 dark:text-gray-100">
+                                            {formatCurrency(runningBalance, invoice.currency)}
+                                          </td>
+                                        </tr>
+                                      )
+                                    })
+                                  })()}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
-                        </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -1841,11 +1804,11 @@ export default function CompanyInvoiceDetailPage() {
                           className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-warning-50 dark:bg-warning-950 text-warning-500 hover:bg-warning-100 dark:hover:bg-warning-900 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <i className="material-symbols-outlined mr-[8px] !text-[20px]">payments</i>
-                          Add Payment
+                          Make payment 
                         </button>
                         {['draft','paid'].includes(invoice.status) && (
                           <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
-                            Payments can only be added when the invoice status is <span className="font-medium">sent</span> or <span className="font-medium">partial-paid</span>.
+                            Payments can only be added when the invoice status is <span className="font-medium">sent</span> or <span className="font-medium">partially-paid</span>.
                           </p>
                         )}
                       </div>
@@ -1876,6 +1839,11 @@ export default function CompanyInvoiceDetailPage() {
                         setItemDescription('')
                         setItemAmount('')
                         setItemTaxable(true)
+                        setItemProjectPhaseId(
+                          invoice.project_phase_id ??
+                            primaryPhase?.id ??
+                            (companyPhases.length === 1 ? companyPhases[0].id : null)
+                        )
                         setIsAddingItem(true)
                       }}
                       disabled={invoice.status !== 'draft'}
@@ -1904,11 +1872,17 @@ export default function CompanyInvoiceDetailPage() {
                           <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
                             Item
                           </th>
+                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                            Phase
+                          </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Unit
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Qty
+                          </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Tax
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Total
@@ -1932,11 +1906,58 @@ export default function CompanyInvoiceDetailPage() {
                                 </div>
                               )}
                             </td>
+                            <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                              {item.projectPhase ? (
+                                <span>
+                                  <span className="font-medium">{item.projectPhase.name}</span>
+                                  {item.projectPhase.code && (
+                                    <span className="ml-[4px] text-xs text-gray-500">
+                                      ({item.projectPhase.code})
+                                    </span>
+                                  )}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-gray-500">-</span>
+                              )}
+                            </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {formatCurrency(item.item_amount, invoice.currency)}
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {item.quantity ?? 1}
+                            </td>
+                            <td className="text-sm text-right px-[15px] py-[12px] align-top">
+                              {item.is_taxable ? (
+                                <div className="space-y-[4px] text-right">
+                                  <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
+                                    <span className="font-semibold">
+                                      {item.tax_item_name || 'Tax'}
+                                    </span>
+                                    <span className="text-[10px] uppercase tracking-wide">
+                                      {item.item_type === 'percent'
+                                        ? 'PERCENT'
+                                        : item.item_type === 'fixed'
+                                        ? 'FIXED'
+                                        : ''}
+                                    </span>
+                                  </div>
+                                  {item.item_value != null && (
+                                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                                      {item.item_type === 'percent'
+                                        ? `${item.item_value}%`
+                                        : `${invoice.currency} ${Number(item.item_value).toLocaleString()}`}
+                                    </div>
+                                  )}
+                                  {item.tax_amount != null && item.tax_amount > 0 && (
+                                    <div className="text-xs text-gray-700 dark:text-gray-300">
+                                      Tax amount: {invoice.currency}{' '}
+                                      {Number(item.tax_amount).toLocaleString()}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
+                              )}
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {formatCurrency(
@@ -1972,128 +1993,8 @@ export default function CompanyInvoiceDetailPage() {
             </div>
           )}
 
-          {/* Tax Items Tab */}
-          {activeTab === 2 && (
-            <div className="pt-[20px]">
-              <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
-                <div className="flex items-center justify-between mb-[15px]">
-                  <h6 className="text-black dark:text-white font-semibold">
-                    Tax Items
-                  </h6>
-                  <div className="text-right">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (invoice.status !== 'draft') {
-                          addToast('Tax items can only be modified while the invoice is in draft status.', 'error')
-                          return
-                        }
-                        setTaxItemName('')
-                        setTaxItemType('percent')
-                        setTaxItemValue('')
-                        setIsAddingTaxItem(true)
-                      }}
-                      disabled={invoice.status !== 'draft'}
-                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
-                      Add Tax Item
-                    </button>
-                    {invoice.status !== 'draft' && (
-                      <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
-                        Tax items can only be added or changed while the invoice is <span className="font-medium">draft</span>.
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {(!invoice.taxitems || invoice.taxitems.length === 0) && (
-                  <p className="text-xs text-gray-500">No tax items on this invoice.</p>
-                )}
-
-                {invoice.taxitems && invoice.taxitems.length > 0 && (
-                  <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 dark:bg-[#15203c]">
-                        <tr>
-                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                            Name
-                          </th>
-                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                            Type
-                          </th>
-                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Value
-                          </th>
-                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Amount
-                          </th>
-                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {invoice.taxitems.map((item) => (
-                          <tr
-                            key={item.id}
-                            className="border-b border-gray-100 dark:border-[#172036] align-middle"
-                          >
-                            <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              {item.item_name}
-                            </td>
-                            <td className="text-sm capitalize ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              {item.item_type}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {(() => {
-                                if (item.item_value == null) return '-'
-
-                                const numericValue =
-                                  typeof item.item_value === 'number'
-                                    ? item.item_value
-                                    : Number(item.item_value)
-
-                                if (Number.isNaN(numericValue)) return '-'
-
-                                return item.item_type === 'percent'
-                                  ? `${numericValue.toFixed(2)}%`
-                                  : formatCurrency(numericValue, invoice.currency)
-                              })()}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {formatCurrency(item.item_amount ?? 0, invoice.currency)}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px] space-x-2">
-                              <button
-                                type="button"
-                                onClick={() => handleStartEditTaxItem(item)}
-                                disabled={invoice.status !== 'draft'}
-                                className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteTaxItem(item)}
-                                disabled={invoice.status !== 'draft'}
-                                className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-danger-200 text-danger-600 hover:bg-danger-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Credit Notes Tab */}
-          {activeTab === 3 && (
+          {activeTab === 2 && (
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <div className="flex items-center justify-between mb-[15px]">
@@ -2166,7 +2067,7 @@ export default function CompanyInvoiceDetailPage() {
           )}
 
           {/* Payments Tab */}
-          {activeTab === 4 && (
+          {activeTab === 3 && (
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <div className="flex items-center justify-between mb-[15px]">
@@ -2182,7 +2083,7 @@ export default function CompanyInvoiceDetailPage() {
                       className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
-                      Add Payment
+                      Make payment 
                     </button>
                     {!canAddPayment && (
                       <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
@@ -2338,7 +2239,7 @@ export default function CompanyInvoiceDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
             <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
-              Add Payment
+              Make payment 
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
@@ -2430,7 +2331,7 @@ export default function CompanyInvoiceDetailPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium mb-[5px]">Accounts Account</label>
+                <label className="block text-xs font-medium mb-[5px]">Funding Account</label>
                 <select
                   value={selectedAccountId}
                   onChange={(e) => setSelectedAccountId(e.target.value)}
@@ -2438,7 +2339,7 @@ export default function CompanyInvoiceDetailPage() {
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">{accountsLoading ? 'Loading accounts…' : 'Select account'}</option>
-                  {accounts.map((account) => (
+                  {accounts.filter(acc => acc.currency === invoice.currency).map((account) => (
                     <option key={account.id} value={account.id}>
                       {account.code} - {account.name}
                     </option>
@@ -2497,6 +2398,31 @@ export default function CompanyInvoiceDetailPage() {
                 />
               </div>
 
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-[5px]">Project Phase (optional)</label>
+                <select
+                  value={itemProjectPhaseId != null ? String(itemProjectPhaseId) : ''}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setItemProjectPhaseId(value ? Number(value) : null)
+                  }}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="" disabled>No specific phase</option>
+                  {companyPhases.map((phase) => (
+                    <option key={phase.id} value={phase.id}>
+                      {phase.name}
+                      {phase.code ? ` (${phase.code})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {!companyPhases.length && company && (
+                  <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
+                    No project phases are currently assigned to this company.
+                  </p>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-medium mb-[5px]">Amount</label>
                 <input
@@ -2516,19 +2442,131 @@ export default function CompanyInvoiceDetailPage() {
                 <label className="block text-xs font-medium mb-[5px]">Taxable</label>
                 <select
                   value={itemTaxable ? 'yes' : 'no'}
-                  onChange={(e) => setItemTaxable(e.target.value === 'yes')}
+                  onChange={(e) => {
+                    const yes = e.target.value === 'yes'
+                    if (!yes) {
+                      setItemTaxable(false)
+                      setItemTaxId('')
+                      setItemTaxItemName('')
+                      setItemTaxType('percent')
+                      setItemTaxValue('')
+                      return
+                    }
+
+                    setItemTaxable(true)
+
+                    if (itemTaxId || !defaultTax) {
+                      return
+                    }
+
+                    setItemTaxId(String(defaultTax.id))
+                    setItemTaxItemName(defaultTax.name)
+                    setItemTaxType('percent')
+                    setItemTaxValue(
+                      defaultTax.rate != null
+                        ? String(defaultTax.rate)
+                        : itemTaxValue || ''
+                    )
+                  }}
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
+                  <option value="">Choose one</option>
                   <option value="yes">Yes</option>
                   <option value="no">No</option>
                 </select>
               </div>
             </div>
 
+            {itemTaxable && (
+              <div className="md:col-span-2 mt-[10px] border border-primary-100 dark:border-primary-900 rounded-md p-[15px] bg-primary-50/40 dark:bg-primary-900/10 space-y-[12px]">
+                <div className="md:grid md:grid-cols-2 md:gap-[15px]">
+                  <div>
+                    <label className="block text-xs font-medium mb-[5px]">
+                      Tax Name <span className="text-danger-500">*</span>
+                    </label>
+                    <select
+                      value={itemTaxId}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        const selectedTax = taxes.find((t) => String(t.id) === value) || null
+                        setItemTaxId(value)
+                        setItemTaxItemName(selectedTax ? selectedTax.name : '')
+                        if (selectedTax && selectedTax.rate != null) {
+                          setItemTaxValue(String(selectedTax.rate))
+                        }
+                      }}
+                      disabled={loadingTaxes || taxes.length === 0}
+                      className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="" disabled>
+                        {loadingTaxes
+                          ? 'Loading taxes...'
+                          : taxes.length === 0
+                          ? 'No taxes configured'
+                          : 'Select tax'}
+                      </option>
+                      {taxes.map((tax) => (
+                        <option key={tax.id} value={tax.id}>
+                          {tax.name}
+                        </option>
+                      ))}
+                    </select>
+                    {taxesError && (
+                      <p className="mt-[6px] text-[11px] text-danger-500">{taxesError}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-[5px]">
+                      Type <span className="text-danger-500">*</span>
+                    </label>
+                    <select
+                      value={itemTaxType}
+                      onChange={(e) =>
+                        setItemTaxType(e.target.value as 'fixed' | 'percent')
+                      }
+                      className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="percent">Percentage</option>
+                      <option disabled value="fixed">
+                        Fixed Amount
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-[5px]">
+                    Value
+                    <span className="text-[11px] font-normal text-gray-500 dark:text-gray-400 ml-[6px]">
+                      {itemTaxType === 'percent'
+                        ? 'as % of line total'
+                        : `in ${invoice.currency}`}
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={itemTaxValue}
+                    onChange={(e) => setItemTaxValue(e.target.value)}
+                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end space-x-[10px]">
               <button
                 type="button"
-                onClick={() => setIsAddingItem(false)}
+                onClick={() => {
+                  setIsAddingItem(false)
+                  setItemTaxId('')
+                  setItemTaxItemName('')
+                  setItemTaxType('percent')
+                  setItemTaxValue('')
+                  setItemProjectPhaseId(null)
+                }}
                 disabled={savingItem}
                 className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -2575,6 +2613,26 @@ export default function CompanyInvoiceDetailPage() {
                 />
               </div>
 
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-[5px]">Project Phase (optional)</label>
+                <select
+                  value={editItemProjectPhaseId != null ? String(editItemProjectPhaseId) : ''}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setEditItemProjectPhaseId(value ? Number(value) : null)
+                  }}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="">No specific phase</option>
+                  {companyPhases.map((phase) => (
+                    <option key={phase.id} value={phase.id}>
+                      {phase.name}
+                      {phase.code ? ` (${phase.code})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs font-medium mb-[5px]">Amount</label>
                 <input
@@ -2594,7 +2652,32 @@ export default function CompanyInvoiceDetailPage() {
                 <label className="block text-xs font-medium mb-[5px]">Taxable</label>
                 <select
                   value={editItemTaxable ? 'yes' : 'no'}
-                  onChange={(e) => setEditItemTaxable(e.target.value === 'yes')}
+                  onChange={(e) => {
+                    const yes = e.target.value === 'yes'
+                    if (!yes) {
+                      setEditItemTaxable(false)
+                      setEditItemTaxId('')
+                      setEditItemTaxItemName('')
+                      setEditItemTaxType('percent')
+                      setEditItemTaxValue('')
+                      return
+                    }
+
+                    setEditItemTaxable(true)
+
+                    if (editItemTaxId || !defaultTax) {
+                      return
+                    }
+
+                    setEditItemTaxId(String(defaultTax.id))
+                    setEditItemTaxItemName(defaultTax.name)
+                    setEditItemTaxType('percent')
+                    setEditItemTaxValue(
+                      defaultTax.rate != null
+                        ? String(defaultTax.rate)
+                        : editItemTaxValue || ''
+                    )
+                  }}
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
                   <option value="yes">Yes</option>
@@ -2603,10 +2686,96 @@ export default function CompanyInvoiceDetailPage() {
               </div>
             </div>
 
+            {editItemTaxable && (
+              <div className="md:col-span-2 mt-[10px] border border-primary-100 dark:border-primary-900 rounded-md p-[15px] bg-primary-50/40 dark:bg-primary-900/10 space-y-[12px]">
+                <div className="md:grid md:grid-cols-2 md:gap-[15px]">
+                  <div>
+                    <label className="block text-xs font-medium mb-[5px]">
+                      Tax Name <span className="text-danger-500">*</span>
+                    </label>
+                    <select
+                      value={editItemTaxId}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        const selectedTax = taxes.find((t) => String(t.id) === value) || null
+                        setEditItemTaxId(value)
+                        setEditItemTaxItemName(selectedTax ? selectedTax.name : '')
+                        if (selectedTax && selectedTax.rate != null) {
+                          setEditItemTaxValue(String(selectedTax.rate))
+                        }
+                      }}
+                      disabled={loadingTaxes || taxes.length === 0}
+                      className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="" disabled>
+                        {loadingTaxes
+                          ? 'Loading taxes...'
+                          : taxes.length === 0
+                          ? 'No taxes configured'
+                          : 'Select tax'}
+                      </option>
+                      {taxes.map((tax) => (
+                        <option key={tax.id} value={tax.id}>
+                          {tax.name}
+                        </option>
+                      ))}
+                    </select>
+                    {taxesError && (
+                      <p className="mt-[6px] text-[11px] text-danger-500">{taxesError}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-[5px]">
+                      Type <span className="text-danger-500">*</span>
+                    </label>
+                    <select
+                      value={editItemTaxType}
+                      onChange={(e) =>
+                        setEditItemTaxType(e.target.value as 'fixed' | 'percent')
+                      }
+                      className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="percent">Percentage</option>
+                      <option disabled value="fixed">
+                        Fixed Amount
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-[5px]">
+                    Value
+                    <span className="text-[11px] font-normal text-gray-500 dark:text-gray-400 ml-[6px]">
+                      {editItemTaxType === 'percent'
+                        ? 'as % of line total'
+                        : `in ${invoice.currency}`}
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editItemTaxValue}
+                    onChange={(e) => setEditItemTaxValue(e.target.value)}
+                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end space-x-[10px]">
               <button
                 type="button"
-                onClick={() => setIsEditingItem(false)}
+                onClick={() => {
+                  setIsEditingItem(false)
+                  setEditItemTaxId('')
+                  setEditItemTaxItemName('')
+                  setEditItemTaxType('percent')
+                  setEditItemTaxValue('')
+                  setEditItemProjectPhaseId(null)
+                }}
                 disabled={savingItemEdit}
                 className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -2619,204 +2788,6 @@ export default function CompanyInvoiceDetailPage() {
                 className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {savingItemEdit ? 'Saving…' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isAddingTaxItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
-            <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
-              Add Tax Item
-            </h3>
-
-            <div className="space-y-[15px] mb-[20px]">
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Tax Name <span className="text-danger-500">*</span>
-                </label>
-                <select
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
-                  value={selectedTaxId ?? ''}
-                  onChange={(e) => {
-                    const value = e.target.value
-                    const id = value ? Number(value) : null
-                    setSelectedTaxId(id)
-
-                    const matched = taxes.find((t) => t.id === id) || null
-                    if (matched) {
-                      setTaxItemName(matched.name)
-                    }
-                  }}
-                  disabled={loadingTaxes || taxes.length === 0}
-                >
-                  <option value="">
-                    {loadingTaxes
-                      ? 'Loading taxes…'
-                      : taxes.length === 0
-                      ? 'No taxes configured'
-                      : 'Select tax'}
-                  </option>
-                  {taxes.map((tax) => (
-                    <option key={tax.id} value={tax.id}>
-                      {tax.name}
-                    </option>
-                  ))}
-                </select>
-                {taxesError && (
-                  <p className="mt-[6px] text-[11px] text-danger-500">{taxesError}</p>
-                )}
-                <p className="mt-[6px] text-[11px] text-gray-500 dark:text-gray-400">
-                  Choose a configured tax. You can adjust the type and value below.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px]">
-                <div>
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Type <span className="text-danger-500">*</span>
-                  </label>
-                  <select
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
-                    value={taxItemType}
-                    onChange={(e) => setTaxItemType(e.target.value as 'fixed' | 'percent')}
-                  >
-                    <option value="fixed">Fixed Amount</option>
-                    <option value="percent">Percentage</option>
-                  </select>
-                  <p className="mt-[6px] text-[11px] text-gray-500 dark:text-gray-400">
-                    Fixed adds a flat amount; Percentage applies on the total of invoice items.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Value{' '}
-                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-                      {taxItemType === 'percent'
-                        ? 'as % of items total'
-                        : `in ${invoice?.currency ?? ''}`}
-                    </span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={taxItemValue}
-                    onChange={(e) => setTaxItemValue(e.target.value)}
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
-                  />
-
-                  {previewTaxAmount != null && invoice && (
-                    <div className="mt-[6px] rounded-md border border-dashed border-primary-200 dark:border-primary-500/40 bg-primary-50/70 dark:bg-primary-500/10 px-[12px] py-[8px] text-xs">
-                      <p className="text-gray-800 dark:text-gray-100">
-                        Estimated tax on current items:{' '}
-                        <span className="font-semibold">
-                          {formatCurrency(previewTaxAmount, invoice.currency)}
-                        </span>
-                      </p>
-                      {taxItemType === 'percent' && (
-                        <p className="mt-[2px] text-[11px] text-gray-600 dark:text-gray-300">
-                          Calculated from the sum of all invoice line items.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-[10px]">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsAddingTaxItem(false)
-                  setSelectedTaxId(null)
-                }}
-                disabled={savingTaxItem}
-                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveTaxItem}
-                disabled={savingTaxItem}
-                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {savingTaxItem ? 'Saving…' : 'Save Tax Item'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isEditingTaxItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
-            <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
-              Edit Tax Item
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
-              <div className="md:col-span-2">
-                <label className="block text-xs font-medium mb-[5px]">Name</label>
-                <input
-                  type="text"
-                  value={editTaxItemName}
-                  onChange={(e) => setEditTaxItemName(e.target.value)}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium mb-[5px]">Type</label>
-                <select
-                  value={editTaxItemType}
-                  onChange={(e) => setEditTaxItemType(e.target.value as 'fixed' | 'percent')}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                >
-                  <option value="percent">Percent</option>
-                  <option value="fixed">Fixed Amount</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium mb-[5px]">Value</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={editTaxItemValue}
-                  onChange={(e) => setEditTaxItemValue(e.target.value)}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-                <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
-                  {editTaxItemType === 'percent'
-                    ? 'Value is a percentage (e.g. 16 for 16%).'
-                    : `Value is a fixed amount in the invoice currency (${invoice?.currency}).`}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-[10px]">
-              <button
-                type="button"
-                onClick={() => setIsEditingTaxItem(false)}
-                disabled={savingTaxItemEdit}
-                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveTaxItemEdit}
-                disabled={savingTaxItemEdit}
-                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {savingTaxItemEdit ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
           </div>
@@ -2868,57 +2839,6 @@ export default function CompanyInvoiceDetailPage() {
                 className="px-[13px] py-[8px] rounded-md bg-danger-500 text-white text-xs font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {deletingItem ? 'Deleting…' : 'Delete Item'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {taxItemToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
-            <h3 className="text-lg font-semibold text-black dark:text-white mb-[10px]">
-              Confirm Delete Tax Item
-            </h3>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mb-[12px]">
-              This will remove the tax item and update the invoice totals accordingly.
-            </p>
-
-            <div className="border border-gray-200 dark:border-[#172036] rounded-md p-[12px] mb-[16px] text-xs space-y-[4px]">
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Name</span>
-                <span className="text-gray-900 dark:text-gray-100 font-medium">
-                  {taxItemToDelete.item_name}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Type</span>
-                <span className="text-gray-900 dark:text-gray-100 capitalize">
-                  {taxItemToDelete.item_type}
-                </span>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-danger-600 dark:text-danger-400 mb-[16px]">
-              This action cannot be undone from the UI. You may need to recreate the tax item if this was done in error.
-            </p>
-
-            <div className="flex justify-end space-x-[8px]">
-              <button
-                type="button"
-                disabled={deletingTaxItem}
-                onClick={() => setTaxItemToDelete(null)}
-                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={deletingTaxItem}
-                onClick={handleConfirmDeleteTaxItem}
-                className="px-[13px] py-[8px] rounded-md bg-danger-500 text-white text-xs font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {deletingTaxItem ? 'Deleting…' : 'Delete Tax Item'}
               </button>
             </div>
           </div>

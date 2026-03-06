@@ -32,24 +32,6 @@ interface SidebarSection {
 
 const SECTIONS: SidebarSection[] = [
   {
-    id: "projects",
-    label: "Projects",
-    icon: "description",
-    group: "main",
-    items: [
-      {
-        label: "All Projects",
-        href: "/project/project-list",
-        matchStrategy: "entity",
-      },
-      { label: "Add Project", href: "/project/create-project" },
-      { label: "Reports", href: "/project/report" },
-      { label: "Categories", href: "/project/category" },
-      { label: "Sources", href: "/project/source-origins" },
-      { label: "Locations", href: "/project/locations" },
-    ],
-  },
-  {
     id: "customers",
     label: "Customers",
     icon: "family_group",
@@ -108,6 +90,24 @@ const SECTIONS: SidebarSection[] = [
     ],
   },
   {
+    id: "projects",
+    label: "Projects",
+    icon: "description",
+    group: "main",
+    items: [
+      {
+        label: "All Projects",
+        href: "/project/project-list",
+        matchStrategy: "entity",
+      },
+      { label: "Add Project", href: "/project/create-project" },
+      { label: "Reports", href: "/project/report" },
+      { label: "Categories", href: "/project/category" },
+      { label: "Sources", href: "/project/source-origins" },
+      { label: "Locations", href: "/project/locations" },
+    ],
+  },
+  {
     id: "customer-invoices",
     label: "Customer Invoices",
     icon: "content_paste",
@@ -156,7 +156,7 @@ const SECTIONS: SidebarSection[] = [
       },
       {
         label: "Payments",
-        href: "/finance/transactions/",
+        href: "/finance/payments/",
         matchStrategy: "startsWith",
       },
       {
@@ -170,7 +170,7 @@ const SECTIONS: SidebarSection[] = [
         matchStrategy: "startsWith",
       },
       {
-        label: "Expenses & Others",
+        label: "Internal Transactions",
         href: "/finance/expenses-and-others/",
         matchStrategy: "startsWith",
       },
@@ -215,12 +215,7 @@ const SECTIONS: SidebarSection[] = [
         label: "Account Settings",
         href: "/settings/",
         matchStrategy: "startsWith",
-      },
-      {
-        label: "Change Password",
-        href: "/settings/change-password/",
-        matchStrategy: "startsWith",
-      },
+      }
     ],
   },
 ];

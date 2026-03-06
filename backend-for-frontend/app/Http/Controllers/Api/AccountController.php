@@ -46,10 +46,10 @@ class AccountController extends Controller
         // Generate account code in backend using CommonService
         $commonService = new CommonService();
         $validated['code'] = $commonService->generateUniqueCode('INT-ACC-');
-        $validated['currency'] = 'KES'; // Accounts run on Base currency
         // Opening balance is always zero on creation
-        $validated['balance'] = $validated['balance'] ?? 0;
-
+        $validated['balance'] = 0;
+        $validated['created_by'] = Auth::id();
+        $validated['created_at'] = now();
         $model = $this->service->create($validated);
         return new AccountResource($model);
     }
@@ -67,8 +67,8 @@ class AccountController extends Controller
         $validated = $request->validated();
         // Enforce base currency and prevent balance changes via update
         unset($validated['currency'], $validated['balance']);
-        $validated['currency'] = 'KES'; // Accounts run on Base currency
-
+        $validated['updated_by'] = Auth::id();
+        $validated['updated_at'] = now();
         $updated = $this->service->update($account->id, $validated);
         return new AccountResource($updated);
     }
@@ -91,7 +91,7 @@ class AccountController extends Controller
         $userId = $request->user()?->id;
 
         DB::transaction(function () use ($account, $amount, $transactionDate, $postedDate, $data, $userId, $transactionService) {
-            $baseCurrency = $account->currency ?? 'KES';
+            $baseCurrency = $account->currency;
 
             $commonService = new CommonService();
             $transactionNumber = $commonService->generateUniqueCode('TRX-');
@@ -244,6 +244,7 @@ class AccountController extends Controller
                 'transaction_type' => $row->transaction_type,
                 'transaction_date' => $row->transaction_date,
                 'posted_date' => $row->posted_date,
+                'created_at' => $row->created_at,
                 'narration' => $row->narration,
                 'transaction_currency' => $row->transaction_currency,
                 'base_currency' => $row->base_currency,
@@ -271,6 +272,7 @@ class AccountController extends Controller
                 'transaction_type' => $row->transaction_type,
                 'transaction_date' => $row->transaction_date,
                 'posted_date' => $row->posted_date,
+                'created_at' => $row->created_at,
                 'narration' => $row->narration,
                 'transaction_currency' => $row->transaction_currency,
                 'base_currency' => $row->base_currency,
@@ -298,6 +300,7 @@ class AccountController extends Controller
                 'transaction_type' => $row->transaction_type,
                 'transaction_date' => $row->transaction_date,
                 'posted_date' => $row->posted_date,
+                'created_at' => $row->created_at,
                 'narration' => $row->narration,
                 'transaction_currency' => $row->transaction_currency,
                 'base_currency' => $row->base_currency,
@@ -314,9 +317,13 @@ class AccountController extends Controller
             ]);
         });
 
+        // Ensure the statement is ordered from oldest to newest so the
+        // running balance progresses chronologically in a visually
+        // intuitive way, using created_at for time precision.
         $rows = $rows->sortBy([
-            ['posted_date', 'asc'],
             ['transaction_date', 'asc'],
+            ['posted_date', 'asc'],
+            ['created_at', 'asc'],
             ['transaction_number', 'asc'],
         ])->values();
 

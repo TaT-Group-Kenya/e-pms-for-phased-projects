@@ -20,7 +20,6 @@ class ProjectPhase extends Model
         'start_date',
         'end_date',
         'progress_percentage',
-        'quote_item_id',
         'updated_at',
         'updated_by',
         'created_at',
@@ -33,16 +32,6 @@ class ProjectPhase extends Model
     public function project()
     {
         return $this->belongsTo(Project::class, 'project_id');
-    }
-
-    public function quoteItem()
-    {
-        return $this->belongsTo(QuoteLineItem::class, 'quote_item_id');
-    }
-
-    public function orderItem()
-    {
-        return $this->hasOne(OrderItem::class, 'project_phase_id');
     }
 
     public function assignment()

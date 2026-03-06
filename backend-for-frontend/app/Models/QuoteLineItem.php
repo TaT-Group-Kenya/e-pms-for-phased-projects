@@ -12,15 +12,19 @@ class QuoteLineItem extends Model
 
     protected $fillable = [
         'quotation_id',
-        'project_phase_id',
-        'phase_name',
-        'phase_description',
+        'item_name',
+        'description',
         'quoted_amount',
         'quantity',
         'total',
         'estimated_hours',
         'custom_note',
         'is_taxable',
+        'tax_id',
+        'tax_item_name',
+        'item_type',
+        'item_value',
+        'item_amount',
         'updated_at',
         'updated_by',
         'created_at',
@@ -36,6 +40,21 @@ class QuoteLineItem extends Model
             $quantity = $item->quantity ?? 1;
             $amount = $item->quoted_amount ?? 0;
             $item->total = $amount * $quantity;
+
+            // Derive tax amount per line when taxable
+            if (! $item->is_taxable) {
+                $item->item_amount = 0;
+                return;
+            }
+
+            $baseAmount = $item->total ?? ($amount * $quantity);
+            $value = $item->item_value !== null ? (float) $item->item_value : 0.0;
+
+            if ($item->item_type === 'fixed') {
+                $item->item_amount = $value;
+            } elseif ($item->item_type === 'percent') {
+                $item->item_amount = $baseAmount * ($value / 100);
+            }
         });
     }
 
@@ -44,8 +63,4 @@ class QuoteLineItem extends Model
         return $this->belongsTo(Quotation::class, 'quotation_id');
     }
 
-    public function projectPhase()
-    {
-        return $this->belongsTo(ProjectPhase::class, 'project_phase_id');
-    }
 }

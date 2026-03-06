@@ -1,9 +1,5 @@
 <?php
 
-namespace App\Policies;
+// CompanyInvoiceTaxItemPolicy is no longer used now that
+// company invoice taxes are handled inline on company_invoice_items.
 
-use App\Models\CompanyInvoiceTaxItem;
-
-class CompanyInvoiceTaxItemPolicy extends BaseModelPolicy
-{
-}

@@ -14,8 +14,6 @@ class CurrencyConversionService
      */
     public function convertToBaseFromInvoice(float $amount, ?string $invoiceCurrencyCode, string $baseCurrencyCode = 'KES'): array
     {
-        $invoiceCurrencyCode = $invoiceCurrencyCode ?: $baseCurrencyCode;
-
         // When invoice currency is same as base, no conversion.
         if ($invoiceCurrencyCode === $baseCurrencyCode) {
             return [

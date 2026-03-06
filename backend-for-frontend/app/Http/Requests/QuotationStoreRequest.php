@@ -16,7 +16,6 @@ class QuotationStoreRequest extends FormRequest
     {
         return [
             'quotation_number' => ['nullable', 'string', 'max:255'],
-            'project_id' => ['nullable', 'exists:projects,id'],
             'customer_id' => ['nullable', 'exists:customers,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:255'],
@@ -27,7 +26,7 @@ class QuotationStoreRequest extends FormRequest
             'discount_percentage' => ['required', 'numeric', 'min:0'],
             'discount_amount' => ['required', 'numeric', 'min:0'],
             'total_amount' => ['required', 'numeric', 'min:0'],
-            'currency' => ['nullable', 'string', 'max:255'],
+            'currency' => ['required', 'string', 'max:255'],
             'payment_terms' => ['nullable', 'string', 'max:255'],
             'min_approval_count' => ['nullable', 'numeric', 'min:1'],
             'notes_to_customer' => ['nullable', 'string', 'max:255'],

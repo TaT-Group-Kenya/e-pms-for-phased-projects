@@ -14,6 +14,7 @@ class Project extends Model
         'code',
         'name',
         'description',
+        'order_id',
         'customer_id',
         'project_category_id',
         'project_source_origin_id',
@@ -63,21 +64,16 @@ class Project extends Model
 
     public function order()
     {
-        return $this->hasOne(Order::class);
+        return $this->hasOne(Order::class, 'project_id');
     }
 
-    public function quotation()
+    public function customer_invoice()
     {
-        return $this->hasOne(Quotation::class);
-    }
-
-    public function customer_invoices()
-    {
-        return $this->hasMany(CustInvoice::class);
+        return $this->hasOne(CustInvoice::class, 'project_id');
     }
 
     public function company_invoices()
     {
-        return $this->hasMany(CompanyInvoice::class);
+        return $this->hasMany(CompanyInvoice::class, 'project_id');
     }
 }

@@ -8,9 +8,9 @@ export default function TransactionsLogPage() {
       <>
         <div className="mb-[25px] md:flex items-center justify-between">
           <div>
-            <h5 className="!mb-1">Transactions</h5>
+            <h5 className="!mb-1">Internal Transactions</h5>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Read-only consolidated transaction log.
+              Read-only consolidated transaction log for top ups, expenses and other financial activities.
             </p>
           </div>
 

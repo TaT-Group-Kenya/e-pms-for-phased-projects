@@ -57,12 +57,6 @@ class CompanyInvoice extends Model
         return $this->hasMany(CompanyPayment::class, 'invoice_id');
     }
 
-    public function taxitems()
-    {
-        // Tax items table uses invoice_id as the foreign key
-        return $this->hasMany(CompanyInvoiceTaxItem::class, 'invoice_id');
-    }
-
     public function creditnotes()
     {
         // Credit notes also reference the invoice by invoice_id

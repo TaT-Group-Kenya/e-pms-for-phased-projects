@@ -1,9 +1,5 @@
 <?php
 
-namespace App\Policies;
+// CustInvoiceTaxItemPolicy is no longer used now that
+// customer invoice taxes are handled inline on cust_invoice_items.
 
-use App\Models\CustInvoiceTaxItem;
-
-class CustInvoiceTaxItemPolicy extends BaseModelPolicy
-{
-}

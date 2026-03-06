@@ -39,8 +39,6 @@ class OrderResource extends BaseResource
 
             'documents' => OrderDocumentResource::collection($this->whenLoaded('documents')),
 
-            'taxitems' => OrderTaxItemResource::collection($this->whenLoaded('taxitems')),
-
         ];
     }
 }

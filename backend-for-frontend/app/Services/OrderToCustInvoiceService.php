@@ -5,13 +5,15 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\CustInvoice;
 use App\Models\CustInvoiceItem;
-use App\Models\CustInvoiceTaxItem;
 use App\Services\CommonService;
 
 class OrderToCustInvoiceService
 {
     /**
-     * Create a draft customer invoice (with items & tax items) from the given order.
+     * Create a draft customer invoice (with items) from the given order.
+     *
+     * Invoice header totals are derived from the created invoice items
+     * and the invoice's discount percentage, mirroring quotation/order logic.
      */
     public function createInvoiceFromOrder(Order $order, ?int $userId = null, array $overrides = []): CustInvoice
     {
@@ -28,12 +30,13 @@ class OrderToCustInvoiceService
             'customer_id'         => $order->customer_id,
             'title'               => $overrides['title'] ?? $order->title,
             'description'         => $overrides['description'] ?? $order->description,
-            'status'              => 'draft',
-            'subtotal_amount'     => $order->subtotal_amount,
-            'tax_amount'          => $order->tax_amount,
+            'status'              => 'sent',
+            // Initialize amounts; they will be recalculated from items below
+            'subtotal_amount'     => 0,
+            'tax_amount'          => 0,
             'discount_percentage' => $order->discount_percentage,
-            'discount_amount'     => $order->discount_amount,
-            'total_amount'        => $order->total_amount,
+            'discount_amount'     => 0,
+            'total_amount'        => 0,
             'currency'            => $order->currency,
             'payment_terms'       => $overrides['payment_terms'] ?? $order->payment_terms,
             'notes_to_customer'   => $overrides['notes_to_customer'] ?? $order->notes_to_customer,
@@ -43,35 +46,47 @@ class OrderToCustInvoiceService
         ]);
 
         // Ensure related data is loaded
-        $order->loadMissing(['orderItems', 'taxitems']);
+        $order->loadMissing(['orderItems']);
 
         foreach ($order->orderItems as $item) {
             CustInvoiceItem::create([
                 'invoice_id'        => $invoice->id,
-                'project_phase_id'  => $item->project_phase_id,
                 'item_name'         => $item->item_name,
                 'item_description'  => $item->item_description,
                 'item_amount'       => $item->order_amount,
                 'quantity'          => $item->quantity ?? 1,
                 'custom_note'       => $item->custom_note,
                 'is_taxable'        => (bool) $item->is_taxable,
+                'tax_id'            => $item->tax_id,
+                'tax_item_name'     => $item->tax_item_name,
+                'item_type'         => $item->item_type,
+                'item_value'        => $item->item_value,
+                'tax_amount'        => $item->item_amount,
                 'created_by'        => $userId,
                 'updated_by'        => $userId,
             ]);
         }
 
-        foreach ($order->taxitems as $taxItem) {
-            CustInvoiceTaxItem::create([
-                'invoice_id'   => $invoice->id,
-                'tax_id'       => $taxItem->tax_id,
-                'item_name'    => $taxItem->item_name,
-                'item_type'    => $taxItem->item_type,
-                'item_value'   => $taxItem->item_value,
-                'item_amount'  => $taxItem->item_amount,
-                'created_by'   => $userId,
-                'updated_by'   => $userId,
-            ]);
-        }
+        // Recalculate invoice header totals from invoice items and discount
+        $invoice->loadMissing('invoiceItems');
+
+        $subtotal = $invoice->invoiceItems->sum(function (CustInvoiceItem $line) {
+            return (float) ($line->total ?? 0);
+        });
+
+        $taxAmount = $invoice->invoiceItems->sum(function (CustInvoiceItem $line) {
+            return (float) ($line->tax_amount ?? 0);
+        });
+
+        $discountPercentage = (float) ($invoice->discount_percentage ?? 0);
+        $discountAmount = $subtotal * ($discountPercentage / 100);
+
+        $invoice->subtotal_amount = $subtotal;
+        $invoice->tax_amount = $taxAmount;
+        $invoice->discount_amount = $discountAmount;
+        $invoice->total_amount = $subtotal + $taxAmount - $discountAmount;
+
+        $invoice->save();
 
         return $invoice;
     }

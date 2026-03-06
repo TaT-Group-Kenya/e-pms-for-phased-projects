@@ -39,13 +39,11 @@ class TransactionResource extends BaseResource
             'accounting_period' => $this->accounting_period,
             'is_adjusting_entry' => (bool) $this->is_adjusting_entry,
             'cost_center_id' => $this->cost_center_id,
-            
             'customer' => new CustomerResource($this->whenLoaded('customer')),
             'company' => new CompanyResource($this->whenLoaded('company')),
             'paymentMethod' => new PaymentMethodResource($this->whenLoaded('paymentMethod')),
-            'costCenter' => new CostCenterResource($this->whenLoaded('costCenter')),
+            'costCenter' => new DepartmentResource($this->whenLoaded('costCenter')),
             'relatedTransaction' => new TransactionResource($this->whenLoaded('relatedTransaction')),
-            
             'created_at' => $this->formatTimestamp($this->created_at),
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'created_by' => $this->created_by,

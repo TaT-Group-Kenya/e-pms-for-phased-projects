@@ -19,6 +19,10 @@ interface OrderItem {
   total: number;
   custom_note?: string | null;
   is_taxable: boolean;
+  tax_item_name?: string | null;
+  item_type?: "fixed" | "percent" | string | null;
+  item_value?: number | null;
+  item_amount?: number | null;
 }
 
 interface OrderTaxItem {
@@ -177,7 +181,7 @@ const OrderDetailPage: React.FC = () => {
         console.error("fetch order error", err);
         addToast("Error loading order. Please refresh the page.", "error");
       } finally {
-        setLoading(false);
+        setTimeout(() => setLoading(false), 500);
       }
     };
 
@@ -618,19 +622,6 @@ const OrderDetailPage: React.FC = () => {
     }
   };
 
-  const openEditItemModal = (item: OrderItem) => {
-    setItemEditError(null);
-    setEditingItem(item);
-    setItemEditData({
-      item_name: item.item_name,
-      item_description: item.item_description ?? "",
-      order_amount: item.order_amount,
-      quantity: item.quantity,
-      custom_note: item.custom_note ?? "",
-      is_taxable: item.is_taxable,
-    });
-  };
-
   const closeEditItemModal = () => {
     if (isItemSubmitting) return;
     setEditingItem(null);
@@ -703,20 +694,6 @@ const OrderDetailPage: React.FC = () => {
       setIsItemSubmitting(false);
     }
   };
-  const openDeleteItemModal = (item: OrderItem) => {
-    if (!order) return;
-    if (order.status === "approved") {
-      addToast(
-        "Cannot delete items on an approved order. Unapprove the order first.",
-        "error"
-      );
-      return;
-    }
-
-    setOrderItemToDelete(item);
-    setDeleteOrderItemError(null);
-    setIsDeleteOrderItemModalOpen(true);
-  };
 
   const closeDeleteOrderItemModal = () => {
     if (isDeletingOrderItem) return;
@@ -766,38 +743,6 @@ const OrderDetailPage: React.FC = () => {
     } finally {
       setIsDeletingOrderItem(false);
     }
-  };
-  const openAddTaxItemModal = () => {
-    if (!order) return;
-    if (order.status === "approved") {
-      addToast(
-        "Cannot add tax items to an approved order. Unapprove the order first.",
-        "error"
-      );
-      return;
-    }
-    setTaxItemEditError(null);
-    setEditingTaxItem(null);
-    setTaxItemEditData({
-      item_name: "",
-      item_type: "percent",
-      item_value: 0,
-    });
-    setIsTaxModalOpen(true);
-  };
-
-  const openEditTaxItemModal = (item: OrderTaxItem) => {
-    setTaxItemEditError(null);
-    const matchedTax = taxes.find((t) => t.name === item.item_name) || null;
-    setEditingTaxItem(item);
-    setTaxItemEditData({
-      item_name: item.item_name,
-      item_type: item.item_type,
-      item_value: item.item_value ?? 0,
-      // @ts-expect-error extend with tax_id for editing state only
-      tax_id: matchedTax ? matchedTax.id : undefined,
-    });
-    setIsTaxModalOpen(true);
   };
 
   const closeTaxItemModal = () => {
@@ -877,20 +822,6 @@ const OrderDetailPage: React.FC = () => {
     } finally {
       setIsTaxSubmitting(false);
     }
-  };
-  const openDeleteTaxItemModal = (item: OrderTaxItem) => {
-    if (!order) return;
-    if (order.status === "approved") {
-      addToast(
-        "Cannot delete tax items on an approved order. Unapprove the order first.",
-        "error"
-      );
-      return;
-    }
-
-    setTaxItemToDelete(item);
-    setDeleteTaxItemError(null);
-    setIsDeleteTaxItemModalOpen(true);
   };
 
   const closeDeleteTaxItemModal = () => {
@@ -1319,8 +1250,8 @@ const OrderDetailPage: React.FC = () => {
                       : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                   }`}
                 >
-                  <i className="material-symbols-outlined !text-[20px]">percent</i>
-                  Tax Items
+                  <i className="material-symbols-outlined !text-[20px]">description</i>
+                  Documents
                 </button>
               </li>
 
@@ -1334,8 +1265,8 @@ const OrderDetailPage: React.FC = () => {
                       : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                   }`}
                 >
-                  <i className="material-symbols-outlined !text-[20px]">description</i>
-                  Documents
+                  <i className="material-symbols-outlined !text-[20px]">work</i>
+                  Order Project
                 </button>
               </li>
             </ul>
@@ -1421,6 +1352,9 @@ const OrderDetailPage: React.FC = () => {
                                 Qty
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                                Tax
+                              </th>
+                              <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                                 Total
                               </th>
                             </tr>
@@ -1444,6 +1378,38 @@ const OrderDetailPage: React.FC = () => {
                                 </td>
                                 <td className="text-sm text-right px-[15px] py-[12px]">
                                   {item.quantity}
+                                </td>
+                                <td className="text-sm text-right px-[15px] py-[12px] align-top">
+                                  {item.is_taxable ? (
+                                    <div className="space-y-[4px] text-right">
+                                      <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
+                                        <span className="font-semibold">
+                                          {item.tax_item_name || "Tax"}
+                                        </span>
+                                        <span className="text-[10px] uppercase tracking-wide">
+                                          {item.item_type === "percent"
+                                            ? "PERCENT"
+                                            : item.item_type === "fixed"
+                                            ? "FIXED"
+                                            : ""}
+                                        </span>
+                                      </div>
+                                      {item.item_value != null && (
+                                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                                          {item.item_type === "percent"
+                                            ? `${item.item_value}%`
+                                            : `${order.currency} ${Number(item.item_value).toLocaleString()}`}
+                                        </div>
+                                      )}
+                                      {item.item_amount != null && item.item_amount > 0 && (
+                                        <div className="text-xs text-gray-700 dark:text-gray-300">
+                                          Tax amount: {order.currency} {Number(item.item_amount).toLocaleString()}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
+                                  )}
                                 </td>
                                 <td className="text-sm text-right px-[15px] py-[12px]">
                                   {formatCurrency(
@@ -1721,7 +1687,7 @@ const OrderDetailPage: React.FC = () => {
                           </i>
                           {isGeneratingInvoice
                             ? "Generating Invoice..."
-                            : "Approve (Generates Invoice)"}
+                            : "Generate Invoice & Project"}
                         </button>
                       )}
 
@@ -1761,56 +1727,6 @@ const OrderDetailPage: React.FC = () => {
                         </i>
                         {isSendingEmail ? "Sending..." : "Send Email"}
                       </button>
-
-                      {isApproved && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!order) return;
-                            try {
-                              const resp = await fetch("/api/orders/unapprove", {
-                                method: "POST",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                  Authorization: `Bearer ${accessToken}`,
-                                },
-                                body: JSON.stringify({ id: order.id }),
-                              });
-
-                              const data: any = await resp.json().catch(() => null);
-
-                              if (!resp.ok) {
-                                addToast(
-                                  data?.message || "Failed to unapprove order",
-                                  "error"
-                                );
-                                return;
-                              }
-
-                              const updated = (data.data || data) as OrderDetail;
-                              setOrder(updated);
-                              setEditData(updated);
-                              addToast(
-                                "Order status changed back to sent and related draft customer invoices without payments were removed.",
-                                "success"
-                              );
-                            } catch (err) {
-                              // eslint-disable-next-line no-console
-                              console.error("unapprove order error", err);
-                              addToast(
-                                "Error unapproving order. Please try again.",
-                                "error"
-                              );
-                            }
-                          }}
-                        className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-warning-50 dark:bg-[#3b2a14] text-warning-600 hover:bg-warning-100 dark:hover:bg-[#4a3419]"
-                        >
-                          <i className="material-symbols-outlined mr-[8px] !text-[20px]">
-                            undo
-                          </i>
-                          Unapprove Order
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -1845,6 +1761,9 @@ const OrderDetailPage: React.FC = () => {
                             Qty
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Tax
+                          </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Total
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
@@ -1872,6 +1791,38 @@ const OrderDetailPage: React.FC = () => {
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {item.quantity}
                             </td>
+                            <td className="text-sm text-right px-[15px] py-[12px] align-top">
+                              {item.is_taxable ? (
+                                <div className="space-y-[4px] text-right">
+                                  <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
+                                    <span className="font-semibold">
+                                      {item.tax_item_name || "Tax"}
+                                    </span>
+                                    <span className="text-[10px] uppercase tracking-wide">
+                                      {item.item_type === "percent"
+                                        ? "PERCENT"
+                                        : item.item_type === "fixed"
+                                        ? "FIXED"
+                                        : ""}
+                                    </span>
+                                  </div>
+                                  {item.item_value != null && (
+                                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                                      {item.item_type === "percent"
+                                        ? `${item.item_value}%`
+                                        : `${order.currency} ${Number(item.item_value).toLocaleString()}`}
+                                    </div>
+                                  )}
+                                  {item.item_amount != null && item.item_amount > 0 && (
+                                    <div className="text-xs text-gray-700 dark:text-gray-300">
+                                      Tax amount: {order.currency} {Number(item.item_amount).toLocaleString()}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
+                              )}
+                            </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {formatCurrency(
                                 item.total ?? item.order_amount * item.quantity,
@@ -1881,131 +1832,17 @@ const OrderDetailPage: React.FC = () => {
                             <td className="text-sm text-right px-[15px] py-[12px] whitespace-nowrap">
                               <button
                                 type="button"
-                                onClick={() => openEditItemModal(item)}
-                                disabled={isApproved}
+                                disabled
                                 className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 mr-[6px] disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
-                                onClick={() => openDeleteItemModal(item)}
-                                disabled={
-                                  isApproved ||
-                                  (isDeletingOrderItem &&
-                                    orderItemToDelete?.id === item.id)
-                                }
+                                disabled
                                 className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-danger-50 dark:bg-danger-950 text-danger-500 hover:bg-danger-100 dark:hover:bg-danger-900 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                {isDeletingOrderItem && orderItemToDelete?.id === item.id
-                                  ? "Deleting..."
-                                  : "Delete"}
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Tax Items Tab */}
-          {activeTab === 2 && (
-            <div className="pt-[20px]">
-              <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
-                <div className="flex items-center justify-between mb-[15px]">
-                  <h6 className="text-black dark:text-white font-semibold">
-                    Tax Items
-                  </h6>
-                  <button
-                    type="button"
-                    onClick={openAddTaxItemModal}
-                    disabled={isApproved}
-                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-500 text-white hover:bg-primary-600 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <i className="material-symbols-outlined mr-[6px] !text-[18px]">
-                      add
-                    </i>
-                    Add Tax Item
-                  </button>
-                </div>
-
-                {(!order.taxitems || order.taxitems.length === 0) && (
-                  <p className="text-xs text-gray-500">No tax items on this order.</p>
-                )}
-
-                {order.taxitems && order.taxitems.length > 0 && (
-                  <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 dark:bg-[#15203c]">
-                        <tr>
-                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                            Name
-                          </th>
-                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                            Type
-                          </th>
-                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Value
-                          </th>
-                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Amount
-                          </th>
-                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(order.taxitems || []).map((item) => (
-                          <tr
-                            key={item.id}
-                            className="border-b border-gray-100 dark:border-[#172036] align-middle"
-                          >
-                            <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              {item.item_name}
-                            </td>
-                            <td className="text-sm capitalize ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              {item.item_type}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {item.item_value != null
-                                ? item.item_type === "percent"
-                                  ? `${item.item_value.toFixed(2)}%`
-                                  : formatCurrency(item.item_value, order.currency)
-                                : "-"}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {formatCurrency(
-                                item.item_amount ?? 0,
-                                order.currency
-                              )}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px] whitespace-nowrap">
-                              <button
-                                type="button"
-                                onClick={() => openEditTaxItemModal(item)}
-                                disabled={isApproved}
-                                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 mr-[6px] disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => openDeleteTaxItemModal(item)}
-                                disabled={
-                                  isApproved ||
-                                  (isDeletingTaxItem &&
-                                    taxItemToDelete?.id === item.id)
-                                }
-                                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-danger-50 dark:bg-danger-950 text-danger-500 hover:bg-danger-100 dark:hover:bg-danger-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {isDeletingTaxItem && taxItemToDelete?.id === item.id
-                                  ? "Deleting..."
-                                  : "Delete"}
+                                Delete
                               </button>
                             </td>
                           </tr>
@@ -2019,7 +1856,7 @@ const OrderDetailPage: React.FC = () => {
           )}
 
           {/* Documents Tab */}
-          {activeTab === 3 && (
+          {activeTab === 2 && (
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <div className="flex items-center justify-between mb-[15px]">
@@ -2120,6 +1957,89 @@ const OrderDetailPage: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Order Project Tab */}
+          {activeTab === 3 && (
+            <div className="pt-[20px]">
+              <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+                <h6 className="text-black dark:text-white font-semibold mb-[15px]">
+                  Order Project
+                </h6>
+
+                {order.project ? (
+                  <div className="space-y-[12px] text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Name</span>
+                      <span className="text-black dark:text-white font-medium">
+                        <Link
+                          href={`/project/${order.project.id}`}
+                          className="text-primary-500 hover:underline"
+                        >
+                          {order.project.name}
+                        </Link>
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Code</span>
+                      <span className="text-black dark:text-white">
+                        {order.project.code}
+                      </span>
+                    </div>
+
+                    {order.project.status && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Status</span>
+                        <span className="text-black dark:text-white capitalize">
+                          {order.project.status}
+                        </span>
+                      </div>
+                    )}
+
+                    {order.project.priority && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Priority</span>
+                        <span className="text-black dark:text-white capitalize">
+                          {order.project.priority}
+                        </span>
+                      </div>
+                    )}
+
+                    {order.project.start_date && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Start Date</span>
+                        <span className="text-black dark:text-white">
+                          {new Date(order.project.start_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+
+                    {order.project.end_date && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">End Date</span>
+                        <span className="text-black dark:text-white">
+                          {new Date(order.project.end_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+
+                    {order.project.progress && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Progress</span>
+                        <span className="text-black dark:text-white">
+                          {Number(order.project.progress).toFixed(1)}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    There is no project setup for this order yet.
+                  </p>
                 )}
               </div>
             </div>

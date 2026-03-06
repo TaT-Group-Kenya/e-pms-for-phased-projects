@@ -8,19 +8,36 @@ import AuthenticatedLayout from "../../components/authenticated/AuthenticatedLay
 import { ToastContainer } from "../../components/common/Toast";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 import { formatApiError } from "../../utils/errorHandler";
+import { set } from "zod";
 
 interface QuoteLineItem {
   id: number;
   quotation_id: number;
-  project_phase_id: number | null;
-  phase_name: string;
-  phase_description?: string;
+  item_name: string;
+  description?: string;
   quoted_amount: number;
   quantity: number;
   total: number;
   estimated_hours?: number;
   custom_note?: string;
   is_taxable: boolean;
+  tax_id?: number | null;
+  tax_item_name?: string | null;
+  item_type?: "fixed" | "percent" | null;
+  item_value?: number | null;
+  item_amount?: number | null;
+}
+
+interface QuoteLineItemFormState {
+  item_name: string;
+  description: string;
+  quoted_amount: string;
+  quantity: string;
+  is_taxable: boolean;
+  tax_id: string;
+  tax_item_name: string;
+  item_type: "fixed" | "percent";
+  item_value: string;
 }
 
 interface QuoteApproval {
@@ -91,20 +108,13 @@ interface OrderSummary {
   } | null;
 }
 
-interface QuotationTaxItem {
-  id: number;
-  quotation_id: number;
-  item_name: string;
-  item_type: string; // fixed | percent
-  item_value: number | null;
-  item_amount: number | null;
-}
-
 interface TaxSummary {
   id: number;
   name: string;
   code: string;
   description?: string | null;
+  rate?: number | null;
+  is_default?: boolean | number | null;
 }
 
 interface Quotation {
@@ -130,7 +140,6 @@ interface Quotation {
   approvals?: QuoteApproval[];
   min_approval_count?: number;
   order?: OrderSummary | null;
-  taxitems?: QuotationTaxItem[];
   created_at: string;
   updated_at: string;
 }
@@ -149,12 +158,16 @@ const QuotationDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<QuoteLineItem | null>(null);
-  const [itemForm, setItemForm] = useState({
-    project_phase_id: "",
-    phase_name: "",
+  const [itemForm, setItemForm] = useState<QuoteLineItemFormState>({
+    item_name: "",
+    description: "",
     quoted_amount: "",
     quantity: "1",
     is_taxable: false,
+    tax_id: "",
+    tax_item_name: "",
+    item_type: "percent",
+    item_value: "16.00",
   });
   const [isItemSubmitting, setIsItemSubmitting] = useState(false);
   const [itemError, setItemError] = useState<string | null>(null);
@@ -181,21 +194,9 @@ const QuotationDetail: React.FC = () => {
   const [deleteOrderError, setDeleteOrderError] = useState<string | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-
-  const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
-  const [editingTaxItem, setEditingTaxItem] = useState<QuotationTaxItem | null>(null);
-  type TaxItemEditState = Partial<QuotationTaxItem> & { tax_id?: number | null };
-  const [taxItemEditData, setTaxItemEditData] = useState<TaxItemEditState>({});
-  const [isTaxSubmitting, setIsTaxSubmitting] = useState(false);
-  const [taxItemEditError, setTaxItemEditError] = useState<string | null>(null);
-  const [deletingTaxItemId, setDeletingTaxItemId] = useState<number | null>(null);
   const [taxes, setTaxes] = useState<TaxSummary[]>([]);
   const [loadingTaxes, setLoadingTaxes] = useState(false);
   const [taxesError, setTaxesError] = useState<string | null>(null);
-  const [isDeleteTaxItemModalOpen, setIsDeleteTaxItemModalOpen] = useState(false);
-  const [taxItemToDelete, setTaxItemToDelete] = useState<QuotationTaxItem | null>(null);
-  const [isDeletingTaxItem, setIsDeletingTaxItem] = useState(false);
-  const [deleteTaxItemError, setDeleteTaxItemError] = useState<string | null>(null);
 
   const handleSendEmail = async () => {
     if (!quotation) return;
@@ -266,7 +267,7 @@ const QuotationDetail: React.FC = () => {
         console.error("Error fetching quotation:", err);
         addToast("Error loading quotation. Please refresh the page.", "error");
       } finally {
-        setLoading(false);
+        setTimeout(() => setLoading(false), 500);
       }
     };
 
@@ -394,23 +395,6 @@ const QuotationDetail: React.FC = () => {
     }
   };
 
-  // When editing a tax item, ensure tax dropdown is prefilled once taxes load
-  useEffect(() => {
-    if (!editingTaxItem || !taxes.length) return;
-
-    const currentTaxId = taxItemEditData.tax_id;
-    if (currentTaxId != null) return;
-
-    const matchedTax = taxes.find((t) => t.name === editingTaxItem.item_name);
-    if (!matchedTax) return;
-
-    setTaxItemEditData((prev) => ({
-      ...prev,
-      tax_id: matchedTax.id,
-      item_name: matchedTax.name,
-    }));
-  }, [editingTaxItem, taxes, taxItemEditData]);
-
   const handleStatusChange = async (newStatus: string) => {
     try {
       const response = await fetch(`/api/quotations/update?id=${quotationId}`, {
@@ -471,14 +455,11 @@ const QuotationDetail: React.FC = () => {
           editData.customer_id != null
             ? Number(editData.customer_id)
             : quotation.customer_id ?? null,
-        project_id:
-          editData.project_id != null
-            ? Number(editData.project_id)
-            : quotation.project_id ?? null,
         valid_until_date:
           typeof editData.valid_until_date === "string" && editData.valid_until_date
             ? editData.valid_until_date
             : quotation.valid_until_date,
+        currency: editData.currency ?? quotation.currency,
         payment_terms: (editData.payment_terms ?? quotation.payment_terms ?? "").toString(),
         notes_to_customer: (editData.notes_to_customer ?? quotation.notes_to_customer ?? "").toString(),
         // tax_percentage removed; tax_amount is driven by backend/tax items.
@@ -661,11 +642,15 @@ const QuotationDetail: React.FC = () => {
     setEditingItem(null);
     setItemError(null);
     setItemForm({
-      project_phase_id: "",
-      phase_name: "",
+      item_name: "",
+      description: "",
       quoted_amount: "",
       quantity: "1",
       is_taxable: false,
+      tax_id: "",
+      tax_item_name: "",
+      item_type: "percent",
+      item_value: "",
     });
     setIsItemModalOpen(true);
   };
@@ -674,11 +659,15 @@ const QuotationDetail: React.FC = () => {
     setEditingItem(item);
     setItemError(null);
     setItemForm({
-      project_phase_id: item.project_phase_id ? String(item.project_phase_id) : "",
-      phase_name: item.phase_name || "",
+      item_name: item.item_name || "",
+      description: item.description || "",
       quoted_amount: item.quoted_amount != null ? String(item.quoted_amount) : "",
       quantity: item.quantity != null ? String(item.quantity) : "1",
       is_taxable: !!item.is_taxable,
+      tax_id: item.tax_id != null ? String(item.tax_id) : "",
+      tax_item_name: item.tax_item_name || "",
+      item_type: item.item_type || "percent",
+      item_value: item.item_value != null ? String(item.item_value) : "",
     });
     setIsItemModalOpen(true);
   };
@@ -696,23 +685,11 @@ const QuotationDetail: React.FC = () => {
     }));
   };
 
-  const handlePhaseSelectChange = (value: string) => {
-    const selectedPhase = quotation?.project?.phases?.find(
-      (phase) => String(phase.id) === value
-    );
-
-    setItemForm((prev) => ({
-      ...prev,
-      project_phase_id: value,
-      phase_name: prev.phase_name || selectedPhase?.name || "",
-    }));
-  };
-
   const handleSubmitItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quotation) return;
 
-    if (!itemForm.phase_name || !itemForm.quoted_amount) {
+    if (!itemForm.item_name || !itemForm.quoted_amount) {
       setItemError("Item name and quoted amount are required.");
       return;
     }
@@ -721,16 +698,28 @@ const QuotationDetail: React.FC = () => {
     setItemError(null);
 
     try {
-      const payload = {
+      const payload: any = {
         quotation_id: quotation.id,
-        project_phase_id: itemForm.project_phase_id
-          ? Number(itemForm.project_phase_id)
-          : null,
-        phase_name: itemForm.phase_name.trim(),
+        item_name: itemForm.item_name.trim(),
+        description: itemForm.description?.trim() || null,
         quoted_amount: Number(itemForm.quoted_amount || 0),
         quantity: Number(itemForm.quantity || 1),
         is_taxable: Boolean(itemForm.is_taxable),
       };
+
+      if (itemForm.is_taxable) {
+        payload.tax_id = itemForm.tax_id ? Number(itemForm.tax_id) : null;
+        payload.tax_item_name = itemForm.tax_item_name || null;
+        payload.item_type = itemForm.item_type || null;
+        payload.item_value = itemForm.item_value
+          ? Number(itemForm.item_value)
+          : null;
+      } else {
+        payload.tax_id = null;
+        payload.tax_item_name = null;
+        payload.item_type = null;
+        payload.item_value = null;
+      }
 
       const isEditingItem = !!editingItem;
       const url = isEditingItem
@@ -817,58 +806,6 @@ const QuotationDetail: React.FC = () => {
       addToast("Error deleting line item", "error");
     } finally {
       setIsDeletingItem(false);
-    }
-  };
-
-  const openDeleteTaxItemModal = (item: QuotationTaxItem) => {
-    setTaxItemToDelete(item);
-    setDeleteTaxItemError(null);
-    setIsDeleteTaxItemModalOpen(true);
-  };
-
-  const closeDeleteTaxItemModal = () => {
-    if (isDeletingTaxItem) return;
-    setIsDeleteTaxItemModalOpen(false);
-    setTaxItemToDelete(null);
-    setDeleteTaxItemError(null);
-  };
-
-  const handleConfirmDeleteTaxItem = async () => {
-    if (!taxItemToDelete) return;
-
-    setIsDeletingTaxItem(true);
-    setDeleteTaxItemError(null);
-    setDeletingTaxItemId(taxItemToDelete.id);
-
-    try {
-      const resp = await fetch(`/api/quotation-tax-items/${taxItemToDelete.id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      if (resp.status !== 204 && !resp.ok) {
-        const data = await resp.json().catch(() => null);
-        const message =
-          formatApiError(data) || data?.message || "Failed to delete tax item";
-        setDeleteTaxItemError(message);
-        addToast(message, "error");
-        return;
-      }
-
-      await refreshQuotationDetails();
-      addToast("Tax item deleted successfully", "success");
-      closeDeleteTaxItemModal();
-    } catch (err) {
-      console.error("Error deleting tax item:", err);
-      const message = "Unexpected error while deleting tax item.";
-      setDeleteTaxItemError(message);
-      addToast(message, "error");
-    } finally {
-      setIsDeletingTaxItem(false);
-      setDeletingTaxItemId(null);
     }
   };
 
@@ -1024,28 +961,51 @@ const QuotationDetail: React.FC = () => {
     }).format(value || 0);
   };
 
-  const previewTaxAmount = useMemo(() => {
-    if (!quotation) return null;
+  const defaultTax = useMemo(() => {
+    if (!taxes || taxes.length === 0) return null;
+    const byDefaultFlag = taxes.find(
+      (t) => t.is_default === true || t.is_default === 1
+    );
+    return byDefaultFlag || taxes[0];
+  }, [taxes]);
 
-    const value = taxItemEditData.item_value;
-    if (value == null) return null;
+  // When a line item is marked taxable and no tax is chosen yet,
+  // automatically select the default tax (if any) and seed the value
+  // from its rate. This also covers the case where taxes load after
+  // the user has already checked "Is Taxable".
+  useEffect(() => {
+    if (!itemForm.is_taxable) return;
+    if (!defaultTax) return;
+    if (itemForm.tax_id) return; // user already has a tax selected
 
-    const type = (taxItemEditData.item_type || "fixed").toString();
-    const baseAmount = (quotation.quoteItems || []).reduce((sum, item) => {
-      const lineTotal = item.total ?? item.quoted_amount * item.quantity;
-      return sum + Number(lineTotal || 0);
-    }, 0);
+    setItemForm((prev) => ({
+      ...prev,
+      tax_id: String(defaultTax.id),
+      tax_item_name: defaultTax.name,
+      item_type: prev.item_type || "percent",
+      item_value:
+        prev.item_value !== ""
+          ? prev.item_value
+          : defaultTax.rate != null
+          ? String(defaultTax.rate)
+          : prev.item_value,
+    }));
+  }, [itemForm.is_taxable, itemForm.tax_id, defaultTax]);
 
-    if (type === "fixed") {
-      return Number(value);
+  // Ensure value defaults to the selected tax's rate when none is set yet
+  useEffect(() => {
+    if (!itemForm.is_taxable) return;
+    if (!itemForm.tax_id) return;
+    if (itemForm.item_value !== "") return;
+
+    const selectedTax = taxes.find((t) => String(t.id) === itemForm.tax_id);
+    if (selectedTax && selectedTax.rate != null) {
+      setItemForm((prev) => ({
+        ...prev,
+        item_value: prev.item_value || String(selectedTax.rate),
+      }));
     }
-
-    if (type === "percent") {
-      return baseAmount * (Number(value) / 100);
-    }
-
-    return null;
-  }, [quotation, taxItemEditData.item_type, taxItemEditData.item_value]);
+  }, [itemForm.is_taxable, itemForm.tax_id, itemForm.item_value, taxes]);
 
   if (loading) {
     return (
@@ -1089,7 +1049,6 @@ const QuotationDetail: React.FC = () => {
 
   const canEditLineItems = quotation.status === "draft";
   const canEditHeaderFields = quotation.status === "draft";
-  const canEditTaxItems = quotation.status === "draft";
 
   return (
     <AuthenticatedLayout>
@@ -1099,7 +1058,7 @@ const QuotationDetail: React.FC = () => {
         isOpen={deleteItemModalOpen}
         title="Delete Line Item"
         message="Are you sure you want to delete this line item? This action cannot be undone."
-        itemName={deleteItem?.phase_name || ""}
+        itemName={deleteItem?.item_name || ""}
         isDeleting={isDeletingItem}
         error={deleteItemError}
         onConfirm={handleConfirmDeleteItem}
@@ -1118,14 +1077,14 @@ const QuotationDetail: React.FC = () => {
       />
 
       <DeleteConfirmationModal
-        isOpen={isDeleteTaxItemModalOpen}
-        title="Remove Tax From Quote"
-        message="You're about to remove this tax from the quotation. This will immediately update the quote totals and cannot be undone."
-        itemName={taxItemToDelete?.item_name || "Tax item"}
-        isDeleting={isDeletingTaxItem}
-        error={deleteTaxItemError}
-        onConfirm={handleConfirmDeleteTaxItem}
-        onCancel={closeDeleteTaxItemModal}
+        isOpen={false}
+        title=""
+        message=""
+        itemName=""
+        isDeleting={false}
+        error={null}
+        onConfirm={() => {}}
+        onCancel={() => {}}
       />
 
       <div className="mb-[25px] md:flex items-center justify-between">
@@ -1227,7 +1186,6 @@ const QuotationDetail: React.FC = () => {
                   Line Items
                 </button>
               </li>
-
               <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
                 <button
                   type="button"
@@ -1237,20 +1195,6 @@ const QuotationDetail: React.FC = () => {
                       : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                     }`}
                 >
-                    <i className="material-symbols-outlined !text-[20px]">receipt_long</i>
-                    Tax Items
-                  </button>
-                </li>
-
-                <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab(3)}
-                    className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 3
-                        ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
-                        : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
-                      }`}
-                  >
                   <i className="material-symbols-outlined !text-[20px]">task_alt</i>
                   Approvals
                 </button>
@@ -1259,8 +1203,8 @@ const QuotationDetail: React.FC = () => {
               <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
                 <button
                   type="button"
-                    onClick={() => setActiveTab(4)}
-                    className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 4
+                  onClick={() => setActiveTab(3)}
+                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 3
                       ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
                       : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                     }`}
@@ -1328,27 +1272,63 @@ const QuotationDetail: React.FC = () => {
                       <table className="w-full">
                         <thead>
                           <tr>
-                            <th className="font-medium ltr:text-left rtl:text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Phase Name</th>
+                            <th className="font-medium ltr:text-left rtl:text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Item Name</th>
                             <th className="font-medium ltr:text-left rtl:text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Description</th>
+                            <th className="font-medium ltr:text-left rtl:text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Tax</th>
                             <th className="font-medium ltr:text-right rtl:text-left px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Amount</th>
                           </tr>
                         </thead>
                         <tbody className="text-black dark:text-white text-sm">
                           {quotation.quoteItems && quotation.quoteItems.length > 0 ? (
                             <>
-                              {quotation.quoteItems.map((item: any, index: number) => (
-                                <tr key={index} className="border-b border-gray-100 dark:border-[#172036]">
-                                  <td className="ltr:text-left rtl:text-right px-[15px] py-[12px] font-medium">{item.phase_name || "N/A"}</td>
-                                  <td className="ltr:text-left rtl:text-right px-[15px] py-[12px]">{item.phase_description || "-"}</td>
-                                  <td className="ltr:text-right rtl:text-left px-[15px] py-[12px] font-semibold">
-                                    {quotation.currency} {Number(item.total ?? 0).toLocaleString()}
-                                  </td>
-                                </tr>
-                              ))}
+                              {quotation.quoteItems.map((item: any, index: number) => {
+                                const isTaxable = Boolean(item.is_taxable);
+                                const itemType = item.item_type as "fixed" | "percent" | undefined;
+                                const itemValue = item.item_value as number | null | undefined;
+                                const itemAmount = item.item_amount as number | null | undefined;
+
+                                return (
+                                  <tr key={index} className="border-b border-gray-100 dark:border-[#172036]">
+                                    <td className="ltr:text-left rtl:text-right px-[15px] py-[12px] font-medium">{item.item_name || "N/A"}</td>
+                                    <td className="ltr:text-left rtl:text-right px-[15px] py-[12px]">{item.description || "-"}</td>
+                                    <td className="ltr:text-left rtl:text-right px-[15px] py-[12px] align-top">
+                                      {isTaxable ? (
+                                        <div className="space-y-[4px]">
+                                          <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
+                                            <span className="font-semibold">
+                                              {item.tax_item_name || "Tax"}
+                                            </span>
+                                            <span className="text-[10px] uppercase tracking-wide">
+                                              {itemType === "percent" ? "PERCENT" : itemType === "fixed" ? "FIXED" : ""}
+                                            </span>
+                                          </div>
+                                          {itemValue != null && (
+                                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                                              {itemType === "percent"
+                                                ? `${itemValue}%`
+                                                : `${quotation.currency} ${Number(itemValue).toLocaleString()}`}
+                                            </div>
+                                          )}
+                                          {itemAmount != null && itemAmount > 0 && (
+                                            <div className="text-xs text-gray-700 dark:text-gray-300">
+                                              Tax amount: {quotation.currency} {Number(itemAmount).toLocaleString()}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
+                                      )}
+                                    </td>
+                                    <td className="ltr:text-right rtl:text-left px-[15px] py-[12px] font-semibold">
+                                      {quotation.currency} {Number(item.total ?? 0).toLocaleString()}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </>
                           ) : (
                             <tr>
-                              <td colSpan={3} className="text-center px-[15px] py-[30px] text-gray-500 dark:text-gray-400">
+                              <td colSpan={4} className="text-center px-[15px] py-[30px] text-gray-500 dark:text-gray-400">
                                 No line items added yet
                               </td>
                             </tr>
@@ -1370,31 +1350,13 @@ const QuotationDetail: React.FC = () => {
                         </span>
                       </div>
 
-                      {quotation.taxitems && quotation.taxitems.length > 0 ? (
-                        <>
-                          {quotation.taxitems.map((taxItem) => (
-                            <div
-                              key={taxItem.id}
-                              className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]"
-                            >
-                              <span className="text-gray-600 dark:text-gray-400">
-                                {taxItem.item_name}
-                              </span>
-                              <span className="text-black dark:text-white font-semibold">
-                                {quotation.currency} {Number(taxItem.item_amount ?? 0).toLocaleString()}
-                              </span>
-                            </div>
-                          ))}
-                        </>
-                      ) : (
-                        quotation.tax_amount > 0 && (
-                          <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
-                            <span className="text-gray-600 dark:text-gray-400">Tax</span>
-                            <span className="text-black dark:text-white font-semibold">
-                              {quotation.currency} {quotation.tax_amount?.toLocaleString()}
-                            </span>
-                          </div>
-                        )
+                      {quotation.tax_amount > 0 && (
+                        <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                          <span className="text-gray-600 dark:text-gray-400">Tax</span>
+                          <span className="text-black dark:text-white font-semibold">
+                            {quotation.currency} {quotation.tax_amount?.toLocaleString()}
+                          </span>
+                        </div>
                       )}
 
                       {quotation.discount_percentage > 0 && (
@@ -1544,10 +1506,11 @@ const QuotationDetail: React.FC = () => {
                   <table className="w-full">
                     <thead>
                       <tr>
-                        <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Phase</th>
-                        <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Item Name</th>
+                        <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Item</th>
+                        <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Details</th>
                         <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Quantity</th>
                         <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Unit Price</th>
+                        <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Tax</th>
                         <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Amount</th>
                         <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Actions</th>
                       </tr>
@@ -1555,57 +1518,86 @@ const QuotationDetail: React.FC = () => {
                     <tbody className="text-black dark:text-white">
                       {quotation.quoteItems && quotation.quoteItems.length > 0 ? (
                         <>
-                          {quotation.quoteItems.map((item, index: number) => (
-                            <tr key={index} className="border-b border-gray-100 dark:border-[#172036]">
-                              <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
-                                <span className="font-medium">{quotation.project?.phases?.find((p) => p.id === item.project_phase_id)?.name || item.phase_name}</span>
-                                {quotation.project?.phases?.find((p) => p.id === item.project_phase_id)?.code && (
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-[4px]">
-                                    {quotation.project?.phases?.find((p) => p.id === item.project_phase_id)?.code}
-                                  </p>
-                                )}
-                              </td>
-                              <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
-                                <span className="font-medium">{item.phase_name}</span>
-                                {item.phase_description && (
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-[4px]">{item.phase_description}</p>
-                                )}
-                              </td>
-                              <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
-                                {item.quantity ?? 1}
-                              </td>
-                              <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
-                                {quotation.currency} {Number(item.quoted_amount || 0).toLocaleString()}
-                              </td>
-                              <td className="ltr:text-right rtl:text-left px-[20px] py-[12px] font-semibold">
-                                {quotation.currency} {Number(item.total ?? 0).toLocaleString()}
-                              </td>
-                              <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
-                                {canEditLineItems && (
-                                  <div className="flex items-center gap-[8px]">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleOpenEditItemModal(item)}
-                                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[8px] py-[4px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white text-xs"
-                                    >
-                                      <i className="material-symbols-outlined !text-[16px]">edit</i>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => openDeleteItemModal(item)}
-                                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[8px] py-[4px] text-danger-500 border border-danger-500 hover:bg-danger-500 hover:text-white text-xs"
-                                    >
-                                      <i className="material-symbols-outlined !text-[16px]">delete</i>
-                                    </button>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
+                          {quotation.quoteItems.map((item, index: number) => {
+                            const isTaxable = Boolean(item.is_taxable);
+                            const itemType = item.item_type as "fixed" | "percent" | undefined;
+                            const itemValue = item.item_value as number | null | undefined;
+                            const itemAmount = item.item_amount as number | null | undefined;
+
+                            return (
+                              <tr key={index} className="border-b border-gray-100 dark:border-[#172036]">
+                                <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
+                                  <span className="font-medium">{item.item_name}</span>
+                                </td>
+                                <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
+                                  {item.description && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-[4px]">{item.description}</p>
+                                  )}
+                                </td>
+                                <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
+                                  {item.quantity ?? 1}
+                                </td>
+                                <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
+                                  {quotation.currency} {Number(item.quoted_amount || 0).toLocaleString()}
+                                </td>
+                                <td className="ltr:text-left rtl:text-right px-[20px] py-[12px] align-top">
+                                  {isTaxable ? (
+                                    <div className="space-y-[4px]">
+                                      <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
+                                        <span className="font-semibold">
+                                          {item.tax_item_name || "Tax"}
+                                        </span>
+                                        <span className="text-[10px] uppercase tracking-wide">
+                                          {itemType === "percent" ? "PERCENT" : itemType === "fixed" ? "FIXED" : ""}
+                                        </span>
+                                      </div>
+                                      {itemValue != null && (
+                                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                                          {itemType === "percent"
+                                            ? `${itemValue}%`
+                                            : `${quotation.currency} ${Number(itemValue).toLocaleString()}`}
+                                        </div>
+                                      )}
+                                      {itemAmount != null && itemAmount > 0 && (
+                                        <div className="text-xs text-gray-700 dark:text-gray-300">
+                                          Tax amount: {quotation.currency} {Number(itemAmount).toLocaleString()}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
+                                  )}
+                                </td>
+                                <td className="ltr:text-right rtl:text-left px-[20px] py-[12px] font-semibold">
+                                  {quotation.currency} {Number(item.total ?? 0).toLocaleString()}
+                                </td>
+                                <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
+                                  {canEditLineItems && (
+                                    <div className="flex items-center gap-[8px]">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenEditItemModal(item)}
+                                        className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[8px] py-[4px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white text-xs"
+                                      >
+                                        <i className="material-symbols-outlined !text-[16px]">edit</i>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => openDeleteItemModal(item)}
+                                        className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[8px] py-[4px] text-danger-500 border border-danger-500 hover:bg-danger-500 hover:text-white text-xs"
+                                      >
+                                        <i className="material-symbols-outlined !text-[16px]">delete</i>
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </>
                       ) : (
                         <tr>
-                          <td colSpan={5} className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400">
+                          <td colSpan={6} className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400">
                             No line items yet
                           </td>
                         </tr>
@@ -1617,126 +1609,8 @@ const QuotationDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Tax Items Tab */}
-          {activeTab === 2 && (
-            <div className="pt-[20px]">
-              <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
-                <div className="flex items-center justify-between mb-[20px]">
-                  <h6 className="text-black dark:text-white font-semibold">Tax Items</h6>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!quotation) return;
-                      setTaxItemEditError(null);
-                      setEditingTaxItem(null);
-                      setTaxItemEditData({
-                        item_name: "",
-                        item_type: "percent",
-                        item_value: 0,
-                      });
-                      setIsTaxModalOpen(true);
-                    }}
-                    disabled={!canEditTaxItems}
-                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <i className="material-symbols-outlined mr-[8px] !text-[18px]">add</i>
-                    Add Tax Item
-                  </button>
-                </div>
-
-                {(!quotation.taxitems || quotation.taxitems.length === 0) && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    No tax items configured for this quotation.
-                  </p>
-                )}
-
-                {quotation.taxitems && quotation.taxitems.length > 0 && (
-                  <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 dark:bg-[#15203c]">
-                        <tr>
-                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                            Tax Name
-                          </th>
-                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                            Type
-                          </th>
-                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Value
-                          </th>
-                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Amount
-                          </th>
-                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(quotation.taxitems || []).map((item) => (
-                          <tr
-                            key={item.id}
-                            className="border-b border-gray-100 dark:border-[#172036] align-middle"
-                          >
-                            <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              {item.item_name}
-                            </td>
-                            <td className="text-sm capitalize ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              {item.item_type}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {item.item_value != null
-                                ? item.item_type === "percent"
-                                  ? `${item.item_value.toFixed(2)}%`
-                                  : formatCurrency(item.item_value, quotation.currency)
-                                : "-"}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {formatCurrency(item.item_amount ?? 0, quotation.currency)}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px] whitespace-nowrap">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const matchedTax = taxes.find(
-                                    (t) => t.name === item.item_name
-                                  ) || null;
-                                  setTaxItemEditError(null);
-                                  setEditingTaxItem(item);
-                                  setTaxItemEditData({
-                                    item_name: item.item_name,
-                                    item_type: item.item_type,
-                                    item_value: item.item_value ?? 0,
-                                    tax_id: matchedTax ? matchedTax.id : undefined,
-                                  });
-                                  setIsTaxModalOpen(true);
-                                }}
-                                disabled={!canEditTaxItems}
-                                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 mr-[6px] disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => openDeleteTaxItemModal(item)}
-                                disabled={deletingTaxItemId === item.id || !canEditTaxItems}
-                                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-danger-50 dark:bg-danger-950 text-danger-500 hover:bg-danger-100 dark:hover:bg-danger-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {deletingTaxItemId === item.id ? "Deleting..." : "Delete"}
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Approvals Tab */}
-          {activeTab === 3 && (
+          {activeTab === 2 && (
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <div className="flex items-center justify-between mb-[20px]">
@@ -1827,7 +1701,7 @@ const QuotationDetail: React.FC = () => {
           )}
 
           {/* Orders Tab */}
-          {activeTab === 4 && (
+          {activeTab === 3 && (
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md mb-[25px]">
                 <div className="flex items-center justify-between mb-[20px]">
@@ -2066,34 +1940,28 @@ const QuotationDetail: React.FC = () => {
             <form onSubmit={handleSubmitItem} className="space-y-[20px]">
               <div>
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Phase
-                </label>
-                <select
-                  value={itemForm.project_phase_id}
-                  onChange={(e) => handlePhaseSelectChange(e.target.value)}
-                  disabled={isItemSubmitting}
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select phase (optional)</option>
-                  {quotation?.project?.phases?.map((phase) => (
-                    <option key={phase.id} value={phase.id}>
-                      {phase.code} - {phase.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
                   Item Name <span className="text-danger-500">*</span>
                 </label>
                 <input
                   type="text"
-                  value={itemForm.phase_name}
-                  onChange={(e) => handleItemFormChange("phase_name", e.target.value)}
+                  value={itemForm.item_name}
+                  onChange={(e) => handleItemFormChange("item_name", e.target.value)}
                   disabled={isItemSubmitting}
                   className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="E.g. Design work for phase"
+                />
+              </div>
+
+              <div>
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Description
+                </label>
+                <textarea
+                  value={itemForm.description}
+                  onChange={(e) => handleItemFormChange("description", e.target.value)}
+                  disabled={isItemSubmitting}
+                  className="min-h-[80px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="Optional description for this item"
                 />
               </div>
 
@@ -2135,13 +2003,144 @@ const QuotationDetail: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={itemForm.is_taxable}
-                    onChange={(e) => handleItemFormChange("is_taxable", e.target.checked)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (!checked) {
+                        setItemForm((prev) => ({
+                          ...prev,
+                          is_taxable: false,
+                          tax_id: "",
+                          tax_item_name: "",
+                          item_type: "percent",
+                          item_value: "",
+                        }));
+                        return;
+                      }
+
+                      if (itemForm.tax_id || !defaultTax) {
+                        setItemForm((prev) => ({
+                          ...prev,
+                          is_taxable: true,
+                        }));
+                        return;
+                      }
+
+                      setItemForm((prev) => ({
+                        ...prev,
+                        is_taxable: true,
+                        tax_id: String(defaultTax.id),
+                        tax_item_name: defaultTax.name,
+                        item_type: "percent",
+                        item_value:
+                          defaultTax.rate != null
+                            ? String(defaultTax.rate)
+                            : prev.item_value || "",
+                      }));
+                    }}
                     disabled={isItemSubmitting}
                     className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                   />
                   <span>Is Taxable</span>
                 </label>
               </div>
+
+              {itemForm.is_taxable && (
+                <div className="mt-[15px] border border-primary-100 dark:border-primary-900 rounded-md p-[15px] bg-primary-50/40 dark:bg-primary-900/10 space-y-[12px]">
+                  <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
+                    <div>
+                      <label className="mb-[10px] text-black dark:text-white font-medium block">
+                        Tax Name <span className="text-danger-500">*</span>
+                      </label>
+                      <select
+                        value={itemForm.tax_id}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const selectedTax =
+                            taxes.find((t) => String(t.id) === value) || null;
+                          setItemForm((prev) => ({
+                            ...prev,
+                            tax_id: value,
+                            tax_item_name: selectedTax ? selectedTax.name : "",
+                            item_value:
+                              selectedTax && selectedTax.rate != null
+                                ? String(selectedTax.rate)
+                                : prev.item_value,
+                          }));
+                        }}
+                        disabled={isItemSubmitting || loadingTaxes || taxes.length === 0}
+                        required
+                        className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="" disabled>
+                          {loadingTaxes
+                            ? "Loading taxes..."
+                            : taxes.length === 0
+                            ? "No taxes configured"
+                            : "Select tax"}
+                        </option>
+                        {taxes.map((tax) => (
+                          <option key={tax.id} value={tax.id}>
+                            {tax.name}
+                          </option>
+                        ))}
+                      </select>
+                      {taxesError && (
+                        <p className="mt-[6px] text-[11px] text-danger-500">
+                          {taxesError}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="mb-[10px] text-black dark:text-white font-medium block">
+                        Type <span className="text-danger-500">*</span>
+                      </label>
+                      <select
+                        value={itemForm.item_type}
+                        onChange={(e) =>
+                          setItemForm((prev) => ({
+                            ...prev,
+                            item_type: e.target.value as "fixed" | "percent",
+                          }))
+                        }
+                        disabled={isItemSubmitting}
+                        required
+                        className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="percent">Percentage</option>
+                        <option disabled value="fixed">Fixed Amount</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Value
+                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-[6px]">
+                        {itemForm.item_type === "percent"
+                          ? "as % of line total"
+                          : `in ${quotation.currency}`}
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={itemForm.item_value}
+                      onChange={(e) =>
+                        setItemForm((prev) => ({
+                          ...prev,
+                          item_value: e.target.value,
+                        }))
+                      }
+                      disabled={isItemSubmitting}
+                      required
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder={itemForm.item_type === "percent" ? "0.00" : "0.00"}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-[10px] mt-[10px]">
                 <button
@@ -2165,233 +2164,7 @@ const QuotationDetail: React.FC = () => {
         </div>
       )}
 
-      {/* Tax Item Modal */}
-      {isTaxModalOpen && quotation && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[520px] max-h-[90vh] overflow-y-auto shadow-xl shadow-black/10 dark:shadow-black/40">
-            <h5 className="mb-[8px] text-black dark:text-white font-semibold">
-              {editingTaxItem ? "Edit Tax Item" : "Add Tax Item"}
-            </h5>
-            <p className="mb-[16px] text-xs text-gray-500 dark:text-gray-400">
-              Configure an additional tax line that will be applied on top
-              of your current quotation line items.
-            </p>
-
-            {taxItemEditError && (
-              <div className="mb-[15px] text-sm font-medium text-danger-500 bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/40 rounded-md px-[12px] py-[8px]">
-                {taxItemEditError}
-              </div>
-            )}
-
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!quotation) return;
-
-                setIsTaxSubmitting(true);
-                setTaxItemEditError(null);
-
-                try {
-                  const payload: any = {
-                    quotation_id: quotation.id,
-                    item_name: (taxItemEditData.item_name || "").toString(),
-                    item_type: (taxItemEditData.item_type || "fixed").toString(),
-                    item_value: Number(taxItemEditData.item_value ?? 0),
-                  };
-
-                  if (taxItemEditData.tax_id != null) {
-                    payload.tax_id = Number(taxItemEditData.tax_id);
-                  }
-
-                  const url = editingTaxItem
-                    ? `/api/quotation-tax-items/${editingTaxItem.id}`
-                    : "/api/quotation-tax-items";
-
-                  const method = editingTaxItem ? "PUT" : "POST";
-
-                  const resp = await fetch(url, {
-                    method,
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${accessToken}`,
-                    },
-                    body: JSON.stringify(payload),
-                  });
-
-                  const data = await resp.json().catch(() => null);
-
-                  if (!resp.ok) {
-                    const message =
-                      formatApiError(data) || data?.message || "Failed to save tax item";
-                    setTaxItemEditError(message);
-                    addToast(message, "error");
-                    return;
-                  }
-
-                  await refreshQuotationDetails();
-
-                  setIsTaxModalOpen(false);
-                  setEditingTaxItem(null);
-                  setTaxItemEditData({});
-                  addToast(
-                    editingTaxItem
-                      ? "Tax item updated successfully"
-                      : "Tax item added successfully",
-                    "success"
-                  );
-                } catch (err) {
-                  console.error("Error saving tax item:", err);
-                  setTaxItemEditError(
-                    "An error occurred while saving the tax item."
-                  );
-                  addToast("Error saving tax item", "error");
-                } finally {
-                  setIsTaxSubmitting(false);
-                }
-              }}
-              className="space-y-[20px] mt-[5px]"
-            >
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Tax Name <span className="text-danger-500">*</span>
-                </label>
-                <select
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
-                  value={taxItemEditData.tax_id ?? ""}
-                  onChange={(e) => {
-                    const selectedId = e.target.value
-                      ? Number(e.target.value)
-                      : undefined;
-                    const selectedTax =
-                      taxes.find((t) => t.id === selectedId) || null;
-                    setTaxItemEditData((prev) => ({
-                      ...prev,
-                      item_name: selectedTax ? selectedTax.name : "",
-                      tax_id: selectedId ?? null,
-                    }));
-                  }}
-                  required
-                  disabled={loadingTaxes || taxes.length === 0}
-                >
-                  <option value="" disabled>
-                    {loadingTaxes
-                      ? "Loading taxes..."
-                      : taxes.length === 0
-                      ? "No taxes configured"
-                      : "Select tax"}
-                  </option>
-                  {taxes.map((tax) => (
-                    <option key={tax.id} value={tax.id}>
-                      {tax.name}
-                    </option>
-                  ))}
-                </select>
-                {taxesError && (
-                  <p className="mt-[6px] text-[11px] text-danger-500">
-                    {taxesError}
-                  </p>
-                )}
-              </div>
-
-              <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
-                <div>
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Type <span className="text-danger-500">*</span>
-                  </label>
-                  <select
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
-                    value={taxItemEditData.item_type || "fixed"}
-                    onChange={(e) =>
-                      setTaxItemEditData((prev) => ({
-                        ...prev,
-                        item_type: e.target.value,
-                      }))
-                    }
-                    required
-                  >
-                    <option value="fixed">Fixed Amount</option>
-                    <option value="percent">Percentage</option>
-                  </select>
-                  <p className="mt-[6px] text-[11px] text-gray-500 dark:text-gray-400">
-                    Fixed adds a flat amount; Percentage applies on the
-                    total of quotation items.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Value{" "}
-                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-                      {(taxItemEditData.item_type || "fixed") === "percent"
-                        ? "as % of items total"
-                        : `in ${quotation.currency}`}
-                    </span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={taxItemEditData.item_value ?? ""}
-                    onChange={(e) =>
-                      setTaxItemEditData((prev) => ({
-                        ...prev,
-                        item_value:
-                          e.target.value === "" ? null : Number(e.target.value),
-                      }))
-                    }
-                    required
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
-                  />
-
-                  {previewTaxAmount != null && (
-                    <div className="mt-[6px] rounded-md border border-dashed border-primary-200 dark:border-primary-500/40 bg-primary-50/70 dark:bg-primary-500/10 px-[12px] py-[8px] text-xs">
-                      <p className="text-gray-800 dark:text-gray-100">
-                        Estimated tax on current items:{" "}
-                        <span className="font-semibold">
-                          {formatCurrency(previewTaxAmount, quotation.currency)}
-                        </span>
-                      </p>
-                      {(taxItemEditData.item_type || "fixed") === "percent" && (
-                        <p className="mt-[2px] text-[11px] text-gray-600 dark:text-gray-300">
-                          Calculated from the sum of all quotation line items.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-[10px] mt-[10px]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isTaxSubmitting) return;
-                    setIsTaxModalOpen(false);
-                    setEditingTaxItem(null);
-                    setTaxItemEditError(null);
-                    setTaxItemEditData({});
-                  }}
-                  disabled={isTaxSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isTaxSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isTaxSubmitting
-                    ? "Saving..."
-                    : editingTaxItem
-                    ? "Update Tax Item"
-                    : "Add Tax Item"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Tax Item Modal removed: quotation now uses inline per-item tax configuration only */}
 
       {/* Edit Quotation Header Modal */}
       {isEditing && quotation && (
@@ -2419,7 +2192,7 @@ const QuotationDetail: React.FC = () => {
             )}
 
             <div className="mb-[15px] p-[12px] rounded-md bg-warning-50 dark:bg-[#2a2410] border border-warning-200 dark:border-warning-900 text-sm text-warning-800 dark:text-warning-300">
-              Changing the customer or project will clear all existing quote line items and reset quote totals.
+              Changing the customer will clear all existing quote line items and reset quote totals.
             </div>
 
             <form onSubmit={handleSubmitEdit} className="space-y-[20px]">
@@ -2437,54 +2210,28 @@ const QuotationDetail: React.FC = () => {
                 />
               </div>
 
-              <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
-                <div>
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Customer
-                  </label>
-                  <select
-                    value={editData.customer_id != null ? String(editData.customer_id) : quotation.customer_id ? String(quotation.customer_id) : ""}
-                    onChange={(e) =>
-                      handleEditFieldChange(
-                        "customer_id",
-                        e.target.value ? Number(e.target.value) : undefined
-                      )
-                    }
-                    disabled={isEditSubmitting}
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="">Select customer</option>
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Project
-                  </label>
-                  <select
-                    value={editData.project_id != null ? String(editData.project_id) : quotation.project_id ? String(quotation.project_id) : ""}
-                    onChange={(e) =>
-                      handleEditFieldChange(
-                        "project_id",
-                        e.target.value ? Number(e.target.value) : undefined
-                      )
-                    }
-                    disabled={isEditSubmitting}
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="">Select project (optional)</option>
-                    {projects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.code} - {project.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Customer
+                </label>
+                <select
+                  value={editData.customer_id != null ? String(editData.customer_id) : quotation.customer_id ? String(quotation.customer_id) : ""}
+                  onChange={(e) =>
+                    handleEditFieldChange(
+                      "customer_id",
+                      e.target.value ? Number(e.target.value) : undefined
+                    )
+                  }
+                  disabled={isEditSubmitting}
+                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select customer</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">

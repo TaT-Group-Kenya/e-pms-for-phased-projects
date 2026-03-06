@@ -17,7 +17,6 @@ class ProjectPhaseResource extends BaseResource
             'start_date' => $this->formatTimestamp($this->start_date),
             'end_date' => $this->formatTimestamp($this->end_date),
             'progress_percentage' => $this->progress_percentage,
-            'quote_item_id' => $this->quote_item_id,
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
             'created_at' => $this->formatTimestamp($this->created_at),
@@ -26,10 +25,6 @@ class ProjectPhaseResource extends BaseResource
             'assignment' => new CompanyProjectResource($this->whenLoaded('assignment')),
 
             'project' => new ProjectResource($this->whenLoaded('project')),
-
-            'quoteItem' => new QuoteLineItemResource($this->whenLoaded('quoteItem')),
-
-            'orderItem' => new OrderItemResource($this->whenLoaded('orderItem')),
 
         ];
     }

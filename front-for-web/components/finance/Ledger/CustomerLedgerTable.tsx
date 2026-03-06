@@ -63,6 +63,7 @@ const CustomerLedgerTable: React.FC = () => {
   const [customerFilterId, setCustomerFilterId] = useState<string>("");
   const [postedFrom, setPostedFrom] = useState("");
   const [postedTo, setPostedTo] = useState("");
+  const [currencyFilter, setCurrencyFilter] = useState<string>("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -239,6 +240,12 @@ const CustomerLedgerTable: React.FC = () => {
         }
       }
 
+      if (currencyFilter) {
+        if ((r.transaction_currency || "") !== currencyFilter) {
+          return false;
+        }
+      }
+
       if (fromTime || toTime) {
         const postedTime = r.posted_date ? new Date(r.posted_date).getTime() : null;
 
@@ -258,7 +265,7 @@ const CustomerLedgerTable: React.FC = () => {
         (r.transaction_status || "").toLowerCase().includes(term)
       );
     });
-  }, [rows, searchTerm, customerFilterId, postedFrom, postedTo]);
+  }, [rows, searchTerm, customerFilterId, postedFrom, postedTo, currencyFilter]);
 
   const customerOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -271,6 +278,16 @@ const CustomerLedgerTable: React.FC = () => {
       }
     });
     return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
+  }, [rows]);
+
+  const currencyOptions = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((r) => {
+      if (r.transaction_currency) {
+        set.add(r.transaction_currency);
+      }
+    });
+    return Array.from(set.values()).sort();
   }, [rows]);
 
   const handlePerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -292,6 +309,7 @@ const CustomerLedgerTable: React.FC = () => {
     setCustomerFilterId("");
     setPostedFrom("");
     setPostedTo("");
+    setCurrencyFilter("");
     setPerPage(20);
     setPage(1);
   };
@@ -431,6 +449,26 @@ const CustomerLedgerTable: React.FC = () => {
               {customerOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Txn Currency:</span>
+            <select
+              value={currencyFilter}
+              onChange={(e) => {
+                setCurrencyFilter(e.target.value);
+                setPage(1);
+              }}
+              disabled={loading}
+              className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[120px]"
+            >
+              <option value="">All currencies</option>
+              {currencyOptions.map((cur) => (
+                <option key={cur} value={cur}>
+                  {cur}
                 </option>
               ))}
             </select>

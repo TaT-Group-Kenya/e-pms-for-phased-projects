@@ -16,13 +16,17 @@ class OrderItemStoreRequest extends FormRequest
     {
         return [
             'order_id' => ['nullable', 'exists:orders,id'],
-            'project_phase_id' => ['nullable', 'exists:project_phases,id'],
             'item_name' => ['required', 'string', 'max:255'],
             'item_description' => ['required', 'string', 'max:255'],
             'order_amount' => ['required', 'numeric', 'min:0'],
             'quantity' => ['sometimes', 'integer', 'min:1'],
             'custom_note' => ['required', 'string', 'max:255'],
             'is_taxable' => ['required', 'boolean'],
+            'tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
+            'tax_item_name' => ['nullable', 'string', 'max:255'],
+            'item_type' => ['nullable', 'string', 'max:255', \Illuminate\Validation\Rule::in(['fixed', 'percent'])],
+            'item_value' => ['nullable', 'numeric', 'min:0'],
+            'item_amount' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

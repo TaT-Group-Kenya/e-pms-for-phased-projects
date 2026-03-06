@@ -54,6 +54,9 @@ class CompanyController extends Controller
         $company->load([
             'users',
             'assignments.project',
+            'assignments.phase',
+            'bankAccounts',
+            'invoices',
             'bankAccounts',
             'invoices'
         ]);

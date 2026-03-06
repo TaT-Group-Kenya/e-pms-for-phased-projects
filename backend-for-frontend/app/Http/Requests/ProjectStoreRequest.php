@@ -15,6 +15,7 @@ class ProjectStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'order_id' => ['required', 'exists:orders,id'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['string', 'max:255'],
             'customer_id' => ['required', 'exists:customers,id'],

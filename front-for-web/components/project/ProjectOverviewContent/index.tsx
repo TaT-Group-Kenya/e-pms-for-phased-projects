@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/router";
+import Link from "next/link";
 import { useSelector } from "react-redux";
 import RecentActivity from "./RecentActivity";
 import ProjectRoadmap from "./ProjectRoadmap";
@@ -9,9 +9,6 @@ import ProjectOverview from "./ProjectOverview";
 import ProjectPhases from "./ProjectPhases";
 import ProjectEditComponent from "./ProjectEditComponent";
 import ProjectPhasesComponent from "./ProjectPhasesComponent";
-import ProjectQuotationsComponent from "./ProjectQuotationsComponent";
-import ProjectOrdersComponent from "./ProjectOrdersComponent";
-import ProjectInvoicesComponent from "./ProjectInvoicesComponent";
 import ProjectTransactionsComponent from "./ProjectTransactionsComponent";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
@@ -37,7 +34,7 @@ interface ProjectDetailsData {
   category?: { id: number; name: string };
   phases?: ProjectPhase[];
   order?: any;
-  quotation?: any;
+  // quotation removed: projects are no longer directly linked to quotations
   customer_invoices?: any[];
   company_invoices?: any[];
   in_coming_payments?: any[];
@@ -68,7 +65,6 @@ interface ProjectOverviewContentProps {
 }
 
 const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ projectId }) => {
-  const router = useRouter();
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
   const [project, setProject] = useState<ProjectDetailsData | null>(null);
@@ -107,7 +103,11 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
       console.error("Error fetching project details:", err);
       addToast("Error loading project details. Please refresh the page.", "error");
     } finally {
-      if (showLoading) setLoading(false);
+      if (showLoading) {
+        setTimeout(() => {
+          setLoading(false);
+        }, 500);
+      }
     }
   };
 
@@ -148,6 +148,17 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
       <ToastContainer toasts={toasts} onClose={removeToast} />
       <div className="trezo-card bg-transparent p-[20px] md:p-[25px] rounded-md">
         <div className="trezo-card-content">
+          {/* Back to Projects List */}
+          <div className="mb-[15px]">
+            <Link
+              href="/project/project-list"
+              className="inline-flex items-center gap-[6px] text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500"
+            >
+              <i className="material-symbols-outlined !text-[18px]">arrow_back</i>
+              <span>Back to Projects</span>
+            </Link>
+          </div>
+
           {/* Tabs Navigation */}
           <div className="trezo-tabs mb-[20px] md:mb-[25px]">
             <ul className="navs border-b border-gray-100 dark:border-[#172036] overflow-x-auto">
@@ -206,24 +217,6 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
                       : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                   }`}
                 >
-                  <i className="material-symbols-outlined !text-[20px]">description</i>
-                  Quotation
-                  {project?.quotation && (
-                    <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-green-500 text-white text-xs font-bold">✓</span>
-                  )}
-                </button>
-              </li>
-
-              <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
-                <button
-                  type="button"
-                  onClick={() => handleTabClick(4)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 4
-                      ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
-                      : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
-                  }`}
-                >
                   <i className="material-symbols-outlined !text-[20px]">shopping_cart</i>
                   Order
                   {project?.order && (
@@ -231,28 +224,13 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
                   )}
                 </button>
               </li>
-
+              
               <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
                 <button
                   type="button"
                   onClick={() => handleTabClick(5)}
                   className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
                     activeTab === 5
-                      ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
-                      : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
-                  }`}
-                >
-                  <i className="material-symbols-outlined !text-[20px]">receipt</i>
-                  Invoices
-                </button>
-              </li>
-
-              <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
-                <button
-                  type="button"
-                  onClick={() => handleTabClick(6)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 6
                       ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
                       : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                   }`}
@@ -406,23 +384,72 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
             />
           )}
 
-          {/* Quotations Tab */}
-          {activeTab === 3 && <ProjectQuotationsComponent quotation={project?.quotation} />}
-
           {/* Orders Tab */}
-          {activeTab === 4 && <ProjectOrdersComponent order={project?.order} />}
+          {activeTab === 3 && (
+            <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md">
+              <div className="pt-[20px]">
+                <h6 className="font-semibold text-black dark:text-white mb-[20px] flex items-center gap-[8px]">
+                  <i className="material-symbols-outlined text-[20px]">shopping_cart</i>
+                  Project Order
+                </h6>
 
-          {/* Invoices Tab */}
-          {activeTab === 5 && (
-            <ProjectInvoicesComponent
-              customerInvoices={project?.customer_invoices || []}
-              companyInvoices={project?.company_invoices || []}
-              projectId={projectId}
-            />
+                {!project?.order || Object.keys(project.order).length === 0 ? (
+                  <div className="text-center py-[40px]">
+                    <div className="mb-[15px]">
+                      <i className="material-symbols-outlined text-[48px] text-gray-400">shopping_cart</i>
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-400 font-medium">No order available</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-[8px]">
+                      An order will appear here once one is created for this project
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200 dark:border-[#172036]">
+                          <th className="text-left py-[12px] px-[16px] text-black dark:text-white font-semibold text-sm">Order #</th>
+                          <th className="text-left py-[12px] px-[16px] text-black dark:text-white font-semibold text-sm">Title</th>
+                          <th className="text-left py-[12px] px-[16px] text-black dark:text-white font-semibold text-sm">Status</th>
+                          <th className="text-left py-[12px] px-[16px] text-black dark:text-white font-semibold text-sm">Total</th>
+                          <th className="text-left py-[12px] px-[16px] text-black dark:text-white font-semibold text-sm">Created</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-gray-100 dark:border-[#0f1829] hover:bg-gray-50 dark:hover:bg-[#172036] transition-colors">
+                          <td className="py-[12px] px-[16px] text-gray-700 dark:text-gray-300 font-medium">
+                            {project.order.order_number || `ORD-${project.order.id}`}
+                          </td>
+                          <td className="py-[12px] px-[16px] text-gray-700 dark:text-gray-300">
+                            {project.order.title || "N/A"}
+                          </td>
+                          <td className="py-[12px] px-[16px]">
+                            <span className="inline-block px-[8px] py-[4px] rounded-full text-xs font-medium capitalize bg-gray-100 text-gray-700">
+                              {project.order.status || "Unknown"}
+                            </span>
+                          </td>
+                          <td className="py-[12px] px-[16px] text-gray-700 dark:text-gray-300 font-medium">
+                            {project.order.currency || project.currency || ""}{" "}
+                            {typeof project.order.total_amount === "number"
+                              ? project.order.total_amount.toFixed(2)
+                              : project.order.total_amount || "0.00"}
+                          </td>
+                          <td className="py-[12px] px-[16px] text-gray-600 dark:text-gray-400 text-sm">
+                            {project.order.created_at
+                              ? new Date(project.order.created_at).toLocaleDateString()
+                              : "N/A"}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {/* Transactions Tab */}
-          {activeTab === 6 && (
+          {activeTab === 5 && (
             <ProjectTransactionsComponent
               incomingPayments={project?.in_coming_payments || []}
               outgoingPayments={project?.out_going_payments || []}

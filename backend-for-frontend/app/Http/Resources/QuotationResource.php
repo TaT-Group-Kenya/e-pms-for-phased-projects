@@ -9,7 +9,6 @@ class QuotationResource extends BaseResource
         return [
             'id' => $this->id,
             'quotation_number' => $this->quotation_number,
-            'project_id' => $this->project_id,
             'customer_id' => $this->customer_id,
             'title' => $this->title,
             'description' => $this->description,
@@ -29,8 +28,6 @@ class QuotationResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
-            'project' => new ProjectResource($this->whenLoaded('project')),
-
             'customer' => new CustomerResource($this->whenLoaded('customer')),
 
             'quoteItems' => QuoteLineItemResource::collection($this->whenLoaded('quoteItems')),
@@ -40,8 +37,6 @@ class QuotationResource extends BaseResource
             'approvals' => QuoteApprovalResource::collection($this->whenLoaded('approvals')),
 
             'order' => new OrderResource($this->whenLoaded('order')),
-
-            'taxitems' => QuotationTaxItemResource::collection($this->whenLoaded('taxitems')),
 
         ];
     }

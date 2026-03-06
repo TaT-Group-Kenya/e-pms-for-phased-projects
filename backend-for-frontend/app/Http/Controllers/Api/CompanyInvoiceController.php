@@ -158,7 +158,7 @@ class CompanyInvoiceController extends Controller
                 'discount_percentage' => '0',
                 'discount_amount'     => 0,
                 'total_amount'        => 0,
-                'currency'            => $project ? ($project->currency ?? 'USD') : 'USD',
+                'currency'            => 'KES',
                 'payment_terms'       => $data['payment_terms'] ?? '',
                 'notes_to_customer'   => $data['notes_to_customer'] ?? '',
                 'valid_until'         => now()->addDays(30),
@@ -174,7 +174,6 @@ class CompanyInvoiceController extends Controller
             'project',
             'project.phases',
             'invoiceItems.projectPhase',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -191,7 +190,6 @@ class CompanyInvoiceController extends Controller
             'project',
             'project.phases',
             'invoiceItems.projectPhase',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -274,6 +272,15 @@ class CompanyInvoiceController extends Controller
             // Determine base (account) currency and invoice currency
             $accountCurrencyCode = $account->currency ?? 'KES';
             $invoiceCurrencyCode = $invoice->currency;
+
+            // Enforce that the selected account uses the same currency as the invoice
+            if ($accountCurrencyCode !== $invoiceCurrencyCode) {
+                throw ValidationException::withMessages([
+                    'account_id' => [
+                        'Selected account currency (' . $accountCurrencyCode . ') must match the invoice currency (' . $invoiceCurrencyCode . ').',
+                    ],
+                ]);
+            }
 
             // Use shared conversion helper: 1 invoice currency unit = exchange_rate * base currency units
             $conversionService = new CurrencyConversionService();
@@ -388,7 +395,6 @@ class CompanyInvoiceController extends Controller
         $invoice->loadMissing([
             'project',
             'invoiceItems.projectPhase',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -499,7 +505,6 @@ class CompanyInvoiceController extends Controller
         $invoice->loadMissing([
             'project',
             'invoiceItems.projectPhase',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -616,7 +621,6 @@ class CompanyInvoiceController extends Controller
         $invoice->loadMissing([
             'project',
             'invoiceItems.projectPhase',
-            'taxitems',
             'payments',
             'creditnotes',
             'documents',
@@ -754,8 +758,13 @@ class CompanyInvoiceController extends Controller
             'company',
             'company.bankAccounts',
             'invoiceItems',
-            'taxitems',
             'documents',
+            'payments' => function ($query) {
+                // Filter out logically deleted company payments; table is company_payments.
+                $query->where('company_payments.is_deleted', false)
+                    ->orderBy('payment_date', 'asc')
+                    ->orderBy('created_at', 'asc');
+            },
         ]);
 
         $configValues = SysConfig::whereIn('name', [
@@ -773,8 +782,17 @@ class CompanyInvoiceController extends Controller
         $senderEmail = $configValues['EMAIL'] ?? config('mail.from.address', 'no-reply@example.com');
         $generatedAt = now();
 
+        // Pre-compute payment summary in invoice currency for the PDF.
+        $payments = $companyInvoice->payments ?? collect();
+        $paymentsTotal = (float) $payments->sum('amount_paid');
+        $invoiceTotal = (float) $companyInvoice->total_amount;
+        $outstandingBalance = max($invoiceTotal - $paymentsTotal, 0.0);
+
         $data = [
             'invoice'            => $companyInvoice,
+            'payments'           => $payments,
+            'paymentsTotal'      => $paymentsTotal,
+            'outstandingBalance' => $outstandingBalance,
             'senderName'         => $senderName,
             'senderEmail'        => $senderEmail,
             'senderPhone'        => $configValues['PHONE']   ?? null,
