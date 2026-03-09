@@ -176,15 +176,24 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 40%;">Description</th>
-                    <th style="width: 15%;" class="text-right">Tax</th>
+                    <th style="width: 40%;">Item</th>
                     <th style="width: 10%;" class="text-right">Qty</th>
                     <th style="width: 17%;" class="text-right">Unit Price</th>
-                    <th style="width: 18%;" class="text-right">Line Total</th>
+                    <th style="width: 15%;" class="text-right">Tax</th>
+                    <th style="width: 18%;" class="text-right">Subtotal</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($invoice->invoiceItems as $item)
+                    @php
+                        $quantity = (float) ($item->quantity ?? 1);
+                        $unitPrice = (float) $item->item_amount;
+                        $lineTotal = (float) ($item->total ?? ($unitPrice * $quantity));
+                        $isTaxable = !empty($item->is_taxable);
+                        $type = $item->item_type ?? null;
+                        $value = $item->item_value ?? null;
+                        $taxAmount = $item->tax_amount !== null ? (float) $item->tax_amount : null;
+                    @endphp
                     <tr>
                         <td>
                             <div class="font-semibold">{{ $item->item_name }}</div>
@@ -192,48 +201,22 @@
                                 <div class="text-sm muted">{{ $item->item_description }}</div>
                             @endif
                         </td>
+                        <td class="text-right">{{ number_format($quantity, 0) }}</td>
+                        <td class="text-right">{{ $invoice->currency }} {{ number_format($unitPrice, 2) }}</td>
                         <td class="text-right text-sm">
-                            @if(!empty($item->is_taxable))
-                                <div>
-                                    <div class="mt-1">
-                                        <span class="badge" style="background-color: #eff6ff; color: #1d4ed8; text-transform: uppercase; font-size: 10px;">
-                                            <span class="font-semibold">{{ $item->tax_item_name ?? 'Tax' }}</span>
-                                            @if($item->item_type)
-                                                &nbsp;&middot;&nbsp;
-                                                @if($item->item_type === 'percent')
-                                                    Percent
-                                                @elseif($item->item_type === 'fixed')
-                                                    Fixed
-                                                @else
-                                                    {{ ucfirst($item->item_type) }}
-                                                @endif
-                                            @endif
-                                        </span>
-                                    </div>
-
-                                    @if($item->item_value !== null)
-                                        <div class="text-sm mt-1 muted">
-                                            @if($item->item_type === 'percent')
-                                                {{ number_format((float) $item->item_value, 2) }}%
-                                            @else
-                                                {{ $invoice->currency }} {{ number_format((float) $item->item_value, 2) }}
-                                            @endif
-                                        </div>
-                                    @endif
-
-                                    @if($item->tax_amount !== null && (float) $item->tax_amount > 0)
-                                        <div class="text-sm mt-1">
-                                            Tax amount: {{ $invoice->currency }} {{ number_format((float) $item->tax_amount, 2) }}
-                                        </div>
-                                    @endif
-                                </div>
+                            @if($isTaxable && $taxAmount !== null)
+                                @if($type === 'percent' && $value !== null)
+                                    Tax({{ number_format((float) $value, 2) }}%): {{ $invoice->currency }} {{ number_format($taxAmount, 2) }}
+                                @else
+                                    Tax: {{ $invoice->currency }} {{ number_format($taxAmount, 2) }}
+                                @endif
+                            @elseif($isTaxable)
+                                Tax
                             @else
                                 <span class="text-sm muted">Not taxable</span>
                             @endif
                         </td>
-                        <td class="text-right">{{ number_format((float) ($item->quantity ?? 1), 0) }}</td>
-                        <td class="text-right">{{ $invoice->currency }} {{ number_format((float) $item->item_amount, 2) }}</td>
-                        <td class="text-right">{{ $invoice->currency }} {{ number_format((float) ($item->total ?? ($item->item_amount * ($item->quantity ?? 1))), 2) }}</td>
+                        <td class="text-right">{{ $invoice->currency }} {{ number_format($lineTotal, 2) }}</td>
                     </tr>
                 @empty
                     <tr>

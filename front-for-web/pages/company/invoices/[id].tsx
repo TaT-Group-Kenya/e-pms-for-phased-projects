@@ -13,6 +13,8 @@ interface ProjectPhaseSummary {
   code: string
   name: string
   status?: string | null
+  progress_percentage?: number | null
+  project?: ProjectSummary | null
 }
 
 interface CompanyInvoiceItem {
@@ -205,7 +207,8 @@ export default function CompanyInvoiceDetailPage() {
   const [itemName, setItemName] = useState('')
   const [itemDescription, setItemDescription] = useState('')
   const [itemAmount, setItemAmount] = useState('')
-  const [itemTaxable, setItemTaxable] = useState(true)
+  const [itemQuantity, setItemQuantity] = useState('1')
+  const [itemTaxable, setItemTaxable] = useState(false)
   const [itemTaxId, setItemTaxId] = useState('')
   const [itemTaxItemName, setItemTaxItemName] = useState('')
   const [itemTaxType, setItemTaxType] = useState<'fixed' | 'percent'>('percent')
@@ -218,6 +221,7 @@ export default function CompanyInvoiceDetailPage() {
   const [editItemName, setEditItemName] = useState('')
   const [editItemDescription, setEditItemDescription] = useState('')
   const [editItemAmount, setEditItemAmount] = useState('')
+  const [editItemQuantity, setEditItemQuantity] = useState('1')
   const [editItemTaxable, setEditItemTaxable] = useState(true)
   const [editItemTaxId, setEditItemTaxId] = useState('')
   const [editItemTaxItemName, setEditItemTaxItemName] = useState('')
@@ -239,11 +243,19 @@ export default function CompanyInvoiceDetailPage() {
 
     company.assignments.forEach((assignment) => {
       if (assignment.phase && !map.has(assignment.phase.id)) {
+        const rawProgress: any = (assignment.phase as any).progress_percentage
+        const progressNumber =
+          rawProgress !== undefined && rawProgress !== null && rawProgress !== ''
+            ? Number(rawProgress)
+            : null
+
         map.set(assignment.phase.id, {
           id: assignment.phase.id,
           code: assignment.phase.code,
           name: assignment.phase.name,
           status: assignment.phase.status ?? null,
+          progress_percentage: Number.isNaN(progressNumber) ? null : progressNumber,
+          project: assignment.project ?? null,
         })
       }
     })
@@ -565,12 +577,18 @@ export default function CompanyInvoiceDetailPage() {
     }
 
     const amount = Number(itemAmount)
+    const quantityValue = itemQuantity.trim()
+    const quantity = quantityValue ? Number(quantityValue) : 1
     if (!itemName.trim()) {
       addToast('Item name is required.', 'error')
       return
     }
     if (!itemAmount || Number.isNaN(amount) || amount <= 0) {
       addToast('Enter a valid item amount.', 'error')
+      return
+    }
+    if (Number.isNaN(quantity) || quantity <= 0) {
+      addToast('Enter a valid quantity.', 'error')
       return
     }
 
@@ -585,6 +603,7 @@ export default function CompanyInvoiceDetailPage() {
         item_name: itemName.trim(),
         item_description: itemDescription.trim() || null,
         item_amount: amount,
+        quantity,
         is_taxable: itemTaxable,
       }
 
@@ -634,6 +653,7 @@ export default function CompanyInvoiceDetailPage() {
     setEditItemName(item.item_name)
     setEditItemDescription(item.item_description || '')
     setEditItemAmount(String(item.item_amount))
+    setEditItemQuantity(item.quantity != null ? String(item.quantity) : '1')
     setEditItemTaxable(item.is_taxable ?? true)
      setEditItemTaxId(item.tax_id != null ? String(item.tax_id) : '')
      setEditItemTaxItemName(item.tax_item_name || '')
@@ -656,12 +676,18 @@ export default function CompanyInvoiceDetailPage() {
     }
 
     const amount = Number(editItemAmount)
+    const quantityValue = editItemQuantity.trim()
+    const quantity = quantityValue ? Number(quantityValue) : 1
     if (!editItemName.trim()) {
       addToast('Item name is required.', 'error')
       return
     }
     if (!editItemAmount || Number.isNaN(amount) || amount <= 0) {
       addToast('Enter a valid item amount.', 'error')
+      return
+    }
+    if (Number.isNaN(quantity) || quantity <= 0) {
+      addToast('Enter a valid quantity.', 'error')
       return
     }
 
@@ -671,6 +697,7 @@ export default function CompanyInvoiceDetailPage() {
         item_name: editItemName.trim(),
         item_description: editItemDescription.trim() || null,
         item_amount: amount,
+        quantity,
         is_taxable: editItemTaxable,
         project_phase_id:
           editItemProjectPhaseId != null
@@ -1326,94 +1353,80 @@ export default function CompanyInvoiceDetailPage() {
                                 Phase
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Unit
+                                Qty
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Qty
+                                Unit Price
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                                 Tax
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Total
+                                Subtotal
                               </th>
                             </tr>
                           </thead>
                           <tbody>
-                            {invoice.invoiceItems.map((item) => (
-                              <tr
-                                key={item.id}
-                                className="border-b border-gray-100 dark:border-[#172036] align-middle"
-                              >
-                                <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                                  <div className="font-medium">{item.item_name}</div>
-                                  {item.item_description && (
-                                    <div className="text-xs text-gray-500">
-                                      {item.item_description}
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                                  {item.projectPhase ? (
-                                    <span>
-                                      <span className="font-medium">{item.projectPhase.name}</span>
-                                      {item.projectPhase.code && (
-                                        <span className="ml-[4px] text-xs text-gray-500">
-                                          ({item.projectPhase.code})
-                                        </span>
-                                      )}
-                                    </span>
-                                  ) : (
-                                    <span className="text-xs text-gray-500">-</span>
-                                  )}
-                                </td>
-                                <td className="text-sm text-right px-[15px] py-[12px]">
-                                  {formatCurrency(item.item_amount, invoice.currency)}
-                                </td>
-                                <td className="text-sm text-right px-[15px] py-[12px]">
-                                  {item.quantity ?? 1}
-                                </td>
-                                <td className="text-sm text-right px-[15px] py-[12px] align-top">
-                                  {item.is_taxable ? (
-                                    <div className="space-y-[4px] text-right">
-                                      <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
-                                        <span className="font-semibold">
-                                          {item.tax_item_name || 'Tax'}
-                                        </span>
-                                        <span className="text-[10px] uppercase tracking-wide">
-                                          {item.item_type === 'percent'
-                                            ? 'PERCENT'
-                                            : item.item_type === 'fixed'
-                                            ? 'FIXED'
-                                            : ''}
-                                        </span>
+                            {invoice.invoiceItems.map((item) => {
+                              const quantity = item.quantity ?? 1
+                              const unitPrice = item.item_amount
+                              const lineTotal = item.total ?? unitPrice * quantity
+                              const isTaxable = Boolean(item.is_taxable)
+                              const taxRateLabel =
+                                item.item_type === 'percent' && item.item_value != null
+                                  ? `${item.item_value}%`
+                                  : null
+                              const rawTaxAmount =
+                                item.tax_amount != null ? item.tax_amount : null
+                              const hasTaxAmount =
+                                typeof rawTaxAmount === 'number' && !Number.isNaN(rawTaxAmount)
+
+                              return (
+                                <tr
+                                  key={item.id}
+                                  className="border-b border-gray-100 dark:border-[#172036] align-middle"
+                                >
+                                  <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                                    <div className="font-medium">{item.item_name}</div>
+                                    {item.item_description && (
+                                      <div className="text-xs text-gray-500">
+                                        {item.item_description}
                                       </div>
-                                      {item.item_value != null && (
-                                        <div className="text-xs text-gray-600 dark:text-gray-400">
-                                          {item.item_type === 'percent'
-                                            ? `${item.item_value}%`
-                                            : `${invoice.currency} ${Number(item.item_value).toLocaleString()}`}
-                                        </div>
-                                      )}
-                                      {item.tax_amount != null && item.tax_amount > 0 && (
-                                        <div className="text-xs text-gray-700 dark:text-gray-300">
-                                          Tax amount: {invoice.currency}{' '}
-                                          {Number(item.tax_amount).toLocaleString()}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
-                                  )}
-                                </td>
-                                <td className="text-sm text-right px-[15px] py-[12px]">
-                                  {formatCurrency(
-                                    item.total ?? item.item_amount * (item.quantity ?? 1),
-                                    invoice.currency
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
+                                    )}
+                                  </td>
+                                  <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                                    {item.projectPhase ? (
+                                      <span>
+                                        <span className="font-medium">{item.projectPhase.name}</span>
+                                        {item.projectPhase.code && (
+                                          <span className="ml-[4px] text-xs text-gray-500">
+                                            ({item.projectPhase.code})
+                                          </span>
+                                        )}
+                                      </span>
+                                    ) : (
+                                      <span className="text-xs text-gray-500">-</span>
+                                    )}
+                                  </td>
+                                  <td className="text-sm text-right px-[15px] py-[12px]">
+                                    {quantity}
+                                  </td>
+                                  <td className="text-sm text-right px-[15px] py-[12px]">
+                                    {formatCurrency(unitPrice, invoice.currency)}
+                                  </td>
+                                  <td className="text-sm text-right px-[15px] py-[12px] align-top">
+                                    {isTaxable && taxRateLabel && hasTaxAmount
+                                      ? `Tax(${taxRateLabel}): ${formatCurrency(rawTaxAmount as number, invoice.currency)}`
+                                      : isTaxable && hasTaxAmount
+                                      ? `Tax: ${formatCurrency(rawTaxAmount as number, invoice.currency)}`
+                                      : 'Not taxable'}
+                                  </td>
+                                  <td className="text-sm text-right px-[15px] py-[12px]">
+                                    {formatCurrency(lineTotal, invoice.currency)}
+                                  </td>
+                                </tr>
+                              )
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -1845,7 +1858,8 @@ export default function CompanyInvoiceDetailPage() {
                           setItemName(primaryPhase?.name || '')
                           setItemDescription('')
                           setItemAmount('')
-                          setItemTaxable(true)
+                          setItemQuantity('1')
+                          setItemTaxable(false)
                           setItemProjectPhaseId(
                             invoice.project_phase_id ??
                               primaryPhase?.id ??
@@ -1884,16 +1898,16 @@ export default function CompanyInvoiceDetailPage() {
                             Phase
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Unit
+                            Qty
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Qty
+                            Unit Price
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Tax
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Total
+                            Subtotal
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Actions
@@ -1901,78 +1915,63 @@ export default function CompanyInvoiceDetailPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {invoice.invoiceItems.map((item) => (
-                          <tr
-                            key={item.id}
-                            className="border-b border-gray-100 dark:border-[#172036] align-middle"
-                          >
-                            <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              <div className="font-medium">{item.item_name}</div>
-                              {item.item_description && (
-                                <div className="text-xs text-gray-500">
-                                  {item.item_description}
-                                </div>
-                              )}
-                            </td>
-                            <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              {item.projectPhase ? (
-                                <span>
-                                  <span className="font-medium">{item.projectPhase.name}</span>
-                                  {item.projectPhase.code && (
-                                    <span className="ml-[4px] text-xs text-gray-500">
-                                      ({item.projectPhase.code})
-                                    </span>
-                                  )}
-                                </span>
-                              ) : (
-                                <span className="text-xs text-gray-500">-</span>
-                              )}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {formatCurrency(item.item_amount, invoice.currency)}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {item.quantity ?? 1}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px] align-top">
-                              {item.is_taxable ? (
-                                <div className="space-y-[4px] text-right">
-                                  <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
-                                    <span className="font-semibold">
-                                      {item.tax_item_name || 'Tax'}
-                                    </span>
-                                    <span className="text-[10px] uppercase tracking-wide">
-                                      {item.item_type === 'percent'
-                                        ? 'PERCENT'
-                                        : item.item_type === 'fixed'
-                                        ? 'FIXED'
-                                        : ''}
-                                    </span>
+                        {invoice.invoiceItems.map((item) => {
+                          const quantity = item.quantity ?? 1
+                          const unitPrice = item.item_amount
+                          const lineTotal = item.total ?? unitPrice * quantity
+                          const isTaxable = Boolean(item.is_taxable)
+                          const taxRateLabel =
+                            item.item_type === 'percent' && item.item_value != null
+                              ? `${item.item_value}%`
+                              : null
+                          const rawTaxAmount =
+                            item.tax_amount != null ? item.tax_amount : null
+                          const hasTaxAmount =
+                            typeof rawTaxAmount === 'number' && !Number.isNaN(rawTaxAmount)
+
+                          return (
+                            <tr
+                              key={item.id}
+                              className="border-b border-gray-100 dark:border-[#172036] align-middle"
+                            >
+                              <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                                <div className="font-medium">{item.item_name}</div>
+                                {item.item_description && (
+                                  <div className="text-xs text-gray-500">
+                                    {item.item_description}
                                   </div>
-                                  {item.item_value != null && (
-                                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                                      {item.item_type === 'percent'
-                                        ? `${item.item_value}%`
-                                        : `${invoice.currency} ${Number(item.item_value).toLocaleString()}`}
-                                    </div>
-                                  )}
-                                  {item.tax_amount != null && item.tax_amount > 0 && (
-                                    <div className="text-xs text-gray-700 dark:text-gray-300">
-                                      Tax amount: {invoice.currency}{' '}
-                                      {Number(item.tax_amount).toLocaleString()}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
-                              )}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {formatCurrency(
-                                item.total ?? item.item_amount * (item.quantity ?? 1),
-                                invoice.currency
-                              )}
-                            </td>
+                                )}
+                              </td>
+                              <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                                {item.projectPhase ? (
+                                  <span>
+                                    <span className="font-medium">{item.projectPhase.name}</span>
+                                    {item.projectPhase.code && (
+                                      <span className="ml-[4px] text-xs text-gray-500">
+                                        ({item.projectPhase.code})
+                                      </span>
+                                    )}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-gray-500">-</span>
+                                )}
+                              </td>
+                              <td className="text-sm text-right px-[15px] py-[12px]">
+                                {quantity}
+                              </td>
+                              <td className="text-sm text-right px-[15px] py-[12px]">
+                                {formatCurrency(unitPrice, invoice.currency)}
+                              </td>
+                              <td className="text-sm text-right px-[15px] py-[12px] align-top">
+                                {isTaxable && taxRateLabel && hasTaxAmount
+                                  ? `Tax(${taxRateLabel}): ${formatCurrency(rawTaxAmount as number, invoice.currency)}`
+                                  : isTaxable && hasTaxAmount
+                                  ? `Tax: ${formatCurrency(rawTaxAmount as number, invoice.currency)}`
+                                  : 'Not taxable'}
+                              </td>
+                              <td className="text-sm text-right px-[15px] py-[12px]">
+                                {formatCurrency(lineTotal, invoice.currency)}
+                              </td>
                             <td className="text-sm text-right px-[15px] py-[12px] space-x-2">
                               <Can any={["ROLE_EDIT_COMPANY_INVOICE_ITEM"]}>
                                 <button
@@ -1996,7 +1995,8 @@ export default function CompanyInvoiceDetailPage() {
                               </Can>
                             </td>
                           </tr>
-                        ))}
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -2423,7 +2423,7 @@ export default function CompanyInvoiceDetailPage() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-medium mb-[5px]">Project Phase (optional)</label>
+                <label className="block text-xs font-medium mb-[5px]">Project Phase</label>
                 <select
                   value={itemProjectPhaseId != null ? String(itemProjectPhaseId) : ''}
                   onChange={(e) => {
@@ -2433,7 +2433,9 @@ export default function CompanyInvoiceDetailPage() {
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
                   <option value="" disabled>No specific phase</option>
-                  {companyPhases.map((phase) => (
+                  {companyPhases
+                    .filter((phase) => Number(phase.progress_percentage ?? 0) >= 100)
+                    .map((phase) => (
                     <option key={phase.id} value={phase.id}>
                       {phase.name}
                       {phase.code ? ` (${phase.code})` : ''}
@@ -2445,6 +2447,18 @@ export default function CompanyInvoiceDetailPage() {
                     No project phases are currently assigned to this company.
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Quantity</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={itemQuantity}
+                  onChange={(e) => setItemQuantity(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
               </div>
 
               <div>
@@ -2463,41 +2477,45 @@ export default function CompanyInvoiceDetailPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium mb-[5px]">Taxable</label>
-                <select
-                  value={itemTaxable ? 'yes' : 'no'}
-                  onChange={(e) => {
-                    const yes = e.target.value === 'yes'
-                    if (!yes) {
-                      setItemTaxable(false)
-                      setItemTaxId('')
-                      setItemTaxItemName('')
+                <label className="inline-flex items-center gap-[8px] text-xs font-medium mb-[5px]">
+                  <input
+                    type="checkbox"
+                    checked={itemTaxable}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      if (!checked) {
+                        setItemTaxable(false)
+                        setItemTaxId('')
+                        setItemTaxItemName('')
+                        setItemTaxType('percent')
+                        setItemTaxValue('')
+                        return
+                      }
+
+                      setItemTaxable(true)
+                      if (itemTaxId) {
+                        return
+                      }
+
+                      const defaultFromTaxes =
+                        taxes.find((t) => (t as any).is_default) || null
+                      if (!defaultFromTaxes) {
+                        return
+                      }
+
+                      setItemTaxId(String(defaultFromTaxes.id))
+                      setItemTaxItemName(defaultFromTaxes.name)
                       setItemTaxType('percent')
-                      setItemTaxValue('')
-                      return
-                    }
-
-                    setItemTaxable(true)
-
-                    if (itemTaxId || !defaultTax) {
-                      return
-                    }
-
-                    setItemTaxId(String(defaultTax.id))
-                    setItemTaxItemName(defaultTax.name)
-                    setItemTaxType('percent')
-                    setItemTaxValue(
-                      defaultTax.rate != null
-                        ? String(defaultTax.rate)
-                        : itemTaxValue || ''
-                    )
-                  }}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                >
-                  <option value="">Choose one</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
+                      setItemTaxValue(
+                        defaultFromTaxes.rate != null
+                          ? String(defaultFromTaxes.rate)
+                          : itemTaxValue || ''
+                      )
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span>Taxable</span>
+                </label>
               </div>
             </div>
 
@@ -2650,13 +2668,27 @@ export default function CompanyInvoiceDetailPage() {
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
                   <option value="">No specific phase</option>
-                  {companyPhases.map((phase) => (
+                  {companyPhases
+                    .filter((phase) => Number(phase.progress_percentage ?? 0) >= 100)
+                    .map((phase) => (
                     <option key={phase.id} value={phase.id}>
                       {phase.name}
                       {phase.code ? ` (${phase.code})` : ''}
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Quantity</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={editItemQuantity}
+                  onChange={(e) => setEditItemQuantity(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
               </div>
 
               <div>
@@ -2675,40 +2707,45 @@ export default function CompanyInvoiceDetailPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium mb-[5px]">Taxable</label>
-                <select
-                  value={editItemTaxable ? 'yes' : 'no'}
-                  onChange={(e) => {
-                    const yes = e.target.value === 'yes'
-                    if (!yes) {
-                      setEditItemTaxable(false)
-                      setEditItemTaxId('')
-                      setEditItemTaxItemName('')
+                <label className="inline-flex items-center gap-[8px] text-xs font-medium mb-[5px]">
+                  <input
+                    type="checkbox"
+                    checked={editItemTaxable}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      if (!checked) {
+                        setEditItemTaxable(false)
+                        setEditItemTaxId('')
+                        setEditItemTaxItemName('')
+                        setEditItemTaxType('percent')
+                        setEditItemTaxValue('')
+                        return
+                      }
+
+                      setEditItemTaxable(true)
+                      if (editItemTaxId) {
+                        return
+                      }
+
+                      const defaultFromTaxes =
+                        taxes.find((t) => (t as any).is_default) || null
+                      if (!defaultFromTaxes) {
+                        return
+                      }
+
+                      setEditItemTaxId(String(defaultFromTaxes.id))
+                      setEditItemTaxItemName(defaultFromTaxes.name)
                       setEditItemTaxType('percent')
-                      setEditItemTaxValue('')
-                      return
-                    }
-
-                    setEditItemTaxable(true)
-
-                    if (editItemTaxId || !defaultTax) {
-                      return
-                    }
-
-                    setEditItemTaxId(String(defaultTax.id))
-                    setEditItemTaxItemName(defaultTax.name)
-                    setEditItemTaxType('percent')
-                    setEditItemTaxValue(
-                      defaultTax.rate != null
-                        ? String(defaultTax.rate)
-                        : editItemTaxValue || ''
-                    )
-                  }}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                >
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
+                      setEditItemTaxValue(
+                        defaultFromTaxes.rate != null
+                          ? String(defaultFromTaxes.rate)
+                          : editItemTaxValue || ''
+                      )
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span>Taxable</span>
+                </label>
               </div>
             </div>
 
@@ -2796,6 +2833,7 @@ export default function CompanyInvoiceDetailPage() {
                 type="button"
                 onClick={() => {
                   setIsEditingItem(false)
+                  setEditItemQuantity('1')
                   setEditItemTaxId('')
                   setEditItemTaxItemName('')
                   setEditItemTaxType('percent')

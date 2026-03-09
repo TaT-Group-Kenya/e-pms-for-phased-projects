@@ -154,15 +154,24 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 40%;">Description</th>
-                    <th style="width: 18%;" class="text-right">Tax</th>
+                    <th style="width: 40%;">Item</th>
                     <th style="width: 10%;" class="text-right">Qty</th>
                     <th style="width: 17%;" class="text-right">Unit Price</th>
-                    <th style="width: 15%;" class="text-right">Line Total</th>
+                    <th style="width: 18%;" class="text-right">Tax</th>
+                    <th style="width: 15%;" class="text-right">Subtotal</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($order->orderItems as $item)
+                    @php
+                        $quantity = (float) ($item->quantity ?? 1);
+                        $unitPrice = (float) $item->order_amount;
+                        $lineTotal = (float) ($item->total ?? ($unitPrice * $quantity));
+                        $isTaxable = (bool) ($item->is_taxable ?? false);
+                        $type = $item->item_type ?? null;
+                        $value = $item->item_value ?? null;
+                        $taxAmount = $item->item_amount !== null ? (float) $item->item_amount : null;
+                    @endphp
                     <tr>
                         <td>
                             <div class="font-semibold">{{ $item->item_name }}</div>
@@ -170,35 +179,22 @@
                                 <div class="text-sm muted">{{ $item->item_description }}</div>
                             @endif
                         </td>
+                        <td class="text-right">{{ number_format($quantity, 0) }}</td>
+                        <td class="text-right">{{ $order->currency }} {{ number_format($unitPrice, 2) }}</td>
                         <td class="text-right text-sm">
-                            @php
-                                $isTaxable = (bool) ($item->is_taxable ?? false);
-                            @endphp
-                            @if($isTaxable)
-                                <div>
-                                    <span class="font-semibold">{{ $item->tax_item_name ?? 'Tax' }}</span>
-                                    @php
-                                        $type = $item->item_type ?? null;
-                                        $value = $item->item_value ?? null;
-                                    @endphp
-                                    @if($type === 'percent')
-                                        <span class="muted">({{ (float) $value }}%)</span>
-                                    @elseif($type === 'fixed')
-                                        <span class="muted">({{ $order->currency }} {{ number_format((float) $value, 2) }})</span>
-                                    @endif
-                                </div>
-                                @if((float) ($item->item_amount ?? 0) > 0)
-                                    <div class="text-sm muted mt-1">
-                                        Tax amount: {{ $order->currency }} {{ number_format((float) $item->item_amount, 2) }}
-                                    </div>
+                            @if($isTaxable && $taxAmount !== null)
+                                @if($type === 'percent' && $value !== null)
+                                    Tax({{ (float) $value }}%): {{ $order->currency }} {{ number_format($taxAmount, 2) }}
+                                @else
+                                    Tax: {{ $order->currency }} {{ number_format($taxAmount, 2) }}
                                 @endif
+                            @elseif($isTaxable)
+                                Tax
                             @else
-                                <div class="muted">Not taxable</div>
+                                <span class="muted">Not taxable</span>
                             @endif
                         </td>
-                        <td class="text-right">{{ number_format((float) ($item->quantity ?? 1), 0) }}</td>
-                        <td class="text-right">{{ $order->currency }} {{ number_format((float) $item->order_amount, 2) }}</td>
-                        <td class="text-right">{{ $order->currency }} {{ number_format((float) ($item->total ?? ($item->order_amount * ($item->quantity ?? 1))), 2) }}</td>
+                        <td class="text-right">{{ $order->currency }} {{ number_format($lineTotal, 2) }}</td>
                     </tr>
                 @empty
                     <tr>

@@ -211,7 +211,8 @@ const ProjectsList: React.FC = () => {
   const filteredProjects = projects.filter((project) =>
     project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     project.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.status.toLowerCase().includes(searchTerm.toLowerCase())
+    project.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.tags?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Calculate pagination display values
@@ -307,6 +308,18 @@ const ProjectsList: React.FC = () => {
                       Priority
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Tags
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Phases
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Currency
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Progress
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Start Date
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -351,6 +364,18 @@ const ProjectsList: React.FC = () => {
                           </span>
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
+                          {project.tags || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
+                          {project.no_of_phases ?? "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
+                          {project.currency || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
+                          {project.progress != null ? `${project.progress}%` : "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
                           {project.start_date ? new Date(project.start_date).toLocaleDateString() : "N/A"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
@@ -381,7 +406,7 @@ const ProjectsList: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={12}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm ? "No projects match your search" : "No projects found"}

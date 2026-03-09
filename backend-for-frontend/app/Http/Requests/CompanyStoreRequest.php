@@ -20,7 +20,7 @@ class CompanyStoreRequest extends FormRequest
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['required', 'string', 'max:255'],
             'contact_person_name' => ['required', 'string', 'max:255'],
-            'logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+            'logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:3072'],
             'address' => ['required', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:255'],
             'state' => ['nullable', 'string', 'max:255'],

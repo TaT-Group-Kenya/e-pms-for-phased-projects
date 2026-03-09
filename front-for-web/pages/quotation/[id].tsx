@@ -121,6 +121,7 @@ interface TaxSummary {
 interface Quotation {
   id: number;
   quotation_number: string;
+  job_reference_id?: string;
   title: string;
   description?: string;
   status: string;
@@ -463,6 +464,7 @@ const QuotationDetail: React.FC = () => {
         currency: editData.currency ?? quotation.currency,
         payment_terms: (editData.payment_terms ?? quotation.payment_terms ?? "").toString(),
         notes_to_customer: (editData.notes_to_customer ?? quotation.notes_to_customer ?? "").toString(),
+        job_reference_id: (editData.job_reference_id ?? quotation.job_reference_id ?? "").toString(),
         // tax_percentage removed; tax_amount is driven by backend/tax items.
         discount_percentage:
           typeof editData.discount_percentage === "number"
@@ -1130,6 +1132,9 @@ const QuotationDetail: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400 text-sm">
               Quote #: <span className="font-semibold">{quotation.quotation_number}</span>
             </p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">
+              Job Ref: <span className="font-semibold">{quotation.job_reference_id || "-"}</span>
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-[10px]">
@@ -1271,7 +1276,7 @@ const QuotationDetail: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Financial Summary */}
+                  {/* Quote Line Items */}
                   <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                     <h6 className="text-black dark:text-white font-semibold mb-[15px]">Quote Line Items</h6>
 
@@ -1279,55 +1284,52 @@ const QuotationDetail: React.FC = () => {
                       <table className="w-full">
                         <thead>
                           <tr>
-                            <th className="font-medium ltr:text-left rtl:text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Item Name</th>
-                            <th className="font-medium ltr:text-left rtl:text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Description</th>
-                            <th className="font-medium ltr:text-left rtl:text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Tax</th>
-                            <th className="font-medium ltr:text-right rtl:text-left px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Amount</th>
+                            <th className="font-medium ltr:text-left rtl:text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Item</th>
+                            <th className="font-medium text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Qty</th>
+                            <th className="font-medium text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Unit Price</th>
+                            <th className="font-medium text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Tax</th>
+                            <th className="font-medium text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Subtotal</th>
                           </tr>
                         </thead>
                         <tbody className="text-black dark:text-white text-sm">
                           {quotation.quoteItems && quotation.quoteItems.length > 0 ? (
                             <>
                               {quotation.quoteItems.map((item: any, index: number) => {
+                                const quantity = item.quantity ?? 1;
+                                const unitPrice = item.item_amount ?? 0;
+                                const lineTotal = item.total ?? unitPrice * quantity;
                                 const isTaxable = Boolean(item.is_taxable);
                                 const itemType = item.item_type as "fixed" | "percent" | undefined;
                                 const itemValue = item.item_value as number | null | undefined;
                                 const itemAmount = item.item_amount as number | null | undefined;
+                                const hasTaxAmount =
+                                  typeof itemAmount === "number" && !Number.isNaN(itemAmount);
+
+                                const taxLabel = isTaxable
+                                  ? itemType === "percent" && itemValue != null && hasTaxAmount
+                                    ? `Tax(${itemValue}%): ${formatCurrency(itemAmount as number, quotation.currency)}`
+                                    : hasTaxAmount
+                                    ? `Tax: ${formatCurrency(itemAmount as number, quotation.currency)}`
+                                    : "Not taxable"
+                                  : "Not taxable";
 
                                 return (
                                   <tr key={index} className="border-b border-gray-100 dark:border-[#172036]">
-                                    <td className="ltr:text-left rtl:text-right px-[15px] py-[12px] font-medium">{item.item_name || "N/A"}</td>
-                                    <td className="ltr:text-left rtl:text-right px-[15px] py-[12px]">{item.description || "-"}</td>
-                                    <td className="ltr:text-left rtl:text-right px-[15px] py-[12px] align-top">
-                                      {isTaxable ? (
-                                        <div className="space-y-[4px]">
-                                          <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
-                                            <span className="font-semibold">
-                                              {item.tax_item_name || "Tax"}
-                                            </span>
-                                            <span className="text-[10px] uppercase tracking-wide">
-                                              {itemType === "percent" ? "PERCENT" : itemType === "fixed" ? "FIXED" : ""}
-                                            </span>
-                                          </div>
-                                          {itemValue != null && (
-                                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                                              {itemType === "percent"
-                                                ? `${itemValue}%`
-                                                : `${quotation.currency} ${Number(itemValue).toLocaleString()}`}
-                                            </div>
-                                          )}
-                                          {itemAmount != null && itemAmount > 0 && (
-                                            <div className="text-xs text-gray-700 dark:text-gray-300">
-                                              Tax amount: {quotation.currency} {Number(itemAmount).toLocaleString()}
-                                            </div>
-                                          )}
+                                    <td className="ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                                      <div className="font-medium">{item.item_name || "N/A"}</div>
+                                      {item.description && (
+                                        <div className="text-xs text-gray-500">
+                                          {item.description}
                                         </div>
-                                      ) : (
-                                        <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
                                       )}
                                     </td>
-                                    <td className="ltr:text-right rtl:text-left px-[15px] py-[12px] font-semibold">
-                                      {quotation.currency} {Number(item.total ?? 0).toLocaleString()}
+                                    <td className="text-right px-[15px] py-[12px] text-sm">{quantity}</td>
+                                    <td className="text-right px-[15px] py-[12px] text-sm">
+                                      {formatCurrency(unitPrice, quotation.currency)}
+                                    </td>
+                                    <td className="text-right px-[15px] py-[12px] text-sm align-top">{taxLabel}</td>
+                                    <td className="text-right px-[15px] py-[12px] text-sm">
+                                      {formatCurrency(lineTotal, quotation.currency)}
                                     </td>
                                   </tr>
                                 );
@@ -1335,7 +1337,7 @@ const QuotationDetail: React.FC = () => {
                             </>
                           ) : (
                             <tr>
-                              <td colSpan={4} className="text-center px-[15px] py-[30px] text-gray-500 dark:text-gray-400">
+                              <td colSpan={5} className="text-center px-[15px] py-[30px] text-gray-500 dark:text-gray-400">
                                 No line items added yet
                               </td>
                             </tr>
@@ -1420,6 +1422,13 @@ const QuotationDetail: React.FC = () => {
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">Quotation #</span>
                         <span className="text-black dark:text-white font-medium">{quotation.quotation_number}</span>
+                      </div>
+
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Job Ref</span>
+                        <span className="text-black dark:text-white font-medium">
+                          {quotation.job_reference_id || "-"}
+                        </span>
                       </div>
 
                       <div className="flex justify-between text-sm">
@@ -1520,11 +1529,10 @@ const QuotationDetail: React.FC = () => {
                     <thead>
                       <tr>
                         <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Item</th>
-                        <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Details</th>
-                        <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Quantity</th>
-                        <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Unit Price</th>
-                        <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Tax</th>
-                        <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Amount</th>
+                        <th className="font-medium text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Qty</th>
+                        <th className="font-medium text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Unit Price</th>
+                        <th className="font-medium text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Tax</th>
+                        <th className="font-medium text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Subtotal</th>
                         <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Actions</th>
                       </tr>
                     </thead>
@@ -1532,57 +1540,43 @@ const QuotationDetail: React.FC = () => {
                       {quotation.quoteItems && quotation.quoteItems.length > 0 ? (
                         <>
                           {quotation.quoteItems.map((item, index: number) => {
+                            const quantity = item.quantity ?? 1;
+                            const unitPrice = item.quoted_amount ?? 0;
+                            const lineTotal = item.total ?? unitPrice * quantity;
                             const isTaxable = Boolean(item.is_taxable);
                             const itemType = item.item_type as "fixed" | "percent" | undefined;
                             const itemValue = item.item_value as number | null | undefined;
                             const itemAmount = item.item_amount as number | null | undefined;
+                            const hasTaxAmount =
+                              typeof itemAmount === "number" && !Number.isNaN(itemAmount);
+
+                            const taxLabel = isTaxable
+                              ? itemType === "percent" && itemValue != null && hasTaxAmount
+                                ? `Tax(${itemValue}%): ${formatCurrency(itemAmount as number, quotation.currency)}`
+                                : hasTaxAmount
+                                ? `Tax: ${formatCurrency(itemAmount as number, quotation.currency)}`
+                                : "Not taxable"
+                              : "Not taxable";
 
                             return (
                               <tr key={index} className="border-b border-gray-100 dark:border-[#172036]">
                                 <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
                                   <span className="font-medium">{item.item_name}</span>
-                                </td>
-                                <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
                                   {item.description && (
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-[4px]">{item.description}</p>
                                   )}
                                 </td>
-                                <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
-                                  {item.quantity ?? 1}
+                                <td className="text-right px-[20px] py-[12px]">
+                                  {quantity}
                                 </td>
-                                <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
-                                  {quotation.currency} {Number(item.quoted_amount || 0).toLocaleString()}
+                                <td className="text-right px-[20px] py-[12px]">
+                                  {formatCurrency(unitPrice, quotation.currency)}
                                 </td>
-                                <td className="ltr:text-left rtl:text-right px-[20px] py-[12px] align-top">
-                                  {isTaxable ? (
-                                    <div className="space-y-[4px]">
-                                      <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
-                                        <span className="font-semibold">
-                                          {item.tax_item_name || "Tax"}
-                                        </span>
-                                        <span className="text-[10px] uppercase tracking-wide">
-                                          {itemType === "percent" ? "PERCENT" : itemType === "fixed" ? "FIXED" : ""}
-                                        </span>
-                                      </div>
-                                      {itemValue != null && (
-                                        <div className="text-xs text-gray-600 dark:text-gray-400">
-                                          {itemType === "percent"
-                                            ? `${itemValue}%`
-                                            : `${quotation.currency} ${Number(itemValue).toLocaleString()}`}
-                                        </div>
-                                      )}
-                                      {itemAmount != null && itemAmount > 0 && (
-                                        <div className="text-xs text-gray-700 dark:text-gray-300">
-                                          Tax amount: {quotation.currency} {Number(itemAmount).toLocaleString()}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
-                                  )}
+                                <td className="text-right px-[20px] py-[12px] align-top">
+                                  {taxLabel}
                                 </td>
-                                <td className="ltr:text-right rtl:text-left px-[20px] py-[12px] font-semibold">
-                                  {quotation.currency} {Number(item.total ?? 0).toLocaleString()}
+                                <td className="text-right px-[20px] py-[12px] font-semibold">
+                                  {formatCurrency(lineTotal, quotation.currency)}
                                 </td>
                                 <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
                                   {canEditLineItems && (
@@ -2381,18 +2375,34 @@ const QuotationDetail: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Description
-                </label>
-                <textarea
-                  value={editData.description ?? quotation.description ?? ""}
-                  onChange={(e) => handleEditFieldChange("description", e.target.value)}
-                  disabled={isEditSubmitting}
-                  className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  rows={3}
-                  placeholder="Short description of this quotation"
-                />
+              <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Job Reference ID
+                  </label>
+                  <input
+                    type="text"
+                    value={editData.job_reference_id ?? quotation.job_reference_id ?? ""}
+                    onChange={(e) => handleEditFieldChange("job_reference_id", e.target.value)}
+                    disabled={isEditSubmitting}
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="E.g. JOB12345"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Description
+                  </label>
+                  <textarea
+                    value={editData.description ?? quotation.description ?? ""}
+                    onChange={(e) => handleEditFieldChange("description", e.target.value)}
+                    disabled={isEditSubmitting}
+                    className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    rows={3}
+                    placeholder="Short description of this quotation"
+                  />
+                </div>
               </div>
 
               <div>

@@ -9,6 +9,7 @@ class QuotationResource extends BaseResource
         return [
             'id' => $this->id,
             'quotation_number' => $this->quotation_number,
+            'job_reference_id' => $this->job_reference_id,
             'customer_id' => $this->customer_id,
             'title' => $this->title,
             'description' => $this->description,

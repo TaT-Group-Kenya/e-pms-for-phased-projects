@@ -11,6 +11,7 @@ import Can from "../../auth/Can";
 interface OrderSummary {
   id: number;
   order_number: string;
+  job_reference_id?: string;
   project_id: number | null;
   customer_id: number | null;
   title: string;
@@ -144,6 +145,7 @@ const OrdersTable: React.FC = () => {
     const lowerSearch = searchTerm.toLowerCase();
     const matchesSearch =
       order.order_number.toLowerCase().includes(lowerSearch) ||
+      (order.job_reference_id || "").toLowerCase().includes(lowerSearch) ||
       order.title.toLowerCase().includes(lowerSearch) ||
       order.status.toLowerCase().includes(lowerSearch);
 
@@ -236,6 +238,9 @@ const OrdersTable: React.FC = () => {
                       Order #
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Job Ref
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Title
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -275,6 +280,9 @@ const OrdersTable: React.FC = () => {
                           >
                             {order.order_number}
                           </Link>
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
+                          {order.job_reference_id || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px]">
                           <Link
@@ -334,7 +342,7 @@ const OrdersTable: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={9}
+                        colSpan={10}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm || statusFilter !== "all"

@@ -10,6 +10,7 @@ class Quotation extends Model
 
     protected $fillable = [
         'quotation_number',
+        'job_reference_id',
         'customer_id',
         'title',
         'description',
@@ -56,5 +57,12 @@ class Quotation extends Model
     public function order()
     {
         return $this->hasOne(Order::class, 'quotation_id');
+    }
+
+    public function setJobReferenceIdAttribute($value): void
+    {
+        $this->attributes['job_reference_id'] = $value !== null
+            ? strtoupper((string) $value)
+            : null;
     }
 }

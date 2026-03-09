@@ -354,8 +354,8 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                 <select
                   value={editFormData.customer_id || ""}
                     onChange={(e) => handleFormChange("customer_id", e.target.value ? parseInt(e.target.value) : null)}
-                  disabled={loadingData}
-                  className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
+                  disabled
+                  className="h-[55px] rounded-md text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-[#172036] bg-gray-100 dark:bg-[#111827] px-[17px] block w-full outline-0 cursor-not-allowed"
                 >
                   <option value="">{loadingData ? "Loading customers..." : "Select a customer"}</option>
                   {customers.map((customer) => (
@@ -506,7 +506,9 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                   type="number"
                   value={editFormData.budget_estimate || ""}
                   onChange={(e) => handleFormChange("budget_estimate", e.target.value)}
-                  className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                  readOnly
+                  disabled
+                  className="h-[55px] rounded-md text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-[#172036] bg-gray-100 dark:bg-[#111827] px-[17px] block w-full outline-0 cursor-not-allowed"
                   placeholder="E.g. 50000"
                 />
               </div>

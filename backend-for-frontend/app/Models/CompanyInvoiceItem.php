@@ -14,6 +14,8 @@ class CompanyInvoiceItem extends Model
         'item_name',
         'item_description',
         'item_amount',
+        'quantity',
+        'total',
         'is_taxable',
         'tax_id',
         'tax_item_name',
@@ -42,6 +44,10 @@ class CompanyInvoiceItem extends Model
     protected static function booted(): void
     {
         static::saving(function (CompanyInvoiceItem $item) {
+            $quantity = $item->quantity ?? 1;
+            $amount = $item->item_amount ?? 0;
+            $item->total = $amount * $quantity;
+
             $isTaxable = (bool) ($item->is_taxable ?? false);
 
             if (! $isTaxable) {
@@ -49,7 +55,7 @@ class CompanyInvoiceItem extends Model
                 return;
             }
 
-            $baseAmount = $item->item_amount ?? 0;
+            $baseAmount = $item->total ?? 0;
             $value = $item->item_value !== null ? (float) $item->item_value : 0.0;
 
             if ($item->item_type === 'fixed') {
@@ -70,7 +76,7 @@ class CompanyInvoiceItem extends Model
             }
 
             $subtotal = $invoice->invoiceItems->sum(function (CompanyInvoiceItem $line) {
-                return (float) ($line->item_amount ?? 0);
+                return (float) ($line->total ?? 0);
             });
 
             $taxAmount = $invoice->invoiceItems->sum(function (CompanyInvoiceItem $line) {

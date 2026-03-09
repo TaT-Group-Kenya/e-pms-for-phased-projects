@@ -22,6 +22,7 @@ class CompanyInvoiceItemStoreRequest extends FormRequest
             'item_name' => ['required', 'string', 'max:255'],
             'item_description' => ['nullable', 'string', 'max:255'],
             'item_amount' => ['required', 'numeric', 'min:0'],
+            'quantity' => ['required', 'integer', 'min:1'],
             'is_taxable' => ['required', 'boolean'],
             'tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
             'tax_item_name' => ['nullable', 'string', 'max:255'],

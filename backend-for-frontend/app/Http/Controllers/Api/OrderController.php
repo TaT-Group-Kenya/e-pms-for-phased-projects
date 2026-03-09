@@ -83,6 +83,9 @@ class OrderController extends Controller
                         ],
                     ], 422);
                 }
+
+                // Ensure job_reference_id on the order matches the quotation
+                $validated['job_reference_id'] = $quotation->job_reference_id;
             }
 
             $overrides = [

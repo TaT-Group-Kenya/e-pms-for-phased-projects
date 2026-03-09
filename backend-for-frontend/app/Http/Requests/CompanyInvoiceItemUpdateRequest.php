@@ -22,6 +22,7 @@ class CompanyInvoiceItemUpdateRequest extends FormRequest
             'item_name' => ['sometimes', 'required', 'string', 'max:255'],
             'item_description' => ['sometimes', 'nullable', 'string', 'max:255'],
             'item_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'quantity' => ['sometimes', 'integer', 'min:1'],
             'is_taxable' => ['sometimes', 'required', 'boolean'],
             'tax_id' => ['sometimes', 'nullable', 'integer', 'exists:taxes,id'],
             'tax_item_name' => ['sometimes', 'nullable', 'string', 'max:255'],
