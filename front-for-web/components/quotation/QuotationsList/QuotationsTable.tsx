@@ -12,6 +12,7 @@ import Can from "../../auth/Can";
 interface Quotation {
   id: number;
   quotation_number: string;
+  job_reference_id?: string;
   title: string;
   description?: string;
   customer_id?: number;
@@ -198,6 +199,7 @@ const QuotationsList: React.FC = () => {
   // Filter quotations based on search term
   const filteredQuotations = quotations.filter((quotation) =>
     quotation.quotation_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (quotation.job_reference_id || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     quotation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quotation.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -250,7 +252,7 @@ const QuotationsList: React.FC = () => {
             </label>
             <input
               type="text"
-              placeholder="Search quotations..."
+              placeholder="Search quotations (number, job ref, title, status)..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -301,6 +303,9 @@ const QuotationsList: React.FC = () => {
                       Quotation #
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Job Ref
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Title
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -337,6 +342,9 @@ const QuotationsList: React.FC = () => {
                           >
                             {quotation.quotation_number}
                           </Link>
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
+                          {quotation.job_reference_id || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px]">
                           <Link
@@ -399,7 +407,7 @@ const QuotationsList: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={9}
+                        colSpan={10}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm || statusFilter !== "all" ? "No quotations match your criteria" : "No quotations found"}

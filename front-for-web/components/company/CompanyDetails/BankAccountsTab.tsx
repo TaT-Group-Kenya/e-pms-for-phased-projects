@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useToast } from "../../../hooks/useToast";
+import { formatApiError } from "../../../utils/errorHandler";
 import Can from "../../auth/Can";
 
 interface BankAccount {
@@ -47,6 +51,16 @@ interface BankAccountsTabProps {
   onRefresh: () => Promise<void>;
   accessToken: string;
 }
+const bankAccountSchema = z.object({
+  type: z.string().min(1, "Account type is required"),
+  account_no: z.string().min(1, "Account number is required"),
+  swiftcode: z.string().optional(),
+  branch: z.string().min(1, "Branch is required"),
+  account_holder_name: z.string().min(1, "Account holder name is required"),
+});
+
+type BankAccountFormData = z.infer<typeof bankAccountSchema>;
+type BankAccountFormField = "type" | "account_no" | "swiftcode" | "branch" | "account_holder_name";
 
 const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
   companyId,
@@ -55,39 +69,36 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
   accessToken,
 }) => {
   const { addToast } = useToast();
-  const [bankAccountMessage, setBankAccountMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddBankAccountModal, setShowAddBankAccountModal] = useState(false);
-  const [bankAccountForm, setBankAccountForm] = useState({
-    type: "",
-    account_no: "",
-    swiftcode: "",
-    branch: "",
-    account_holder_name: "",
-  });
   const [accountTypes, setAccountTypes] = useState<Array<{ id: string; name: string }>>([]);
   const [loadingAccountTypes, setLoadingAccountTypes] = useState(false);
   const [submittingBankAccount, setSubmittingBankAccount] = useState(false);
   const [editingBankAccountId, setEditingBankAccountId] = useState<number | null>(null);
-  const [editingBankAccountForm, setEditingBankAccountForm] = useState({
-    type: "",
-    account_no: "",
-    swiftcode: "",
-    branch: "",
-    account_holder_name: "",
-  });
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
-  // Auto-dismiss bank account message after 5 seconds
-  useEffect(() => {
-    if (bankAccountMessage) {
-      const timer = setTimeout(() => {
-        setBankAccountMessage(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [bankAccountMessage]);
+  const {
+    register: registerCreate,
+    handleSubmit: handleCreateSubmit,
+    reset: resetCreateForm,
+    setError: setCreateFieldError,
+    formState: { errors: createErrors },
+  } = useForm<BankAccountFormData>({
+    resolver: zodResolver(bankAccountSchema),
+    mode: "onBlur",
+  });
+
+  const {
+    register: registerEdit,
+    handleSubmit: handleEditSubmit,
+    reset: resetEditForm,
+    setError: setEditFieldError,
+    formState: { errors: editErrors },
+  } = useForm<BankAccountFormData>({
+    resolver: zodResolver(bankAccountSchema),
+    mode: "onBlur",
+  });
 
   useEffect(() => {
     const fetchAccountTypes = async () => {
@@ -117,13 +128,7 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
     }
   }, [accessToken]);
 
-  const handleCreateBankAccount = async () => {
-    if (!bankAccountForm.type || !bankAccountForm.account_no || !bankAccountForm.swiftcode || 
-        !bankAccountForm.branch || !bankAccountForm.account_holder_name) {
-      addToast("Please fill in all required fields", "error");
-      return;
-    }
-
+  const handleCreateBankAccount = async (formData: BankAccountFormData) => {
     setSubmittingBankAccount(true);
     try {
       const response = await fetch(`/api/companies/accounts/company-bank-accounts`, {
@@ -134,26 +139,44 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
         },
         body: JSON.stringify({
           company_id: companyId,
-          type: bankAccountForm.type,
-          account_no: bankAccountForm.account_no,
-          swiftcode: bankAccountForm.swiftcode,
-          branch: bankAccountForm.branch,
-          account_holder_name: bankAccountForm.account_holder_name,
+          type: formData.type,
+          account_no: formData.account_no,
+          swiftcode: formData.swiftcode,
+          branch: formData.branch,
+          account_holder_name: formData.account_holder_name,
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorMsg = data.message || "Failed to create bank account";
-        addToast(errorMsg, "error");
-        setBankAccountMessage({ type: 'error', text: errorMsg });
-        setSubmittingBankAccount(false);
+        const formattedError = data ? formatApiError(data) : "Failed to create bank account";
+
+        if (data && data.errors && typeof data.errors === "object") {
+          Object.entries(data.errors).forEach(([field, messages]) => {
+            const key = field as BankAccountFormField;
+            if (!( ["type", "account_no", "swiftcode", "branch", "account_holder_name"] as string[]).includes(key)) {
+              return;
+            }
+
+            let message: string | undefined;
+            if (Array.isArray(messages) && messages.length > 0) {
+              message = String(messages[0]);
+            } else if (typeof messages === "string") {
+              message = messages;
+            }
+
+            if (message) {
+              setCreateFieldError(key, { type: "server", message });
+            }
+          });
+        }
+
+        addToast(formattedError, "error");
         return;
       }
 
       addToast("Bank account added successfully", "success");
-      setBankAccountMessage({ type: 'success', text: 'Bank account added successfully' });
 
       // Re-fetch company data to get updated bank accounts
       try {
@@ -163,19 +186,12 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
       }
 
       // Reset form and close modal
-      setBankAccountForm({
-        type: "",
-        account_no: "",
-        swiftcode: "",
-        branch: "",
-        account_holder_name: "",
-      });
+      resetCreateForm();
       setShowAddBankAccountModal(false);
     } catch (err) {
       console.error("Error creating bank account:", err);
       const errorMsg = "Error creating bank account";
       addToast(errorMsg, "error");
-      setBankAccountMessage({ type: 'error', text: errorMsg });
     } finally {
       setSubmittingBankAccount(false);
     }
@@ -183,19 +199,18 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
 
   const handleEditBankAccount = (account: BankAccount) => {
     setEditingBankAccountId(account.id);
-    setEditingBankAccountForm({
-      type: account.type,
-      account_no: account.account_no,
+    resetEditForm({
+      type: account.type || "",
+      account_no: account.account_no || "",
       swiftcode: account.swiftcode || "",
       branch: account.branch || "",
-      account_holder_name: account.account_holder_name,
+      account_holder_name: account.account_holder_name || "",
     });
   };
 
-  const handleUpdateBankAccount = async () => {
-    if (!editingBankAccountId || !editingBankAccountForm.type || !editingBankAccountForm.account_no || 
-        !editingBankAccountForm.swiftcode || !editingBankAccountForm.branch || !editingBankAccountForm.account_holder_name) {
-      addToast("Please fill in all required fields", "error");
+  const handleUpdateBankAccount = async (formData: BankAccountFormData) => {
+    if (!editingBankAccountId) {
+      addToast("Invalid bank account selection", "error");
       return;
     }
 
@@ -207,21 +222,38 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(editingBankAccountForm),
+        body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const errorMsg = data.message || "Failed to update bank account";
-        addToast(errorMsg, "error");
-        setBankAccountMessage({ type: 'error', text: errorMsg });
+        const formattedError = data ? formatApiError(data) : "Failed to update bank account";
+
+        if (data && data.errors && typeof data.errors === "object") {
+          Object.entries(data.errors).forEach(([field, messages]) => {
+            const key = field as BankAccountFormField;
+            if (!( ["type", "account_no", "swiftcode", "branch", "account_holder_name"] as string[]).includes(key)) {
+              return;
+            }
+            let message: string | undefined;
+            if (Array.isArray(messages) && messages.length > 0) {
+              message = String(messages[0]);
+            } else if (typeof messages === "string") {
+              message = messages;
+            }
+            if (message) {
+              setEditFieldError(key, { type: "server", message });
+            }
+          });
+        }
+
+        addToast(formattedError, "error");
         setSubmittingBankAccount(false);
         return;
       }
 
       addToast("Bank account updated successfully", "success");
-      setBankAccountMessage({ type: 'success', text: 'Bank account updated successfully' });
 
       // Re-fetch company data to get updated bank accounts
       try {
@@ -231,18 +263,11 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
       }
 
       setEditingBankAccountId(null);
-      setEditingBankAccountForm({
-        type: "",
-        account_no: "",
-        swiftcode: "",
-        branch: "",
-        account_holder_name: "",
-      });
+      resetEditForm();
     } catch (err) {
       console.error("Error updating bank account:", err);
       const errorMsg = "Error updating bank account";
       addToast(errorMsg, "error");
-      setBankAccountMessage({ type: 'error', text: errorMsg });
     } finally {
       setSubmittingBankAccount(false);
     }
@@ -272,13 +297,11 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
       if (!response.ok) {
         const errorMsg = data.message || "Failed to delete bank account";
         addToast(errorMsg, "error");
-        setBankAccountMessage({ type: 'error', text: errorMsg });
         setSubmittingBankAccount(false);
         return;
       }
 
       addToast("Bank account deleted successfully", "success");
-      setBankAccountMessage({ type: 'success', text: 'Bank account deleted successfully' });
 
       // Re-fetch company data to get updated bank accounts
       try {
@@ -290,7 +313,6 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
       console.error("Error deleting bank account:", err);
       const errorMsg = "Error deleting bank account";
       addToast(errorMsg, "error");
-      setBankAccountMessage({ type: 'error', text: errorMsg });
     } finally {
       setSubmittingBankAccount(false);
       setDeleteConfirmId(null);
@@ -327,35 +349,6 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
           </button>
         </Can>
       </div>
-
-      {bankAccountMessage && (
-        <div
-          className={`mb-[20px] p-[15px] rounded-md flex items-center gap-[10px] animate-pulse ${
-            bankAccountMessage.type === 'success'
-              ? 'bg-green-50 dark:bg-[#1a3a2a] border border-green-200 dark:border-green-900'
-              : 'bg-red-50 dark:bg-[#3a1a1a] border border-red-200 dark:border-red-900'
-          }`}
-        >
-          <i
-            className={`material-symbols-outlined !text-[20px] ${
-              bankAccountMessage.type === 'success'
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-red-600 dark:text-red-400'
-            }`}
-          >
-            {bankAccountMessage.type === 'success' ? 'check_circle' : 'error'}
-          </i>
-          <p
-            className={`${
-              bankAccountMessage.type === 'success'
-                ? 'text-green-700 dark:text-green-300'
-                : 'text-red-700 dark:text-red-300'
-            }`}
-          >
-            {bankAccountMessage.text}
-          </p>
-        </div>
-      )}
 
       {company.bank_accounts.length === 0 ? (
         <div className="text-center py-[40px]">
@@ -445,107 +438,133 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
           <div className="bg-white dark:bg-[#0c1427] rounded-lg p-[25px] max-w-[500px] w-full mx-[20px] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-[20px]">
               <h5 className="text-lg font-semibold text-black dark:text-white">
-                Add Bank Account
+                Add Bank Account for {company.name}
               </h5>
               <button
                 type="button"
-                onClick={() => setShowAddBankAccountModal(false)}
+                onClick={() => {
+                  resetCreateForm();
+                  setShowAddBankAccountModal(false);
+                }}
                 className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
+            <form onSubmit={handleCreateSubmit(handleCreateBankAccount)}>
+              <div className="space-y-[15px]">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Account Type
+                  </label>
+                  <select
+                    {...registerCreate("type")}
+                    disabled={loadingAccountTypes}
+                    className={`w-full px-[12px] py-[10px] rounded-md bg-white dark:bg-[#1a2942] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border ${
+                      createErrors.type ? "border-danger-500" : "border-gray-300 dark:border-gray-600"
+                    }`}
+                  >
+                    <option value="">Select account type</option>
+                    {accountTypes.map((type) => (
+                      <option key={type.id} value={type.id}>
+                        {type.name}
+                      </option>
+                    ))}
+                  </select>
+                  {createErrors.type && (
+                    <p className="text-danger-500 text-xs mt-1">{createErrors.type.message}</p>
+                  )}
+                </div>
 
-            <div className="space-y-[15px]">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Account Type
-                </label>
-                <select
-                  value={bankAccountForm.type}
-                  onChange={(e) => setBankAccountForm({ ...bankAccountForm, type: e.target.value })}
-                  disabled={loadingAccountTypes}
-                  className="w-full px-[12px] py-[10px] border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#1a2942] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Account Holder Name
+                  </label>
+                  <input
+                    type="text"
+                    {...registerCreate("account_holder_name")}
+                    className={`w-full px-[12px] py-[10px] rounded-md text-black dark:text-white border ${
+                      createErrors.account_holder_name ? "border-danger-500" : "border-gray-300 dark:border-gray-600"
+                    } bg-white dark:bg-[#1a2942] focus:outline-none focus:ring-2 focus:ring-primary-500`}
+                    placeholder="Enter account holder name"
+                  />
+                  {createErrors.account_holder_name && (
+                    <p className="text-danger-500 text-xs mt-1">{createErrors.account_holder_name.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Account Number
+                  </label>
+                  <input
+                    type="text"
+                    {...registerCreate("account_no")}
+                    className={`w-full px-[12px] py-[10px] rounded-md text-black dark:text-white border ${
+                      createErrors.account_no ? "border-danger-500" : "border-gray-300 dark:border-gray-600"
+                    } bg-white dark:bg-[#1a2942] focus:outline-none focus:ring-2 focus:ring-primary-500`}
+                    placeholder="Enter account number"
+                  />
+                  {createErrors.account_no && (
+                    <p className="text-danger-500 text-xs mt-1">{createErrors.account_no.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Branch
+                  </label>
+                  <input
+                    type="text"
+                    {...registerCreate("branch")}
+                    className={`w-full px-[12px] py-[10px] rounded-md text-black dark:text-white border ${
+                      createErrors.branch ? "border-danger-500" : "border-gray-300 dark:border-gray-600"
+                    } bg-white dark:bg-[#1a2942] focus:outline-none focus:ring-2 focus:ring-primary-500`}
+                    placeholder="Enter branch name"
+                  />
+                  {createErrors.branch && (
+                    <p className="text-danger-500 text-xs mt-1">{createErrors.branch.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Swift Code
+                  </label>
+                  <input
+                    type="text"
+                    {...registerCreate("swiftcode")}
+                    className={`w-full px-[12px] py-[10px] rounded-md text-black dark:text-white border ${
+                      createErrors.swiftcode ? "border-danger-500" : "border-gray-300 dark:border-gray-600"
+                    } bg-white dark:bg-[#1a2942] focus:outline-none focus:ring-2 focus:ring-primary-500`}
+                    placeholder="Enter swift code"
+                  />
+                  {createErrors.swiftcode && (
+                    <p className="text-danger-500 text-xs mt-1">{createErrors.swiftcode.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-[10px] mt-[25px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetCreateForm();
+                    setShowAddBankAccountModal(false);
+                  }}
+                  className="flex-1 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-[10px] px-[15px] rounded-md transition-all"
                 >
-                  <option value="">Select account type</option>
-                  {accountTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.name}
-                    </option>
-                  ))}
-                </select>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingBankAccount}
+                  className="flex-1 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-400 text-white font-medium py-[10px] px-[15px] rounded-md transition-all"
+                >
+                  {submittingBankAccount ? "Adding..." : "Add Account"}
+                </button>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Account Holder Name
-                </label>
-                <input
-                  type="text"
-                  value={bankAccountForm.account_holder_name}
-                  onChange={(e) => setBankAccountForm({ ...bankAccountForm, account_holder_name: e.target.value })}
-                  className="w-full px-[12px] py-[10px] border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#1a2942] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter account holder name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Account Number
-                </label>
-                <input
-                  type="text"
-                  value={bankAccountForm.account_no}
-                  onChange={(e) => setBankAccountForm({ ...bankAccountForm, account_no: e.target.value })}
-                  className="w-full px-[12px] py-[10px] border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#1a2942] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter account number"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Branch
-                </label>
-                <input
-                  type="text"
-                  value={bankAccountForm.branch}
-                  onChange={(e) => setBankAccountForm({ ...bankAccountForm, branch: e.target.value })}
-                  className="w-full px-[12px] py-[10px] border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#1a2942] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter branch name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Swift Code
-                </label>
-                <input
-                  type="text"
-                  value={bankAccountForm.swiftcode}
-                  onChange={(e) => setBankAccountForm({ ...bankAccountForm, swiftcode: e.target.value })}
-                  className="w-full px-[12px] py-[10px] border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#1a2942] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter swift code"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-[10px] mt-[25px]">
-              <button
-                type="button"
-                onClick={() => setShowAddBankAccountModal(false)}
-                className="flex-1 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-[10px] px-[15px] rounded-md transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateBankAccount}
-                disabled={submittingBankAccount}
-                className="flex-1 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-400 text-white font-medium py-[10px] px-[15px] rounded-md transition-all"
-              >
-                {submittingBankAccount ? "Adding..." : "Add Account"}
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
@@ -556,109 +575,135 @@ const BankAccountsTab: React.FC<BankAccountsTabProps> = ({
           <div className="bg-white dark:bg-[#0c1427] rounded-lg p-[25px] max-w-[500px] w-full mx-[20px] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-[20px]">
               <h5 className="text-lg font-semibold text-black dark:text-white">
-                Edit Bank Account
+                Edit Bank Account for {company.name}
               </h5>
               <button
                 type="button"
-                onClick={() => setEditingBankAccountId(null)}
+                onClick={() => {
+                  resetEditForm();
+                  setEditingBankAccountId(null);
+                }}
                 className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
+            <form onSubmit={handleEditSubmit(handleUpdateBankAccount)}>
+              <div className="space-y-[15px]">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Account Type
+                  </label>
+                  <select
+                    {...registerEdit("type")}
+                    disabled={loadingAccountTypes}
+                    className={`w-full px-[12px] py-[10px] rounded-md bg-white dark:bg-[#1a2942] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border ${
+                      editErrors.type ? "border-danger-500" : "border-gray-300 dark:border-gray-600"
+                    }`}
+                  >
+                    <option value="">Select account type</option>
+                    {accountTypes.map((type) => (
+                      <option key={type.id} value={type.id}>
+                        {type.name}
+                      </option>
+                    ))}
+                  </select>
+                  {editErrors.type && (
+                    <p className="text-danger-500 text-xs mt-1">{editErrors.type.message}</p>
+                  )}
+                </div>
 
-            <div className="space-y-[15px]">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Account Type
-                </label>
-                <select
-                  value={editingBankAccountForm.type}
-                  onChange={(e) => setEditingBankAccountForm({ ...editingBankAccountForm, type: e.target.value })}
-                  disabled={loadingAccountTypes}
-                  className="w-full px-[12px] py-[10px] border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#1a2942] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select account type</option>
-                  {accountTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.name}
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Account Holder Name
+                  </label>
+                  <input
+                    type="text"
+                    {...registerEdit("account_holder_name")}
+                    className={`w-full px-[12px] py-[10px] rounded-md text-black dark:text-white border ${
+                      editErrors.account_holder_name ? "border-danger-500" : "border-gray-300 dark:border-gray-600"
+                    } bg-white dark:bg-[#1a2942] focus:outline-none focus:ring-2 focus:ring-primary-500`}
+                    placeholder="Enter account holder name"
+                  />
+                  {editErrors.account_holder_name && (
+                    <p className="text-danger-500 text-xs mt-1">{editErrors.account_holder_name.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Account Number
+                  </label>
+                  <input
+                    type="text"
+                    {...registerEdit("account_no")}
+                    className={`w-full px-[12px] py-[10px] rounded-md text-black dark:text-white border ${
+                      editErrors.account_no ? "border-danger-500" : "border-gray-300 dark:border-gray-600"
+                    } bg-white dark:bg-[#1a2942] focus:outline-none focus:ring-2 focus:ring-primary-500`}
+                    placeholder="Enter account number"
+                  />
+                  {editErrors.account_no && (
+                    <p className="text-danger-500 text-xs mt-1">{editErrors.account_no.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Branch
+                  </label>
+                  <input
+                    type="text"
+                    {...registerEdit("branch")}
+                    className={`w-full px-[12px] py-[10px] rounded-md text-black dark:text-white border ${
+                      editErrors.branch ? "border-danger-500" : "border-gray-300 dark:border-gray-600"
+                    } bg-white dark:bg-[#1a2942] focus:outline-none focus:ring-2 focus:ring-primary-500`}
+                    placeholder="Enter branch name"
+                  />
+                  {editErrors.branch && (
+                    <p className="text-danger-500 text-xs mt-1">{editErrors.branch.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Swift Code
+                  </label>
+                  <input
+                    type="text"
+                    {...registerEdit("swiftcode")}
+                    className={`w-full px-[12px] py-[10px] rounded-md text-black dark:text-white border ${
+                      editErrors.swiftcode ? "border-danger-500" : "border-gray-300 dark:border-gray-600"
+                    } bg-white dark:bg-[#1a2942] focus:outline-none focus:ring-2 focus:ring-primary-500`}
+                    placeholder="Enter swift code"
+                  />
+                  {editErrors.swiftcode && (
+                    <p className="text-danger-500 text-xs mt-1">{editErrors.swiftcode.message}</p>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Account Holder Name
-                </label>
-                <input
-                  type="text"
-                  value={editingBankAccountForm.account_holder_name}
-                  onChange={(e) => setEditingBankAccountForm({ ...editingBankAccountForm, account_holder_name: e.target.value })}
-                  className="w-full px-[12px] py-[10px] border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#1a2942] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter account holder name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Account Number
-                </label>
-                <input
-                  type="text"
-                  value={editingBankAccountForm.account_no}
-                  onChange={(e) => setEditingBankAccountForm({ ...editingBankAccountForm, account_no: e.target.value })}
-                  className="w-full px-[12px] py-[10px] border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#1a2942] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter account number"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Branch
-                </label>
-                <input
-                  type="text"
-                  value={editingBankAccountForm.branch}
-                  onChange={(e) => setEditingBankAccountForm({ ...editingBankAccountForm, branch: e.target.value })}
-                  className="w-full px-[12px] py-[10px] border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#1a2942] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter branch name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Swift Code
-                </label>
-                <input
-                  type="text"
-                  value={editingBankAccountForm.swiftcode}
-                  onChange={(e) => setEditingBankAccountForm({ ...editingBankAccountForm, swiftcode: e.target.value })}
-                  className="w-full px-[12px] py-[10px] border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#1a2942] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="Enter swift code"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-[10px] mt-[25px]">
-              <button
-                type="button"
-                onClick={() => setEditingBankAccountId(null)}
-                className="flex-1 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-[10px] px-[15px] rounded-md transition-all"
-              >
-                Cancel
-              </button>
-              <Can any={["ROLE_EDIT_COMPANY_BANK"]}>
+              <div className="flex gap-[10px] mt-[25px]">
                 <button
                   type="button"
-                  onClick={handleUpdateBankAccount}
-                  disabled={submittingBankAccount}
-                  className="flex-1 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-400 text-white font-medium py-[10px] px-[15px] rounded-md transition-all"
+                  onClick={() => {
+                    resetEditForm();
+                    setEditingBankAccountId(null);
+                  }}
+                  className="flex-1 bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-[10px] px-[15px] rounded-md transition-all"
                 >
-                  {submittingBankAccount ? "Updating..." : "Update Account"}
+                  Cancel
                 </button>
-              </Can>
-            </div>
+                <Can any={["ROLE_EDIT_COMPANY_BANK"]}>
+                  <button
+                    type="submit"
+                    disabled={submittingBankAccount}
+                    className="flex-1 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-400 text-white font-medium py-[10px] px-[15px] rounded-md transition-all"
+                  >
+                    {submittingBankAccount ? "Updating..." : "Update Account"}
+                  </button>
+                </Can>
+              </div>
+            </form>
           </div>
         </div>
       )}

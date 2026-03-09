@@ -16,6 +16,15 @@ class QuotationUpdateRequest extends FormRequest
     {
         return [
             'customer_id' => ['nullable', 'exists:customers,id'],
+            'job_reference_id' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:32',
+                Rule::unique('quotations', 'job_reference_id')
+                    ->ignore($this->route('quotation') ?? $this->route('id'))
+                    ->where(fn ($q) => $q->where('is_deleted', false)),
+            ],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:255'],
             'status' => ['sometimes', 'required', Rule::in(['draft','sent','approved','rejected','revised'])],

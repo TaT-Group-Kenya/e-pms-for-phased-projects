@@ -12,7 +12,14 @@ import { ToastContainer } from "../../common/Toast";
 import { formatApiError } from "../../../utils/errorHandler";
 
 const quotationSchema = z.object({
-  title: z.string().min(1, "Quotation title is required").max(255, "Title must not exceed 255 characters"),
+  title: z
+    .string()
+    .min(1, "Quotation title is required")
+    .max(255, "Title must not exceed 255 characters"),
+  job_reference_id: z
+    .string()
+    .min(1, "Job reference ID is required")
+    .max(32, "Job reference ID must not exceed 32 characters"),
   status: z.string().min(1, "Status is required"),
   description: z.string().optional(),
   customer_id: z.string().min(1, "Customer is required"),
@@ -128,6 +135,7 @@ const CreateQuotationForm: React.FC = () => {
     try {
       const bodyData = {
         title: data.title,
+        job_reference_id: data.job_reference_id,
         status: data.status || "draft",
         description: data.description || "",
         customer_id: data.customer_id ? parseInt(data.customer_id) : null,
@@ -211,7 +219,7 @@ const CreateQuotationForm: React.FC = () => {
             )}
 
             <div className="mb-[25px]">
-              <div className="sm:grid sm:grid-cols-3 sm:gap-[25px] mb-[20px]">
+              <div className="sm:grid sm:grid-cols-4 sm:gap-[25px] mb-[20px]">
                 {/* Title - Required */}
                 <div className="mb-[20px] sm:mb-0">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
@@ -226,6 +234,24 @@ const CreateQuotationForm: React.FC = () => {
                     placeholder="E.g. Website Development Quote"
                   />
                   {renderFieldError("title")}
+                </div>
+
+                {/* Job Reference ID - Required */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Job Reference ID <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    {...register("job_reference_id")}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${
+                      errors.job_reference_id
+                        ? "border-danger-500"
+                        : "border-gray-200 dark:border-[#172036]"
+                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
+                    placeholder="E.g. JOB12345"
+                  />
+                  {renderFieldError("job_reference_id")}
                 </div>
 
                 {/* Customer - Required */}

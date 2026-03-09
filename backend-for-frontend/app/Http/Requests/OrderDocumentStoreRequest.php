@@ -18,7 +18,12 @@ class OrderDocumentStoreRequest extends FormRequest
             'order_id' => ['nullable', 'exists:orders,id'],
             // For creation we now always require an uploaded file;
             // its stored path will be saved into document_path.
-            'document_file' => ['required', 'file'],
+            'document_file' => [
+                'required',
+                'file',
+                'mimes:pdf,xlsx,docx,jpg,jpeg,png',
+                'max:3072', // max size in KB (3MB)
+            ],
             'document_type' => ['required', Rule::in(['proposal','terms','attachments'])],
         ];
     }

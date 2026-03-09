@@ -76,6 +76,7 @@ interface OrderDocument {
 interface OrderDetail {
   id: number;
   order_number: string;
+  job_reference_id?: string;
   quotation_id: number | null;
   project_id: number | null;
   customer_id: number | null;
@@ -588,6 +589,7 @@ const OrderDetailPage: React.FC = () => {
         currency: (editData.currency || order.currency || "").toString(),
         payment_terms: (editData.payment_terms ?? order.payment_terms ?? "").toString(),
         notes_to_customer: (editData.notes_to_customer ?? order.notes_to_customer ?? "").toString(),
+        job_reference_id: (editData.job_reference_id ?? order.job_reference_id ?? "").toString(),
       };
 
       const resp = await fetch(`/api/orders/${order.id}`, {
@@ -1151,6 +1153,9 @@ const OrderDetailPage: React.FC = () => {
         <div>
           <h5 className="!mb-1">Order Details</h5>
           <p className="text-sm text-gray-500">Order #{order.order_number}</p>
+          <p className="text-sm text-gray-500">
+            Job Ref: <span className="font-semibold">{order.job_reference_id || "-"}</span>
+          </p>
         </div>
 
         <ol className="breadcrumb mt-[12px] md:mt-0">
@@ -1311,6 +1316,13 @@ const OrderDetailPage: React.FC = () => {
                       </div>
 
                       <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                        <span className="text-gray-600 dark:text-gray-400">Job Ref:</span>
+                        <span className="text-black dark:text-white font-semibold">
+                          {order.job_reference_id || "-"}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
                         <span className="text-gray-600 dark:text-gray-400">Created:</span>
                         <span className="text-black dark:text-white font-semibold">
                           {order.created_at
@@ -1353,79 +1365,66 @@ const OrderDetailPage: React.FC = () => {
                                 Item
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Unit
+                                Qty
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Qty
+                                Unit Price
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                                 Tax
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Total
+                                Subtotal
                               </th>
                             </tr>
                           </thead>
                           <tbody>
-                            {(order.orderItems ?? []).map((item) => (
-                              <tr
-                                key={item.id}
-                                className="border-b border-gray-100 dark:border-[#172036] align-middle"
-                              >
-                                <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                                  <div className="font-medium">{item.item_name}</div>
-                                  {item.item_description && (
-                                    <div className="text-xs text-gray-500">
-                                      {item.item_description}
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="text-sm text-right px-[15px] py-[12px]">
-                                  {formatCurrency(item.order_amount, order.currency)}
-                                </td>
-                                <td className="text-sm text-right px-[15px] py-[12px]">
-                                  {item.quantity}
-                                </td>
-                                <td className="text-sm text-right px-[15px] py-[12px] align-top">
-                                  {item.is_taxable ? (
-                                    <div className="space-y-[4px] text-right">
-                                      <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
-                                        <span className="font-semibold">
-                                          {item.tax_item_name || "Tax"}
-                                        </span>
-                                        <span className="text-[10px] uppercase tracking-wide">
-                                          {item.item_type === "percent"
-                                            ? "PERCENT"
-                                            : item.item_type === "fixed"
-                                            ? "FIXED"
-                                            : ""}
-                                        </span>
+                            {(order.orderItems ?? []).map((item) => {
+                              const quantity = item.quantity ?? 1
+                              const unitPrice = item.order_amount
+                              const lineTotal = item.total ?? unitPrice * quantity
+                              const isTaxable = Boolean(item.is_taxable)
+                              const taxRateLabel =
+                                item.item_type === "percent" && item.item_value != null
+                                  ? `${item.item_value}%`
+                                  : null
+                              const rawTaxAmount =
+                                item.item_amount != null ? item.item_amount : null
+                              const hasTaxAmount =
+                                typeof rawTaxAmount === "number" && !Number.isNaN(rawTaxAmount)
+
+                              return (
+                                <tr
+                                  key={item.id}
+                                  className="border-b border-gray-100 dark:border-[#172036] align-middle"
+                                >
+                                  <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                                    <div className="font-medium">{item.item_name}</div>
+                                    {item.item_description && (
+                                      <div className="text-xs text-gray-500">
+                                        {item.item_description}
                                       </div>
-                                      {item.item_value != null && (
-                                        <div className="text-xs text-gray-600 dark:text-gray-400">
-                                          {item.item_type === "percent"
-                                            ? `${item.item_value}%`
-                                            : `${order.currency} ${Number(item.item_value).toLocaleString()}`}
-                                        </div>
-                                      )}
-                                      {item.item_amount != null && item.item_amount > 0 && (
-                                        <div className="text-xs text-gray-700 dark:text-gray-300">
-                                          Tax amount: {order.currency} {Number(item.item_amount).toLocaleString()}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
-                                  )}
-                                </td>
-                                <td className="text-sm text-right px-[15px] py-[12px]">
-                                  {formatCurrency(
-                                    item.total ?? item.order_amount * item.quantity,
-                                    order.currency
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
+                                    )}
+                                  </td>
+                                  <td className="text-sm text-right px-[15px] py-[12px]">
+                                    {quantity}
+                                  </td>
+                                  <td className="text-sm text-right px-[15px] py-[12px]">
+                                    {formatCurrency(unitPrice, order.currency)}
+                                  </td>
+                                  <td className="text-sm text-right px-[15px] py-[12px] align-top">
+                                    {isTaxable && taxRateLabel && hasTaxAmount
+                                      ? `Tax(${taxRateLabel}): ${formatCurrency(rawTaxAmount as number, order.currency)}`
+                                      : isTaxable && hasTaxAmount
+                                      ? `Tax: ${formatCurrency(rawTaxAmount as number, order.currency)}`
+                                      : "Not taxable"}
+                                  </td>
+                                  <td className="text-sm text-right px-[15px] py-[12px]">
+                                    {formatCurrency(lineTotal, order.currency)}
+                                  </td>
+                                </tr>
+                              )
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -1764,16 +1763,16 @@ const OrderDetailPage: React.FC = () => {
                             Item
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Unit
+                            Qty
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Qty
+                            Unit Price
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Tax
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Total
+                            Subtotal
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Actions
@@ -1781,81 +1780,68 @@ const OrderDetailPage: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {(order.orderItems ?? []).map((item) => (
-                          <tr
-                            key={item.id}
-                            className="border-b border-gray-100 dark:border-[#172036] align-middle"
-                          >
-                            <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              <div className="font-medium">{item.item_name}</div>
-                              {item.item_description && (
-                                <div className="text-xs text-gray-500">
-                                  {item.item_description}
-                                </div>
-                              )}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {formatCurrency(item.order_amount, order.currency)}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {item.quantity}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px] align-top">
-                              {item.is_taxable ? (
-                                <div className="space-y-[4px] text-right">
-                                  <div className="inline-flex items-center gap-[6px] px-[8px] py-[3px] rounded-full bg-primary-50 dark:bg-primary-950 text-[11px] text-primary-600 dark:text-primary-300">
-                                    <span className="font-semibold">
-                                      {item.tax_item_name || "Tax"}
-                                    </span>
-                                    <span className="text-[10px] uppercase tracking-wide">
-                                      {item.item_type === "percent"
-                                        ? "PERCENT"
-                                        : item.item_type === "fixed"
-                                        ? "FIXED"
-                                        : ""}
-                                    </span>
+                        {(order.orderItems ?? []).map((item) => {
+                          const quantity = item.quantity ?? 1
+                          const unitPrice = item.order_amount
+                          const lineTotal = item.total ?? unitPrice * quantity
+                          const isTaxable = Boolean(item.is_taxable)
+                          const taxRateLabel =
+                            item.item_type === "percent" && item.item_value != null
+                              ? `${item.item_value}%`
+                              : null
+                          const rawTaxAmount =
+                            item.item_amount != null ? item.item_amount : null
+                          const hasTaxAmount =
+                            typeof rawTaxAmount === "number" && !Number.isNaN(rawTaxAmount)
+
+                          return (
+                            <tr
+                              key={item.id}
+                              className="border-b border-gray-100 dark:border-[#172036] align-middle"
+                            >
+                              <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                                <div className="font-medium">{item.item_name}</div>
+                                {item.item_description && (
+                                  <div className="text-xs text-gray-500">
+                                    {item.item_description}
                                   </div>
-                                  {item.item_value != null && (
-                                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                                      {item.item_type === "percent"
-                                        ? `${item.item_value}%`
-                                        : `${order.currency} ${Number(item.item_value).toLocaleString()}`}
-                                    </div>
-                                  )}
-                                  {item.item_amount != null && item.item_amount > 0 && (
-                                    <div className="text-xs text-gray-700 dark:text-gray-300">
-                                      Tax amount: {order.currency} {Number(item.item_amount).toLocaleString()}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-xs text-gray-500 dark:text-gray-400">Not taxable</span>
-                              )}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px]">
-                              {formatCurrency(
-                                item.total ?? item.order_amount * item.quantity,
-                                order.currency
-                              )}
-                            </td>
-                            <td className="text-sm text-right px-[15px] py-[12px] whitespace-nowrap">
-                              <button
-                                type="button"
-                                disabled
-                                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 mr-[6px] disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                disabled
-                                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-danger-50 dark:bg-danger-950 text-danger-500 hover:bg-danger-100 dark:hover:bg-danger-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                                )}
+                              </td>
+                              <td className="text-sm text-right px-[15px] py-[12px]">
+                                {quantity}
+                              </td>
+                              <td className="text-sm text-right px-[15px] py-[12px]">
+                                {formatCurrency(unitPrice, order.currency)}
+                              </td>
+                              <td className="text-sm text-right px-[15px] py-[12px] align-top">
+                                {isTaxable && taxRateLabel && hasTaxAmount
+                                  ? `Tax(${taxRateLabel}): ${formatCurrency(rawTaxAmount as number, order.currency)}`
+                                  : isTaxable && hasTaxAmount
+                                  ? `Tax: ${formatCurrency(rawTaxAmount as number, order.currency)}`
+                                  : "Not taxable"}
+                              </td>
+                              <td className="text-sm text-right px-[15px] py-[12px]">
+                                {formatCurrency(lineTotal, order.currency)}
+                              </td>
+                              <td className="text-sm text-right px-[15px] py-[12px] whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 mr-[6px] disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[10px] py-[4px] text-xs bg-danger-50 dark:bg-danger-950 text-danger-500 hover:bg-danger-100 dark:hover:bg-danger-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -2149,6 +2135,23 @@ const OrderDetailPage: React.FC = () => {
                     placeholder="e.g. USD"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Job Reference ID
+                </label>
+                <input
+                  type="text"
+                  value={editData.job_reference_id ?? order.job_reference_id ?? ""}
+                  onChange={(e) => handleEditFieldChange("job_reference_id", e.target.value)}
+                  disabled={isEditSubmitting}
+                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="E.g. JOB12345"
+                />
+                <p className="mt-[6px] text-[11px] text-gray-500 dark:text-gray-400">
+                  Used to link this order to an external job or project reference.
+                </p>
               </div>
 
               <div>

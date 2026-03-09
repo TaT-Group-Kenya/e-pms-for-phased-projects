@@ -18,7 +18,7 @@ class CompanyBankStoreRequest extends FormRequest
             'company_id' => ['nullable', 'exists:companies,id'],
             'type' => ['required', Rule::in(['Bank','MPESA', 'CASH'])],
             'account_no' => ['required', 'string', 'max:255'],
-            'swiftcode' => ['required', 'string', 'max:255'],
+            'swiftcode' => ['nullable', 'string', 'max:255'],
             'branch' => ['required', 'string', 'max:255'],
             'account_holder_name' => ['required', 'string', 'max:255'],
         ];

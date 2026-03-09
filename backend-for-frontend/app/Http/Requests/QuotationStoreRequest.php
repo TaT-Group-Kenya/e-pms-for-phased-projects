@@ -16,6 +16,12 @@ class QuotationStoreRequest extends FormRequest
     {
         return [
             'quotation_number' => ['nullable', 'string', 'max:255'],
+            'job_reference_id' => [
+                'required',
+                'string',
+                'max:32',
+                Rule::unique('quotations', 'job_reference_id')->where(fn ($q) => $q->where('is_deleted', false)),
+            ],
             'customer_id' => ['nullable', 'exists:customers,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:255'],

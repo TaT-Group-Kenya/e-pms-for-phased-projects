@@ -95,5 +95,14 @@ Route::prefix('/')->group(function () {
 		Route::get('cust-payments/{custPayment}/download-pdf', [App\Http\Controllers\Api\CustPaymentController::class, 'downloadPdf']);
 		Route::get('company-transactions-ledger/{company_transactions_ledger}/download-pdf', [App\Http\Controllers\Api\CompanyTransactionsLedgerController::class, 'downloadPdf']);
 		Route::get('customer-transactions-ledger/{customer_transactions_ledger}/download-pdf', [App\Http\Controllers\Api\CustomerTransactionsLedgerController::class, 'downloadPdf']);
+		Route::get('dashboard/projects-overview', [App\Http\Controllers\Api\DashboardInformationController::class, 'projectsOverview']);
+		Route::get('dashboard/projects-roadmap', [App\Http\Controllers\Api\DashboardInformationController::class, 'projectsRoadmap']);
+		Route::get('dashboard/projects-progress-overview', [App\Http\Controllers\Api\DashboardInformationController::class, 'projectsProgressOverview']);
+		Route::get('dashboard/recent-progress-updates', [App\Http\Controllers\Api\DashboardInformationController::class, 'recentProgressUpdates']);
+		Route::get('dashboard/latest-projects', [App\Http\Controllers\Api\DashboardInformationController::class, 'latestProjects']);
+		Route::get('dashboard/projects-analysis', [App\Http\Controllers\Api\DashboardInformationController::class, 'projectsAnalysis']);
+		Route::get('dashboard/top-customers-by-revenue', [App\Http\Controllers\Api\DashboardInformationController::class, 'topCustomersByRevenue']);
+		Route::get('dashboard/recent-orders', [App\Http\Controllers\Api\DashboardInformationController::class, 'recentOrders']);
+		Route::get('dashboard/quotations-overview', [App\Http\Controllers\Api\DashboardInformationController::class, 'quotationsOverview']);
 	});
 });

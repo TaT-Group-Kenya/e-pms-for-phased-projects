@@ -13,6 +13,8 @@ class CompanyInvoiceItemResource extends BaseResource
             'item_name' => $this->item_name,
             'item_description' => $this->item_description,
             'item_amount' => (float) $this->item_amount,
+            'quantity' => (int) ($this->quantity ?? 1),
+            'total' => (float) ($this->total ?? 0),
             'is_taxable' => (bool) $this->is_taxable,
             'tax_id' => $this->tax_id,
             'tax_item_name' => $this->tax_item_name,

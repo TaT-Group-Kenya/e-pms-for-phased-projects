@@ -41,6 +41,7 @@ interface QuotationOption {
   id: number;
   quotation_number: string;
   title?: string | null;
+  job_reference_id?: string | null;
 }
 
 const CreateOrderForm: React.FC = () => {
@@ -58,6 +59,7 @@ const CreateOrderForm: React.FC = () => {
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<OrderFormData>({
     resolver: zodResolver(orderSchema),
     mode: "onBlur",
@@ -108,18 +110,38 @@ const CreateOrderForm: React.FC = () => {
     };
   }, [accessToken, addToast]);
 
+  const selectedQuotationId = watch("quotation_id");
+  const selectedQuotation = quotations.find(
+    (q) => q.id.toString() === (selectedQuotationId || "")
+  );
+
   const onSubmit: SubmitHandler<OrderFormData> = async (data) => {
     setIsSubmitting(true);
     setFormError("");
     setSuccessMessage("");
 
     try {
+      const selected = quotations.find(
+        (q) => q.id === Number(data.quotation_id)
+      );
+
+      const jobRef = selected?.job_reference_id || "";
+
+      if (!jobRef) {
+        setFormError(
+          "The selected quotation is missing a Job Reference ID. Please choose a different quotation or contact your administrator."
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
       const bodyData = {
         quotation_id: Number(data.quotation_id),
         title: data.title || "",
         description: data.description || "",
         payment_terms: data.payment_terms || "",
         notes_to_customer: data.notes_to_customer || "",
+        job_reference_id: jobRef,
       };
 
       const response = await fetch("/api/orders/create", {
@@ -215,6 +237,20 @@ const CreateOrderForm: React.FC = () => {
                   ))}
                 </select>
                 {renderFieldError("quotation_id")}
+              </div>
+
+              {/* Job Reference ID (derived from quotation) */}
+              <div className="mb-[20px]">
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Job Reference ID
+                </label>
+                <input
+                  type="text"
+                  value={selectedQuotation?.job_reference_id || ""}
+                  readOnly
+                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-gray-50 dark:bg-[#15203c] px-[17px] block w-full outline-0 cursor-not-allowed"
+                  placeholder="Select a quotation to see its Job Reference ID"
+                />
               </div>
 
               <div className="mb-[20px]">

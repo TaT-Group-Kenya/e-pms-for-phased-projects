@@ -85,6 +85,7 @@ class OrderService
             'discount_amount'     => $quotation->discount_amount,
             'total_amount'        => $quotation->total_amount,
             'currency'            => $quotation->currency,
+            'job_reference_id'    => $quotation->job_reference_id,
             'payment_terms'       => $overrides['payment_terms'] ?? $quotation->payment_terms,
             'notes_to_customer'   => $overrides['notes_to_customer'] ?? $quotation->notes_to_customer,
             'created_by'          => $userId,

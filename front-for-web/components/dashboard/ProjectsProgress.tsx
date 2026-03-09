@@ -1,47 +1,93 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { ApexOptions } from "apexcharts";
 import dynamic from "next/dynamic";
+import { useAppSelector } from "../../store/hooks";
+import { useToast } from "../../hooks/useToast";
+import { useDashboardFilters } from "./DashboardFiltersContext";
 
 // Dynamically import react-apexcharts with Next.js dynamic import
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
+type SeriesItem = {
+  name: string;
+  data: number[];
+};
+
+type ProgressOverviewResponse = {
+  categories: string[];
+  series: SeriesItem[];
+};
+
 const ProjectsProgress: React.FC = () => {
-  // selectedOption state
-  const [selectedOption, setSelectedOption] = useState<string>("Last 6 Months");
-
-  const handleSelect = (option: string) => {
-    setSelectedOption(option);
-    console.log(`Selected option: ${option}`); // Add your logic here
-  };
-
-  // Chart
+  const [categories, setCategories] = useState<string[]>([]);
+  const [series, setSeries] = useState<SeriesItem[]>([]);
   const [isChartLoaded, setChartLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const accessToken = useAppSelector((s) => s.auth.accessToken);
+  const { addToast } = useToast();
+
+  const { range } = useDashboardFilters();
 
   useEffect(() => {
     setChartLoaded(true);
   }, []);
 
-  const series = [
-    {
-      name: "Completed",
-      data: [70, 23, 45, 30, 62, 70],
-    },
-    {
-      name: "In Progress",
-      data: [15, 40, 37, 38, 80, 45],
-    },
-    {
-      name: "Not Start Yet",
-      data: [50, 11, 60, 15, 31, 30],
-    },
-    {
-      name: "Cancelled",
-      data: [30, 60, 25, 22, 50, 15],
-    },
-  ];
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const controller = new AbortController();
+
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `/api/dashboard/projects-progress-overview?range=${encodeURIComponent(
+            range
+          )}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
+          }
+        );
+
+        if (controller.signal.aborted) return;
+
+        if (!response.ok) {
+          addToast("Failed to load projects progress", "error");
+          setCategories([]);
+          setSeries([]);
+          return;
+        }
+
+        const body: ProgressOverviewResponse | { data: ProgressOverviewResponse } =
+          await response.json();
+        const payload = (body as any).data ?? body;
+
+        setCategories(payload.categories || []);
+        setSeries(payload.series || []);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        console.error("Error loading projects progress", error);
+        addToast("Error loading projects progress", "error");
+        setCategories([]);
+        setSeries([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchData();
+
+    return () => controller.abort();
+  }, [accessToken, addToast, range]);
 
   const options: ApexOptions = {
     chart: {
@@ -73,7 +119,7 @@ const ProjectsProgress: React.FC = () => {
       },
     },
     xaxis: {
-      categories: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+      categories,
       axisTicks: {
         show: false,
         color: "#ECEEF2",
@@ -133,49 +179,20 @@ const ProjectsProgress: React.FC = () => {
     },
   };
 
+  const hasData = series.some((s) => s.data.some((value) => value > 0));
+
   return (
     <>
-      <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+      <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md h-[500px] flex flex-col">
         <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-center justify-between">
           <div className="trezo-card-title">
             <h5 className="!mb-0">Projects Progress</h5>
           </div>
-
-          <div className="trezo-card-subtitle">
-            <Menu as="div" className="trezo-card-dropdown relative">
-              <MenuButton className="trezo-card-dropdown-btn inline-block transition-all hover:text-primary-500">
-                <span className="inline-block relative ltr:pr-[17px] ltr:md:pr-[20px] rtl:pl-[17px] rtl:ml:pr-[20px]">
-                  {selectedOption}
-                  <i className="ri-arrow-down-s-line text-lg absolute ltr:-right-[3px] rtl:-left-[3px] top-1/2 -translate-y-1/2"></i>
-                </span>
-              </MenuButton>
-
-              <MenuItems
-                transition
-                className=" transition-all bg-white shadow-3xl rounded-md top-full py-[15px] absolute ltr:right-0 rtl:left-0 w-[195px] z-[50] dark:bg-dark dark:shadow-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
-              >
-                {["This Day", "This Week", "This Month", "This Year"].map(
-                  (option) => (
-                    <MenuItem
-                      key={option}
-                      as="div"
-                      className={`block w-full transition-all text-black cursor-pointer ltr:text-left rtl:text-right relative py-[8px] px-[20px] hover:bg-gray-50 dark:text-white dark:hover:bg-black ${
-                        selectedOption === option ? "font-semibold" : ""
-                      }`}
-                      onClick={() => handleSelect(option)}
-                    >
-                      {option}
-                    </MenuItem>
-                  )
-                )}
-              </MenuItems>
-            </Menu>
-          </div>
         </div>
 
-        <div className="trezo-card-content">
-          <div className="-mt-[8px] -mb-[20px] ltr:-ml-[13px] rtl:-mr-[13px]">
-            {isChartLoaded && (
+        <div className="trezo-card-content flex-1 overflow-y-auto">
+          <div className="mt-[8px] -mb-[20px] ltr:-ml-[13px] rtl:-mr-[13px]">
+            {isChartLoaded && hasData && (
               <Chart
                 options={options}
                 series={series}
@@ -183,6 +200,16 @@ const ProjectsProgress: React.FC = () => {
                 height={322}
                 width={"100%"}
               />
+            )}
+            {isChartLoaded && !loading && !hasData && (
+              <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                No projects found for the selected period.
+              </p>
+            )}
+            {loading && (
+              <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                Loading projects progress...
+              </p>
             )}
           </div>
         </div>

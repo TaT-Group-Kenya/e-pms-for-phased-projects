@@ -16,6 +16,15 @@ class OrderUpdateRequest extends FormRequest
     {
         return [
             'quotation_id' => ['sometimes', 'required', 'exists:quotations,id'],
+            'job_reference_id' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:32',
+                Rule::unique('orders', 'job_reference_id')
+                    ->ignore($this->route('order') ?? $this->route('id'))
+                    ->where(fn ($q) => $q->where('is_deleted', false)),
+            ],
             'customer_id' => ['sometimes', 'required', 'exists:customers,id'],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:255'],

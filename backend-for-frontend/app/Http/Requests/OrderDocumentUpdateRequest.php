@@ -18,7 +18,12 @@ class OrderDocumentUpdateRequest extends FormRequest
             'order_id' => ['nullable', 'exists:orders,id'],
             // On update, a new file is optional; when provided it will
             // overwrite the stored path on the model.
-            'document_file' => ['sometimes', 'file'],
+            'document_file' => [
+                'sometimes',
+                'file',
+                'mimes:pdf,xlsx,docx,jpg,jpeg,png',
+                'max:3072', // max size in KB (3MB)
+            ],
             'document_type' => ['sometimes', 'required', Rule::in(['proposal','terms','attachments'])],
         ];
     }

@@ -79,37 +79,111 @@ class AccountController extends Controller
         $this->authorize('update', $account);
 
         $data = $request->validate([
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'source_account_id' => ['required', 'integer'],
+            'source_debit_amount' => ['required', 'numeric', 'min:0.01'],
+            'exchange_rate' => ['nullable', 'numeric', 'min:0.0000001'],
+            'amount' => ['nullable', 'numeric', 'min:0.01'],
             'transaction_date' => ['nullable', 'date'],
             'posted_date' => ['nullable', 'date'],
             'narration' => ['nullable', 'string', 'max:1000'],
         ]);
-
-        $amount = (float) $data['amount'];
         $transactionDate = $data['transaction_date'] ?? now()->toDateString();
         $postedDate = $data['posted_date'] ?? now()->toDateString();
 
         $userId = $request->user()?->id;
+        $sourceAccount = Account::findOrFail($data['source_account_id']);
 
-        DB::transaction(function () use ($account, $amount, $transactionDate, $postedDate, $data, $userId, $transactionService) {
-            $baseCurrency = $account->currency;
+        // Prevent using the same account as both source and target
+        if ($sourceAccount->id === $account->id) {
+            return response()->json([
+                'message' => 'Source account must be different from the account being topped up.',
+            ], 422);
+        }
 
+        // Basic balance and currency validation for the source account
+        $sourceCurrency = (string) $sourceAccount->currency;
+        $targetCurrency = (string) $account->currency;
+
+        $exchangeRate = 1.0;
+        if ($sourceCurrency && $targetCurrency && $sourceCurrency !== $targetCurrency) {
+            if (!isset($data['exchange_rate'])) {
+                return response()->json([
+                    'message' => 'Exchange rate is required when source and target currencies differ.',
+                ], 422);
+            }
+            $exchangeRate = (float) $data['exchange_rate'];
+            if ($exchangeRate <= 0) {
+                return response()->json([
+                    'message' => 'Exchange rate must be greater than zero.',
+                ], 422);
+            }
+        }
+
+        // Canonical flow: user specifies source_debit_amount in the
+        // source account's currency. When currencies differ, we derive
+        // the target (top-up) amount as source_debit_amount * exchange_rate.
+        $sourceDebitAmount = (float) $data['source_debit_amount'];
+
+        if ($sourceDebitAmount <= 0) {
+            return response()->json([
+                'message' => 'Source debit amount must be greater than zero.',
+            ], 422);
+        }
+
+        // If currencies are the same, treat exchange rate as 1:1 regardless
+        // of what the client sends.
+        if ($sourceCurrency === $targetCurrency) {
+            $exchangeRate = 1.0;
+        }
+
+        // Interpret exchange rate as: 1 SOURCE = X TARGET
+        // i.e. exchange_rate = how many units of target currency equal 1 unit of source currency.
+        // When currencies differ, the top-up (target) amount is: source_debit_amount * exchange_rate.
+        $amount = $sourceCurrency === $targetCurrency
+            ? $sourceDebitAmount
+            : ($sourceDebitAmount * $exchangeRate);
+
+        if ($amount <= 0) {
+            return response()->json([
+                'message' => 'Calculated top-up amount must be greater than zero.',
+            ], 422);
+        }
+
+        if ((float) $sourceAccount->balance <= 0 || (float) $sourceAccount->balance < $sourceDebitAmount) {
+            return response()->json([
+                'message' => 'Source account does not have enough balance for this top-up.',
+            ], 422);
+        }
+
+        DB::transaction(function () use (
+            $account,
+            $sourceAccount,
+            $amount,
+            $sourceDebitAmount,
+            $transactionDate,
+            $postedDate,
+            $data,
+            $userId,
+            $transactionService,
+            $exchangeRate,
+            $sourceCurrency,
+            $targetCurrency
+        ) {
             $commonService = new CommonService();
             $transactionNumber = $commonService->generateUniqueCode('TRX-');
 
+            // Record debit on the source account in its own currency
             $transactionService->create([
                 'transaction_number' => $transactionNumber,
-                // Use a valid enum value for transaction_type in the current schema
-                'transaction_type' => 'topup',
+                'transaction_type' => 'expense',
                 'transaction_date' => $transactionDate,
                 'posted_date' => $postedDate,
-                'amount' => $amount,
-                'base_currency' => $baseCurrency,
+                'amount' => $sourceDebitAmount,
+                'base_currency' => $targetCurrency,
                 'tax_amount' => 0,
-                'net_amount' => $amount,
-                'transaction_currency' => $baseCurrency,
-                'base_currency' => $baseCurrency,
-                'exchange_rate' => 1,
+                'net_amount' => $sourceDebitAmount,
+                'transaction_currency' => $sourceCurrency,
+                'exchange_rate' => $exchangeRate,
                 'converted_amount' => $amount,
                 'converted_tax_amount' => 0,
                 'converted_net_amount' => $amount,
@@ -117,14 +191,52 @@ class AccountController extends Controller
                 'company_id' => null,
                 'source_type' => 'account_topup',
                 'source_id' => $account->id,
-                'account_debit' => null,
-                'account_credit' => $account->id,
-                // Top-ups increase funds, so classify as revenue
+                'account_debit' => $sourceAccount->id,
+                'account_credit' => null,
                 'category' => 'revenue',
                 'payment_method' => 'CASH',
                 'bank_account' => null,
                 'check_number' => null,
-                // Immediately cleared since this is an internal top-up
+                'transaction_status' => 'cleared',
+                'related_transaction_id' => null,
+                'narration' => $data['narration'] ?? 'Funding account top-up',
+                'is_recurring' => false,
+                'fiscal_year' => now()->year,
+                'accounting_period' => now()->format('Y-m'),
+                'is_adjusting_entry' => false,
+                'cost_center_id' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ]);
+
+            // Record credit on the target account in its own currency
+            $transactionNumber = $commonService->generateUniqueCode('TRX-');
+            $transactionService->create([
+                'transaction_number' => $transactionNumber,
+                'transaction_type' => 'topup',
+                'transaction_date' => $transactionDate,
+                'posted_date' => $postedDate,
+                'amount' => $amount,
+                'base_currency' => $sourceCurrency,
+                'tax_amount' => 0,
+                'net_amount' => $amount,
+                'transaction_currency' => $targetCurrency,
+                'exchange_rate' => $exchangeRate,
+                'converted_amount' => $sourceDebitAmount,
+                'converted_tax_amount' => 0,
+                'converted_net_amount' => $sourceDebitAmount,
+                'customer_id' => null,
+                'company_id' => null,
+                'source_type' => 'account_topup',
+                'source_id' => $account->id,
+                'account_debit' => null,
+                'account_credit' => $account->id,
+                'category' => 'revenue',
+                'payment_method' => 'CASH',
+                'bank_account' => null,
+                'check_number' => null,
                 'transaction_status' => 'cleared',
                 'related_transaction_id' => null,
                 'narration' => $data['narration'] ?? 'Account top-up',
@@ -139,7 +251,13 @@ class AccountController extends Controller
                 'updated_by' => $userId,
             ]);
 
-            // Increase the account balance
+            // Decrease the source account balance
+            $sourceAccount->balance = (float) $sourceAccount->balance - $sourceDebitAmount;
+            $sourceAccount->updated_at = now();
+            $sourceAccount->updated_by = $userId;
+            $sourceAccount->save();
+
+            // Increase the target account balance
             $account->balance = (float) $account->balance + $amount;
             $account->updated_at = now();
             $account->updated_by = $userId;

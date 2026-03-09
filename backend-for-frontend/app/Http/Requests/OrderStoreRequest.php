@@ -16,6 +16,12 @@ class OrderStoreRequest extends FormRequest
     {
         return [
             'quotation_id' => ['required', 'exists:quotations,id'],
+            'job_reference_id' => [
+                'required',
+                'string',
+                'max:32',
+                Rule::unique('orders', 'job_reference_id')->where(fn ($q) => $q->where('is_deleted', false)),
+            ],
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'payment_terms' => ['nullable', 'string', 'max:255'],

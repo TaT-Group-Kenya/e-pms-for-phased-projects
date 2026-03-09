@@ -66,10 +66,16 @@ const AccountStatementPage: React.FC = () => {
   const [reloadKey, setReloadKey] = useState(0);
 
   const [showTopupModal, setShowTopupModal] = useState(false);
-  const [topupAmount, setTopupAmount] = useState<string>("");
   const [topupDate, setTopupDate] = useState<string>("");
   const [topupNarration, setTopupNarration] = useState<string>("");
   const [toppingUp, setToppingUp] = useState(false);
+  const [sourceAccounts, setSourceAccounts] = useState<
+    { id: number; code: string; name: string; currency: string; balance: number }[]
+  >([]);
+  const [loadingSources, setLoadingSources] = useState(false);
+  const [selectedSourceId, setSelectedSourceId] = useState<string>("");
+  const [sourceDebitAmount, setSourceDebitAmount] = useState<string>("");
+  const [forexRate, setForexRate] = useState<string>("");
 
   useEffect(() => {
     if (!id || !accessToken) return;
@@ -134,11 +140,81 @@ const AccountStatementPage: React.FC = () => {
       return;
     }
 
-    setTopupAmount("");
     setTopupNarration("Account top-up");
     setTopupDate(new Date().toISOString().slice(0, 10));
+    setSelectedSourceId("");
+    setSourceDebitAmount("");
+    setForexRate("");
     setShowTopupModal(true);
   };
+
+  // Load eligible source accounts (with balance > 0 and excluding the current account)
+  useEffect(() => {
+    if (!showTopupModal || !accessToken || !account) return;
+
+    const controller = new AbortController();
+
+    const fetchSources = async () => {
+      setLoadingSources(true);
+      try {
+        const url = "/api/accounts/list?page=1&per_page=100";
+        const resp = await fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
+        });
+
+        const data: any = await resp.json().catch(() => null);
+
+        if (!resp.ok) {
+          addToast(data?.message || "Failed to load accounts for source selection", "error");
+          setSourceAccounts([]);
+          return;
+        }
+
+        const items = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data)
+          ? data
+          : [];
+
+        const mapped: { id: number; code: string; name: string; currency: string; balance: number }[] =
+          (items || []).map((acc: any) => {
+            const rawBalance = acc.balance ?? "0";
+            const balanceNum =
+              typeof rawBalance === "number" ? rawBalance : parseFloat(String(rawBalance));
+
+            return {
+              id: Number(acc.id),
+              code: String(acc.code ?? ""),
+              name: String(acc.name ?? ""),
+              currency: String(
+                acc.currency ?? acc.currency_code ?? acc.currency?.code ?? "",
+              ),
+              balance: Number.isFinite(balanceNum) ? balanceNum : 0,
+            };
+          });
+
+        const currentId = account.id;
+        const eligible = mapped.filter((acc) => acc.id !== currentId && acc.balance > 0);
+        setSourceAccounts(eligible);
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+        // eslint-disable-next-line no-console
+        console.error("fetch source accounts error", err);
+        addToast("Error loading source accounts. Please try again.", "error");
+        setSourceAccounts([]);
+      } finally {
+        setLoadingSources(false);
+      }
+    };
+
+    fetchSources();
+
+    return () => controller.abort();
+  }, [showTopupModal, accessToken, account, addToast]);
 
   const handleSubmitTopup = async () => {
     if (!id) return;
@@ -148,9 +224,61 @@ const AccountStatementPage: React.FC = () => {
       return;
     }
 
-    const amount = parseFloat(topupAmount || "0");
-    if (!topupAmount || Number.isNaN(amount) || amount <= 0) {
-      addToast("Please enter a valid top-up amount greater than zero.", "error");
+    if (!account) {
+      addToast("Account details not loaded yet.", "error");
+      return;
+    }
+
+    if (!selectedSourceId) {
+      addToast("Please select a source account for this top-up.", "error");
+      return;
+    }
+
+    const selectedSource = sourceAccounts.find(
+      (acc) => String(acc.id) === String(selectedSourceId),
+    );
+
+    if (!selectedSource) {
+      addToast("Selected source account is not available.", "error");
+      return;
+    }
+
+    const rawSourceAmount = parseFloat(sourceDebitAmount || "0");
+    if (!sourceDebitAmount || Number.isNaN(rawSourceAmount) || rawSourceAmount <= 0) {
+      addToast("Please enter a valid source debit amount greater than zero.", "error");
+      return;
+    }
+
+    const targetCurrency = account.currency || "";
+    const sourceCurrency = selectedSource.currency || "";
+    const currenciesDiffer =
+      !!sourceCurrency && !!targetCurrency && sourceCurrency !== targetCurrency;
+
+    let exchangeRateValue: number | undefined;
+
+    if (currenciesDiffer) {
+      const rate = parseFloat(forexRate || "0");
+      if (!forexRate || Number.isNaN(rate) || rate <= 0) {
+        addToast("Please enter a valid forex rate greater than zero.", "error");
+        return;
+      }
+      exchangeRateValue = rate;
+    } else {
+      exchangeRateValue = 1;
+    }
+
+    const amount = currenciesDiffer && exchangeRateValue
+      ? rawSourceAmount * exchangeRateValue
+      : rawSourceAmount;
+
+    if (amount <= 0) {
+      addToast("Calculated top-up amount must be greater than zero.", "error");
+      return;
+    }
+
+    // Basic client-side check that the source account has enough balance
+    if (rawSourceAmount > selectedSource.balance) {
+      addToast("Source account does not have enough balance for this top-up.", "error");
       return;
     }
 
@@ -158,10 +286,15 @@ const AccountStatementPage: React.FC = () => {
     try {
       const payload: any = {
         amount,
+        source_debit_amount: rawSourceAmount,
         narration: topupNarration.trim() || undefined,
+        source_account_id: selectedSource.id,
       };
       if (topupDate) {
         payload.transaction_date = topupDate;
+      }
+      if (currenciesDiffer && exchangeRateValue && exchangeRateValue !== 1) {
+        payload.exchange_rate = exchangeRateValue;
       }
 
       const resp = await fetch(`/api/accounts/${id}/topup`, {
@@ -182,8 +315,10 @@ const AccountStatementPage: React.FC = () => {
 
       addToast("Account topped up successfully.", "success");
       setShowTopupModal(false);
-      setTopupAmount("");
       setTopupNarration("");
+      setSelectedSourceId("");
+      setSourceDebitAmount("");
+      setForexRate("");
       setReloadKey((k) => k + 1);
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -509,36 +644,143 @@ const AccountStatementPage: React.FC = () => {
 
             <div className="space-y-[12px] mb-[18px]">
               <div>
-                <label className="block text-xs font-medium mb-[5px]">Amount ({account?.currency || "KES"})</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={topupAmount}
-                  onChange={(e) => setTopupAmount(e.target.value)}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
+                <label className="block text-xs font-medium mb-[5px]">Source of money</label>
+                <select
+                  value={selectedSourceId}
+                  onChange={(e) => setSelectedSourceId(e.target.value)}
+                  disabled={loadingSources || toppingUp}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select source account</option>
+                  {sourceAccounts.map((src) => (
+                    <option key={src.id} value={src.id}>
+                      {src.name} ({src.code}) — {src.currency || ""} {" "}
+                      {Number(src.balance).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </option>
+                  ))}
+                </select>
+                {showTopupModal && !loadingSources && sourceAccounts.length === 0 && (
+                  <p className="mt-[4px] text-[11px] text-yellow-600 dark:text-yellow-400">
+                    No eligible source accounts with a positive balance were found.
+                  </p>
+                )}
               </div>
 
-              <div>
-                <label className="block text-xs font-medium mb-[5px]">Date</label>
-                <input
-                  type="date"
-                  value={topupDate}
-                  onChange={(e) => setTopupDate(e.target.value)}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-              </div>
+              {(() => {
+                if (!account || !selectedSourceId) return null;
+                const selectedSource = sourceAccounts.find(
+                  (acc) => String(acc.id) === String(selectedSourceId),
+                );
+                if (!selectedSource) return null;
 
-              <div>
-                <label className="block text-xs font-medium mb-[5px]">Narration</label>
-                <textarea
-                  rows={3}
-                  value={topupNarration}
-                  onChange={(e) => setTopupNarration(e.target.value)}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-              </div>
+                const targetCurrency = account.currency || "";
+                const sourceCurrency = selectedSource.currency || "";
+                const currenciesDiffer =
+                  !!sourceCurrency && !!targetCurrency && sourceCurrency !== targetCurrency;
+
+                const sourceAmountNum = parseFloat(sourceDebitAmount || "0");
+                const rateNum = parseFloat(forexRate || "0");
+                const hasSourceAmount = sourceAmountNum > 0;
+                const hasValidRate = rateNum > 0;
+
+                const calculatedTopupAmount = currenciesDiffer && hasSourceAmount && hasValidRate
+                  ? sourceAmountNum * rateNum
+                  : !currenciesDiffer && hasSourceAmount
+                  ? sourceAmountNum
+                  : 0;
+
+                return (
+                  <>
+                    <div>
+                      <label className="block text-xs font-medium mb-[5px]">
+                        Source debit amount ({sourceCurrency || "---"})
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={sourceDebitAmount}
+                        onChange={(e) => setSourceDebitAmount(e.target.value)}
+                        className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      />
+                      <p className="mt-[3px] text-[11px] text-gray-500 dark:text-gray-400">
+                        This is the amount that will be debited from the selected source account.
+                      </p>
+                    </div>
+
+                    {currenciesDiffer && hasSourceAmount && (
+                      <div>
+                        <label className="block text-xs font-medium mb-[5px]">
+                          Forex rate (1 {sourceCurrency} = ? {targetCurrency})
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.0001"
+                          value={forexRate}
+                          onChange={(e) => setForexRate(e.target.value)}
+                          className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        />
+                        {hasValidRate && (
+                          <p className="mt-[3px] text-[11px] text-gray-500 dark:text-gray-400">
+                            {sourceAmountNum.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}{" "}
+                            {sourceCurrency} × {rateNum.toLocaleString(undefined, {
+                              minimumFractionDigits: 4,
+                              maximumFractionDigits: 4,
+                            })}{" "}
+                            = {calculatedTopupAmount.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}{" "}
+                            {targetCurrency}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-medium mb-[5px]">
+                        Top-up amount ({targetCurrency || "---"})
+                      </label>
+                      <input
+                        type="number"
+                        readOnly
+                        value={calculatedTopupAmount || ""}
+                        className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-gray-50 dark:bg-[#111827] text-sm focus:outline-none"
+                      />
+                      <p className="mt-[3px] text-[11px] text-gray-500 dark:text-gray-400">
+                        This is the amount that will be credited to the destination account being topped up.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium mb-[5px]">Date</label>
+                      <input
+                        type="date"
+                        value={topupDate}
+                        onChange={(e) => setTopupDate(e.target.value)}
+                        className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium mb-[5px]">Narration</label>
+                      <textarea
+                        rows={3}
+                        value={topupNarration}
+                        onChange={(e) => setTopupNarration(e.target.value)}
+                        className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      />
+                    </div>
+                  </>
+                );
+              })()}
             </div>
 
             <div className="flex justify-end space-x-[10px]">

@@ -12,6 +12,7 @@ class Order extends Model
 
     protected $fillable = [
         'order_number',
+        'job_reference_id',
         'quotation_id',
         'project_id',
         'customer_id',
@@ -63,5 +64,12 @@ class Order extends Model
     public function custInvoices()
     {
         return $this->hasMany(CustInvoice::class, 'order_id');
+    }
+
+    public function setJobReferenceIdAttribute($value): void
+    {
+        $this->attributes['job_reference_id'] = $value !== null
+            ? strtoupper((string) $value)
+            : null;
     }
 }
