@@ -78,7 +78,7 @@ const ProjectsRoadmap: React.FC = () => {
 
   const series = [
     {
-      name: "Projects",
+      name: "Progress(%)",
       data: items.map((item) => item.progress ?? 0),
     },
   ];
@@ -89,7 +89,7 @@ const ProjectsRoadmap: React.FC = () => {
         show: false,
       },
     },
-    colors: ["#3584FC"],
+    colors: ["#3584FC", "#fe7a36", "#0ab39c"],
     plotOptions: {
       bar: {
         horizontal: true,
@@ -149,7 +149,7 @@ const ProjectsRoadmap: React.FC = () => {
         </div>
 
         <div className="trezo-card-content flex-1 overflow-y-auto">
-          <div className="-mt-[26px] -mb-[25px] ltr:-ml-[10px] rtl:-mr-[10px]">
+          <div className="mt-[26px] -mb-[25px] ltr:-ml-[10px] rtl:-mr-[10px]">
             {isChartLoaded && (
               <Chart
                 options={options}
