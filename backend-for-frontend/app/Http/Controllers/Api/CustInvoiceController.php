@@ -321,6 +321,8 @@ class CustInvoiceController extends Controller
             $payment = CustPayment::create([
                 'transaction_number' => $transactionNumber,
                 'amount_paid' => $validated['amount_paid'],
+                'direction' => 'incoming',
+                'transaction_type' => 'receipt',
                 'tax_amount' => $taxPortion,
                 'net_amount' => $netPortion,
                 'payment_date' => $validated['payment_date'],

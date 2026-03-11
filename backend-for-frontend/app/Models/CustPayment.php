@@ -15,6 +15,8 @@ class CustPayment extends Model
     protected $fillable = [
         'transaction_id',
         'transaction_number',
+        'direction',
+        'transaction_type',
         'amount_paid',
         'tax_amount',
         'net_amount',

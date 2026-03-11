@@ -58,7 +58,7 @@ class CustCreditNoteItemController extends Controller
     {
         $this->authorize('delete', $custCreditNoteItem);
 
-        $this->service->delete($custCreditNoteItem->id);
+        $this->service->delete($custCreditNoteItem->id, Auth::id());
         return response()->noContent();
     }
 }

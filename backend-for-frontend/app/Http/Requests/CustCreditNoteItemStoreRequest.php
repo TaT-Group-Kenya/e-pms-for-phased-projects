@@ -15,10 +15,11 @@ class CustCreditNoteItemStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'credit_note_id' => ['nullable', 'exists:credit_notes,id'],
+            'credit_note_id' => ['nullable', 'exists:cust_credit_notes,id'],
             'item_name' => ['required', 'string', 'max:255'],
             'item_description' => ['required', 'string', 'max:255'],
             'item_amount' => ['required', 'numeric', 'min:0'],
+            'quantity' => ['sometimes', 'integer', 'min:1'],
             'is_taxable' => ['required', 'boolean'],
             'tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
             'tax_item_name' => ['nullable', 'string', 'max:255'],

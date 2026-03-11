@@ -15,18 +15,15 @@ class CompanyCreditNoteUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'credit_note_number' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('company_credit_notes')->ignore(
-                    $this->route('company_credit_note')
-                )],
             'invoice_id' => ['nullable', 'exists:company_invoices,id'],
-            'credit_note_date' => ['sometimes', 'required', 'date'],
-            'reason' => ['sometimes', 'required', 'string', 'max:255'],
+            'title' => ['sometimes', 'required', 'string', 'max:255'],
+            'description' => ['sometimes', 'required', 'string', 'max:255'],
+            'status' => ['sometimes', 'required', Rule::in(['draft','raised','refunded'])],
             'subtotal_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'tax_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'total_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'currency' => ['sometimes', 'required', 'string', 'max:255'],
-            'exchange_rate' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'status' => ['sometimes', 'required', Rule::in(['draft','raised','refunded'])],
+            'notes_to_customer' => ['sometimes', 'required', 'string', 'max:255'],
         ];
     }
 

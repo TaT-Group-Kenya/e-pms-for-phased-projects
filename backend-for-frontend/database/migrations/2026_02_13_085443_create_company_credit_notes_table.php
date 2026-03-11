@@ -10,14 +10,16 @@ return new class extends Migration
         Schema::create('company_credit_notes', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('invoice_id');
-            $table->string('title');
+            $table->string('credit_note_number')->unique();
+            $table->string('title')->nullable();
             $table->text('description')->nullable();
             $table->enum('status', ['draft','raised','refunded'])->default('draft');
             $table->decimal('subtotal_amount', 15, 2);
-            $table->decimal('tax_percentage', 8, 2);
+            $table->decimal('tax_percentage', 8, 2)->nullable();
             $table->decimal('tax_amount', 15, 2);
             $table->decimal('total_amount', 15, 2);
             $table->string('currency');
+            $table->string('exchange_rate')->nullable();
             $table->text('notes_to_customer')->nullable();
             $table->timestamps();
             $table->unsignedBigInteger('updated_by')->nullable();

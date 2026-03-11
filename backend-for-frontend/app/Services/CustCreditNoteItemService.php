@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\CustCreditNoteItem;
+use App\Models\CustCreditNote;
+use Illuminate\Validation\ValidationException;
 
 class CustCreditNoteItemService
 {
@@ -17,6 +19,17 @@ class CustCreditNoteItemService
         $query = CustCreditNoteItem::query();
         if (!empty($with)) {
             $query->with($with);
+        }
+        // Handle soft-delete visibility flags
+        $withDeleted = filter_var($filters['with_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
+        $onlyDeleted = filter_var($filters['only_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
+
+        unset($filters['with_deleted'], $filters['only_deleted']);
+
+        if ($onlyDeleted) {
+            $query->onlyDeleted();
+        } elseif ($withDeleted) {
+            $query->withDeleted();
         }
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
@@ -37,18 +50,51 @@ class CustCreditNoteItemService
 
     public function create(array $data)
     {
+        $creditNoteId = $data['credit_note_id'] ?? null;
+
+        if (! $creditNoteId) {
+            throw ValidationException::withMessages([
+                'credit_note_id' => 'Credit note id is required.',
+            ]);
+        }
+
+        $note = CustCreditNote::findOrFail($creditNoteId);
+
+        if (in_array($note->status, ['raised', 'refunded'], true)) {
+            throw ValidationException::withMessages([
+                'credit_note_id' => 'Credit note items cannot be modified when the credit note status is raised or refunded.',
+            ]);
+        }
+
         return CustCreditNoteItem::create($data);
     }
 
     public function update(int $id, array $data)
     {
         $model = CustCreditNoteItem::findOrFail($id);
+
+        $note = $model->creditNote;
+        if ($note && in_array($note->status, ['raised', 'refunded'], true)) {
+            throw ValidationException::withMessages([
+                'credit_note_id' => 'Credit note items cannot be modified when the credit note status is raised or refunded.',
+            ]);
+        }
+
         $model->update($data);
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return CustCreditNoteItem::destroy($id);
+        $model = CustCreditNoteItem::findOrFail($id);
+
+        $note = $model->creditNote;
+        if ($note && in_array($note->status, ['raised', 'refunded'], true)) {
+            throw ValidationException::withMessages([
+                'credit_note_id' => 'Credit note items cannot be modified when the credit note status is raised or refunded.',
+            ]);
+        }
+
+        return $model->softDelete($deletedBy);
     }
 }

@@ -1262,7 +1262,6 @@ export default function CustInvoiceDetailPage() {
                           Edit Header
                         </button>
                       </Can>
-
                       <button
                         type="button"
                         onClick={handleDownloadPdf}
@@ -1449,6 +1448,9 @@ export default function CustInvoiceDetailPage() {
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Amount
                           </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Actions
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1459,7 +1461,7 @@ export default function CustInvoiceDetailPage() {
                           >
                             <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
                               <Link
-                                href={`/cust/credit-notes/${cn.id}`}
+                                href={`/cust-invoices/credit-notes/${cn.id}`}
                                 className="font-medium text-primary-500 hover:text-primary-600 hover:underline"
                               >
                                 {cn.title}
@@ -1473,7 +1475,7 @@ export default function CustInvoiceDetailPage() {
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               <Link
-                                href={`/cust-credit-notes/${cn.id}`}
+                                href={`/cust-invoices/credit-notes/${cn.id}`}
                                 className="text-primary-500 hover:underline text-xs"
                               >
                                 View

@@ -967,14 +967,14 @@ export default function CompanyInvoiceDetailPage() {
         },
         body: JSON.stringify({
           invoice_id: invoice.id,
-          credit_note_date: today,
-          reason: creditNoteTitle,
+          title: creditNoteTitle,
+          description: creditNoteDescription || '',
+          notes_to_customer: creditNoteNotes || '',
+          status: 'draft',
           subtotal_amount: 0,
           tax_amount: 0,
           total_amount: 0,
           currency: invoice.currency,
-          exchange_rate: 1,
-          status: 'draft',
         }),
       })
 
@@ -2053,6 +2053,9 @@ export default function CompanyInvoiceDetailPage() {
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Amount
                           </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Actions
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2062,13 +2065,26 @@ export default function CompanyInvoiceDetailPage() {
                             className="border-b border-gray-100 dark:border-[#172036] align-middle"
                           >
                             <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
-                              <span className="font-medium">{cn.title}</span>
+                              <Link
+                                href={`/company/credit-notes/${cn.id}`}
+                                className="font-medium text-primary-500 hover:text-primary-600 hover:underline"
+                              >
+                                {cn.title}
+                              </Link>
                             </td>
                             <td className="text-sm capitalize ltr:text-left rtl:text-right px-[15px] py-[12px]">
                               {cn.status}
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {formatCurrency(cn.total_amount, cn.currency)}
+                            </td>
+                            <td className="text-sm text-right px-[15px] py-[12px]">
+                              <Link
+                                href={`/company/credit-notes/${cn.id}`}
+                                className="text-primary-500 hover:underline text-xs"
+                              >
+                                View
+                              </Link>
                             </td>
                           </tr>
                         ))}
@@ -3112,6 +3128,8 @@ export default function CompanyInvoiceDetailPage() {
                   value={creditNoteTitle}
                   onChange={(e) => setCreditNoteTitle(e.target.value)}
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  maxLength={100}
+                  required
                 />
               </div>
 
@@ -3122,16 +3140,18 @@ export default function CompanyInvoiceDetailPage() {
                   onChange={(e) => setCreditNoteDescription(e.target.value)}
                   rows={3}
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  maxLength={500}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium mb-[5px]">Notes (optional)</label>
+                <label className="block text-xs font-medium mb-[5px]">Notes to Customer (optional)</label>
                 <textarea
                   value={creditNoteNotes}
                   onChange={(e) => setCreditNoteNotes(e.target.value)}
                   rows={3}
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  maxLength={500}
                 />
               </div>
             </div>
@@ -3149,7 +3169,7 @@ export default function CompanyInvoiceDetailPage() {
                 <button
                   type="button"
                   onClick={handleCreateCreditNote}
-                  disabled={savingCreditNote}
+                  disabled={savingCreditNote || !creditNoteTitle.trim()}
                   className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {savingCreditNote ? 'Creating…' : 'Create Credit Note'}

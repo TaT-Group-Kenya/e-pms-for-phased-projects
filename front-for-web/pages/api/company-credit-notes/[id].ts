@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!resp.ok) {
         return res
           .status(resp.status)
-          .json(data?.errors || data || { message: 'Failed to load credit note' })
+          .json(data?.errors || data || { message: 'Failed to load company credit note' })
       }
 
       return res.status(resp.status).json(data)
@@ -54,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!resp.ok) {
         return res
           .status(resp.status)
-          .json(data?.errors || data || { message: 'Failed to update credit note' })
+          .json(data?.errors || data || { message: 'Failed to update company credit note' })
       }
 
       return res.status(resp.status).json(data)
@@ -74,10 +74,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!resp.ok) {
         return res
           .status(resp.status)
-          .json(data || { message: 'Failed to delete credit note' })
+          .json(data || { message: 'Failed to delete company credit note' })
       }
 
-      return res.status(resp.status).json(data || { message: 'Credit note deleted successfully' })
+      return res.status(resp.status).json(data || { message: 'Company credit note deleted successfully' })
     }
   } catch (err) {
     // eslint-disable-next-line no-console

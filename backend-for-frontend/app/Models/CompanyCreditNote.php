@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Traits\HasLogicalDeletion;
 
 class CompanyCreditNote extends Model
 {
+    use HasLogicalDeletion;
+
     protected $table = 'company_credit_notes';
 
     public $timestamps = false;
@@ -14,8 +17,9 @@ class CompanyCreditNote extends Model
     protected $fillable = [
         'credit_note_number',
         'invoice_id',
-        'credit_note_date',
-        'reason',
+        'title',
+        'description',
+        'notes_to_customer',
         'subtotal_amount',
         'tax_amount',
         'total_amount',
