@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 
-const internalImages = process.env.NEXT_PUBLIC_EPMS_API_BASE + '/images/logos/';
+const internalImages = process.env.NEXT_PUBLIC_EPMS_API_BASE;
 
 interface Company {
   id: number;
