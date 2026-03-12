@@ -7,6 +7,7 @@ import { ToastContainer } from '../../../components/common/Toast'
 import { useToast } from '../../../hooks/useToast'
 import { selectAccessToken } from '../../../store/auth/selectors'
 import Can from '../../../components/auth/Can'
+import { currencySymbols, formatCurrency } from '../../../utils/format'
 
 interface ProjectPhaseSummary {
   id: number
@@ -1076,16 +1077,6 @@ export default function CompanyInvoiceDetailPage() {
     return itemPhase || null
   })()
 
-  const formatCurrency = (value: number, currency: string) => {
-    if (Number.isNaN(value)) return '-'
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: currency || 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value || 0)
-  }
-
   const getStatusBadgeClass = (status: string): string => {
     switch (status?.toLowerCase()) {
       case 'draft':
@@ -1356,13 +1347,13 @@ export default function CompanyInvoiceDetailPage() {
                                 Qty
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Unit Price
+                                Unit Price({currencySymbols[invoice.currency]})
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Tax
+                                Tax({currencySymbols[invoice.currency]})
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Subtotal
+                                Subtotal({currencySymbols[invoice.currency]})
                               </th>
                             </tr>
                           </thead>
@@ -1370,17 +1361,11 @@ export default function CompanyInvoiceDetailPage() {
                             {invoice.invoiceItems.map((item) => {
                               const quantity = item.quantity ?? 1
                               const unitPrice = item.item_amount
-                              const lineTotal = item.total ?? unitPrice * quantity
-                              const isTaxable = Boolean(item.is_taxable)
-                              const taxRateLabel =
-                                item.item_type === 'percent' && item.item_value != null
-                                  ? `${item.item_value}%`
-                                  : null
                               const rawTaxAmount =
                                 item.tax_amount != null ? item.tax_amount : null
-                              const hasTaxAmount =
-                                typeof rawTaxAmount === 'number' && !Number.isNaN(rawTaxAmount)
-
+                              const hasTaxAmount = typeof rawTaxAmount === 'number' && !Number.isNaN(rawTaxAmount)
+                              const lineTotal = (item.total ?? unitPrice * quantity) + (hasTaxAmount ? rawTaxAmount : 0)
+                              const isTaxable = Boolean(item.is_taxable)
                               return (
                                 <tr
                                   key={item.id}
@@ -1412,17 +1397,15 @@ export default function CompanyInvoiceDetailPage() {
                                     {quantity}
                                   </td>
                                   <td className="text-sm text-right px-[15px] py-[12px]">
-                                    {formatCurrency(unitPrice, invoice.currency)}
+                                    {formatCurrency(unitPrice, '')}
                                   </td>
                                   <td className="text-sm text-right px-[15px] py-[12px] align-top">
-                                    {isTaxable && taxRateLabel && hasTaxAmount
-                                      ? `Tax(${taxRateLabel}): ${formatCurrency(rawTaxAmount as number, invoice.currency)}`
-                                      : isTaxable && hasTaxAmount
-                                      ? `Tax: ${formatCurrency(rawTaxAmount as number, invoice.currency)}`
+                                    {isTaxable && hasTaxAmount
+                                      ? `${formatCurrency(rawTaxAmount as number, '')}`
                                       : 'Not taxable'}
                                   </td>
                                   <td className="text-sm text-right px-[15px] py-[12px]">
-                                    {formatCurrency(lineTotal, invoice.currency)}
+                                    {formatCurrency(lineTotal, '')}
                                   </td>
                                 </tr>
                               )
@@ -1901,13 +1884,13 @@ export default function CompanyInvoiceDetailPage() {
                             Qty
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Unit Price
+                            Unit Price({currencySymbols[invoice.currency]})
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Tax
+                            Tax({currencySymbols[invoice.currency]})
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Subtotal
+                            Subtotal({currencySymbols[invoice.currency]})
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Actions
@@ -1918,16 +1901,12 @@ export default function CompanyInvoiceDetailPage() {
                         {invoice.invoiceItems.map((item) => {
                           const quantity = item.quantity ?? 1
                           const unitPrice = item.item_amount
-                          const lineTotal = item.total ?? unitPrice * quantity
-                          const isTaxable = Boolean(item.is_taxable)
-                          const taxRateLabel =
-                            item.item_type === 'percent' && item.item_value != null
-                              ? `${item.item_value}%`
-                              : null
                           const rawTaxAmount =
                             item.tax_amount != null ? item.tax_amount : null
                           const hasTaxAmount =
                             typeof rawTaxAmount === 'number' && !Number.isNaN(rawTaxAmount)
+                          const lineTotal = (item.total ?? unitPrice * quantity) + (hasTaxAmount ? rawTaxAmount : 0)
+                          const isTaxable = Boolean(item.is_taxable)
 
                           return (
                             <tr
@@ -1960,17 +1939,15 @@ export default function CompanyInvoiceDetailPage() {
                                 {quantity}
                               </td>
                               <td className="text-sm text-right px-[15px] py-[12px]">
-                                {formatCurrency(unitPrice, invoice.currency)}
+                                {formatCurrency(unitPrice, '')}
                               </td>
                               <td className="text-sm text-right px-[15px] py-[12px] align-top">
-                                {isTaxable && taxRateLabel && hasTaxAmount
-                                  ? `Tax(${taxRateLabel}): ${formatCurrency(rawTaxAmount as number, invoice.currency)}`
-                                  : isTaxable && hasTaxAmount
-                                  ? `Tax: ${formatCurrency(rawTaxAmount as number, invoice.currency)}`
+                                {isTaxable && hasTaxAmount
+                                  ? `${formatCurrency(rawTaxAmount as number, '')}`
                                   : 'Not taxable'}
                               </td>
                               <td className="text-sm text-right px-[15px] py-[12px]">
-                                {formatCurrency(lineTotal, invoice.currency)}
+                                {formatCurrency(lineTotal, '')}
                               </td>
                             <td className="text-sm text-right px-[15px] py-[12px] space-x-2">
                               <Can any={["ROLE_EDIT_COMPANY_INVOICE_ITEM"]}>

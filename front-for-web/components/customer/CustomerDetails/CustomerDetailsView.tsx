@@ -762,8 +762,29 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
                     <div className="flex items-center gap-[15px]">
                       <input
                         type="file"
-                        onChange={handleLogoChange}
-                        accept="image/*"
+                        accept="image/png,image/jpeg,image/jpg,image/webp"
+                        onChange={e => {
+                          const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+                          if (file) {
+                            const allowedTypes = [
+                              'image/png',
+                              'image/jpeg',
+                              'image/jpg',
+                              'image/webp',
+                            ];
+                            if (!allowedTypes.includes(file.type)) {
+                              addToast('Logo must be an image file (png, jpg, jpeg, webp)', 'error');
+                              e.target.value = '';
+                              return;
+                            }
+                            if (file.size > 5 * 1024 * 1024) {
+                              addToast('Logo must be less than 5MB', 'error');
+                              e.target.value = '';
+                              return;
+                            }
+                          }
+                          handleLogoChange(e);
+                        }}
                         className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 file:mr-[10px] file:py-[8px] file:px-[12px] file:rounded-md file:border-0 file:bg-primary-500 file:text-white file:cursor-pointer file:transition-all hover:file:bg-primary-400"
                       />
                       {logoPreview && (

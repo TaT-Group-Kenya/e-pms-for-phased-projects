@@ -8,6 +8,7 @@ import DeleteConfirmationModal from "../../components/common/DeleteConfirmationM
 import { useToast } from "../../hooks/useToast";
 import { selectAccessToken } from "../../store/auth/selectors";
 import Can from "../../components/auth/Can";
+import { currencySymbols, formatCurrency } from "../../utils/format";
 
 interface OrderItem {
   id: number;
@@ -520,16 +521,6 @@ const OrderDetailPage: React.FC = () => {
     } finally {
       setDownloadingDocumentId(null);
     }
-  };
-
-  const formatCurrency = (value: number, currency: string) => {
-    if (Number.isNaN(value)) return "-";
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currency || "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value || 0);
   };
 
   const getStatusBadgeClass = (status: string): string => {
@@ -1368,13 +1359,13 @@ const OrderDetailPage: React.FC = () => {
                                 Qty
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Unit Price
+                                Unit Price({ currencySymbols[order.currency]})
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Tax
+                                Tax({ currencySymbols[order.currency]})
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Subtotal
+                                Subtotal({ currencySymbols[order.currency]})
                               </th>
                             </tr>
                           </thead>
@@ -1382,16 +1373,12 @@ const OrderDetailPage: React.FC = () => {
                             {(order.orderItems ?? []).map((item) => {
                               const quantity = item.quantity ?? 1
                               const unitPrice = item.order_amount
-                              const lineTotal = item.total ?? unitPrice * quantity
-                              const isTaxable = Boolean(item.is_taxable)
-                              const taxRateLabel =
-                                item.item_type === "percent" && item.item_value != null
-                                  ? `${item.item_value}%`
-                                  : null
                               const rawTaxAmount =
                                 item.item_amount != null ? item.item_amount : null
                               const hasTaxAmount =
                                 typeof rawTaxAmount === "number" && !Number.isNaN(rawTaxAmount)
+                              const lineTotal = (item.total ?? unitPrice * quantity) + (hasTaxAmount ? rawTaxAmount : 0)
+                              const isTaxable = Boolean(item.is_taxable)
 
                               return (
                                 <tr
@@ -1410,17 +1397,15 @@ const OrderDetailPage: React.FC = () => {
                                     {quantity}
                                   </td>
                                   <td className="text-sm text-right px-[15px] py-[12px]">
-                                    {formatCurrency(unitPrice, order.currency)}
+                                    {formatCurrency(unitPrice, '')}
                                   </td>
                                   <td className="text-sm text-right px-[15px] py-[12px] align-top">
-                                    {isTaxable && taxRateLabel && hasTaxAmount
-                                      ? `Tax(${taxRateLabel}): ${formatCurrency(rawTaxAmount as number, order.currency)}`
-                                      : isTaxable && hasTaxAmount
-                                      ? `Tax: ${formatCurrency(rawTaxAmount as number, order.currency)}`
+                                    {isTaxable && hasTaxAmount
+                                      ? `${formatCurrency(rawTaxAmount as number, '')}`
                                       : "Not taxable"}
                                   </td>
                                   <td className="text-sm text-right px-[15px] py-[12px]">
-                                    {formatCurrency(lineTotal, order.currency)}
+                                    {formatCurrency(lineTotal, '')}
                                   </td>
                                 </tr>
                               )
@@ -1766,13 +1751,13 @@ const OrderDetailPage: React.FC = () => {
                             Qty
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Unit Price
+                            Unit Price({currencySymbols[order.currency]})
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Tax
+                            Tax({currencySymbols[order.currency]})
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Subtotal
+                            Subtotal({currencySymbols[order.currency]})
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Actions
@@ -1783,16 +1768,12 @@ const OrderDetailPage: React.FC = () => {
                         {(order.orderItems ?? []).map((item) => {
                           const quantity = item.quantity ?? 1
                           const unitPrice = item.order_amount
-                          const lineTotal = item.total ?? unitPrice * quantity
                           const isTaxable = Boolean(item.is_taxable)
-                          const taxRateLabel =
-                            item.item_type === "percent" && item.item_value != null
-                              ? `${item.item_value}%`
-                              : null
                           const rawTaxAmount =
                             item.item_amount != null ? item.item_amount : null
                           const hasTaxAmount =
                             typeof rawTaxAmount === "number" && !Number.isNaN(rawTaxAmount)
+                          const lineTotal = (item.total ?? unitPrice * quantity) + (hasTaxAmount ? rawTaxAmount : 0)
 
                           return (
                             <tr
@@ -1811,17 +1792,15 @@ const OrderDetailPage: React.FC = () => {
                                 {quantity}
                               </td>
                               <td className="text-sm text-right px-[15px] py-[12px]">
-                                {formatCurrency(unitPrice, order.currency)}
+                                {formatCurrency(unitPrice, '')}
                               </td>
                               <td className="text-sm text-right px-[15px] py-[12px] align-top">
-                                {isTaxable && taxRateLabel && hasTaxAmount
-                                  ? `Tax(${taxRateLabel}): ${formatCurrency(rawTaxAmount as number, order.currency)}`
-                                  : isTaxable && hasTaxAmount
-                                  ? `Tax: ${formatCurrency(rawTaxAmount as number, order.currency)}`
+                                {isTaxable && hasTaxAmount
+                                  ? `${formatCurrency(rawTaxAmount as number, '')}`
                                   : "Not taxable"}
                               </td>
                               <td className="text-sm text-right px-[15px] py-[12px]">
-                                {formatCurrency(lineTotal, order.currency)}
+                                {formatCurrency(lineTotal, '')}
                               </td>
                               <td className="text-sm text-right px-[15px] py-[12px] whitespace-nowrap">
                                 <button
@@ -2574,17 +2553,44 @@ const OrderDetailPage: React.FC = () => {
                 </label>
                 <input
                   type="file"
-                  onChange={(e) =>
-                    setDocumentFile(
-                      e.target.files && e.target.files[0] ? e.target.files[0] : null
-                    )
-                  }
+                  accept=".doc,.docx,.xls,.xlsx,.pdf,.png,.jpg,.jpeg,.webp,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,image/png,image/jpeg,image/webp"
+                  onChange={(e) => {
+                    const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+                    if (file) {
+                      const allowedTypes = [
+                        'application/msword',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'application/vnd.ms-excel',
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        'application/pdf',
+                        'image/png',
+                        'image/jpeg',
+                        'image/webp',
+                      ];
+                      const allowedExts = ['.doc', '.docx', '.xls', '.xlsx', '.pdf', '.png', '.jpg', '.jpeg', '.webp'];
+                      const fileName = file.name.toLowerCase();
+                      const hasAllowedExt = allowedExts.some(ext => fileName.endsWith(ext));
+                      if (!allowedTypes.includes(file.type) && !hasAllowedExt) {
+                        addToast('Invalid file type. Allowed: doc, docx, xls, xlsx, pdf, png, jpg, jpeg, webp.', 'error');
+                        e.target.value = '';
+                        setDocumentFile(null);
+                        return;
+                      }
+                      if (file.size > 5 * 1024 * 1024) {
+                        addToast('File size exceeds 5MB limit.', 'error');
+                        e.target.value = '';
+                        setDocumentFile(null);
+                        return;
+                      }
+                    }
+                    setDocumentFile(file);
+                  }}
                   className="block w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-primary-50 file:text-primary-600 hover:file:bg-primary-100 cursor-pointer"
                   required
                 />
                 <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
-                  The file will be uploaded and its stored path will be
-                  saved automatically.
+                  Allowed file types: doc, docx, xls, xlsx, pdf, png, jpg, jpeg, webp. Max size: 5MB.<br/>
+                  The file will be uploaded and its stored path will be saved automatically.
                 </p>
               </div>
 

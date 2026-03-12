@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             CurrencySeeder::class,
             CompanySeeder::class,
             CustomerSeeder::class,
+            SysConfigSeeder::class,
         ]);
     }
 }

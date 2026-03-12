@@ -10,6 +10,7 @@ import DeleteConfirmationModal from "../../components/common/DeleteConfirmationM
 import { formatApiError } from "../../utils/errorHandler";
 import { set } from "zod";
 import Can from "../../components/auth/Can";
+import { currencySymbols, formatCurrency } from "../../utils/format";
 
 interface QuoteLineItem {
   id: number;
@@ -954,15 +955,6 @@ const QuotationDetail: React.FC = () => {
         )
       : quotation?.subtotal_amount ?? 0;
 
-  const formatCurrency = (value: number, currency: string) => {
-    if (Number.isNaN(value)) return "-";
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currency || "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value || 0);
-  };
 
   const defaultTax = useMemo(() => {
     if (!taxes || taxes.length === 0) return null;
@@ -1286,9 +1278,9 @@ const QuotationDetail: React.FC = () => {
                           <tr>
                             <th className="font-medium ltr:text-left rtl:text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Item</th>
                             <th className="font-medium text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Qty</th>
-                            <th className="font-medium text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Unit Price</th>
-                            <th className="font-medium text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Tax</th>
-                            <th className="font-medium text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Subtotal</th>
+                            <th className="font-medium text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Unit Price({currencySymbols[quotation.currency]})</th>
+                            <th className="font-medium text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Tax({currencySymbols[quotation.currency]})</th>
+                            <th className="font-medium text-right px-[15px] py-[12px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap text-sm">Subtotal({currencySymbols[quotation.currency]})</th>
                           </tr>
                         </thead>
                         <tbody className="text-black dark:text-white text-sm">
@@ -1296,20 +1288,20 @@ const QuotationDetail: React.FC = () => {
                             <>
                               {quotation.quoteItems.map((item: any, index: number) => {
                                 const quantity = item.quantity ?? 1;
-                                const unitPrice = item.item_amount ?? 0;
-                                const lineTotal = item.total ?? unitPrice * quantity;
+                                const unitPrice = item.quoted_amount ?? 0;
                                 const isTaxable = Boolean(item.is_taxable);
                                 const itemType = item.item_type as "fixed" | "percent" | undefined;
                                 const itemValue = item.item_value as number | null | undefined;
                                 const itemAmount = item.item_amount as number | null | undefined;
                                 const hasTaxAmount =
                                   typeof itemAmount === "number" && !Number.isNaN(itemAmount);
+                                const lineTotal = (item.total ?? unitPrice * quantity) + (hasTaxAmount ? itemAmount : 0);
 
                                 const taxLabel = isTaxable
                                   ? itemType === "percent" && itemValue != null && hasTaxAmount
-                                    ? `Tax(${itemValue}%): ${formatCurrency(itemAmount as number, quotation.currency)}`
+                                    ? `${formatCurrency(itemAmount as number, '')}`
                                     : hasTaxAmount
-                                    ? `Tax: ${formatCurrency(itemAmount as number, quotation.currency)}`
+                                    ? `${formatCurrency(itemAmount as number, '')}`
                                     : "Not taxable"
                                   : "Not taxable";
 
@@ -1325,11 +1317,11 @@ const QuotationDetail: React.FC = () => {
                                     </td>
                                     <td className="text-right px-[15px] py-[12px] text-sm">{quantity}</td>
                                     <td className="text-right px-[15px] py-[12px] text-sm">
-                                      {formatCurrency(unitPrice, quotation.currency)}
+                                      {formatCurrency(unitPrice, '')}
                                     </td>
-                                    <td className="text-right px-[15px] py-[12px] text-sm align-top">{taxLabel}</td>
+                                    <td className="text-right px-[15px] py-[12px] text-sm">{taxLabel}</td>
                                     <td className="text-right px-[15px] py-[12px] text-sm">
-                                      {formatCurrency(lineTotal, quotation.currency)}
+                                      {formatCurrency(lineTotal, '')}
                                     </td>
                                   </tr>
                                 );
@@ -1530,9 +1522,9 @@ const QuotationDetail: React.FC = () => {
                       <tr>
                         <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Item</th>
                         <th className="font-medium text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Qty</th>
-                        <th className="font-medium text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Unit Price</th>
-                        <th className="font-medium text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Tax</th>
-                        <th className="font-medium text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Subtotal</th>
+                        <th className="font-medium text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Unit Price({currencySymbols[quotation.currency]})</th>
+                        <th className="font-medium text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Tax({currencySymbols[quotation.currency]})</th>
+                        <th className="font-medium text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Subtotal({currencySymbols[quotation.currency]})</th>
                         <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Actions</th>
                       </tr>
                     </thead>
@@ -1542,19 +1534,19 @@ const QuotationDetail: React.FC = () => {
                           {quotation.quoteItems.map((item, index: number) => {
                             const quantity = item.quantity ?? 1;
                             const unitPrice = item.quoted_amount ?? 0;
-                            const lineTotal = item.total ?? unitPrice * quantity;
                             const isTaxable = Boolean(item.is_taxable);
                             const itemType = item.item_type as "fixed" | "percent" | undefined;
                             const itemValue = item.item_value as number | null | undefined;
                             const itemAmount = item.item_amount as number | null | undefined;
                             const hasTaxAmount =
                               typeof itemAmount === "number" && !Number.isNaN(itemAmount);
+                            const lineTotal = (item.total ?? unitPrice * quantity) + (hasTaxAmount ? itemAmount : 0);
 
                             const taxLabel = isTaxable
                               ? itemType === "percent" && itemValue != null && hasTaxAmount
-                                ? `Tax(${itemValue}%): ${formatCurrency(itemAmount as number, quotation.currency)}`
+                                ? `${formatCurrency(itemAmount as number, '')}`
                                 : hasTaxAmount
-                                ? `Tax: ${formatCurrency(itemAmount as number, quotation.currency)}`
+                                ? `${formatCurrency(itemAmount as number, '')}`
                                 : "Not taxable"
                               : "Not taxable";
 
@@ -1570,13 +1562,13 @@ const QuotationDetail: React.FC = () => {
                                   {quantity}
                                 </td>
                                 <td className="text-right px-[20px] py-[12px]">
-                                  {formatCurrency(unitPrice, quotation.currency)}
+                                  {formatCurrency(unitPrice, '')}
                                 </td>
                                 <td className="text-right px-[20px] py-[12px] align-top">
                                   {taxLabel}
                                 </td>
                                 <td className="text-right px-[20px] py-[12px] font-semibold">
-                                  {formatCurrency(lineTotal, quotation.currency)}
+                                  {formatCurrency(lineTotal, '')}
                                 </td>
                                 <td className="ltr:text-left rtl:text-right px-[20px] py-[12px]">
                                   {canEditLineItems && (

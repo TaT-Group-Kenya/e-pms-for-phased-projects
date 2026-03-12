@@ -7,6 +7,7 @@ import { useToast } from '../../../hooks/useToast'
 import { selectAccessToken } from '../../../store/auth/selectors'
 import { ToastContainer } from '../../../components/common/Toast'
 import Can from '../../../components/auth/Can'
+import { currencySymbols, formatCurrency } from '../../../utils/format'
 
 interface CustomerSummary {
   id: number
@@ -583,16 +584,6 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [creditNote?.id, accessToken])
 
-  const formatCurrency = (value: number, currency: string) => {
-    if (Number.isNaN(value)) return '-'
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: currency || 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value || 0)
-  }
-
   const getStatusBadgeClass = (status: string): string => {
     switch (status?.toLowerCase()) {
       case 'draft':
@@ -1019,13 +1010,13 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
                                 Qty
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Unit Price
+                                Unit Price ({currencySymbols[creditNote.currency]})
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Tax
+                                Tax ({currencySymbols[creditNote.currency]})
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Line Total
+                                Line Total ({currencySymbols[creditNote.currency]})
                               </th>
                             {isDraft && (
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Actions</th>
@@ -1055,15 +1046,15 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
                                   {item.quantity}
                                 </td>
                                 <td className="text-sm text-right px-[15px] py-[12px]">
-                                  {formatCurrency(item.item_amount, creditNote.currency)}
+                                  {formatCurrency(item.item_amount, '')}
                                 </td>
                                 <td className="text-sm text-right px-[15px] py-[12px]">
                                   {item.is_taxable
-                                    ? formatCurrency(item.tax_amount, creditNote.currency)
+                                    ? formatCurrency(item.tax_amount, '')
                                     : 'Not taxable'}
                                 </td>
                                 <td className="text-sm text-right px-[15px] py-[12px]">
-                                  {formatCurrency(item.total + (item.tax_amount || 0), creditNote.currency)}
+                                  {formatCurrency(item.total + (item.tax_amount || 0), '')}
                                 </td>
                               </tr>
                             ))}
@@ -1479,13 +1470,13 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
                             Qty
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Unit Price
+                            Unit Price ({currencySymbols[creditNote.currency]})
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Tax
+                            Tax ({currencySymbols[creditNote.currency]})
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Line Total
+                            Line Total ({currencySymbols[creditNote.currency]})
                           </th>
                           {isDraft && (
                             <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
@@ -1517,15 +1508,15 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
                               {item.quantity}
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
-                              {formatCurrency(item.item_amount, creditNote.currency)}
+                              {formatCurrency(item.item_amount, '')}
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {item.is_taxable
-                                ? formatCurrency(item.tax_amount, creditNote.currency)
+                                ? formatCurrency(item.tax_amount, '')
                                 : 'Not taxable'}
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
-                              {formatCurrency(item.total + (item.tax_amount || 0), creditNote.currency)}
+                              {formatCurrency(item.total + (item.tax_amount || 0), '')}
                             </td>
                             {isDraft && (
                               <td className="text-sm text-right px-[15px] py-[12px] whitespace-nowrap">

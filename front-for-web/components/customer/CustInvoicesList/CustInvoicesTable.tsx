@@ -10,6 +10,7 @@ import Can from "../../auth/Can";
 
 interface CustInvoiceSummary {
   id: number;
+  job_reference_id?: string;
   invoice_number: string;
   title?: string | null;
   status: string;
@@ -96,6 +97,7 @@ const CustInvoicesTable: React.FC = () => {
           invoice_number: inv.invoice_number,
           title: inv.title ?? null,
           status: inv.status,
+          job_reference_id: inv.job_reference_id ?? null,
           subtotal_amount: Number(inv.subtotal_amount ?? 0),
           tax_amount: Number(inv.tax_amount ?? 0),
           discount_amount: Number(inv.discount_amount ?? 0),
@@ -153,7 +155,8 @@ const CustInvoicesTable: React.FC = () => {
     const matchesSearch =
       inv.invoice_number.toLowerCase().includes(lowerSearch) ||
       (inv.title || "").toLowerCase().includes(lowerSearch) ||
-      inv.status.toLowerCase().includes(lowerSearch);
+      inv.status.toLowerCase().includes(lowerSearch) ||
+      (inv.job_reference_id || "").toLowerCase().includes(lowerSearch);
 
     const matchesStatus =
       statusFilter === "all" || inv.status.toLowerCase() === statusFilter.toLowerCase();
@@ -406,6 +409,9 @@ const CustInvoicesTable: React.FC = () => {
                       Invoice #
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Job Ref ID
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Title
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -445,6 +451,9 @@ const CustInvoicesTable: React.FC = () => {
                           >
                             {inv.invoice_number}
                           </Link>
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          {inv.job_reference_id || ""}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px]">
                           {inv.title ? (

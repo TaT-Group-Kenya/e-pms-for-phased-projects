@@ -14,6 +14,7 @@ interface Project {
   code: string;
   name: string;
   description?: string;
+  job_reference_id?: string;
   customer_id?: number;
   project_category_id?: number;
   no_of_phases?: number;
@@ -212,7 +213,8 @@ const ProjectsList: React.FC = () => {
     project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     project.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     project.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.tags?.toLowerCase().includes(searchTerm.toLowerCase())
+    project.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (project.job_reference_id || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Calculate pagination display values
@@ -295,6 +297,9 @@ const ProjectsList: React.FC = () => {
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Code
                     </th>
+                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Job Ref ID
+                    </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Name
                     </th>
@@ -341,6 +346,9 @@ const ProjectsList: React.FC = () => {
                           >
                             {project.code}
                           </Link>
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          {project.job_reference_id || ""}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px]">
                           <Link
