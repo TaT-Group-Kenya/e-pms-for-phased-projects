@@ -11,6 +11,8 @@ class CustInvoiceResource extends BaseResource
             'invoice_number' => $this->invoice_number,
             'job_reference_id' => $this->job_reference_id,
             'order_id' => $this->order_id,
+            'order_number' => optional($this->order)->order_number,
+            'quotation_number' => optional(optional($this->order)->quotation)->quotation_number,
             'project_id' => $this->project_id,
             'customer_id' => $this->customer_id,
             'title' => $this->title,
@@ -31,19 +33,12 @@ class CustInvoiceResource extends BaseResource
             'created_by' => $this->created_by,
 
             'order' => new OrderResource($this->whenLoaded('order')),
-
             'project' => new ProjectResource($this->whenLoaded('project')),
-
             'customer' => new CustomerResource($this->whenLoaded('customer')),
-
             'invoiceItems' => CustInvoiceItemResource::collection($this->whenLoaded('invoiceItems')),
-
             'payments' => CustPaymentResource::collection($this->whenLoaded('payments')),
-
             'creditnotes' => CustCreditNoteResource::collection($this->whenLoaded('creditnotes')),
-
             'documents' => CustInvoiceDocumentResource::collection($this->whenLoaded('documents')),
-
         ];
     }
 }

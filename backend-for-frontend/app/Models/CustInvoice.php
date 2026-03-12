@@ -77,6 +77,20 @@ class CustInvoice extends Model
         return $this->hasMany(CustInvoiceDocument::class, 'invoice_id');
     }
 
+    /**
+     * Get the total amount paid to this invoice so far.
+     * @return float
+     */
+    public function getTotalPaidAttribute()
+    {
+        // Eager load payments if not loaded
+        $payments = $this->payments;
+        if ($payments && $payments->count() > 0) {
+            return (float) $payments->sum('amount_paid');
+        }
+        return 0.0;
+    }
+
     public function getStatusLabelAttribute()
     {
         $statusLabels = [

@@ -104,12 +104,24 @@
             return response()->json(['message' => 'Expense is already paid.'], 422);
         }
 
+
         $validated = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
             'date' => ['required', 'date'],
             'funding_account' => ['required', 'integer', 'exists:accounts,id'],
             'narration' => ['nullable', 'string'],
         ]);
+
+        // Ensure settlement date is not older than expense creation date
+        $settleDate = \Carbon\Carbon::parse($validated['date'])->toDateString();
+        $expenseCreatedAt = $expense->created_at instanceof \Carbon\Carbon
+            ? $expense->created_at->toDateString()
+            : \Carbon\Carbon::parse($expense->created_at)->toDateString();
+        if ($settleDate < $expenseCreatedAt) {
+            return response()->json([
+                'message' => 'Settlement date cannot be earlier than the expense creation date (' . $expenseCreatedAt . ').',
+            ], 422);
+        }
 
         // Ensure full payment only
         if ((float)$validated['amount'] !== (float)$expense->amount) {

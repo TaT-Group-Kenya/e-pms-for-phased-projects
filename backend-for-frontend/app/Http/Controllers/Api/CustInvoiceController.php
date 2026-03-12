@@ -41,7 +41,9 @@ class CustInvoiceController extends Controller
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
+        // Eager load order for order_number and quotation_number
         $data = $this->service->index($filters, $perPage, $page);
+        $data->load('order.quotation');
         return CustInvoiceResource::collection($data);
     }
 
@@ -238,6 +240,20 @@ class CustInvoiceController extends Controller
             'receipt_number' => ['required', 'string', 'max:255'],
             'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
+
+        // Ensure payment_date is not older than invoice creation date
+        $paymentDate = \Carbon\Carbon::parse($validated['payment_date'])->toDateString();
+        $invoiceCreatedAt = $custInvoice->created_at instanceof \Carbon\Carbon
+            ? $custInvoice->created_at->toDateString()
+            : \Carbon\Carbon::parse($custInvoice->created_at)->toDateString();
+        if ($paymentDate < $invoiceCreatedAt) {
+            return response()->json([
+                'message' => 'Payment date cannot be earlier than the invoice creation date (' . $invoiceCreatedAt . ').',
+                'errors'  => [
+                    'payment_date' => ['Payment date must not be before the invoice creation date.'],
+                ],
+            ], 422);
+        }
 
         $invoice = $custInvoice;
 
