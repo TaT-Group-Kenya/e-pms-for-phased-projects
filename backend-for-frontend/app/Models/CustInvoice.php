@@ -15,6 +15,7 @@ class CustInvoice extends Model
         'order_id',
         'project_id',
         'customer_id',
+        'job_reference_id',
         'title',
         'description',
         'status',

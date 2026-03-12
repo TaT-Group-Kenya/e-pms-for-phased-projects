@@ -7,6 +7,7 @@ import { ToastContainer } from '../../components/common/Toast'
 import { useToast } from '../../hooks/useToast'
 import { selectAccessToken } from '../../store/auth/selectors'
 import Can from '../../components/auth/Can'
+import { currencySymbols, formatCurrency } from '../../utils/format'
 
 interface CustInvoiceItem {
   id: number
@@ -622,16 +623,6 @@ export default function CustInvoiceDetailPage() {
   const outstandingBalance = Math.max(invoice.total_amount - totalPayments, 0)
   const canAddPayment = invoice.status !== 'paid' && invoice.status !== 'draft'
 
-  const formatCurrency = (value: number, currency: string) => {
-    if (Number.isNaN(value)) return '-'
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: currency || 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value || 0)
-  }
-
   const getStatusBadgeClass = (status: string): string => {
     switch (status?.toLowerCase()) {
       case 'sent':
@@ -863,13 +854,13 @@ export default function CustInvoiceDetailPage() {
                                 Qty
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Unit Price
+                                Unit Price ({currencySymbols[invoice.currency]})
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Tax
+                                Tax ({currencySymbols[invoice.currency]})
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Subtotal
+                                Subtotal ({currencySymbols[invoice.currency]})
                               </th>
                             </tr>
                           </thead>
@@ -877,12 +868,8 @@ export default function CustInvoiceDetailPage() {
                             {invoice.invoiceItems.map((item) => {
                               const quantity = item.quantity ?? 1
                               const unitPrice = item.item_amount
-                              const lineTotal = item.total ?? unitPrice * quantity
+                              const lineTotal = (item.total ?? unitPrice * quantity) + ((item.tax_amount != null && !Number.isNaN(item.tax_amount)) ? item.tax_amount : 0)
                               const isTaxable = Boolean(item.is_taxable)
-                              const taxRateLabel =
-                                item.item_type === 'percent' && item.item_value != null
-                                  ? `${item.item_value}%`
-                                  : null
                               const rawTaxAmount =
                                 item.tax_amount != null ? item.tax_amount : null
                               const hasTaxAmount =
@@ -905,17 +892,15 @@ export default function CustInvoiceDetailPage() {
                                     {quantity}
                                   </td>
                                   <td className="text-sm text-right px-[15px] py-[12px]">
-                                    {formatCurrency(unitPrice, invoice.currency)}
+                                    {formatCurrency(unitPrice, '')}
                                   </td>
                                   <td className="text-sm text-right px-[15px] py-[12px] align-top">
-                                    {isTaxable && taxRateLabel && hasTaxAmount
-                                      ? `Tax(${taxRateLabel}): ${formatCurrency(rawTaxAmount as number, invoice.currency)}`
-                                      : isTaxable && hasTaxAmount
-                                      ? `Tax: ${formatCurrency(rawTaxAmount as number, invoice.currency)}`
+                                    {isTaxable  && hasTaxAmount
+                                      ? `${formatCurrency(rawTaxAmount as number, '')}`
                                       : 'Not taxable'}
                                   </td>
                                   <td className="text-sm text-right px-[15px] py-[12px]">
-                                    {formatCurrency(lineTotal, invoice.currency)}
+                                    {formatCurrency(lineTotal, '')}
                                   </td>
                                 </tr>
                               )
@@ -1262,7 +1247,6 @@ export default function CustInvoiceDetailPage() {
                           Edit Header
                         </button>
                       </Can>
-
                       <button
                         type="button"
                         onClick={handleDownloadPdf}
@@ -1336,13 +1320,13 @@ export default function CustInvoiceDetailPage() {
                             Qty
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Unit Price
+                            Unit Price({currencySymbols[invoice.currency]})
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Tax
+                            Tax ({currencySymbols[invoice.currency]})
                           </th>
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                            Subtotal
+                            Subtotal ({currencySymbols[invoice.currency]})
                           </th>
                         </tr>
                       </thead>
@@ -1350,12 +1334,8 @@ export default function CustInvoiceDetailPage() {
                         {invoice.invoiceItems.map((item) => {
                           const quantity = item.quantity ?? 1
                           const unitPrice = item.item_amount
-                          const lineTotal = item.total ?? unitPrice * quantity
+                          const lineTotal = (item.total ?? unitPrice * quantity) + ((item.tax_amount != null && !Number.isNaN(item.tax_amount)) ? item.tax_amount : 0)
                           const isTaxable = Boolean(item.is_taxable)
-                          const taxRateLabel =
-                            item.item_type === 'percent' && item.item_value != null
-                              ? `${item.item_value}%`
-                              : null
                           const rawTaxAmount =
                             item.tax_amount != null ? item.tax_amount : null
                           const hasTaxAmount =
@@ -1378,17 +1358,15 @@ export default function CustInvoiceDetailPage() {
                                 {quantity}
                               </td>
                               <td className="text-sm text-right px-[15px] py-[12px]">
-                                {formatCurrency(unitPrice, invoice.currency)}
+                                {formatCurrency(unitPrice, '')}
                               </td>
                               <td className="text-sm text-right px-[15px] py-[12px] align-top">
-                                {isTaxable && taxRateLabel && hasTaxAmount
-                                  ? `Tax(${taxRateLabel}): ${formatCurrency(rawTaxAmount as number, invoice.currency)}`
-                                  : isTaxable && hasTaxAmount
-                                  ? `Tax: ${formatCurrency(rawTaxAmount as number, invoice.currency)}`
+                                {isTaxable && hasTaxAmount
+                                  ? `${formatCurrency(rawTaxAmount as number, '')}`
                                   : 'Not taxable'}
                               </td>
                               <td className="text-sm text-right px-[15px] py-[12px]">
-                                {formatCurrency(lineTotal, invoice.currency)}
+                                {formatCurrency(lineTotal, '')}
                               </td>
                             </tr>
                           )
@@ -1449,6 +1427,9 @@ export default function CustInvoiceDetailPage() {
                           <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
                             Amount
                           </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Actions
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1459,7 +1440,7 @@ export default function CustInvoiceDetailPage() {
                           >
                             <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
                               <Link
-                                href={`/cust/credit-notes/${cn.id}`}
+                                href={`/cust-invoices/credit-notes/${cn.id}`}
                                 className="font-medium text-primary-500 hover:text-primary-600 hover:underline"
                               >
                                 {cn.title}
@@ -1473,7 +1454,7 @@ export default function CustInvoiceDetailPage() {
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               <Link
-                                href={`/cust-credit-notes/${cn.id}`}
+                                href={`/cust-invoices/credit-notes/${cn.id}`}
                                 className="text-primary-500 hover:underline text-xs"
                               >
                                 View

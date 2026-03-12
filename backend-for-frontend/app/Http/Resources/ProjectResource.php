@@ -10,6 +10,7 @@ class ProjectResource extends BaseResource
             'id' => $this->id,
             'code' => $this->code,
             'name' => $this->name,
+            'job_reference_id' => $this->job_reference_id,
             'description' => $this->description,
             'order_id' => $this->order_id,
             'customer_id' => $this->customer_id,

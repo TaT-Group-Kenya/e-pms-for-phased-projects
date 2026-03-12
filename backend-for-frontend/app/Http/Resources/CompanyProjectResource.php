@@ -17,12 +17,18 @@ class CompanyProjectResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
 
-            'project' => new ProjectResource($this->whenLoaded('project')),
+            // Hide budget_estimate in nested project
+            'project' => $this->whenLoaded('project', function () {
+                $project = $this->project;
+                if (!$project) return null;
+                $data = (new ProjectResource($project))->toArray(request());
+                unset($data['budget_estimate']);
+                return $data;
+            }),
 
             'phase' => new ProjectPhaseResource($this->whenLoaded('phase')),
 
             'company' => new CompanyResource($this->whenLoaded('company')),
-
         ];
     }
 }

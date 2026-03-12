@@ -3,12 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class CustCreditNote extends Model
 {
+    use HasLogicalDeletion;
+
     protected $table = 'cust_credit_notes';
 
     protected $fillable = [
+        'credit_note_number',
         'invoice_id',
         'title',
         'description',

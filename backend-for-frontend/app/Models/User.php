@@ -25,7 +25,7 @@ class User extends Authenticatable
         'created_by',
         'remember_token',
         'avatar_pic',
-        'category',
+        'category', //internal, company, customer
         'is_active',
         'company_id',
         'customer_id',

@@ -77,6 +77,10 @@ class CustInvoiceController extends Controller
             'payment_terms'    => $data['payment_terms'] ?? null,
             'notes_to_customer'=> $data['notes_to_customer'] ?? null,
         ];
+        // Set job_reference_id from order if present
+        if (isset($order->job_reference_id)) {
+            $overrides['job_reference_id'] = $order->job_reference_id;
+        }
 
         $invoice = DB::transaction(function () use ($request, $order, $overrides) {
             return $this->orderToCustInvoiceService->createInvoiceFromOrder(
@@ -321,6 +325,8 @@ class CustInvoiceController extends Controller
             $payment = CustPayment::create([
                 'transaction_number' => $transactionNumber,
                 'amount_paid' => $validated['amount_paid'],
+                'direction' => 'incoming',
+                'transaction_type' => 'receipt',
                 'tax_amount' => $taxPortion,
                 'net_amount' => $netPortion,
                 'payment_date' => $validated['payment_date'],
@@ -741,6 +747,10 @@ class CustInvoiceController extends Controller
             'payment_terms',
             'notes_to_customer',
         ]);
+        // Set job_reference_id from order if present
+        if (isset($order->job_reference_id)) {
+            $overrides['job_reference_id'] = $order->job_reference_id;
+        }
 
         $invoice = DB::transaction(function () use ($request, $order, $overrides) {
             return $this->orderToCustInvoiceService->createInvoiceFromOrder(
@@ -866,6 +876,8 @@ class CustInvoiceController extends Controller
             },
         ]);
 
+
+        // Fetch sender/company details
         $configValues = SysConfig::whereIn('name', [
             'NAME',
             'EMAIL',
@@ -875,6 +887,21 @@ class CustInvoiceController extends Controller
             'COUNTRY',
             'PHONE',
             'WEBSITE',
+        ])->pluck('value', 'name');
+
+        // Fetch payment details configs
+        $mpesaConfig = SysConfig::whereIn('name', [
+            'PAY_METHOD_MPESA_PAYBILL',
+            'PAY_METHOD_MPESA_ACCOUNT',
+        ])->pluck('value', 'name');
+
+        $bankConfig = SysConfig::whereIn('name', [
+            'PAY_METHOD_BANK_HOLDER_NAME',
+            'PAY_METHOD_BANK_ACCOUNT_NUMBER',
+            'PAY_METHOD_BANK_NAME',
+            'PAY_METHOD_BANK_BRANCH',
+            'PAY_METHOD_BANK_IBAN',
+            'PAY_METHOD_BANK_SWIFT_CODE',
         ])->pluck('value', 'name');
 
         $senderName = $configValues['NAME'] ?? config('app.name', 'EPMS');
@@ -901,6 +928,8 @@ class CustInvoiceController extends Controller
             'senderState'        => $configValues['STATE']   ?? null,
             'senderCountry'      => $configValues['COUNTRY'] ?? null,
             'generatedAt'        => $generatedAt,
+            'mpesaConfig'        => $mpesaConfig,
+            'bankConfig'         => $bankConfig,
         ];
 
         $html = view('pdf.cust-invoice', $data)->render();

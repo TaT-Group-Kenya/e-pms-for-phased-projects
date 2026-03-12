@@ -242,6 +242,7 @@ class OrderController extends Controller
         $projectData = [
             'code'                  => $code,
             'name'                  => $name,
+            'job_reference_id'       => $order->job_reference_id,
             'description'           => $order->description,
             'order_id'              => $order->id,
             'customer_id'           => $order->customer_id,
@@ -302,7 +303,7 @@ class OrderController extends Controller
             // Ensure the order is linked to a project before creating an invoice,
             // because customer invoices require a non-null project_id.
             $order->loadMissing(['project']);
-            if (! $order->project) {
+            if (!$order->project) {
                 $project = $this->createProjectFromOrder($order, $userId);
                 $order->project_id = $project->id;
                 $order->save();

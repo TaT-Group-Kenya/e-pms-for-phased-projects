@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class CompanyCreditNoteItem extends Model
 {
+    use HasLogicalDeletion;
+
     protected $table = 'company_credit_note_items';
 
     public $timestamps = false;
@@ -15,6 +18,8 @@ class CompanyCreditNoteItem extends Model
         'item_name',
         'item_description',
         'item_amount',
+        'quantity',
+        'total',
         'is_taxable',
         'tax_id',
         'tax_item_name',
@@ -39,6 +44,10 @@ class CompanyCreditNoteItem extends Model
     protected static function booted(): void
     {
         static::saving(function (CompanyCreditNoteItem $item) {
+            $quantity = $item->quantity ?? 1;
+            $amount = $item->item_amount ?? 0;
+            $item->total = $amount * $quantity;
+
             $isTaxable = (bool) ($item->is_taxable ?? false);
 
             if (! $isTaxable) {
@@ -46,7 +55,7 @@ class CompanyCreditNoteItem extends Model
                 return;
             }
 
-            $baseAmount = $item->item_amount ?? 0;
+            $baseAmount = $item->total ?? 0;
             $value = $item->item_value !== null ? (float) $item->item_value : 0.0;
 
             if ($item->item_type === 'fixed') {
@@ -67,7 +76,7 @@ class CompanyCreditNoteItem extends Model
             }
 
             $subtotal = $note->items->sum(function (CompanyCreditNoteItem $line) {
-                return (float) ($line->item_amount ?? 0);
+                return (float) ($line->total ?? 0);
             });
 
             $taxAmount = $note->items->sum(function (CompanyCreditNoteItem $line) {

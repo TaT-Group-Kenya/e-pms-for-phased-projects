@@ -18,6 +18,17 @@ class CompanyCreditNoteItemService
         if (!empty($with)) {
             $query->with($with);
         }
+        // Handle soft-delete visibility flags
+        $withDeleted = filter_var($filters['with_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
+        $onlyDeleted = filter_var($filters['only_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
+
+        unset($filters['with_deleted'], $filters['only_deleted']);
+
+        if ($onlyDeleted) {
+            $query->onlyDeleted();
+        } elseif ($withDeleted) {
+            $query->withDeleted();
+        }
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
@@ -47,8 +58,10 @@ class CompanyCreditNoteItemService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return CompanyCreditNoteItem::destroy($id);
+        $model = CompanyCreditNoteItem::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

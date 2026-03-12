@@ -159,9 +159,9 @@
                 <tr>
                     <th style="width: 40%;">Item</th>
                     <th style="width: 10%;" class="text-right">Qty</th>
-                    <th style="width: 17%;" class="text-right">Unit Price</th>
-                    <th style="width: 15%;" class="text-right">Tax</th>
-                    <th style="width: 18%;" class="text-right">Subtotal</th>
+                    <th style="width: 17%;" class="text-right">Unit Price({{ $invoice->currency }})</th>
+                    <th style="width: 15%;" class="text-right">Tax({{ $invoice->currency }})</th>
+                    <th style="width: 18%;" class="text-right">Subtotal({{ $invoice->currency }})</th>
                 </tr>
             </thead>
             <tbody>
@@ -183,21 +183,19 @@
                             @endif
                         </td>
                         <td class="text-right">{{ number_format($quantity, 0) }}</td>
-                        <td class="text-right">{{ $invoice->currency }} {{ number_format($unitPrice, 2) }}</td>
+                        <td class="text-right"> {{ number_format($unitPrice, 2) }}</td>
                         <td class="text-right text-sm">
                             @if($isTaxable && $taxAmount !== null)
                                 @if($type === 'percent' && $value !== null)
-                                    Tax({{ number_format((float) $value, 2) }}%): {{ $invoice->currency }} {{ number_format($taxAmount, 2) }}
+                                    {{ number_format($taxAmount, 2) }}
                                 @else
-                                    Tax: {{ $invoice->currency }} {{ number_format($taxAmount, 2) }}
+                                    {{ number_format($taxAmount, 2) }}
                                 @endif
-                            @elseif($isTaxable)
-                                Tax
                             @else
                                 <span class="text-sm muted">Not taxable</span>
                             @endif
                         </td>
-                        <td class="text-right">{{ $invoice->currency }} {{ number_format($lineTotal, 2) }}</td>
+                        <td class="text-right"> {{ number_format($lineTotal, 2) }}</td>
                     </tr>
                 @empty
                     <tr>
@@ -323,6 +321,7 @@
         </div>
     </div>
 
+
     @if(isset($payments) && $payments->count() > 0)
         <div class="section card" style="margin-top: 8px;">
             <h3>Payments / Installments</h3>
@@ -363,6 +362,54 @@
                     @endforeach
                 </tbody>
             </table>
+        </div>
+    @endif
+
+    {{-- Payment Details Section --}}
+    @if((isset($mpesaConfig) && $mpesaConfig->count()) || (isset($bankConfig) && $bankConfig->count()))
+        <div class="section card" style="margin-top: 8px;">
+            <br>
+            <h3>Payment Details</h3>
+            @if(isset($mpesaConfig) && ($mpesaConfig['PAY_METHOD_MPESA_PAYBILL'] ?? null))
+                <div class="mb-2">
+                    <strong>Mpesa Details:</strong><br>
+                    <span>Paybill No: {{ $mpesaConfig['PAY_METHOD_MPESA_PAYBILL'] }}</span><br>
+                    @if($mpesaConfig['PAY_METHOD_MPESA_ACCOUNT'] ?? null)
+                        <span>Account No: {{ $mpesaConfig['PAY_METHOD_MPESA_ACCOUNT'] }}</span><br>
+                    @endif
+                </div>
+            @endif
+            <br>
+            @if(isset($bankConfig) && (
+                ($bankConfig['PAY_METHOD_BANK_HOLDER_NAME'] ?? null) ||
+                ($bankConfig['PAY_METHOD_BANK_ACCOUNT_NUMBER'] ?? null) ||
+                ($bankConfig['PAY_METHOD_BANK_NAME'] ?? null) ||
+                ($bankConfig['PAY_METHOD_BANK_BRANCH'] ?? null) ||
+                ($bankConfig['PAY_METHOD_BANK_IBAN'] ?? null) ||
+                ($bankConfig['PAY_METHOD_BANK_SWIFT_CODE'] ?? null)
+            ))
+                <div class="mb-2">
+                    <strong>Bank Details:</strong><br>
+                    @if($bankConfig['PAY_METHOD_BANK_HOLDER_NAME'] ?? null)
+                        <span>Account Name: {{ $bankConfig['PAY_METHOD_BANK_HOLDER_NAME'] }}</span><br>
+                    @endif
+                    @if($bankConfig['PAY_METHOD_BANK_ACCOUNT_NUMBER'] ?? null)
+                        <span>Account Number: {{ $bankConfig['PAY_METHOD_BANK_ACCOUNT_NUMBER'] }}</span><br>
+                    @endif
+                    @if($bankConfig['PAY_METHOD_BANK_NAME'] ?? null)
+                        <span>Bank Name: {{ $bankConfig['PAY_METHOD_BANK_NAME'] }}</span><br>
+                    @endif
+                    @if($bankConfig['PAY_METHOD_BANK_BRANCH'] ?? null)
+                        <span>Branch: {{ $bankConfig['PAY_METHOD_BANK_BRANCH'] }}</span><br>
+                    @endif
+                    @if($bankConfig['PAY_METHOD_BANK_IBAN'] ?? null)
+                        <span>IBAN: {{ $bankConfig['PAY_METHOD_BANK_IBAN'] }}</span><br>
+                    @endif
+                    @if($bankConfig['PAY_METHOD_BANK_SWIFT_CODE'] ?? null)
+                        <span>SWIFT Code: {{ $bankConfig['PAY_METHOD_BANK_SWIFT_CODE'] }}</span><br>
+                    @endif
+                </div>
+            @endif
         </div>
     @endif
 

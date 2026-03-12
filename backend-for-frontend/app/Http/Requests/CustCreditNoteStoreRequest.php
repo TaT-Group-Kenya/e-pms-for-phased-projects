@@ -24,6 +24,7 @@ class CustCreditNoteStoreRequest extends FormRequest
             'total_amount' => ['required', 'numeric', 'min:0'],
             'currency' => ['required', 'string', 'max:255'],
             'notes_to_customer' => ['required', 'string', 'max:255'],
+            'credit_note_number' => ['nullable', 'string'],
         ];
     }
 
