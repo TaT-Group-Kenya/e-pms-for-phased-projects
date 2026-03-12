@@ -974,18 +974,20 @@ const UsersTable: React.FC = () => {
                               Edit
                             </button>
                           </Can>
-                          <Can any={["ROLE_EDIT_USER"]}>
-                            <button
-                              type="button"
-                              onClick={() => openGroupModal(user)}
-                              className="px-2.5 py-1 rounded-md border border-primary-100 text-primary-600 hover:bg-primary-50 dark:border-primary-500/40 dark:text-primary-200 dark:hover:bg-primary-500/10 flex items-center gap-1"
-                            >
-                              <span className="material-symbols-outlined text-[16px]">
-                                group
-                              </span>
-                              Groups
-                            </button>
-                          </Can>
+                          { user.category === "internal" && (
+                            <Can any={["ROLE_EDIT_USER"]}>
+                              <button
+                                type="button"
+                                onClick={() => openGroupModal(user)}
+                                className="px-2.5 py-1 rounded-md border border-primary-100 text-primary-600 hover:bg-primary-50 dark:border-primary-500/40 dark:text-primary-200 dark:hover:bg-primary-500/10 flex items-center gap-1"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">
+                                  group
+                                </span>
+                                Groups
+                              </button>
+                            </Can>
+                          )}
                           <Can any={["ROLE_DELETE_USER"]}>
                             <button
                               type="button"

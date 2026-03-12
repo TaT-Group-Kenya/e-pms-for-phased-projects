@@ -9,7 +9,7 @@ import { ToastContainer } from "../../common/Toast";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal";
 import Can from "../../auth/Can";
 
-const internalImages = process.env.NEXT_PUBLIC_EPMS_API_BASE + '/images/logos/';
+const internalImages = process.env.NEXT_PUBLIC_EPMS_API_BASE;
 
 interface Company {
   id: number;

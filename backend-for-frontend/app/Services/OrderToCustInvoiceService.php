@@ -27,6 +27,7 @@ class OrderToCustInvoiceService
             'invoice_number'      => $invoiceNumber,
             'order_id'            => $order->id,
             'project_id'          => $order->project_id,
+            'job_reference_id'     => $order->job_reference_id,
             'customer_id'         => $order->customer_id,
             'title'               => $overrides['title'] ?? $order->title,
             'description'         => $overrides['description'] ?? $order->description,

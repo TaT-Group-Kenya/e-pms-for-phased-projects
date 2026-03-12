@@ -48,18 +48,23 @@ class ProjectController extends Controller
                 ],
             ], 422);
         }
-        
+
+        // Set job_reference_id from order if present
+        if (isset($order->job_reference_id)) {
+            $validated['job_reference_id'] = $order->job_reference_id;
+        }
+
         do {
             $commonService = new CommonService();
             $code = $commonService->generateUniqueCode('PRJ-');
         } while (Project::where('code', $code)->exists());
-        
+
         $validated['code'] = $code;
         $validated['created_by'] = Auth::id();
         $validated['quote_item_id'] = null;
         $validated['start_date'] = is_null($validated['start_date']) ? new \DateTime() : $validated['start_date'];
         $validated['end_date'] = is_null($validated['end_date']) ? new \DateTime() : $validated['end_date'];
-        
+
         $model = $this->service->create($validated);
         return new ProjectResource($model);
     }

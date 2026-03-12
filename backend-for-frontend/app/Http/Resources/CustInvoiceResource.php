@@ -9,6 +9,7 @@ class CustInvoiceResource extends BaseResource
         return [
             'id' => $this->id,
             'invoice_number' => $this->invoice_number,
+            'job_reference_id' => $this->job_reference_id,
             'order_id' => $this->order_id,
             'project_id' => $this->project_id,
             'customer_id' => $this->customer_id,

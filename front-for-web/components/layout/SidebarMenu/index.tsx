@@ -174,7 +174,7 @@ const SECTIONS: SidebarSection[] = [
       },
       {
         label: "Credit Notes",
-        href: "/cust/credit-notes",
+        href: "/cust-invoices/credit-notes",
         matchStrategy: "entity",
         requiredRoles: ["ROLE_VIEW_CUST_CREDIT_NOTE"],
       },
@@ -217,6 +217,12 @@ const SECTIONS: SidebarSection[] = [
         href: "/finance/payments/",
         matchStrategy: "startsWith",
         requiredRoles: ["ROLE_VIEW_CUST_PAYMENT", "ROLE_VIEW_COMPANY_PAYMENT"],
+      },
+      {
+        label: "Office Expenses",
+        href: "/finance/office-expenses/",
+        matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_OFFICE_EXPENSE"],
       },
       {
         label: "Customer Trxns Ledger",

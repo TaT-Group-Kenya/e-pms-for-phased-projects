@@ -10,6 +10,7 @@ import Can from "../../auth/Can";
 
 interface CustCreditNoteSummary {
   id: number;
+  credit_note_number: string;
   invoice_id: number | null;
   title: string | null;
   description: string | null;
@@ -18,7 +19,13 @@ interface CustCreditNoteSummary {
   tax_amount: number;
   total_amount: number;
   currency: string;
+  notes_to_customer: string | null;
+  updated_at: string | null;
+  updated_by: number | null;
   created_at: string | null;
+  created_by: number | null;
+  invoice?: any;
+  items?: any[];
 }
 
 interface CustInvoiceSummary {
@@ -363,27 +370,20 @@ const CustCreditNotesTable: React.FC = () => {
         ) : (
           <>
             <div className="table-responsive overflow-x-auto">
-              <table className="w-full">
+              <table className="min-w-[1200px] w-full">
                 <thead className="text-black dark:text-white">
                   <tr>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Credit Note
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Invoice
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Total
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Status
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Created
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Actions
-                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Credit Note #</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Title</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Description</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Invoice</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Subtotal</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Tax</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Total</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Currency</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Status</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Created</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="text-black dark:text-white">
@@ -393,13 +393,19 @@ const CustCreditNotesTable: React.FC = () => {
                         key={cn.id}
                         className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
                       >
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap font-mono">
+                          {cn.credit_note_number || cn.id}
+                        </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <Link
-                            href={`/cust/credit-notes/${cn.id}`}
+                            href={`/cust-invoices/credit-notes/${cn.id}`}
                             className="font-medium text-sm text-primary-500 hover:text-primary-600 hover:underline"
                           >
-                            {cn.title || `(Credit Note #${cn.id})`}
+                            {cn.title || "(Untitled)"}
                           </Link>
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-xs max-w-[250px] truncate">
+                          {cn.description || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
                           {cn.invoice_id ? (
@@ -413,10 +419,17 @@ const CustCreditNotesTable: React.FC = () => {
                             <span className="text-gray-500 dark:text-gray-400">-</span>
                           )}
                         </td>
+                        <td className="ltr:text-right rtl:text-left px-[20px] py-[15px] whitespace-nowrap">
+                          {formatCurrency(cn.subtotal_amount, cn.currency)}
+                        </td>
+                        <td className="ltr:text-right rtl:text-left px-[20px] py-[15px] whitespace-nowrap">
+                          {formatCurrency(cn.tax_amount, cn.currency)}
+                        </td>
+                        <td className="ltr:text-right rtl:text-left px-[20px] py-[15px] whitespace-nowrap font-semibold text-primary-500">
+                          {formatCurrency(cn.total_amount, cn.currency)}
+                        </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
-                          <span className="font-semibold text-primary-500">
-                            {formatCurrency(cn.total_amount, cn.currency)}
-                          </span>
+                          {cn.currency}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <span
@@ -432,7 +445,7 @@ const CustCreditNotesTable: React.FC = () => {
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <Link
-                            href={`/cust/credit-notes/${cn.id}`}
+                            href={`/cust-invoices/credit-notes/${cn.id}`}
                             className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-primary-500 hover:text-white hover:border-primary-500 transition-all"
                             title="View Details"
                           >
@@ -444,7 +457,7 @@ const CustCreditNotesTable: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={11}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm || statusFilter !== "all"

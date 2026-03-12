@@ -262,8 +262,8 @@ const TransactionsTable: React.FC = () => {
   const currencyOptions = useMemo(() => {
     const set = new Set<string>();
     rows.forEach((r) => {
-      if (r.base_currency) {
-        set.add(r.base_currency);
+      if (r.transaction_currency) {
+        set.add(r.transaction_currency);
       }
     });
     return Array.from(set.values());

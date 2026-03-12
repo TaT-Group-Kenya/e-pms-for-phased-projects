@@ -8,6 +8,7 @@ class CustCreditNoteResource extends BaseResource
     {
         return [
             'id' => $this->id,
+            'credit_note_number' => $this->credit_note_number,
             'invoice_id' => $this->invoice_id,
             'title' => $this->title,
             'description' => $this->description,
@@ -23,6 +24,8 @@ class CustCreditNoteResource extends BaseResource
             'created_by' => $this->created_by,
 
             'invoice' => new CustInvoiceResource($this->whenLoaded('invoice')),
+
+            'items' => CustCreditNoteItemResource::collection($this->whenLoaded('items')),
 
         ];
     }

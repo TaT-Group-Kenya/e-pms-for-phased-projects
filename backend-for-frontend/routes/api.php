@@ -1,3 +1,4 @@
+
 <?php
 
 use Illuminate\Http\Request;
@@ -10,6 +11,25 @@ Route::prefix('/')->group(function () {
 		Route::post('reset-password', [App\Http\Controllers\Api\AuthController::class, 'resetPassword']);
 
 	Route::middleware('auth:sanctum')->group(function () {
+		   // External Customer User Endpoints
+		   Route::prefix('external-customer')->group(function () {
+			   Route::get('overview', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'overview']);
+			   Route::get('quotations', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'quotations']);
+			   Route::get('orders', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'orders']);
+			   Route::get('invoices', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'invoices']);
+			   Route::get('credit-notes', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'creditNotes']);
+			   Route::get('projects', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'projects']);
+			   Route::get('payments', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'payments']);
+		   });
+
+		   // External Company User Endpoints
+		   Route::prefix('external-company')->group(function () {
+			   Route::get('overview', [App\Http\Controllers\Api\ExternalCompanyUserController::class, 'overview']);
+			   Route::get('invoices', [App\Http\Controllers\Api\ExternalCompanyUserController::class, 'invoices']);
+			   Route::get('credit-notes', [App\Http\Controllers\Api\ExternalCompanyUserController::class, 'creditNotes']);
+			   Route::get('projects', [App\Http\Controllers\Api\ExternalCompanyUserController::class, 'projects']);
+		   });
+		Route::post('office-expenses/{id}/settle', [App\Http\Controllers\Api\OfficeExpenseController::class, 'settleExpense']);
 		Route::post('logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
 		Route::get('me', [App\Http\Controllers\Api\AuthController::class, 'me']);
 		Route::put('me/profile', [App\Http\Controllers\Api\AuthController::class, 'updateProfile']);
@@ -24,6 +44,9 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('companies', App\Http\Controllers\Api\CompanyController::class);
 		Route::apiResource('company-banks', App\Http\Controllers\Api\CompanyBankController::class);
 		Route::apiResource('company-credit-notes', App\Http\Controllers\Api\CompanyCreditNoteController::class);
+		Route::get('company-credit-notes/{companyCreditNote}/download-pdf', [App\Http\Controllers\Api\CompanyCreditNoteController::class, 'downloadPdf']);
+		Route::post('company-credit-notes/{companyCreditNote}/send-email', [App\Http\Controllers\Api\CompanyCreditNoteController::class, 'sendEmail']);
+		Route::post('company-credit-notes/{companyCreditNote}/refund', [App\Http\Controllers\Api\CompanyCreditNoteController::class, 'refund']);
 		Route::apiResource('company-credit-note-items', App\Http\Controllers\Api\CompanyCreditNoteItemController::class);
 		Route::get('company-invoices/{companyInvoice}/download-pdf', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'downloadPdf']);
 		Route::post('company-invoices/{companyInvoice}/send-email', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'sendEmail']);
@@ -39,6 +62,9 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('countries', App\Http\Controllers\Api\CountryController::class);
 		Route::apiResource('currencies', App\Http\Controllers\Api\CurrencyController::class);
 		Route::apiResource('cust-credit-notes', App\Http\Controllers\Api\CustCreditNoteController::class);
+		Route::get('cust-credit-notes/{custCreditNote}/download-pdf', [App\Http\Controllers\Api\CustCreditNoteController::class, 'downloadPdf']);
+		Route::post('cust-credit-notes/{custCreditNote}/send-email', [App\Http\Controllers\Api\CustCreditNoteController::class, 'sendEmail']);
+		Route::post('cust-credit-notes/{custCreditNote}/refund', [App\Http\Controllers\Api\CustCreditNoteController::class, 'refund']);
 		Route::apiResource('cust-credit-note-items', App\Http\Controllers\Api\CustCreditNoteItemController::class);
 		Route::get('cust-invoices/{custInvoice}/download-pdf', [App\Http\Controllers\Api\CustInvoiceController::class, 'downloadPdf']);
 		Route::post('cust-invoices/{custInvoice}/send-email', [App\Http\Controllers\Api\CustInvoiceController::class, 'sendEmail']);
@@ -104,5 +130,8 @@ Route::prefix('/')->group(function () {
 		Route::get('dashboard/top-customers-by-revenue', [App\Http\Controllers\Api\DashboardInformationController::class, 'topCustomersByRevenue']);
 		Route::get('dashboard/recent-orders', [App\Http\Controllers\Api\DashboardInformationController::class, 'recentOrders']);
 		Route::get('dashboard/quotations-overview', [App\Http\Controllers\Api\DashboardInformationController::class, 'quotationsOverview']);
+		Route::apiResource('office-expenses', App\Http\Controllers\Api\OfficeExpenseController::class);
+		Route::apiResource('office-expense-categories', App\Http\Controllers\Api\OfficeExpenseCategoryController::class);
+		Route::apiResource('office-expense-payments', App\Http\Controllers\Api\OfficeExpensePaymentController::class);
 	});
 });

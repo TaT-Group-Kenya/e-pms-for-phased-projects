@@ -16,6 +16,8 @@ class CompanyPayment extends Model
         'transaction_id',
         'transaction_number',
         'invoice_id',
+        'direction',
+        'transaction_type',
         'amount_paid',
         'tax_amount',
         'net_amount',

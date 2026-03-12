@@ -15,10 +15,11 @@ class CompanyCreditNoteItemUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'credit_note_id' => ['nullable', 'exists:credit_notes,id'],
+            'credit_note_id' => ['nullable', 'exists:company_credit_notes,id'],
             'item_name' => ['sometimes', 'required', 'string', 'max:255'],
             'item_description' => ['sometimes', 'required', 'string', 'max:255'],
             'item_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'quantity' => ['sometimes', 'integer', 'min:1'],
             'is_taxable' => ['sometimes', 'required', 'boolean'],
             'tax_id' => ['sometimes', 'nullable', 'integer', 'exists:taxes,id'],
             'tax_item_name' => ['sometimes', 'nullable', 'string', 'max:255'],

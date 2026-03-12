@@ -141,9 +141,9 @@
                 <tr>
                     <th style="width: 36%;">Item</th>
                     <th style="width: 12%;" class="text-right">Qty</th>
-                    <th style="width: 17%;" class="text-right">Unit Price</th>
-                    <th style="width: 18%;" class="text-right">Tax</th>
-                    <th style="width: 17%;" class="text-right">Subtotal</th>
+                    <th style="width: 17%;" class="text-right">Unit Price({{ $quotation->currency }})</th>
+                    <th style="width: 18%;" class="text-right">Tax({{ $quotation->currency }})</th>
+                    <th style="width: 17%;" class="text-right">Subtotal({{ $quotation->currency }})</th>
                 </tr>
             </thead>
             <tbody>
@@ -165,21 +165,19 @@
                             @endif
                         </td>
                         <td class="text-right">{{ number_format($quantity, 0) }}</td>
-                        <td class="text-right">{{ $quotation->currency }} {{ number_format($unitPrice, 2) }}</td>
+                        <td class="text-right"> {{ number_format($unitPrice, 2) }}</td>
                         <td class="text-right text-sm">
                             @if($isTaxable && $taxAmount !== null)
                                 @if($type === 'percent' && $value !== null)
-                                    Tax({{ (float) $value }}%): {{ $quotation->currency }} {{ number_format($taxAmount, 2) }}
+                                    {{ number_format($taxAmount, 2) }}
                                 @else
-                                    Tax: {{ $quotation->currency }} {{ number_format($taxAmount, 2) }}
+                                    {{ number_format($taxAmount, 2) }}
                                 @endif
-                            @elseif($isTaxable)
-                                Tax
                             @else
                                 <span class="muted">Not taxable</span>
                             @endif
                         </td>
-                        <td class="text-right">{{ $quotation->currency }} {{ number_format($lineTotal, 2) }}</td>
+                        <td class="text-right">{{ number_format($lineTotal, 2) }}</td>
                     </tr>
                 @empty
                     <tr>
