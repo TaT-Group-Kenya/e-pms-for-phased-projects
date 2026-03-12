@@ -11,6 +11,24 @@ Route::prefix('/')->group(function () {
 		Route::post('reset-password', [App\Http\Controllers\Api\AuthController::class, 'resetPassword']);
 
 	Route::middleware('auth:sanctum')->group(function () {
+		   // External Customer User Endpoints
+		   Route::prefix('external-customer')->group(function () {
+			   Route::get('overview', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'overview']);
+			   Route::get('quotations', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'quotations']);
+			   Route::get('orders', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'orders']);
+			   Route::get('invoices', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'invoices']);
+			   Route::get('credit-notes', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'creditNotes']);
+			   Route::get('projects', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'projects']);
+			   Route::get('payments', [App\Http\Controllers\Api\ExternalCustomerUserController::class, 'payments']);
+		   });
+
+		   // External Company User Endpoints
+		   Route::prefix('external-company')->group(function () {
+			   Route::get('overview', [App\Http\Controllers\Api\ExternalCompanyUserController::class, 'overview']);
+			   Route::get('invoices', [App\Http\Controllers\Api\ExternalCompanyUserController::class, 'invoices']);
+			   Route::get('credit-notes', [App\Http\Controllers\Api\ExternalCompanyUserController::class, 'creditNotes']);
+			   Route::get('projects', [App\Http\Controllers\Api\ExternalCompanyUserController::class, 'projects']);
+		   });
 		Route::post('office-expenses/{id}/settle', [App\Http\Controllers\Api\OfficeExpenseController::class, 'settleExpense']);
 		Route::post('logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
 		Route::get('me', [App\Http\Controllers\Api\AuthController::class, 'me']);
