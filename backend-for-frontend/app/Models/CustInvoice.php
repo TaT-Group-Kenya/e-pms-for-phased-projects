@@ -28,6 +28,7 @@ class CustInvoice extends Model
         'payment_terms',
         'notes_to_customer',
         'valid_until',
+        'payment_receiving_method_id',
         'updated_at',
         'updated_by',
         'created_at',
@@ -36,6 +37,11 @@ class CustInvoice extends Model
         'deleted_at',
         'deleted_by',
     ];
+    
+    public function receivingPaymentMethod()
+    {
+        return $this->belongsTo(\App\Models\PaymentReceivingMethod::class, 'payment_receiving_method_id');
+    }
 
     public function order()
     {
@@ -75,6 +81,20 @@ class CustInvoice extends Model
     public function documents()
     {
         return $this->hasMany(CustInvoiceDocument::class, 'invoice_id');
+    }
+
+    /**
+     * Get the total amount paid to this invoice so far.
+     * @return float
+     */
+    public function getTotalPaidAttribute()
+    {
+        // Eager load payments if not loaded
+        $payments = $this->payments;
+        if ($payments && $payments->count() > 0) {
+            return (float) $payments->sum('amount_paid');
+        }
+        return 0.0;
     }
 
     public function getStatusLabelAttribute()

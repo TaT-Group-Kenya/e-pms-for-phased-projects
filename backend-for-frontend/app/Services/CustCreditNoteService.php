@@ -51,8 +51,10 @@ class CustCreditNoteService
 
     public function create(array $data)
     {
-        // Header amounts are always derived from items
-        unset($data['subtotal_amount'], $data['tax_amount'], $data['total_amount']);
+        // Header amounts are initialized to zero and always derived from items
+        $data['subtotal_amount'] = 0;
+        $data['tax_amount'] = 0;
+        $data['total_amount'] = 0;
 
         // Generate unique credit_note_number
         $commonService = new \App\Services\CommonService();

@@ -227,6 +227,20 @@ class CompanyInvoiceController extends Controller
             'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
 
+        // Ensure payment_date is not older than invoice creation date
+        $paymentDate = \Carbon\Carbon::parse($validated['payment_date'])->toDateString();
+        $invoiceCreatedAt = $companyInvoice->created_at instanceof \Carbon\Carbon
+            ? $companyInvoice->created_at->toDateString()
+            : \Carbon\Carbon::parse($companyInvoice->created_at)->toDateString();
+        if ($paymentDate < $invoiceCreatedAt) {
+            return response()->json([
+                'message' => 'Payment date cannot be earlier than the invoice creation date (' . $invoiceCreatedAt . ').',
+                'errors'  => [
+                    'payment_date' => ['Payment date must not be before the invoice creation date.'],
+                ],
+            ], 422);
+        }
+
         $invoice = $companyInvoice;
 
         $commonService = new CommonService();
@@ -378,8 +392,18 @@ class CompanyInvoiceController extends Controller
             $paidTotal = $existingPaymentsTotal + $amountPaid;
             $remaining = max((float) $invoice->total_amount - $paidTotal, 0.0);
 
+
             if ($remaining <= 0.0) {
                 $invoice->status = 'paid';
+                // Mark all project phases on this invoice as billed
+                $phaseIds = $invoice->invoiceItems()
+                    ->whereNotNull('project_phase_id')
+                    ->pluck('project_phase_id')
+                    ->unique()
+                    ->toArray();
+                if (!empty($phaseIds)) {
+                    \App\Models\ProjectPhase::whereIn('id', $phaseIds)->update(['is_billed' => true]);
+                }
             } else {
                 $invoice->status = 'partially-paid';
             }

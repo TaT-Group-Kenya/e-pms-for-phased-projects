@@ -21,6 +21,7 @@ class CustInvoiceStoreRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:255'],
             'payment_terms' => ['nullable', 'string', 'max:255'],
             'notes_to_customer' => ['nullable', 'string', 'max:255'],
+            'payment_receiving_method_id' => ['required', 'integer', 'exists:payment_receiving_methods,id'],
         ];
     }
 

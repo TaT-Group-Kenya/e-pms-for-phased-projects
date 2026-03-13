@@ -31,11 +31,20 @@ class ExternalCustomerUserService
 
     public function getCustInvoices($customerId)
     {
-        return CustInvoice::where('customer_id', $customerId)
+        $invoices = CustInvoice::where('customer_id', $customerId)
             ->where('is_deleted', false)
             ->where('status', '!=', 'draft')
             ->orderByDesc('created_at')
+            ->with('payments')
             ->get();
+
+        // Transform to include total_paid but exclude payments
+        return $invoices->map(function ($invoice) {
+            $arr = $invoice->toArray();
+            unset($arr['payments']);
+            $arr['total_paid'] = $invoice->total_paid;
+            return $arr;
+        });
     }
 
     public function getCustCreditNotes($customerId)

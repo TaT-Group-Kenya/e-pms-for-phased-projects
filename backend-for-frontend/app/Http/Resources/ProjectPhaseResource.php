@@ -21,6 +21,7 @@ class ProjectPhaseResource extends BaseResource
             'updated_by' => $this->updated_by,
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
+            'is_billed' => $this->is_billed,
 
             'assignment' => new CompanyProjectResource($this->whenLoaded('assignment')),
 

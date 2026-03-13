@@ -9,6 +9,29 @@ import { selectAccessToken } from '../../store/auth/selectors'
 import Can from '../../components/auth/Can'
 import { currencySymbols, formatCurrency } from '../../utils/format'
 
+interface ReceivingPaymentMethod {
+  id: number
+  type: string
+  name: string
+  currency: string
+  instruction: string
+  paybill?: string | null
+  account_holder_name: string
+  account_number: string
+  bank: string
+  branch: string
+  swift_code: string
+  iban?: string | null
+  status: string
+  is_deleted: boolean
+  deleted_at?: string | null
+  deleted_by?: number | null
+  updated_at: string
+  updated_by: number
+  created_at: string
+  created_by: number
+}
+
 interface CustInvoiceItem {
   id: number
   item_name: string
@@ -95,6 +118,7 @@ interface CustInvoice {
   total_amount: number
   payment_terms?: string | null
   notes_to_customer?: string | null
+  payment_receiving_method_id?: number | null
   invoiceItems?: CustInvoiceItem[]
   taxitems?: CustInvoiceTaxItem[]
   payments?: CustPaymentSummary[]
@@ -102,6 +126,7 @@ interface CustInvoice {
   customer?: CustomerSummary
   project?: ProjectSummary
   order?: OrderSummary
+  receivingPaymentMethod?: ReceivingPaymentMethod
 }
 
 export default function CustInvoiceDetailPage() {
@@ -119,6 +144,11 @@ export default function CustInvoiceDetailPage() {
   const [editPaymentTerms, setEditPaymentTerms] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Payment Receiving Method for Edit Header
+  const [editPaymentReceivingMethodId, setEditPaymentReceivingMethodId] = useState<number | ''>('');
+  const [paymentReceivingMethods, setPaymentReceivingMethods] = useState<Array<{ id: number; name: string }>>([]);
+  const [loadingReceivingMethods, setLoadingReceivingMethods] = useState(false);
 
   const [markingSent, setMarkingSent] = useState(false)
 
@@ -186,6 +216,18 @@ export default function CustInvoiceDetailPage() {
   useEffect(() => {
     fetchInvoice()
   }, [fetchInvoice])
+
+    // Fetch payment receiving methods when editing
+    useEffect(() => {
+      if (!isEditing || !accessToken) return;
+      setLoadingReceivingMethods(true);
+      import('../../utils/paymentReceivingMethods').then(({ fetchActivePaymentReceivingMethods }) => {
+        fetchActivePaymentReceivingMethods(accessToken)
+          .then((methods) => setPaymentReceivingMethods(methods))
+          .catch(() => setPaymentReceivingMethods([]))
+          .finally(() => setLoadingReceivingMethods(false));
+      });
+    }, [isEditing, accessToken]);
 
   const fetchAccounts = useCallback(async () => {
     if (!accessToken) return
@@ -298,17 +340,21 @@ export default function CustInvoiceDetailPage() {
     setEditDescription(invoice.description || '')
     setEditPaymentTerms(invoice.payment_terms || '')
     setEditNotes(invoice.notes_to_customer || '')
+      setEditPaymentReceivingMethodId(invoice.payment_receiving_method_id || '');
     setIsEditing(true)
   }
 
   const handleSaveHeader = async () => {
-    if (!id) return
+    if (!id) return;
     if (!accessToken) {
-      addToast('You are not authenticated.', 'error')
-      return
+      addToast('You are not authenticated.', 'error');
+      return;
     }
-
-    setSaving(true)
+    if (!editPaymentReceivingMethodId) {
+      addToast('Please select a receiving payment method.', 'error');
+      return;
+    }
+    setSaving(true);
     try {
       const resp = await fetch(`/api/cust-invoices/${id}` as string, {
         method: 'PUT',
@@ -321,24 +367,23 @@ export default function CustInvoiceDetailPage() {
           description: editDescription || null,
           payment_terms: editPaymentTerms || null,
           notes_to_customer: editNotes || null,
+          payment_receiving_method_id: editPaymentReceivingMethodId,
         }),
-      })
-
-      const data = await resp.json().catch(() => null)
+      });
+      const data = await resp.json().catch(() => null);
       if (!resp.ok) {
-        throw new Error(data?.message || 'Failed to update invoice')
+        throw new Error(data?.message || 'Failed to update invoice');
       }
-
-      const inv = (data?.data || data) as CustInvoice
-      setInvoice(inv)
-      setIsEditing(false)
-      addToast('Invoice updated successfully', 'success')
+      const inv = (data?.data || data) as CustInvoice;
+      setInvoice(inv);
+      setIsEditing(false);
+      addToast('Invoice updated successfully', 'success');
     } catch (e: any) {
-      addToast(e.message || 'Failed to update invoice', 'error')
+      addToast(e.message || 'Failed to update invoice', 'error');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleMarkAsSent = async () => {
     if (!invoice) return
@@ -1291,6 +1336,61 @@ export default function CustInvoiceDetailPage() {
                       </div>
                     </div>
                   </div>
+                  {invoice.receivingPaymentMethod && (
+                    <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+                      <h6 className="text-black dark:text-white font-semibold mb-[15px]">Payment Receiving Method</h6>
+                      <div className="space-y-[8px] text-sm">
+                        {invoice.receivingPaymentMethod.type === 'Bank' && invoice.receivingPaymentMethod.account_holder_name && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Account Holder</span>
+                            <span className="text-black dark:text-white">{invoice.receivingPaymentMethod.account_holder_name}</span>
+                          </div>
+                        )}
+                        {invoice.receivingPaymentMethod.type === 'Bank' && invoice.receivingPaymentMethod.account_number && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Account Number</span>
+                            <span className="text-black dark:text-white">{invoice.receivingPaymentMethod.account_number}</span>
+                          </div>
+                        )}
+                        {invoice.receivingPaymentMethod.currency && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Currency</span>
+                            <span className="text-black dark:text-white">{invoice.receivingPaymentMethod.currency}</span>
+                          </div>
+                        )}
+                        {invoice.receivingPaymentMethod.type === 'Bank' && invoice.receivingPaymentMethod.bank && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Bank</span>
+                            <span className="text-black dark:text-white">{invoice.receivingPaymentMethod.bank}</span>
+                          </div>
+                        )}
+                        {invoice.receivingPaymentMethod.type === 'Bank' && invoice.receivingPaymentMethod.branch && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Branch</span>
+                            <span className="text-black dark:text-white">{invoice.receivingPaymentMethod.branch}</span>
+                          </div>
+                        )}
+                        {invoice.receivingPaymentMethod.type === 'Bank' && invoice.receivingPaymentMethod.swift_code && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">SWIFT Code</span>
+                            <span className="text-black dark:text-white">{invoice.receivingPaymentMethod.swift_code}</span>
+                          </div>
+                        )}
+                        {invoice.receivingPaymentMethod.type === 'Bank' && invoice.receivingPaymentMethod.iban && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">IBAN</span>
+                            <span className="text-black dark:text-white">{invoice.receivingPaymentMethod.iban}</span>
+                          </div>
+                        )}
+                        {invoice.receivingPaymentMethod.type === 'Mpesa' && invoice.receivingPaymentMethod.paybill && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Paybill</span>
+                            <span className="text-black dark:text-white">{invoice.receivingPaymentMethod.paybill}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1621,6 +1721,21 @@ export default function CustInvoiceDetailPage() {
                   rows={3}
                   className="w-full border rounded px-3 py-2 text-sm"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 mt-3">Receiving Payment Method <span className="text-danger-500">*</span></label>
+                <select
+                  value={editPaymentReceivingMethodId}
+                  onChange={e => setEditPaymentReceivingMethodId(Number(e.target.value) || '')}
+                  className="w-full border rounded px-3 py-2 text-sm mb-5"
+                  required
+                  disabled={loadingReceivingMethods}
+                >
+                  <option value="">{loadingReceivingMethods ? 'Loading…' : 'Select method'}</option>
+                  {paymentReceivingMethods.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="flex gap-2 mt-2">
                 <Can any={["ROLE_EDIT_CUST_INVOICE"]}>

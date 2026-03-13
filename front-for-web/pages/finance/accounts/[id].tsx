@@ -7,6 +7,7 @@ import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../../components/common/Toast";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
+import { currencyStrength } from "../../../utils/format";
 
 interface AccountMeta {
   id: number;
@@ -260,6 +261,13 @@ const AccountStatementPage: React.FC = () => {
       const rate = parseFloat(forexRate || "0");
       if (!forexRate || Number.isNaN(rate) || rate <= 0) {
         addToast("Please enter a valid forex rate greater than zero.", "error");
+        return;
+      }
+      // Strict validation: prevent forex >= 1 if source is minor
+      const sourceStrength = currencyStrength[sourceCurrency as keyof typeof currencyStrength] || 0;
+      const destStrength = currencyStrength[targetCurrency as keyof typeof currencyStrength] || 0;
+      if (currenciesDiffer && sourceStrength > 0 && destStrength > 0 && sourceStrength < destStrength && rate >= 1) {
+        addToast("Forex rate must be less than 1 when source currency is minor to destination currency.", "error");
         return;
       }
       exchangeRateValue = rate;
@@ -724,21 +732,36 @@ const AccountStatementPage: React.FC = () => {
                           onChange={(e) => setForexRate(e.target.value)}
                           className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
+                        {(() => {
+                          const sourceStrength = currencyStrength[sourceCurrency as keyof typeof currencyStrength] || 0;
+                          const destStrength = currencyStrength[targetCurrency as keyof typeof currencyStrength] || 0;
+                          if (
+                            sourceStrength > 0 &&
+                            destStrength > 0 &&
+                            sourceStrength < destStrength &&
+                            hasValidRate &&
+                            rateNum >= 1
+                          ) {
+                            return (
+                              <p className="mt-[3px] text-[12px] text-red-600 dark:text-red-400 font-semibold">
+                                Source currency is minor to destination currency, ensure the forex is less than 1.
+                              </p>
+                            );
+                          }
+                          return null;
+                        })()}
                         {hasValidRate && (
                           <p className="mt-[3px] text-[11px] text-gray-500 dark:text-gray-400">
                             {sourceAmountNum.toLocaleString(undefined, {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
-                            })}{" "}
-                            {sourceCurrency} × {rateNum.toLocaleString(undefined, {
+                            })} {sourceCurrency} × {rateNum.toLocaleString(undefined, {
                               minimumFractionDigits: 4,
                               maximumFractionDigits: 4,
-                            })}{" "}
-                            = {calculatedTopupAmount.toLocaleString(undefined, {
+                            })} = {calculatedTopupAmount.toLocaleString(undefined, {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
-                            })}{" "}
-                            {targetCurrency}
+                            })} {targetCurrency}
                           </p>
                         )}
                       </div>

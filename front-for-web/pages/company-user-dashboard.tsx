@@ -131,12 +131,19 @@ const CompanyUserDashboard: NextPage = () => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  // Search filter helper
+  // Search filter helper (supports dot notation for nested properties)
+  function getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((acc, part) => (acc && acc[part] !== undefined ? acc[part] : undefined), obj);
+  }
+
   function filterRows<T extends Record<string, any>>(rows: T[], columns: string[], search: string): T[] {
     if (!search) return rows;
     const s = search.toLowerCase();
     return rows.filter(row =>
-      columns.some(col => (row[col] !== undefined && String(row[col] ?? '').toLowerCase().includes(s)))
+      columns.some(col => {
+        const value = getNestedValue(row, col);
+        return value !== undefined && String(value ?? '').toLowerCase().includes(s);
+      })
     );
   }
 
@@ -349,7 +356,14 @@ const CompanyUserDashboard: NextPage = () => {
                     onClick={() => exportToCSV(
                       filterRows(projects || [], [
                         'project.name','project.status','project.start_date','project.end_date','created_at','is_complete'
-                      ], search),
+                      ], search).map(proj => ({
+                        'project.name': proj.project?.name ?? '',
+                        'project.status': proj.project?.status ?? '',
+                        'project.start_date': proj.project?.start_date ?? '',
+                        'project.end_date': proj.project?.end_date ?? '',
+                        'created_at': proj.created_at ?? '',
+                        'is_complete': proj.is_complete ? 'Yes' : 'No',
+                      })),
                       [
                         'project.name','project.status','project.start_date','project.end_date','created_at','is_complete'
                       ],
@@ -373,8 +387,12 @@ const CompanyUserDashboard: NextPage = () => {
                     </thead>
                     <tbody>
                       {loading ? <tr><td colSpan={24} className="text-center py-6 text-gray-400">Loading...</td></tr> :
-                        (projects && projects.length > 0 ?
-                          projects.map(proj => (
+                        (projects && filterRows(projects, [
+                          'project.name','project.status','project.start_date','project.end_date','created_at','is_complete'
+                        ], search).length > 0 ?
+                          filterRows(projects, [
+                            'project.name','project.status','project.start_date','project.end_date','created_at','is_complete'
+                          ], search).map(proj => (
                             <tr key={proj.id} className="whitespace-nowrap">
                               <td className="px-4 py-2">{proj.project?.name}</td>
                               <td className="px-4 py-2">{proj.project?.status}</td>

@@ -109,6 +109,17 @@ class CustCreditNoteController extends Controller
             'narration' => ['nullable', 'string'],
         ]);
 
+        // Ensure refund date is not older than credit note creation date
+        $refundDate = \Carbon\Carbon::parse($validated['date'])->toDateString();
+        $creditNoteCreatedAt = $custCreditNote->created_at instanceof \Carbon\Carbon
+            ? $custCreditNote->created_at->toDateString()
+            : \Carbon\Carbon::parse($custCreditNote->created_at)->toDateString();
+        if ($refundDate < $creditNoteCreatedAt) {
+            return response()->json([
+                'message' => 'Refund date cannot be earlier than the credit note creation date (' . $creditNoteCreatedAt . ').',
+            ], 422);
+        }
+
         $validated['payment_method'] = 'bank_transfer';
         
         if (strtolower($custCreditNote->status) !== 'raised') {

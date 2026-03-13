@@ -11,6 +11,8 @@ import Can from "../../auth/Can";
 interface CustInvoiceSummary {
   id: number;
   job_reference_id?: string;
+  order_number?: string;
+  quotation_number?: string;
   invoice_number: string;
   title?: string | null;
   status: string;
@@ -98,6 +100,8 @@ const CustInvoicesTable: React.FC = () => {
           title: inv.title ?? null,
           status: inv.status,
           job_reference_id: inv.job_reference_id ?? null,
+          order_number: inv.order_number ?? null,
+          quotation_number: inv.quotation_number ?? null,
           subtotal_amount: Number(inv.subtotal_amount ?? 0),
           tax_amount: Number(inv.tax_amount ?? 0),
           discount_amount: Number(inv.discount_amount ?? 0),
@@ -156,7 +160,9 @@ const CustInvoicesTable: React.FC = () => {
       inv.invoice_number.toLowerCase().includes(lowerSearch) ||
       (inv.title || "").toLowerCase().includes(lowerSearch) ||
       inv.status.toLowerCase().includes(lowerSearch) ||
-      (inv.job_reference_id || "").toLowerCase().includes(lowerSearch);
+      (inv.job_reference_id || "").toLowerCase().includes(lowerSearch) ||
+      (inv.order_number || "").toLowerCase().includes(lowerSearch) ||
+      (inv.quotation_number || "").toLowerCase().includes(lowerSearch);
 
     const matchesStatus =
       statusFilter === "all" || inv.status.toLowerCase() === statusFilter.toLowerCase();
@@ -412,7 +418,13 @@ const CustInvoicesTable: React.FC = () => {
                       Job Ref ID
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Title
+                      Order #
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Quotation #
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      <span style={{ minWidth: 200, display: 'inline-block' }}>Title</span>
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Subtotal
@@ -455,11 +467,24 @@ const CustInvoicesTable: React.FC = () => {
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           {inv.job_reference_id || ""}
                         </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          {inv.order_number || ""}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          {inv.quotation_number || ""}
+                        </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px]">
                           {inv.title ? (
                             <Link
                               href={`/cust-invoices/${inv.id}`}
                               className="text-primary-500 hover:text-primary-600 hover:underline font-medium"
+                              style={{
+                                whiteSpace: 'nowrap',
+                                minWidth: 200,
+                                display: 'inline-block',
+                                maxWidth: '100%',
+                                overflow: 'visible',
+                              }}
                             >
                               {inv.title}
                             </Link>

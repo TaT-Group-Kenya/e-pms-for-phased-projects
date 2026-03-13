@@ -51,6 +51,7 @@ interface ProjectPhase {
   updated_by: number;
   created_at: string;
   created_by: number;
+  is_billed: boolean;
 }
 
 interface CompanyDetailsData {
@@ -179,9 +180,9 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
 
   const handleSubmitProgress = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedAssignment) return;
-    
+
     if (!formData.percentage_complete || !formData.comment.trim()) {
       setError("Please fill in all fields");
       return;
@@ -322,11 +323,11 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
         prev.map((u) =>
           u.id === updateId
             ? {
-                ...u,
-                percentage_complete: editingData.percentage,
-                comment: editingData.comment,
-                updated_at: new Date().toISOString(),
-              }
+              ...u,
+              percentage_complete: editingData.percentage,
+              comment: editingData.comment,
+              updated_at: new Date().toISOString(),
+            }
             : u
         )
       );
@@ -366,31 +367,31 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
             className="mb-4 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-[#0c1427] text-black dark:text-white"
           />
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-max">
               <thead className="border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap min-w-[120px]">
                     Code
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap min-w-[180px]">
                     Name
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap min-w-[120px]">
                     Phase
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap min-w-[120px]">
                     Status
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
-                    Budget
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap min-w-[120px]">
                     Progress
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap min-w-[120px]">
+                    Billing
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap min-w-[120px]">
                     Complete
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap min-w-[180px]">
                     Action
                   </th>
                 </tr>
@@ -401,24 +402,19 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
                     key={assignment.id}
                     className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
-                    <td className="py-3 px-4">{assignment.project.code}</td>
-                    <td className="py-3 px-4">{assignment.project.name}</td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 whitespace-nowrap min-w-[120px]">{assignment.project.code}</td>
+                    <td className="py-3 px-4 whitespace-nowrap min-w-[180px]">{assignment.project.name}</td>
+                    <td className="py-3 px-4 whitespace-nowrap min-w-[120px]">
                       <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                         Phase {assignment.phase?.phase_order || ""}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 whitespace-nowrap min-w-[120px]">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200`}>
                         {assignment.project.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
-                      {assignment.project.currency}{" "}
-                      {Number(assignment.project.budget_estimate).toLocaleString() ||
-                        "N/A"}
-                    </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 whitespace-nowrap min-w-[120px]">
                       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div
                           className="bg-green-500 h-2 rounded-full"
@@ -431,28 +427,38 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
                         {parseFloat(String(assignment.project.progress)).toFixed(2)}%
                       </span>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 whitespace-nowrap min-w-[120px]">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          assignment.is_complete
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${assignment?.phase?.is_billed
                             ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                             : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                        }`}
+                          }`}
+                      >
+                        {assignment?.phase?.is_billed ? "Billed" : "Not-Billed"}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap min-w-[120px]">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${assignment.is_complete
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                          }`}
                       >
                         {assignment.is_complete ? "Complete" : "Pending"}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 whitespace-nowrap min-w-[180px]">
                       <div className="flex gap-2">
                         <button
+                          disabled={assignment.is_complete}
                           onClick={() => handleOpenModal(assignment)}
-                          className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded transition-colors"
+                          className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded transition-colors disabled:opacity-50 whitespace-nowrap min-w-[90px]"
                         >
                           Add Update
                         </button>
                         <button
                           onClick={() => handleOpenTimelineModal(assignment)}
-                          className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 rounded transition-colors"
+                          className="inline-flex items-center justify-center px-2.5 py-1.5 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 rounded transition-colors disabled:opacity-50 whitespace-nowrap min-w-[110px]"
                         >
                           View Timeline
                         </button>
@@ -575,11 +581,10 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
 
       {/* Toast Notification */}
       {showToast && toastMessage && (
-        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 z-[60] transition-opacity duration-300 ${
-          toastMessage.type === 'success'
+        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 z-[60] transition-opacity duration-300 ${toastMessage.type === 'success'
             ? 'bg-green-500 text-white'
             : 'bg-red-500 text-white'
-        }`}>
+          }`}>
           {toastMessage.type === 'success' ? (
             <span className="text-xl">✓</span>
           ) : (
@@ -646,11 +651,10 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
                         </span>
 
                         {/* Update Card */}
-                        <div className={`rounded-lg border p-4 ${
-                          editingUpdateId === update.id
+                        <div className={`rounded-lg border p-4 ${editingUpdateId === update.id
                             ? "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700"
                             : "bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-700"
-                        }`}>
+                          }`}>
                           {editingUpdateId === update.id ? (
                             // Edit Mode
                             <div className="space-y-4">
