@@ -34,6 +34,7 @@ interface CompanyPhaseAssignment {
   phase_name: string;
   phase_code?: string | null;
   project_name?: string | null;
+  billed?: boolean;
 }
 
 const CompanyInvoicesTable: React.FC = () => {
@@ -178,10 +179,6 @@ const CompanyInvoicesTable: React.FC = () => {
 
     return matchesSearch && matchesStatus;
   });
-
-  const canDeleteInvoice = (inv: CompanyInvoiceSummary): boolean => {
-    return inv.status.toLowerCase() === "draft";
-  };
 
   const handleSendEmail = async (id: number) => {
     if (!accessToken) {
@@ -336,9 +333,10 @@ const CompanyInvoicesTable: React.FC = () => {
         phase_name: item.phase?.name || item.phase_name || `Phase #${item.phase_id}`,
         phase_code: item.phase?.code ?? null,
         project_name: item.project?.name ?? null,
+        billed: !!item.phase?.is_billed,
       }));
 
-      setAssignments(mapped);
+      setAssignments(mapped.filter(a => a.billed !== true));
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("fetch company assignments error", err);
@@ -505,7 +503,7 @@ const CompanyInvoicesTable: React.FC = () => {
                       Invoice #
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Title
+                      <span style={{ minWidth: 200, display: 'inline-block' }}>Title</span>
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Subtotal
@@ -550,6 +548,13 @@ const CompanyInvoicesTable: React.FC = () => {
                             <Link
                               href={`/company/invoices/${inv.id}`}
                               className="text-primary-500 hover:text-primary-600 hover:underline font-medium"
+                              style={{
+                                whiteSpace: 'nowrap',
+                                minWidth: 200,
+                                display: 'inline-block',
+                                maxWidth: '100%',
+                                overflow: 'visible',
+                              }}
                             >
                               {inv.title}
                             </Link>

@@ -92,6 +92,9 @@ Route::prefix('/')->group(function () {
 		Route::get('order-documents/{orderDocument}/download', [App\Http\Controllers\Api\OrderDocumentController::class, 'download']);
 		Route::apiResource('order-documents', App\Http\Controllers\Api\OrderDocumentController::class);
 		Route::apiResource('order-items', App\Http\Controllers\Api\OrderItemController::class);
+		Route::post('payment-receiving-methods/{id}/restore', [App\Http\Controllers\Api\PaymentReceivingMethodController::class, 'restore']);
+		Route::apiResource('payment-receiving-methods', App\Http\Controllers\Api\PaymentReceivingMethodController::class);
+		Route::post('payment-methods/{id}/restore', [App\Http\Controllers\Api\PaymentMethodController::class, 'restore']);
 		Route::apiResource('payment-methods', App\Http\Controllers\Api\PaymentMethodController::class);
 		Route::apiResource('projects', App\Http\Controllers\Api\ProjectController::class);
 		Route::apiResource('project-categories', App\Http\Controllers\Api\ProjectCategoryController::class);

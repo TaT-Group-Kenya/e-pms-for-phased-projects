@@ -41,7 +41,9 @@ class CustInvoiceController extends Controller
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
+        // Eager load order for order_number and quotation_number
         $data = $this->service->index($filters, $perPage, $page);
+        $data->load('order.quotation');
         return CustInvoiceResource::collection($data);
     }
 
@@ -101,6 +103,7 @@ class CustInvoiceController extends Controller
             'order',
             'project',
             'customer',
+            'receivingPaymentMethod',
             'invoiceItems',
             'payments',
             'creditnotes',
@@ -238,6 +241,20 @@ class CustInvoiceController extends Controller
             'receipt_number' => ['required', 'string', 'max:255'],
             'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
+
+        // Ensure payment_date is not older than invoice creation date
+        $paymentDate = \Carbon\Carbon::parse($validated['payment_date'])->toDateString();
+        $invoiceCreatedAt = $custInvoice->created_at instanceof \Carbon\Carbon
+            ? $custInvoice->created_at->toDateString()
+            : \Carbon\Carbon::parse($custInvoice->created_at)->toDateString();
+        if ($paymentDate < $invoiceCreatedAt) {
+            return response()->json([
+                'message' => 'Payment date cannot be earlier than the invoice creation date (' . $invoiceCreatedAt . ').',
+                'errors'  => [
+                    'payment_date' => ['Payment date must not be before the invoice creation date.'],
+                ],
+            ], 422);
+        }
 
         $invoice = $custInvoice;
 
@@ -741,11 +758,13 @@ class CustInvoiceController extends Controller
             ], 422);
         }
 
+
         $overrides = $request->only([
             'title',
             'description',
             'payment_terms',
             'notes_to_customer',
+            'payment_receiving_method_id',
         ]);
         // Set job_reference_id from order if present
         if (isset($order->job_reference_id)) {
@@ -890,20 +909,6 @@ class CustInvoiceController extends Controller
         ])->pluck('value', 'name');
 
         // Fetch payment details configs
-        $mpesaConfig = SysConfig::whereIn('name', [
-            'PAY_METHOD_MPESA_PAYBILL',
-            'PAY_METHOD_MPESA_ACCOUNT',
-        ])->pluck('value', 'name');
-
-        $bankConfig = SysConfig::whereIn('name', [
-            'PAY_METHOD_BANK_HOLDER_NAME',
-            'PAY_METHOD_BANK_ACCOUNT_NUMBER',
-            'PAY_METHOD_BANK_NAME',
-            'PAY_METHOD_BANK_BRANCH',
-            'PAY_METHOD_BANK_IBAN',
-            'PAY_METHOD_BANK_SWIFT_CODE',
-        ])->pluck('value', 'name');
-
         $senderName = $configValues['NAME'] ?? config('app.name', 'EPMS');
         $senderEmail = $configValues['EMAIL'] ?? config('mail.from.address', 'no-reply@example.com');
         $generatedAt = now();
@@ -913,6 +918,7 @@ class CustInvoiceController extends Controller
         $paymentsTotal = (float) $payments->sum('amount_paid');
         $invoiceTotal = (float) $custInvoice->total_amount;
         $outstandingBalance = max($invoiceTotal - $paymentsTotal, 0.0);
+        $receivingPaymentMethod = $custInvoice->receivingPaymentMethod ?? null;
 
         $data = [
             'invoice'            => $custInvoice,
@@ -923,13 +929,10 @@ class CustInvoiceController extends Controller
             'senderEmail'        => $senderEmail,
             'senderPhone'        => $configValues['PHONE']   ?? null,
             'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
-            'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'         => $configValues['CITY']    ?? null,
+            'receivingPaymentMethod' => $receivingPaymentMethod,
             'senderState'        => $configValues['STATE']   ?? null,
             'senderCountry'      => $configValues['COUNTRY'] ?? null,
             'generatedAt'        => $generatedAt,
-            'mpesaConfig'        => $mpesaConfig,
-            'bankConfig'         => $bankConfig,
         ];
 
         $html = view('pdf.cust-invoice', $data)->render();

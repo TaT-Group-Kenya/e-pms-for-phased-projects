@@ -34,7 +34,6 @@ const AccountsTable: React.FC = () => {
 
   const [accounts, setAccounts] = useState<AccountSummary[]>([]);
   const [currencies, setCurrencies] = useState<CurrencyOption[]>([]);
-  const [currenciesLoading, setCurrenciesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
@@ -127,8 +126,6 @@ const AccountsTable: React.FC = () => {
         return;
       }
 
-      setCurrenciesLoading(true);
-
       try {
         const url = "/api/currencies/list";
         const resp = await fetch(url, {
@@ -167,7 +164,6 @@ const AccountsTable: React.FC = () => {
         addToast("Error loading currencies. Please try again.", "error");
         setCurrencies([]);
       } finally {
-        setCurrenciesLoading(false);
       }
     };
 

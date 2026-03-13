@@ -23,11 +23,21 @@ class OrderToCustInvoiceService
             $invoiceNumber = $commonService->generateUniqueCode('CINV-');
         } while (CustInvoice::where('invoice_number', $invoiceNumber)->exists());
 
+        // Determine payment_receiving_method_id: use override, or first active, or null
+        $paymentReceivingMethodId = $overrides['payment_receiving_method_id'] ?? null;
+        if ($paymentReceivingMethodId === null) {
+            $activeMethod = \App\Models\PaymentReceivingMethod::where('status', 'active')
+                ->where('is_deleted', false)
+                ->orderBy('id')
+                ->first();
+            $paymentReceivingMethodId = $activeMethod ? $activeMethod->id : null;
+        }
+
         $invoice = CustInvoice::create([
             'invoice_number'      => $invoiceNumber,
             'order_id'            => $order->id,
             'project_id'          => $order->project_id,
-            'job_reference_id'     => $order->job_reference_id,
+            'job_reference_id'    => $order->job_reference_id,
             'customer_id'         => $order->customer_id,
             'title'               => $overrides['title'] ?? $order->title,
             'description'         => $overrides['description'] ?? $order->description,
@@ -42,6 +52,7 @@ class OrderToCustInvoiceService
             'payment_terms'       => $overrides['payment_terms'] ?? $order->payment_terms,
             'notes_to_customer'   => $overrides['notes_to_customer'] ?? $order->notes_to_customer,
             'valid_until'         => now()->addDays(30),
+            'payment_receiving_method_id' => $paymentReceivingMethodId,
             'created_by'          => $userId,
             'updated_by'          => $userId,
         ]);
