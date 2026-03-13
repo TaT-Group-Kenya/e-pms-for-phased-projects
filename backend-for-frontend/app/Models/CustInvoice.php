@@ -28,6 +28,7 @@ class CustInvoice extends Model
         'payment_terms',
         'notes_to_customer',
         'valid_until',
+        'payment_receiving_method_id',
         'updated_at',
         'updated_by',
         'created_at',
@@ -36,6 +37,11 @@ class CustInvoice extends Model
         'deleted_at',
         'deleted_by',
     ];
+    
+    public function receivingPaymentMethod()
+    {
+        return $this->belongsTo(\App\Models\PaymentReceivingMethod::class, 'payment_receiving_method_id');
+    }
 
     public function order()
     {

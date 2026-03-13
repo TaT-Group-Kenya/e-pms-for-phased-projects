@@ -306,7 +306,7 @@ const QuotationsList: React.FC = () => {
                       Job Ref
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Title
+                      <span style={{ minWidth: 200, display: 'inline-block' }}>Title</span>
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Amount
@@ -350,6 +350,13 @@ const QuotationsList: React.FC = () => {
                           <Link
                             href={`/quotation/${quotation.id}`}
                             className="text-primary-500 hover:text-primary-600 hover:underline font-medium"
+                            style={{
+                              whiteSpace: 'nowrap',
+                              minWidth: 200,
+                              display: 'inline-block',
+                              maxWidth: '100%',
+                              overflow: 'visible',
+                            }}
                           >
                             {quotation.title}
                           </Link>

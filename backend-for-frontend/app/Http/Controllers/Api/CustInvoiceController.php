@@ -103,6 +103,7 @@ class CustInvoiceController extends Controller
             'order',
             'project',
             'customer',
+            'receivingPaymentMethod',
             'invoiceItems',
             'payments',
             'creditnotes',
@@ -757,11 +758,13 @@ class CustInvoiceController extends Controller
             ], 422);
         }
 
+
         $overrides = $request->only([
             'title',
             'description',
             'payment_terms',
             'notes_to_customer',
+            'payment_receiving_method_id',
         ]);
         // Set job_reference_id from order if present
         if (isset($order->job_reference_id)) {
@@ -906,20 +909,6 @@ class CustInvoiceController extends Controller
         ])->pluck('value', 'name');
 
         // Fetch payment details configs
-        $mpesaConfig = SysConfig::whereIn('name', [
-            'PAY_METHOD_MPESA_PAYBILL',
-            'PAY_METHOD_MPESA_ACCOUNT',
-        ])->pluck('value', 'name');
-
-        $bankConfig = SysConfig::whereIn('name', [
-            'PAY_METHOD_BANK_HOLDER_NAME',
-            'PAY_METHOD_BANK_ACCOUNT_NUMBER',
-            'PAY_METHOD_BANK_NAME',
-            'PAY_METHOD_BANK_BRANCH',
-            'PAY_METHOD_BANK_IBAN',
-            'PAY_METHOD_BANK_SWIFT_CODE',
-        ])->pluck('value', 'name');
-
         $senderName = $configValues['NAME'] ?? config('app.name', 'EPMS');
         $senderEmail = $configValues['EMAIL'] ?? config('mail.from.address', 'no-reply@example.com');
         $generatedAt = now();
@@ -929,6 +918,7 @@ class CustInvoiceController extends Controller
         $paymentsTotal = (float) $payments->sum('amount_paid');
         $invoiceTotal = (float) $custInvoice->total_amount;
         $outstandingBalance = max($invoiceTotal - $paymentsTotal, 0.0);
+        $receivingPaymentMethod = $custInvoice->receivingPaymentMethod ?? null;
 
         $data = [
             'invoice'            => $custInvoice,
@@ -939,13 +929,10 @@ class CustInvoiceController extends Controller
             'senderEmail'        => $senderEmail,
             'senderPhone'        => $configValues['PHONE']   ?? null,
             'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
-            'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'         => $configValues['CITY']    ?? null,
+            'receivingPaymentMethod' => $receivingPaymentMethod,
             'senderState'        => $configValues['STATE']   ?? null,
             'senderCountry'      => $configValues['COUNTRY'] ?? null,
             'generatedAt'        => $generatedAt,
-            'mpesaConfig'        => $mpesaConfig,
-            'bankConfig'         => $bankConfig,
         ];
 
         $html = view('pdf.cust-invoice', $data)->render();

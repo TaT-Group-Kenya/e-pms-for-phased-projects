@@ -15,3 +15,10 @@ export const currencySymbols: { [key: string]: string } = {
   GBP: '£',
   KES: 'KES'
 }
+
+export const currencyStrength: Record<string, number> = {
+  KES: 1, 
+  USD: 2, 
+  EUR: 3, 
+  GBP: 4 
+};

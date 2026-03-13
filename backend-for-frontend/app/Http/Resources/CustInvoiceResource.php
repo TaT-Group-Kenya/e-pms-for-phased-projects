@@ -27,6 +27,7 @@ class CustInvoiceResource extends BaseResource
             'payment_terms' => $this->payment_terms,
             'notes_to_customer' => $this->notes_to_customer,
             'valid_until' => $this->valid_until,
+            'receivingPaymentMethod' => new PaymentReceivingMethodResource($this->whenLoaded('receivingPaymentMethod')),
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
             'created_at' => $this->formatTimestamp($this->created_at),

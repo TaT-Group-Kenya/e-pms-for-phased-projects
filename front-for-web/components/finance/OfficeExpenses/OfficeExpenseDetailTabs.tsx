@@ -149,7 +149,8 @@ const OfficeExpenseDetailTabs = ({ expenseId }: OfficeExpenseDetailTabsProps) =>
         <h6 className="text-black dark:text-white font-semibold">Payment</h6>
         <button
           type="button"
-          className="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 transition"
+          disabled={expense?.status === 'paid'}
+          className="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={() => setShowSettle(true)}
         >
           <i className="material-symbols-outlined !text-[18px]">add</i>

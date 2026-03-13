@@ -107,6 +107,7 @@ export interface Invoice {
   discount_percentage: string;
   discount_amount: string;
   total_amount: string;
+  total_paid: string;
   currency: string;
   payment_terms: string;
   notes_to_customer: string | null;
@@ -615,12 +616,8 @@ const CustomerUserDashboard: NextPage = () => {
                         <th className="px-4 py-2 text-left">Discount %</th>
                         <th className="px-4 py-2 text-left">Discount Amt</th>
                         <th className="px-4 py-2 text-left">Total</th>
-                        <th className="px-4 py-2 text-left">Currency</th>
-                        <th className="px-4 py-2 text-left">Payment Terms</th>
-                        <th className="px-4 py-2 text-left">Notes</th>
+                        <th className="px-4 py-2 text-left">Paid</th>
                         <th className="px-4 py-2 text-left">Valid Until</th>
-                        <th className="px-4 py-2 text-left">Created</th>
-                        <th className="px-4 py-2 text-left">Updated</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -635,17 +632,18 @@ const CustomerUserDashboard: NextPage = () => {
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.title}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.description}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.status}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.subtotal_amount}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.tax_amount}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
+                              {inv.currency} {inv.subtotal_amount}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
+                              {inv.currency} {inv.tax_amount}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.discount_percentage}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.discount_amount}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.total_amount}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.currency}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.payment_terms}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.notes_to_customer}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
+                              { inv.currency} {inv.discount_amount}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
+                              {inv.currency} {inv.total_amount}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
+                              {inv.currency} {inv.total_paid}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.valid_until ? new Date(inv.valid_until).toLocaleDateString() : ''}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.created_at ? new Date(inv.created_at).toLocaleDateString() : ''}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.updated_at ? new Date(inv.updated_at).toLocaleDateString() : ''}</td>
                           </tr>
                         ))}
                     </tbody>

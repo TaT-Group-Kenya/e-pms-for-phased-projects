@@ -213,6 +213,12 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_ACCOUNT"],
       },
       {
+        label: "Receiving Methods",
+        href: "/finance/payment-receiving-methods/",
+        matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_PAYMENT_RECEIVING_METHOD"],
+      },
+      {
         label: "Payments",
         href: "/finance/payments/",
         matchStrategy: "startsWith",
