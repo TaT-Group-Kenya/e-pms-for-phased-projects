@@ -11,6 +11,353 @@
         }
     ],
     "paths": {
+                "/reports/orders-summary": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "Orders Summary Report",
+                        "requestBody": {
+                            "required": false,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "currency_code": {"type": "string"},
+                                            "status": {"type": "string"},
+                                            "project_id": {"type": "integer"},
+                                            "customer_id": {"type": "integer"},
+                                            "from_date": {"type": "string", "format": "date"},
+                                            "to_date": {"type": "string", "format": "date"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "OK", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/OrdersSummaryResource"}}}}},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
+                "/reports/projects-summary": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "Projects Summary Report",
+                        "requestBody": {
+                            "required": false,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "currency_code": {"type": "string"},
+                                            "status": {"type": "string"},
+                                            "customer_id": {"type": "integer"},
+                                            "project_category_id": {"type": "integer"},
+                                            "project_source_origin_id": {"type": "integer"},
+                                            "project_location_id": {"type": "integer"},
+                                            "job_reference_id": {"type": "string"},
+                                            "from_date": {"type": "string", "format": "date"},
+                                            "to_date": {"type": "string", "format": "date"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "OK", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/ProjectsSummaryResource"}}}}},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
+                "/reports/customer-history": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "Customer History Report",
+                        "requestBody": {
+                            "required": false,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "from": {"type": "string", "format": "date"},
+                                            "to": {"type": "string", "format": "date"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "OK", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/CustomerHistoryResource"}}}}},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
+                "/reports/revenue-snapshot": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "Revenue Snapshot Report",
+                        "requestBody": {
+                            "required": false,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "currency_code": {"type": "string"},
+                                            "from": {"type": "string", "format": "date"},
+                                            "to": {"type": "string", "format": "date"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "OK", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RevenueSnapshotResource"}}}},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
+                "/reports/invoices-report": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "Invoices Report",
+                        "requestBody": {
+                            "required": false,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "type": {"type": "string", "enum": ["customer", "company"]},
+                                            "status": {"type": "string"},
+                                            "currency_code": {"type": "string"},
+                                            "from": {"type": "string", "format": "date"},
+                                            "to": {"type": "string", "format": "date"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "OK", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/InvoicesReportResource"}}}}},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
+                "/reports/payments-to-companies": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "Payments to Companies Report",
+                        "requestBody": {
+                            "required": false,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "company_id": {"type": "integer"},
+                                            "currency_code": {"type": "string"},
+                                            "from": {"type": "string", "format": "date"},
+                                            "to": {"type": "string", "format": "date"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "OK", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/PaymentsToCompaniesResource"}}}}},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
+                "/reports/margin-per-project": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "Margin Per Project Report",
+                        "requestBody": {
+                            "required": false,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "currency_code": {"type": "string"},
+                                            "forex_to_kes": {"type": "number"},
+                                            "from": {"type": "string", "format": "date"},
+                                            "to": {"type": "string", "format": "date"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "OK", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/MarginPerProjectResource"}}}}},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
+                "/reports/general-ledger": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "General Ledger Report",
+                        "requestBody": {
+                            "required": false,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "currency_code": {"type": "string"},
+                                            "forex": {"type": "number"},
+                                            "project_id": {"type": "integer"},
+                                            "company_id": {"type": "integer"},
+                                            "customer_id": {"type": "integer"},
+                                            "from": {"type": "string", "format": "date"},
+                                            "to": {"type": "string", "format": "date"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "OK", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/GeneralLedgerResource"}}}},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
+                "/reports/invoice-payments": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "Invoice Payments Report",
+                        "requestBody": {
+                            "required": false,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "type": {"type": "string", "enum": ["customer", "company"]},
+                                            "currency_code": {"type": "string"},
+                                            "forex": {"type": "number"},
+                                            "project_id": {"type": "integer"},
+                                            "company_id": {"type": "integer"},
+                                            "customer_id": {"type": "integer"},
+                                            "from": {"type": "string", "format": "date"},
+                                            "to": {"type": "string", "format": "date"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "OK", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/InvoicePaymentsResource"}}}},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
+                "/reports/tax-payments-customer": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "Tax Payments Customer Report",
+                        "requestBody": {
+                            "required": false,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "currency_code": {"type": "string"},
+                                            "customer_id": {"type": "integer"},
+                                            "from": {"type": "string", "format": "date"},
+                                            "to": {"type": "string", "format": "date"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "OK", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TaxPaymentsCustomerResource"}}}},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
+                "/reports/tax-payments-company": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "Tax Payments Company Report",
+                        "requestBody": {
+                            "required": false,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "currency_code": {"type": "string"},
+                                            "company_id": {"type": "integer"},
+                                            "from": {"type": "string", "format": "date"},
+                                            "to": {"type": "string", "format": "date"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "OK", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TaxPaymentsCompanyResource"}}}},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
+                "/reports/expense-report": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "Expense Report",
+                        "requestBody": {
+                            "required": false,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "currency_code": {"type": "string"},
+                                            "from": {"type": "string", "format": "date"},
+                                            "to": {"type": "string", "format": "date"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "OK", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ExpenseReportResource"}}}},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
+                "/reports/export-pdf": {
+                    "post": {
+                        "tags": ["reports"],
+                        "summary": "Export PDF for any report",
+                        "requestBody": {
+                            "required": true,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "report_type": {"type": "string"},
+                                            "filters": {"type": "object"}
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {"description": "PDF stream"},
+                            "400": {"description": "Error", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}}}}}}
+                        }
+                    }
+                },
         "/accounts": {
             "get": {
                 "tags": [
@@ -7118,6 +7465,168 @@
     },
     "components": {
         "schemas": {
+                                                "CustomerHistoryResource": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "customer_id": { "type": "integer" },
+                                                        "customer_name": { "type": "string" },
+                                                        "email": { "type": "string" },
+                                                        "phone": { "type": "string" },
+                                                        "total_orders": { "type": "integer" },
+                                                        "total_invoiced": { "type": "number", "format": "float" },
+                                                        "total_paid": { "type": "number", "format": "float" },
+                                                        "currency": { "type": "string" }
+                                                    },
+                                                    "required": ["customer_id", "customer_name", "total_orders", "total_invoiced", "total_paid", "currency"]
+                                                },
+                                                "ExpenseReportResource": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "transaction_id": { "type": "integer" },
+                                                        "category": { "type": "string" },
+                                                        "amount": { "type": "number", "format": "float" },
+                                                        "date": { "type": "string", "format": "date" },
+                                                        "cost_center": { "type": "string" },
+                                                        "description": { "type": "string" },
+                                                        "currency": { "type": "string" }
+                                                    },
+                                                    "required": ["transaction_id", "category", "amount", "date", "currency"]
+                                                },
+                                                "TaxPaymentsCompanyResource": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "transaction_id": { "type": "integer" },
+                                                        "company_id": { "type": "integer" },
+                                                        "company_name": { "type": "string" },
+                                                        "tax_amount": { "type": "number", "format": "float" },
+                                                        "tax_type": { "type": "string" },
+                                                        "date": { "type": "string", "format": "date" },
+                                                        "currency": { "type": "string" }
+                                                    },
+                                                    "required": ["transaction_id", "company_id", "company_name", "tax_amount", "tax_type", "date", "currency"]
+                                                },
+                                                "TaxPaymentsCustomerResource": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "transaction_id": { "type": "integer" },
+                                                        "customer_id": { "type": "integer" },
+                                                        "customer_name": { "type": "string" },
+                                                        "tax_amount": { "type": "number", "format": "float" },
+                                                        "tax_type": { "type": "string" },
+                                                        "date": { "type": "string", "format": "date" },
+                                                        "currency": { "type": "string" }
+                                                    },
+                                                    "required": ["transaction_id", "customer_id", "customer_name", "tax_amount", "tax_type", "date", "currency"]
+                                                },
+                                                "InvoicePaymentsResource": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "payment_id": { "type": "integer" },
+                                                        "invoice_id": { "type": "integer" },
+                                                        "amount_paid": { "type": "number", "format": "float" },
+                                                        "payment_date": { "type": "string", "format": "date" },
+                                                        "payment_method": { "type": "string" },
+                                                        "currency": { "type": "string" },
+                                                        "exchange_rate": { "type": "number", "format": "float" }
+                                                    },
+                                                    "required": ["payment_id", "invoice_id", "amount_paid", "payment_date", "currency"]
+                                                },
+                                                "GeneralLedgerResource": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "entry_id": { "type": "integer" },
+                                                        "account": { "type": "string" },
+                                                        "debit": { "type": "number", "format": "float" },
+                                                        "credit": { "type": "number", "format": "float" },
+                                                        "balance": { "type": "number", "format": "float" },
+                                                        "date": { "type": "string", "format": "date" },
+                                                        "description": { "type": "string" },
+                                                        "currency": { "type": "string" }
+                                                    },
+                                                    "required": ["entry_id", "account", "debit", "credit", "balance", "date", "currency"]
+                                                },
+                                                "MarginPerProjectResource": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "project_id": { "type": "integer" },
+                                                        "project_name": { "type": "string" },
+                                                        "revenue": { "type": "number", "format": "float" },
+                                                        "cost": { "type": "number", "format": "float" },
+                                                        "margin": { "type": "number", "format": "float" },
+                                                        "currency": { "type": "string" }
+                                                    },
+                                                    "required": ["project_id", "project_name", "revenue", "cost", "margin", "currency"]
+                                                },
+                                                "PaymentsToCompaniesResource": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "payment_id": { "type": "integer" },
+                                                        "company_id": { "type": "integer" },
+                                                        "company_name": { "type": "string" },
+                                                        "amount_paid": { "type": "number", "format": "float" },
+                                                        "payment_date": { "type": "string", "format": "date" },
+                                                        "payment_method": { "type": "string" },
+                                                        "currency": { "type": "string" }
+                                                    },
+                                                    "required": ["payment_id", "company_id", "company_name", "amount_paid", "payment_date", "currency"]
+                                                },
+                                                "InvoicesReportResource": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "invoice_id": { "type": "integer" },
+                                                        "invoice_number": { "type": "string" },
+                                                        "customer_name": { "type": "string" },
+                                                        "project_name": { "type": "string" },
+                                                        "status": { "type": "string" },
+                                                        "total_amount": { "type": "number", "format": "float" },
+                                                        "currency": { "type": "string" },
+                                                        "issue_date": { "type": "string", "format": "date" },
+                                                        "due_date": { "type": "string", "format": "date" }
+                                                    },
+                                                    "required": ["invoice_id", "invoice_number", "customer_name", "status", "total_amount", "currency"]
+                                                },
+                                                "RevenueSnapshotResource": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "total_revenue": { "type": "number", "format": "float" },
+                                                        "total_cost": { "type": "number", "format": "float" },
+                                                        "net_profit": { "type": "number", "format": "float" },
+                                                        "currency": { "type": "string" },
+                                                        "period": { "type": "string" }
+                                                    },
+                                                    "required": ["total_revenue", "total_cost", "net_profit", "currency", "period"]
+                                                },
+                                    "ProjectsSummaryResource": {
+                                        "type": "object",
+                                        "properties": {
+                                            "project_id": { "type": "integer" },
+                                            "project_name": { "type": "string" },
+                                            "customer_name": { "type": "string" },
+                                            "status": { "type": "string" },
+                                            "budget_estimate": { "type": "number", "format": "float" },
+                                            "currency": { "type": "string" },
+                                            "start_date": { "type": "string", "format": "date" },
+                                            "end_date": { "type": "string", "format": "date" },
+                                            "created_at": { "type": "string", "format": "date-time" },
+                                            "updated_at": { "type": "string", "format": "date-time" }
+                                        },
+                                        "required": ["project_id", "project_name", "customer_name", "status", "budget_estimate", "currency"]
+                                    },
+                        "OrdersSummaryResource": {
+                            "type": "object",
+                            "properties": {
+                                "order_id": { "type": "integer" },
+                                "order_number": { "type": "string" },
+                                "customer_name": { "type": "string" },
+                                "project_name": { "type": "string" },
+                                "status": { "type": "string" },
+                                "total_amount": { "type": "number", "format": "float" },
+                                "currency": { "type": "string" },
+                                "created_at": { "type": "string", "format": "date-time" },
+                                "updated_at": { "type": "string", "format": "date-time" }
+                            },
+                            "required": ["order_id", "order_number", "customer_name", "status", "total_amount", "currency"]
+                        },
             "Accounts": {
                 "type": "object",
                 "properties": {
