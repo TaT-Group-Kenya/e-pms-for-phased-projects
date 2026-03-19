@@ -44,7 +44,7 @@
             <tr>
                 <th>Payment #</th>
                 <th>Invoice #</th>
-                <th>Amount (KES)</th>
+                <th>Amount</th>
                 <th>Tax</th>
                 <th>Net</th>
                 <th>Currency</th>
@@ -56,7 +56,7 @@
             <tr>
                 <td><strong>{{ $payment->id }}</strong></td>
                 <td><strong>{{ $payment->invoice_number }}</strong></td>
-                <td><strong>{{ number_format((float) $payment->amount_kes, 2) }}</strong></td>
+                <td><strong>{{ number_format((float) $payment->amount, 2) }}</strong></td>
                 <td>{{ number_format((float) $payment->tax_amount, 2) }}</td>
                 <td><strong>{{ number_format((float) $payment->net_amount, 2) }}</strong></td>
                 <td>{{ $payment->currency }}</td>
@@ -66,9 +66,9 @@
         </tbody>
     </table>
     <div class="section">
-        <span style="font-size:14px;font-weight:bold;color:#1d4ed8;">Total Payments:</span> <strong>{{ number_format((float) $data['totals']['total'], 2) }}</strong><br>
-        <span style="font-size:14px;font-weight:bold;color:#1d4ed8;">Payments Taxes:</span> <strong>{{ number_format((float) $data['totals']['taxes'], 2) }}</strong><br>
-        <span style="font-size:14px;font-weight:bold;color:#1d4ed8;">Payments Net:</span> <strong>{{ number_format((float) $data['totals']['net'], 2) }}</strong>
+        <span style="font-size:14px;font-weight:bold;color:#1d4ed8;">Total:</span> <strong>{{ number_format((float) $data['totals']['total'], 2) }}</strong><br>
+        <span style="font-size:14px;font-weight:bold;color:#1d4ed8;">Taxes:</span> <strong>{{ number_format((float) $data['totals']['taxes'], 2) }}</strong><br>
+        <span style="font-size:14px;font-weight:bold;color:#1d4ed8;">Net:</span> <strong>{{ number_format((float) $data['totals']['net'], 2) }}</strong>
     </div>
 </div>
 

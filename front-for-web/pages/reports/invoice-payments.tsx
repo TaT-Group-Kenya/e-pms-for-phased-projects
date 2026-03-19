@@ -5,23 +5,7 @@ import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../../components/common/Toast';
 import Can from '../../components/auth/Can';
 import AuthenticatedLayout from '../../components/authenticated/AuthenticatedLayout';
-import { formatCurrency } from '../../utils/format';
-
-function formatDateTime(dateString: string): string {
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return '';
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = months[date.getMonth()];
-  const day = date.getDate();
-  const year = date.getFullYear();
-  let hours = date.getHours();
-  const minutes = date.getMinutes();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  const paddedMinutes = minutes < 10 ? '0' + minutes : minutes;
-  return `${month} ${day}, ${year} ${hours}:${paddedMinutes} ${ampm}`;
-}
+import { formatCurrency, formatDateTime } from '../../utils/format';
 
 export default function InvoicePaymentsReportPage() {
   const [filters, setFilters] = useState({
@@ -130,7 +114,10 @@ export default function InvoicePaymentsReportPage() {
   async function exportPdf() {
     try {
       const params = new URLSearchParams();
-      params.append('filters', JSON.stringify({...filters, type }));
+      if (type) params.append('type', type);
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
       params.append('reportType', 'invoicePayments');
       const url = `/api/reports/export-pdf?${params.toString()}`;
       const resp = await fetch(url, {
@@ -175,7 +162,7 @@ export default function InvoicePaymentsReportPage() {
       row.tax_amount,
       row.net_amount,
       row.currency,
-      row.created_at ? formatDateTime(row.created_at) : (row.date ? formatDateTime(row.date) : ''),
+      formatDateTime(row.created_at || row.date || ''),
     ]);
     // Add totals rows matching HTML view
     const totalsRows: string[][] = [];
@@ -397,7 +384,7 @@ export default function InvoicePaymentsReportPage() {
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.tax_amount}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.net_amount}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.currency}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.created_at ? formatDateTime(row.created_at) : (row.date ? formatDateTime(row.date) : '')}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{formatDateTime(row.created_at)}</td>
                         </tr>
                       ))
                     )}

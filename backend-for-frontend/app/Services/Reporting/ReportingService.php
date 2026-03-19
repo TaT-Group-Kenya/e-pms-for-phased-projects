@@ -215,18 +215,32 @@ class ReportingService
     }
     
     public function marginPerProject($filters) {
+        $projectId = $filters['project_id'] ?? null;
         $currency = $filters['currency_code'] ?? null;
         $forexToKes = $filters['forex_to_kes'] ?? null;
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
-        if (!$currency || !$forexToKes) {
+        if (!$currency) {
             return [
-                'error' => 'currency_code and forex_to_kes are required for margin per project report.'
+                'error' => 'currency is required for margin per project report.'
             ];
         }
 
+        if ($currency !== 'KES' && !$forexToKes) {
+            return [
+                'error' => 'forex to KES is required for margin per project report.'
+            ];
+        } 
+        
+        if ($currency === 'KES') {
+            $forexToKes = 1;
+        }
+
         $projects = \App\Models\Project::query();
+        if ($projectId) {
+            $projects->where('id', $projectId);
+        }
         if ($currency) {
             $projects->where('currency', $currency);
         }
@@ -252,9 +266,9 @@ class ReportingService
                     $revenueKes += $invoice->total_amount * $forexToKes;
                 }
             }
-            // Cost: sum of company payments for project (all in KES)
-            $costKes = \App\Models\CompanyPayment::where('project_id', $project->id)
-                ->sum('amount');
+            // Cost: sum of company invoices for project (all in KES)
+            $costKes = \App\Models\CompanyInvoice::where('project_id', $project->id)
+                ->sum('total_amount');
             $marginKes = $revenueKes - $costKes;
             $result[] = [
                 'project_id' => $project->id,
@@ -277,22 +291,36 @@ class ReportingService
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
-        if (!$currency || !$forex) {
+        if (!$currency) {
             return [
-                'error' => 'currency_code and forex are required for general ledger report.'
+                'error' => 'currency is required for general ledger report.'
             ];
         }
 
+        if ($currency !== 'KES' && !$forex) {
+            return [
+                'error' => 'forex to KES is required for general ledger report.'
+            ];
+        }
+
+        if ($currency === 'KES') {
+            $forex = 1;
+        }
+
         // Receivables (CustPayment)
-        $receivablesQuery = \App\Models\CustPayment::query();
+        $receivablesQuery = \App\Models\CustPayment::with(['allocations.invoice.project', 'allocations.invoice.customer'])->where('transaction_type', 'receipt');
         if ($currency) {
             $receivablesQuery->where('currency', $currency);
         }
         if ($projectId) {
-            $receivablesQuery->where('project_id', $projectId);
+            $receivablesQuery->whereHas('allocations.invoice', function ($q) use ($projectId) {
+                $q->where('project_id', $projectId);
+            });
         }
         if ($customerId) {
-            $receivablesQuery->where('customer_id', $customerId);
+            $receivablesQuery->whereHas('allocations.invoice', function ($q) use ($customerId) {
+                $q->where('customer_id', $customerId);
+            });
         }
         if ($from) {
             $receivablesQuery->whereDate('created_at', '>=', $from);
@@ -301,18 +329,37 @@ class ReportingService
             $receivablesQuery->whereDate('created_at', '<=', $to);
         }
         $receivables = $receivablesQuery->get();
-        // Convert receivables to KES
+        // Attach project and customer from first allocation's invoice
         foreach ($receivables as $payment) {
-            $payment->amount_kes = $payment->currency === 'KES' ? $payment->amount : $payment->amount * $forex;
+            $payment->amount_kes = $payment->currency === 'KES' ? $payment->amount_paid : $payment->amount_paid * $forex;
+            $payment->tax_amount_kes = $payment->currency === 'KES' ? $payment->tax_amount : $payment->tax_amount * $forex;
+            $payment->net_amount_kes = $payment->currency === 'KES' ? $payment->net_amount : $payment->net_amount * $forex;
+            $allocation = $payment->allocations->first();
+            $invoice = $allocation ? $allocation->invoice : null;
+            if ($invoice) {
+                $payment->project_id = $invoice->project_id;
+                $payment->project_name = $invoice->project ? $invoice->project->name : null;
+                $payment->customer_id = $invoice->customer_id;
+                $payment->customer_name = $invoice->customer ? $invoice->customer->name : null;
+            } else {
+                $payment->project_id = null;
+                $payment->project_name = null;
+                $payment->customer_id = null;
+                $payment->customer_name = null;
+            }
         }
 
         // Payables (CompanyPayment)
-        $payablesQuery = \App\Models\CompanyPayment::query();
+        $payablesQuery = \App\Models\CompanyPayment::with(['invoice', 'invoice.company', 'invoice.project'])->where('direction', 'outgoing');
         if ($projectId) {
-            $payablesQuery->where('project_id', $projectId);
+            $payablesQuery->whereHas('invoice', function ($q) use ($projectId) {
+                $q->where('project_id', $projectId);
+            });
         }
         if ($companyId) {
-            $payablesQuery->where('company_id', $companyId);
+            $payablesQuery->whereHas('invoice', function ($q) use ($companyId) {
+                $q->where('company_id', $companyId);
+            });
         }
         if ($from) {
             $payablesQuery->whereDate('created_at', '>=', $from);
@@ -321,6 +368,21 @@ class ReportingService
             $payablesQuery->whereDate('created_at', '<=', $to);
         }
         $payables = $payablesQuery->get();
+        // Attach project and company from invoice
+        foreach ($payables as $payment) {
+            $invoice = $payment->invoice;
+            if ($invoice) {
+                $payment->project_id = $invoice->project_id;
+                $payment->project_name = $invoice->project ? $invoice->project->name : null;
+                $payment->company_id = $invoice->company_id;
+                $payment->company_name = $invoice->company ? $invoice->company->name : null;
+            } else {
+                $payment->project_id = null;
+                $payment->project_name = null;
+                $payment->company_id = null;
+                $payment->company_name = null;
+            }
+        }
 
         // Compute totals for receivables
         $totalReceivables = 0;
@@ -328,11 +390,11 @@ class ReportingService
         $totalReceivablesNet = 0;
         foreach ($receivables as $payment) {
             $tax = $payment->tax_amount ?? 0;
-            $totalReceivables += $payment->amount_kes;
+            $totalReceivables += $payment->amount_paid;
             $totalReceivablesTax += $tax;
-            $totalReceivablesNet += ($payment->amount_kes - $tax);
+            $totalReceivablesNet += ($payment->amount_paid - $tax);
             $payment->tax_amount = $tax;
-            $payment->net_amount = $payment->amount_kes - $tax;
+            $payment->net_amount = $payment->amount_paid - $tax;
         }
 
         // Compute totals for payables
@@ -341,11 +403,11 @@ class ReportingService
         $totalPayablesNet = 0;
         foreach ($payables as $payment) {
             $tax = $payment->tax_amount ?? 0;
-            $totalPayables += $payment->amount;
+            $totalPayables += $payment->amount_paid;
             $totalPayablesTax += $tax;
-            $totalPayablesNet += ($payment->amount - $tax);
+            $totalPayablesNet += ($payment->amount_paid - $tax);
             $payment->tax_amount = $tax;
-            $payment->net_amount = $payment->amount - $tax;
+            $payment->net_amount = $payment->amount_paid - $tax;
         }
 
         return [
@@ -368,6 +430,7 @@ class ReportingService
     }
     
     public function invoicePayments($filters) {
+        \Log::info('Generating Invoice Payments Report', ['filters' => $filters]);
         $type = $filters['type'] ?? null; // 'customer' or 'company'
         $currency = $filters['currency_code'] ?? null;
         $forex = $filters['forex'] ?? null;
@@ -724,33 +787,15 @@ class ReportingService
 
     private function exportGeneralLedgerPdf($filters) {
         $userId = Auth::id() ?? null;
-        $rawData = $this->generalLedger($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\GeneralLedgerResource::collection($rawData);
-        $data = [];
-        foreach ($resourceCollection as $item) {
-            $data[] = $item->toArray(null);
-        }
+        $data = $this->generalLedger($filters);
+        \Log::info('General Ledger raw data', ['data' => $data]);
         return $this->renderPdf('pdf.general-ledger', $data, $filters, $userId, 'generalLedger');
     }
 
     private function exportInvoicePaymentsPdf($filters) {
         $userId = Auth::id() ?? null;
         $rawData = $this->invoicePayments($filters);
-        $payments = isset($rawData['payments']) ? $rawData['payments'] : [];
-        $resourceCollection = \App\Http\Resources\Reporting\InvoicePaymentsResource::collection($payments);
-        $paymentsArray = [];
-        foreach ($resourceCollection as $item) {
-            $paymentsArray[] = $item->resource;
-        }
-        $data = [
-            'payments' => $paymentsArray,
-            'totals' => isset($rawData['totals']) ? $rawData['totals'] : [
-                'total' => 0,
-                'taxes' => 0,
-                'net' => 0,
-            ],
-        ];
-        return $this->renderPdf('pdf.invoice-payments', $data, $filters, $userId, 'invoicePayments');
+        return $this->renderPdf('pdf.invoice-payments', $rawData, $filters, $userId, 'invoicePayments');
     }
 
     private function exportTaxPaymentsCustomerPdf($filters) {

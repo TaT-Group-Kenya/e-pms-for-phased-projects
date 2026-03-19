@@ -43,9 +43,11 @@
     <table class="table">
         <thead>
             <tr>
-                <th>Payment #</th>
+                <th>Transaction #</th>
+                <th>Project</th>
                 <th>Customer</th>
-                <th>Amount (KES)</th>
+                <th>Amount</th>
+                <th>Currency</th>
                 <th>Tax</th>
                 <th>Net</th>
                 <th>Date</th>
@@ -54,16 +56,19 @@
         <tbody>
         @foreach($data['receivables'] as $payment)
             <tr>
-                <td>{{ $payment->id }}</td>
-                <td>{{ optional($payment->customer)->name }}</td>
-                <td>{{ number_format((float) $payment->amount_kes, 2) }}</td>
-                <td>{{ number_format((float) $payment->tax_amount, 2) }}</td>
-                <td>{{ number_format((float) $payment->net_amount, 2) }}</td>
-                <td>{{ optional($payment->created_at)->format('d M Y') }}</td>
+                <td>{{ $payment->transaction_number ?? '' }}</td>
+                <td>{{ $payment->project_name ?? '' }}</td>
+                <td>{{ $payment->customer_name ?? '' }}</td>
+                <td>{{ number_format((float) $payment->amount_paid ?? 0, 2) }}</td>
+                <td>{{ $payment->currency ?? 'KES' }}</td>
+                <td>{{ number_format((float) $payment->tax_amount ?? 0, 2) }}</td>
+                <td>{{ number_format((float) $payment->net_amount ?? 0, 2) }}</td>
+                <td>{{ $payment->date }}</td>
             </tr>
         @endforeach
         </tbody>
     </table>
+    <br>
     <div class="section">
         <strong>Total Receivables:</strong> {{ number_format((float) $data['totals']['receivables']['total'], 2) }}<br>
         <strong>Receivables Taxes:</strong> {{ number_format((float) $data['totals']['receivables']['taxes'], 2) }}<br>
@@ -76,9 +81,11 @@
     <table class="table">
         <thead>
             <tr>
-                <th>Payment #</th>
+                <th>Transaction #</th>
+                <th>Project</th>
                 <th>Company</th>
                 <th>Amount</th>
+                <th>Currency</th>
                 <th>Tax</th>
                 <th>Net</th>
                 <th>Date</th>
@@ -87,16 +94,19 @@
         <tbody>
         @foreach($data['payables'] as $payment)
             <tr>
-                <td>{{ $payment->id }}</td>
-                <td>{{ optional($payment->company)->name }}</td>
-                <td>{{ number_format((float) $payment->amount, 2) }}</td>
-                <td>{{ number_format((float) $payment->tax_amount, 2) }}</td>
-                <td>{{ number_format((float) $payment->net_amount, 2) }}</td>
-                <td>{{ optional($payment->created_at)->format('d M Y') }}</td>
+                <td>{{ $payment->transaction_number ?? '' }}</td>
+                <td>{{ $payment->project_name ?? '' }}</td>
+                <td>{{ $payment->company_name ?? '' }}</td>
+                <td>{{ number_format((float) $payment->amount_paid ?? 0, 2) }}</td>
+                <td>{{ $payment->currency ?? 'KES' }}</td>
+                <td>{{ number_format((float) $payment->tax_amount ?? 0, 2) }}</td>
+                <td>{{ number_format((float) $payment->net_amount ?? 0, 2) }}</td>
+                <td>{{ $payment->date }}</td>
             </tr>
         @endforeach
         </tbody>
     </table>
+    <br>
     <div class="section">
         <strong>Total Payables:</strong> {{ number_format((float) $data['totals']['payables']['total'], 2) }}<br>
         <strong>Payables Taxes:</strong> {{ number_format((float) $data['totals']['payables']['taxes'], 2) }}<br>
