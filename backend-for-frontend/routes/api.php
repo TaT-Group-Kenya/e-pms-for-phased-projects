@@ -1,4 +1,3 @@
-
 <?php
 
 use Illuminate\Http\Request;
@@ -136,5 +135,21 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('office-expenses', App\Http\Controllers\Api\OfficeExpenseController::class);
 		Route::apiResource('office-expense-categories', App\Http\Controllers\Api\OfficeExpenseCategoryController::class);
 		Route::apiResource('office-expense-payments', App\Http\Controllers\Api\OfficeExpensePaymentController::class);
+		// Reporting Endpoints
+		Route::prefix('reports')->group(function () {
+			Route::get('orders-summary', [App\Http\Controllers\ReportingController::class, 'ordersSummary']);
+			Route::get('projects-summary', [App\Http\Controllers\ReportingController::class, 'projectsSummary']);
+			Route::get('customer-history', [App\Http\Controllers\ReportingController::class, 'customerHistory']);
+			Route::get('revenue', [App\Http\Controllers\ReportingController::class, 'revenueSnapshot']);
+			Route::get('invoices', [App\Http\Controllers\ReportingController::class, 'invoicesReport']);
+			Route::get('payments-to-companies', [App\Http\Controllers\ReportingController::class, 'paymentsToCompanies']);
+			Route::get('margin-per-project', [App\Http\Controllers\ReportingController::class, 'marginPerProject']);
+			Route::get('general-ledger', [App\Http\Controllers\ReportingController::class, 'generalLedger']);
+			Route::get('invoice-payments', [App\Http\Controllers\ReportingController::class, 'invoicePayments']);
+			Route::get('tax-payments-customer', [App\Http\Controllers\ReportingController::class, 'taxPaymentsCustomer']);
+			Route::get('tax-payments-company', [App\Http\Controllers\ReportingController::class, 'taxPaymentsCompany']);
+			Route::get('expense', [App\Http\Controllers\ReportingController::class, 'expenseReport']);
+			Route::get('export-pdf', [App\Http\Controllers\ReportingController::class, 'exportPdf']);
+		});
 	});
 });

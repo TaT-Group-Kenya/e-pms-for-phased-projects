@@ -201,6 +201,7 @@ class CompanyCreditNoteController extends Controller
                 'transaction_number' => $transactionNumber,
                 'direction' => 'incoming',
                 'transaction_type' => 'refund',
+                'invoice_id' => $companyCreditNote->invoice_id,
                 'amount_paid' => $amount,
                 'tax_amount' => $taxPortion,
                 'net_amount' => $netPortion,
@@ -215,6 +216,7 @@ class CompanyCreditNoteController extends Controller
                 'exchange_rate' => $exchangeRate,
                 'reconciled' => false,
                 'reconciliation_date' => null,
+                'created_at' => now(),
                 'updated_by' => $userId,
                 'created_by' => $userId
             ]);

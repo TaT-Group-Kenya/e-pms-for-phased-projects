@@ -1,3 +1,51 @@
+# Reports API
+
+The application provides a suite of reporting endpoints for financial and project analytics. All endpoints require appropriate filters and authorization.
+
+### Available Reports
+
+- Orders Summary: `/api/reports/orders-summary` — Filter by status, project, customer, date, currency.
+- Projects Summary: `/api/reports/projects-summary` — Filter by status, customer, category, origin, location, job reference, date, currency.
+- Customer History: `/api/reports/customer-history` — Filter by date.
+- Revenue Snapshot: `/api/reports/revenue-snapshot` — Filter by currency, date.
+- Invoices Report: `/api/reports/invoices-report` — Filter by type (customer/company), status, currency, date.
+- Payments to Companies: `/api/reports/payments-to-companies` — Filter by company, currency, date.
+- Margin Per Project: `/api/reports/margin-per-project` — Filter by currency, forex rate, date.
+- General Ledger: `/api/reports/general-ledger` — Filter by currency, forex, project, company, customer, date.
+- Invoice Payments: `/api/reports/invoice-payments` — Filter by type, currency, forex, project, company, customer, date.
+- Tax Payments Customer: `/api/reports/tax-payments-customer` — Filter by currency, customer, date.
+- Tax Payments Company: `/api/reports/tax-payments-company` — Filter by currency, company, date.
+- Expense Report: `/api/reports/expense-report` — Filter by currency, date.
+- PDF Export: `/api/reports/export-pdf` — Provide `report_type` and filters to generate a PDF for any report.
+
+### Request Filters
+
+Each endpoint accepts filters via query parameters or request body. Common filters include:
+
+- `currency_code`: Currency code (required for most reports)
+- `status`: Order or invoice status
+- `project_id`, `company_id`, `customer_id`: Entity IDs
+- `from`, `to`, `from_date`, `to_date`: Date range
+- `type`: Report type (customer/company)
+- `forex`, `forex_to_kes`: Exchange rate
+- `job_reference_id`, `project_category_id`, `project_source_origin_id`, `project_location_id`: Project attributes
+
+### Example Request
+
+```
+POST /api/reports/invoice-payments
+{
+	"type": "customer",
+	"currency_code": "KES",
+	"forex": 1.0,
+	"from": "2024-01-01",
+	"to": "2024-12-31"
+}
+```
+
+### Response
+
+All responses are formatted using API Resources. Errors return HTTP 400 with an error message. PDF export returns a PDF stream.
 ## Project Overview
 
 This application manages client projects, assigns companies to work on those projects, and handles payments to companies. It provides entities for users, companies, customers, projects, quotations, orders, invoices, credit notes, roles, and groups.
