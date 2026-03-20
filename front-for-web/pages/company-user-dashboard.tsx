@@ -25,6 +25,7 @@ export interface CompanyInvoice {
   discount_percentage: string;
   discount_amount: string;
   total_amount: string;
+  total_paid: string;
   currency: string;
   payment_terms: string;
   notes_to_company: string | null;
@@ -86,6 +87,7 @@ import AuthenticatedSimpleLayout from '../components/authenticated/Authenticated
 import { useAppSelector } from '../store/hooks';
 import { selectUser, selectAccessToken } from '../store/auth/selectors';
 import { JSON_HEADERS } from '../constants/headers';
+import { formatCurrency } from '../utils/format';
 
 const TABS = [
   { label: 'Overview', key: 'overview' },
@@ -302,6 +304,7 @@ const CompanyUserDashboard: NextPage = () => {
                         <th className="px-4 py-2 text-left">Discount %</th>
                         <th className="px-4 py-2 text-left">Discount Amt</th>
                         <th className="px-4 py-2 text-left">Total</th>
+                        <th className="px-4 py-2 text-left">Paid</th>
                         <th className="px-4 py-2 text-left">Currency</th>
                         <th className="px-4 py-2 text-left">Payment Terms</th>
                         <th className="px-4 py-2 text-left">Notes</th>
@@ -321,11 +324,12 @@ const CompanyUserDashboard: NextPage = () => {
                               <td className="px-4 py-2">{inv.title}</td>
                               <td className="px-4 py-2">{inv.description}</td>
                               <td className="px-4 py-2">{inv.status}</td>
-                              <td className="px-4 py-2">{inv.subtotal_amount}</td>
-                              <td className="px-4 py-2">{inv.tax_amount}</td>
+                              <td className="px-4 py-2">{formatCurrency(Number(inv.subtotal_amount), inv.currency)}</td>
+                              <td className="px-4 py-2">{formatCurrency(Number(inv.tax_amount), inv.currency)}</td>
                               <td className="px-4 py-2">{inv.discount_percentage}</td>
-                              <td className="px-4 py-2">{inv.discount_amount}</td>
-                              <td className="px-4 py-2">{inv.total_amount}</td>
+                              <td className="px-4 py-2">{formatCurrency(Number(inv.discount_amount), inv.currency)}</td>
+                              <td className="px-4 py-2">{formatCurrency(Number(inv.total_amount), inv.currency)}</td>
+                              <td className="px-4 py-2">{formatCurrency(Number(inv.total_paid), inv.currency)}</td>
                               <td className="px-4 py-2">{inv.currency}</td>
                               <td className="px-4 py-2">{inv.payment_terms}</td>
                               <td className="px-4 py-2">{inv.notes_to_company}</td>

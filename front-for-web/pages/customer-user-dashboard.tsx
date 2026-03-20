@@ -37,6 +37,7 @@ import type { NextPage } from 'next';
 import AuthenticatedSimpleLayout from '../components/authenticated/AuthenticatedSimpleLayout';
 import { useAppSelector } from '../store/hooks';
 import { selectUser, selectAccessToken } from '../store/auth/selectors';
+import { formatCurrency } from '../utils/format';
 
 // --- Entity Interfaces ---
 export interface Quotation {
@@ -490,11 +491,11 @@ const CustomerUserDashboard: NextPage = () => {
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{q.description}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{q.status}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{q.valid_until_date ? new Date(q.valid_until_date).toLocaleDateString() : ''}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{q.subtotal_amount}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{q.tax_amount}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(q.subtotal_amount), q.currency)}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(q.tax_amount), q.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{q.discount_percentage}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{q.discount_amount}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{q.total_amount}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(q.discount_amount), q.currency)}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(q.total_amount), q.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{q.currency}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{q.payment_terms}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{q.notes_to_customer}</td>
@@ -562,11 +563,11 @@ const CustomerUserDashboard: NextPage = () => {
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{o.title}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{o.description}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{o.status}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{o.subtotal_amount}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{o.tax_amount}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(o.subtotal_amount), o.currency)}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(o.tax_amount), o.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{o.discount_percentage}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{o.discount_amount}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{o.total_amount}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(o.discount_amount), o.currency)}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(o.total_amount), o.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{o.currency}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{o.payment_terms}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{o.notes_to_customer}</td>
@@ -633,16 +634,16 @@ const CustomerUserDashboard: NextPage = () => {
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.description}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.status}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
-                              {inv.currency} {inv.subtotal_amount}</td>
+                              {formatCurrency(Number(inv.subtotal_amount), inv.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
-                              {inv.currency} {inv.tax_amount}</td>
+                              {formatCurrency(Number(inv.tax_amount), inv.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.discount_percentage}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
-                              { inv.currency} {inv.discount_amount}</td>
+                              {formatCurrency(Number(inv.discount_amount), inv.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
-                              {inv.currency} {inv.total_amount}</td>
+                              {formatCurrency(Number(inv.total_amount), inv.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">
-                              {inv.currency} {inv.total_paid}</td>
+                              {formatCurrency(Number(inv.total_paid), inv.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{inv.valid_until ? new Date(inv.valid_until).toLocaleDateString() : ''}</td>
                           </tr>
                         ))}
@@ -708,11 +709,11 @@ const CustomerUserDashboard: NextPage = () => {
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{c.title}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{c.description}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{c.status}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{c.subtotal_amount}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{c.tax_amount}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(c.subtotal_amount), c.currency)}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(c.tax_amount), c.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{c.discount_percentage}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{c.discount_amount}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{c.total_amount}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(c.discount_amount), c.currency)}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(c.total_amount), c.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{c.currency}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{c.payment_terms}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{c.min_approval_count}</td>
@@ -851,7 +852,7 @@ const CustomerUserDashboard: NextPage = () => {
                         ], search).map((pay) => (
                           <tr key={pay.id}>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{pay.transaction_number}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{pay.amount_paid}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(pay.amount_paid), pay.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{pay.payment_date ? new Date(pay.payment_date).toLocaleDateString() : ''}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{pay.payment_method}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{pay.payment_status}</td>
@@ -861,8 +862,8 @@ const CustomerUserDashboard: NextPage = () => {
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{pay.notes_to_customer}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{pay.created_at ? new Date(pay.created_at).toLocaleDateString() : ''}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{pay.updated_at ? new Date(pay.updated_at).toLocaleDateString() : ''}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{pay.tax_amount}</td>
-                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{pay.net_amount}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(pay.tax_amount), pay.currency)}</td>
+                            <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{formatCurrency(Number(pay.net_amount), pay.currency)}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{pay.bank_name}</td>
                             <td className="px-4 py-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-xs">{pay.receipt_number}</td>
                           </tr>

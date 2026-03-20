@@ -13,6 +13,7 @@ export async function fetchActivePaymentReceivingMethods(accessToken: string) {
   return (data?.data || data) as Array<{
     id: number;
     name: string;
+    currency: string;
     status: string;
     is_deleted: number;
   }>;

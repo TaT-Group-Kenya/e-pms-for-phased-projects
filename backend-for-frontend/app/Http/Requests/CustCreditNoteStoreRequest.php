@@ -17,13 +17,13 @@ class CustCreditNoteStoreRequest extends FormRequest
         return [
             'invoice_id' => ['required', 'exists:cust_invoices,id'],
             'title' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:255'],
             'status' => ['required', Rule::in(['draft','raised','refunded'])],
             'subtotal_amount' => ['required', 'numeric', 'min:0'],
             'tax_amount' => ['required', 'numeric', 'min:0'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'currency' => ['required', 'string', 'max:255'],
-            'notes_to_customer' => ['required', 'string', 'max:255'],
+            'notes_to_customer' => ['nullable', 'string', 'max:255'],
             'credit_note_number' => ['nullable', 'string'],
         ];
     }

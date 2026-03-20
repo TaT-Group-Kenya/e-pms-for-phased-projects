@@ -60,6 +60,8 @@ class CustCreditNoteController extends Controller
             }
         }
         $validated['created_by'] = Auth::id();
+        $validated['description'] = $validated['description'] ?? $validated['title'];
+        $validated['notes_to_customer'] = $validated['notes_to_customer'] ?? 'Correction for invoice ' . ($invoice->invoice_number);
         // Generate credit_note_number if not provided
         if (empty($validated['credit_note_number'])) {
             $commonService = new CommonService();

@@ -57,6 +57,20 @@ class CompanyInvoice extends Model
         return $this->hasMany(CompanyPayment::class, 'invoice_id');
     }
 
+    /**
+     * Get the total amount paid to this invoice so far.
+     * @return float
+     */
+    public function getTotalPaidAttribute()
+    {
+        // Eager load payments if not loaded
+        $payments = $this->payments;
+        if ($payments && $payments->count() > 0) {
+            return (float) $payments->sum('amount_paid');
+        }
+        return 0.0;
+    }
+
     public function creditnotes()
     {
         // Credit notes also reference the invoice by invoice_id

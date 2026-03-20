@@ -52,15 +52,16 @@ class CompanyCreditNoteController extends Controller
         }
 
         // Auto-generate a unique credit note number if not provided
-        if (empty($validated['credit_note_number'] ?? null)) {
-            $commonService = new CommonService();
+        $commonService = new CommonService();
 
-            do {
-                $number = $commonService->generateUniqueCode('CMPCN-');
-            } while (CompanyCreditNote::where('credit_note_number', $number)->exists());
+        do {
+            $number = $commonService->generateUniqueCode('CMPCN-');
+        } while (CompanyCreditNote::where('credit_note_number', $number)->exists());
 
-            $validated['credit_note_number'] = $number;
-        }
+        $validated['credit_note_number'] = $number;
+        $validated['description'] = $validated['description'] ?? $validated['title'];
+        $validated['notes_to_customer'] = $validated['notes_to_customer'] ?? 'Correction for invoice ' . ($invoice->invoice_number);
+        
 
         $validated['created_by'] = Auth::id();
 

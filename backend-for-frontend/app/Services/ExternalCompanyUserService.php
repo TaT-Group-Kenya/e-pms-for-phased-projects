@@ -10,11 +10,18 @@ class ExternalCompanyUserService
 {
     public function getInvoices($companyId)
     {
-        return CompanyInvoice::where('company_id', $companyId)
+        $invoices = CompanyInvoice::where('company_id', $companyId)
             ->where('is_deleted', false)
             ->where('status', '!=', 'draft')
             ->orderByDesc('created_at')
             ->get();
+        
+        return $invoices->map(function ($invoice) {
+            $arr = $invoice->toArray();
+            unset($arr['payments']);
+            $arr['total_paid'] = $invoice->total_paid;
+            return $arr;
+        });
     }
 
     public function getCreditNotes($companyId)

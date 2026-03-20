@@ -145,9 +145,8 @@ export default function CustInvoiceDetailPage() {
   const [editNotes, setEditNotes] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // Payment Receiving Method for Edit Header
   const [editPaymentReceivingMethodId, setEditPaymentReceivingMethodId] = useState<number | ''>('');
-  const [paymentReceivingMethods, setPaymentReceivingMethods] = useState<Array<{ id: number; name: string }>>([]);
+  const [paymentReceivingMethods, setPaymentReceivingMethods] = useState<Array<{ id: number; name: string, currency: string }>>([]);
   const [loadingReceivingMethods, setLoadingReceivingMethods] = useState(false);
 
   const [markingSent, setMarkingSent] = useState(false)
@@ -1725,16 +1724,17 @@ export default function CustInvoiceDetailPage() {
               <div>
                 <label className="block text-sm font-medium mb-1 mt-3">Receiving Payment Method <span className="text-danger-500">*</span></label>
                 <select
-                  value={editPaymentReceivingMethodId}
+                  value={editPaymentReceivingMethodId || invoice?.receivingPaymentMethod?.id}
                   onChange={e => setEditPaymentReceivingMethodId(Number(e.target.value) || '')}
                   className="w-full border rounded px-3 py-2 text-sm mb-5"
                   required
                   disabled={loadingReceivingMethods}
                 >
                   <option value="">{loadingReceivingMethods ? 'Loading…' : 'Select method'}</option>
-                  {paymentReceivingMethods.map((m) => (
+                  {paymentReceivingMethods.filter(rpm => rpm.currency === invoice?.currency).map((m) => {
+                    return (
                     <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
+                  )})}
                 </select>
               </div>
               <div className="flex gap-2 mt-2">
