@@ -9,6 +9,8 @@ class CompanyPaymentResource extends BaseResource
         return [
             'id' => $this->id,
             'transaction_number' => $this->transaction_number,
+            'transaction_type' => $this->transaction_type,
+            'direction' => $this->direction,
             'invoice_id' => $this->invoice_id,
             'amount_paid' => (float) $this->amount_paid,
             'tax_amount' => (float) $this->tax_amount,
@@ -29,6 +31,7 @@ class CompanyPaymentResource extends BaseResource
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
             'invoice' => new CompanyInvoiceResource($this->whenLoaded('invoice')),
+            'created_by_user' => new UserResource($this->whenLoaded('createdByUser')),
             'ledger_entries' => CompanyTransactionsLedgerResource::collection($this->whenLoaded('companyLedgerEntries')),
         ];
     }

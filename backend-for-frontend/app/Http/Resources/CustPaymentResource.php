@@ -33,6 +33,7 @@ class CustPaymentResource extends BaseResource
             'ledger_entries' => CustomerTransactionsLedgerResource::collection($this->whenLoaded('customerLedgerEntries')),
             'allocations' => CustPaymentAllocationResource::collection($this->whenLoaded('allocations')),
             'invoices' => CustInvoiceResource::collection($this->whenLoaded('invoices')),
+            'created_by_user' => new UserResource($this->whenLoaded('createdByUser')),
         ];
     }
 }

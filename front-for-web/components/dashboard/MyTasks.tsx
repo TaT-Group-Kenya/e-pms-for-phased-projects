@@ -3,10 +3,15 @@
 import React, { useEffect, useState } from "react";
 import { useAppSelector } from "../../store/hooks";
 import { useToast } from "../../hooks/useToast";
+import { format } from "path";
+import { formatDate } from "react-calendar/dist/shared/dateFormatter";
+import { date } from "zod";
+import { formatDateTime } from "../../utils/format";
 
 type RecentUpdate = {
   id: number;
   project_id?: number | null;
+  job_reference_id?: string | null;
   project_name: string;
   phase_name?: string | null;
   comment?: string | null;
@@ -105,6 +110,9 @@ const MyTasks: React.FC = () => {
                     Project
                   </th>
                   <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] md:ltr:first:pl-[25px] md:rtl:first:pr-[25px] ltr:first:pr-0 rtl:first:pl-0 bg-primary-50 dark:bg-[#15203c] whitespace-nowrap">
+                    Job Reference ID
+                  </th>
+                  <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] md:ltr:first:pl-[25px] md:rtl:first:pr-[25px] ltr:first:pr-0 rtl:first:pl-0 bg-primary-50 dark:bg-[#15203c] whitespace-nowrap">
                     Phase
                   </th>
                   <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] md:ltr:first:pl-[25px] md:rtl:first:pr-[25px] ltr:first:pr-0 rtl:first:pl-0 bg-primary-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -125,6 +133,9 @@ const MyTasks: React.FC = () => {
                       {update.project_name}
                     </td>
                     <td className="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] md:ltr:first:pl-[25px] md:rtl:first:pr-[25px] ltr:first:pr-0 rtl:first:pl-0 border-b border-gray-100 dark:border-[#172036]">
+                      {update.job_reference_id || "-"}
+                    </td>
+                    <td className="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] md:ltr:first:pl-[25px] md:rtl:first:pr-[25px] ltr:first:pr-0 rtl:first:pl-0 border-b border-gray-100 dark:border-[#172036]">
                       {update.phase_name || "-"}
                     </td>
                     <td className="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] md:ltr:first:pl-[25px] md:rtl:first:pr-[25px] ltr:first:pr-0 rtl:first:pl-0 border-b border-gray-100 dark:border-[#172036] max-w-[220px] truncate">
@@ -137,7 +148,7 @@ const MyTasks: React.FC = () => {
                     </td>
                     <td className="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] md:ltr:first:pl-[25px] md:rtl:first:pr-[25px] ltr:first:pr-0 rtl:first:pl-0 border-b border-gray-100 dark:border-[#172036]">
                       <span className="text-gray-500 dark:text-gray-400">
-                        {update.updated_at}
+                        {formatDateTime(update.updated_at)}
                       </span>
                     </td>
                   </tr>

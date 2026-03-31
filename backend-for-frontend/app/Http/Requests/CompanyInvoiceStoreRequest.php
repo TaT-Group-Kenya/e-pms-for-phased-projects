@@ -31,6 +31,7 @@ class CompanyInvoiceStoreRequest extends FormRequest
             'payment_terms' => ['required', 'string', 'max:255'],
             'notes_to_customer' => ['required', 'string', 'max:255'],
             'valid_until' => ['required', 'string', 'max:255'],
+            'created_at' => ['nullable', 'date'],
         ];
     }
 

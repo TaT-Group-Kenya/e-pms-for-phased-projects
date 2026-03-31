@@ -58,6 +58,8 @@ class OrderController extends Controller
         
         $model = DB::transaction(function () use ($request) {
             $validated = $request->validated();
+            $validated['created_by'] = Auth::id();
+            $validated['created_at'] = $validated['created_at'] ?? now();
 
             // If an order is being linked to a quotation, enforce the
             // same business rules as generateFromQuotation: the
@@ -194,8 +196,10 @@ class OrderController extends Controller
         $updated = DB::transaction(function () use ($request, $order) {
             $oldStatus = $order->status;
             $userId = $request->user()?->id;
-
-            $updatedOrder = $this->service->update($order->id, $request->validated());
+            $validated = $request->validated();
+            $validated['updated_by'] = $userId;
+            $validated['created_at'] = $validated['created_at'] ?? $order->created_at;
+            $updatedOrder = $this->service->update($order->id, $validated);
 
             // When an order is moved to approved status, automatically
             // generate a draft customer invoice (if none exists yet)
@@ -204,7 +208,7 @@ class OrderController extends Controller
                 // Ensure the order is linked to a project before creating an invoice,
                 // because customer invoices require a non-null project_id.
                 $updatedOrder->loadMissing(['project']);
-                if (! $updatedOrder->project) {
+                if (!$updatedOrder->project) {
                     $project = $this->createProjectFromOrder($updatedOrder, $userId);
 
                     $updatedOrder->project_id = $project->id;
@@ -259,6 +263,7 @@ class OrderController extends Controller
             'tags'                  => null,
             'currency'              => $order->currency,
             'created_by'            => $userId,
+            'created_at'            => $order->created_at,
             'updated_by'            => $userId,
         ];
 

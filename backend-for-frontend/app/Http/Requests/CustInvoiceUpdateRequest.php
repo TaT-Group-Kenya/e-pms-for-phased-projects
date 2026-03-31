@@ -20,6 +20,7 @@ class CustInvoiceUpdateRequest extends FormRequest
             'payment_terms' => ['sometimes', 'nullable', 'string', 'max:255'],
             'notes_to_customer' => ['sometimes', 'nullable', 'string', 'max:255'],
             'payment_receiving_method_id' => ['sometimes', 'required', 'integer', 'exists:payment_receiving_methods,id'],
+            'created_at' => ['sometimes', 'nullable', 'date'],
         ];
     }
 

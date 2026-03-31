@@ -7,22 +7,17 @@ import { useAppSelector } from "../../store/hooks";
 import { useToast } from "../../hooks/useToast";
 import { useDashboardFilters } from "./DashboardFiltersContext";
 
-// Dynamically import react-apexcharts with Next.js dynamic import
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
-type SeriesItem = {
-  name: string;
-  data: number[];
-};
-
-type ProgressOverviewResponse = {
-  categories: string[];
-  series: SeriesItem[];
+type ProjectsProgressData = {
+  new: number;
+  progress: number;
+  draft: number;
+  complete: number;
 };
 
 const ProjectsProgress: React.FC = () => {
-  const [categories, setCategories] = useState<string[]>([]);
-  const [series, setSeries] = useState<SeriesItem[]>([]);
+  const [data, setData] = useState<ProjectsProgressData | null>(null);
   const [isChartLoaded, setChartLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -60,25 +55,20 @@ const ProjectsProgress: React.FC = () => {
 
         if (!response.ok) {
           addToast("Failed to load projects progress", "error");
-          setCategories([]);
-          setSeries([]);
+          setData(null);
           return;
         }
 
-        const body: ProgressOverviewResponse | { data: ProgressOverviewResponse } =
-          await response.json();
-        const payload = (body as any).data ?? body;
-
-        setCategories(payload.categories || []);
-        setSeries(payload.series || []);
+        const body = await response.json();
+        const payload: ProjectsProgressData = (body?.data ?? body) || null;
+        setData(payload);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
         }
         console.error("Error loading projects progress", error);
         addToast("Error loading projects progress", "error");
-        setCategories([]);
-        setSeries([]);
+        setData(null);
       } finally {
         setLoading(false);
       }
@@ -89,83 +79,37 @@ const ProjectsProgress: React.FC = () => {
     return () => controller.abort();
   }, [accessToken, addToast, range]);
 
+  const series = [
+    data?.new ?? 0,
+    data?.progress ?? 0,
+    data?.draft ?? 0,
+    data?.complete ?? 0,
+  ];
+
   const options: ApexOptions = {
-    chart: {
-      zoom: {
-        enabled: false,
-      },
-      toolbar: {
-        show: true,
-      },
-    },
+    labels: ["New", "In Progress", "Draft", "Completed"],
+    colors: ["#3584FC", "#FE7A36", "#64748B", "#37D80A"],
     dataLabels: {
       enabled: false,
     },
-    colors: ["#605DFF", "#FE7A36", "#AD63F6", "#D71C00"],
+    plotOptions: {
+      pie: {
+        expandOnClick: false,
+      },
+    },
     stroke: {
-      curve: "smooth",
-      width: 2,
-    },
-    grid: {
+      width: 1,
       show: true,
-      borderColor: "#ECEEF2",
-    },
-    markers: {
-      size: 4,
-      strokeWidth: 0,
-      shape: ["circle", "square", "circle", "square"],
-      hover: {
-        size: 5,
-      },
-    },
-    xaxis: {
-      categories,
-      axisTicks: {
-        show: false,
-        color: "#ECEEF2",
-      },
-      axisBorder: {
-        show: false,
-        color: "#ECEEF2",
-      },
-      labels: {
-        show: true,
-        style: {
-          colors: "#8695AA",
-          fontSize: "12px",
-        },
-      },
-    },
-    yaxis: {
-      tickAmount: 5,
-      max: 100,
-      min: 0,
-      labels: {
-        formatter: (val) => {
-          return val + "%";
-        },
-        style: {
-          colors: "#64748B",
-          fontSize: "12px",
-        },
-      },
-      axisBorder: {
-        show: false,
-        color: "#ECEEF2",
-      },
-      axisTicks: {
-        show: false,
-        color: "#ECEEF2",
-      },
+      colors: ["#ffffff"],
     },
     legend: {
       show: true,
-      position: "top",
       fontSize: "12px",
-      horizontalAlign: "left",
+      position: "bottom",
+      horizontalAlign: "center",
       itemMargin: {
         horizontal: 8,
-        vertical: 0,
+        vertical: 7,
       },
       labels: {
         colors: "#64748B",
@@ -179,8 +123,6 @@ const ProjectsProgress: React.FC = () => {
     },
   };
 
-  const hasData = series.some((s) => s.data.some((value) => value > 0));
-
   return (
     <>
       <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md h-[500px] flex flex-col">
@@ -191,27 +133,20 @@ const ProjectsProgress: React.FC = () => {
         </div>
 
         <div className="trezo-card-content flex-1 overflow-y-auto">
-          <div className="mt-[8px] -mb-[20px] ltr:-ml-[13px] rtl:-mr-[13px]">
-            {isChartLoaded && hasData && (
-              <Chart
-                options={options}
-                series={series}
-                type="line"
-                height={322}
-                width={"100%"}
-              />
-            )}
-            {isChartLoaded && !loading && !hasData && (
-              <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                No projects found for the selected period.
-              </p>
-            )}
-            {loading && (
-              <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                Loading projects progress...
-              </p>
-            )}
-          </div>
+          {isChartLoaded && (
+            <Chart
+              options={options}
+              series={series}
+              type="pie"
+              height={376}
+              width={"100%"}
+            />
+          )}
+          {loading && (
+            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+              Loading projects progress...
+            </p>
+          )}
         </div>
       </div>
     </>

@@ -13,6 +13,9 @@
         h1 { font-size: 20px; margin: 0 0 4px 0; }
         h2 { font-size: 14px; margin: 0 0 4px 0; }
         .section { margin-bottom: 16px; }
+        .table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        .table th, .table td { border: 0px solid #e5e7eb; padding: 8px; text-align: left; }
+        .table th { background-color: #f3f4f6; font-weight: 600; }
         .two-col { display: flex; justify-content: space-between; gap: 24px; }
         .card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; }
         .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
@@ -86,42 +89,53 @@
     </div>
     <div class="card" style="flex: 1;">
         <h2>Payment Details</h2>
-        <div class="row">
-            <div class="label">Amount Paid</div>
-            <div class="value font-semibold">{{ $currency }} {{ number_format((float) $payment->amount_paid, 2) }}</div>
-        </div>
-        @if(!is_null($payment->tax_amount))
-            <div class="row">
-                <div class="label">Tax Amount</div>
-                <div class="value">{{ $currency }} {{ number_format((float) $payment->tax_amount, 2) }}</div>
-            </div>
-        @endif
-        @if(!is_null($payment->net_amount))
-            <div class="row">
-                <div class="label">Net Amount</div>
-                <div class="value font-semibold">{{ $currency }} {{ number_format((float) $payment->net_amount, 2) }}</div>
-            </div>
-        @endif
-        <div class="row mt-1">
-            <div class="label">Method</div>
-            <div class="value">{{ $payment->payment_method ?? '-' }}</div>
-        </div>
-        <div class="row">
-            <div class="label">Receipt #</div>
-            <div class="value">{{ $payment->receipt_number ?? '-' }}</div>
-        </div>
-        <div class="row">
-            <div class="label">Bank</div>
-            <div class="value">{{ $payment->bank_name ?? '-' }}</div>
-        </div>
-        <div class="row">
-            <div class="label">Cheque #</div>
-            <div class="value">{{ $payment->check_number ?? '-' }}</div>
-        </div>
-        <div class="row">
-            <div class="label">Reference</div>
-            <div class="value">{{ $payment->transaction_reference ?? '-' }}</div>
-        </div>
+         <table class="table">
+            <tr>
+                <td class="label">
+                    <!-- Left -->
+                    <div class="row">
+                        <div class="label">Amount Paid</div>
+                        <div class="value font-semibold">{{ $currency }} {{ number_format((float) $payment->amount_paid, 2) }}</div>
+                    </div>
+                    @if(!is_null($payment->tax_amount))
+                        <div class="row">
+                            <div class="label">Tax Amount</div>
+                            <div class="value">{{ $currency }} {{ number_format((float) $payment->tax_amount, 2) }}</div>
+                        </div>
+                    @endif
+                    @if(!is_null($payment->net_amount))
+                        <div class="row">
+                            <div class="label">Net Amount</div>
+                            <div class="value font-semibold">{{ $currency }} {{ number_format((float) $payment->net_amount, 2) }}</div>
+                        </div>
+                    @endif
+                    <div class="row mt-1">
+                        <div class="label">Method</div>
+                        <div class="value">{{ $payment->payment_method ?? '-' }}</div>
+                    </div>
+                </td>
+                <td class="label">
+                    <!-- Right -->
+                    <div class="row">
+                        <div class="label">Receipt #</div>
+                        <div class="value">{{ $payment->receipt_number ?? '-' }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="label">Bank</div>
+                        <div class="value">{{ $payment->bank_name ?? '-' }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="label">Cheque #</div>
+                        <div class="value">{{ $payment->check_number ?? '-' }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="label">Reference</div>
+                        <div class="value">{{ $payment->transaction_reference ?? '-' }}</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+       
     </div>
 </div>
 

@@ -33,6 +33,8 @@ class CompanyPaymentService
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
+
+        $query->where('transaction_type', 'receipt');
         
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;

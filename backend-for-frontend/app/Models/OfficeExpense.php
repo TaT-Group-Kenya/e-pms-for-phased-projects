@@ -57,4 +57,14 @@ class OfficeExpense extends Model
         // Payments are stored in office_expense_payments with an expense_id foreign key
         return $this->hasMany(OfficeExpensePayment::class, 'expense_id');
     }
+
+    public function createdByUser()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedByUser()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
 }

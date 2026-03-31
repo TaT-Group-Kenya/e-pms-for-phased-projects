@@ -70,6 +70,7 @@ interface CompanyAssignmentSummary {
 interface CompanyPaymentSummary {
   id: number
   payment_date: string | null
+  transaction_type: string | null
   amount_paid: number
   currency: string
   payment_status: string
@@ -146,7 +147,8 @@ interface CompanyInvoice {
   invoiceItems?: CompanyInvoiceItem[]
   payments?: CompanyPaymentSummary[]
   creditnotes?: CompanyCreditNoteSummary[]
-  project?: ProjectWithPhasesSummary
+  project?: ProjectWithPhasesSummary,
+  created_at?: string | null
 }
 
 export default function CompanyInvoiceDetailPage() {
@@ -160,6 +162,7 @@ export default function CompanyInvoiceDetailPage() {
   const [downloading, setDownloading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
+  const [editCreatedAt, setEditCreatedAt] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editPaymentTerms, setEditPaymentTerms] = useState('')
   const [editNotes, setEditNotes] = useState('')
@@ -483,6 +486,7 @@ export default function CompanyInvoiceDetailPage() {
     setEditDescription(invoice.description || '')
     setEditPaymentTerms(invoice.payment_terms || '')
     setEditNotes(invoice.notes_to_customer || '')
+    setEditCreatedAt(invoice.created_at ? invoice.created_at.slice(0, 10) : '')
     setIsEditing(true)
   }
 
@@ -506,6 +510,7 @@ export default function CompanyInvoiceDetailPage() {
           description: editDescription || null,
           payment_terms: editPaymentTerms || null,
           notes_to_customer: editNotes || null,
+          created_at: editCreatedAt || null,
         }),
       })
 
@@ -2140,11 +2145,7 @@ export default function CompanyInvoiceDetailPage() {
                             </td>
                             <td className="text-sm capitalize ltr:text-left rtl:text-right px-[15px] py-[12px]">
                               <span>{formatPaymentStatus(pmt.payment_status)}</span>
-                              {Number(pmt.reconciled) === 1 && (
-                                <span className="ml-2 inline-flex items-center px-2 py-[2px] rounded-full text-[10px] font-medium bg-success-50 text-success-600 dark:bg-success-900/40 dark:text-success-300">
-                                  Reconciled
-                                </span>
-                              )}
+                              ( { pmt.transaction_type })
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {formatCurrency(pmt.amount_paid, pmt.currency)}
@@ -2195,6 +2196,15 @@ export default function CompanyInvoiceDetailPage() {
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full border rounded px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Creation Date</label>
+                <input
+                  type="date"
+                  value={editCreatedAt}
+                  onChange={(e) => setEditCreatedAt(e.target.value)}
                   className="w-full border rounded px-3 py-2 text-sm"
                 />
               </div>

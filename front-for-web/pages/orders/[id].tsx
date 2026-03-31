@@ -236,7 +236,7 @@ const OrderDetailPage: React.FC = () => {
 
     return () => controller.abort();
   }, [accessToken, addToast]);
-  
+
   // When editing a tax item, ensure tax dropdown is prefilled once taxes load
   useEffect(() => {
     if (!editingTaxItem || !taxes.length) return;
@@ -420,7 +420,7 @@ const OrderDetailPage: React.FC = () => {
 
       addToast(
         data?.message ||
-          "Order approved and customer invoice generated successfully.",
+        "Order approved and customer invoice generated successfully.",
         "success"
       );
 
@@ -504,9 +504,8 @@ const OrderDetailPage: React.FC = () => {
 
       const path = doc.document_path || "";
       const inferredName = path.split("/").pop();
-      const fallbackName = `${doc.document_type || "document"}-${
-        order.order_number
-      }`;
+      const fallbackName = `${doc.document_type || "document"}-${order.order_number
+        }`;
 
       link.href = url;
       link.download = inferredName || fallbackName;
@@ -581,6 +580,7 @@ const OrderDetailPage: React.FC = () => {
         payment_terms: (editData.payment_terms ?? order.payment_terms ?? "").toString(),
         notes_to_customer: (editData.notes_to_customer ?? order.notes_to_customer ?? "").toString(),
         job_reference_id: (editData.job_reference_id ?? order.job_reference_id ?? "").toString(),
+        created_at: editData.created_at ?? order.created_at,
       };
 
       const resp = await fetch(`/api/orders/${order.id}`, {
@@ -963,13 +963,13 @@ const OrderDetailPage: React.FC = () => {
       setOrder((prev) =>
         prev
           ? {
-              ...prev,
-              documents: editingDocument
-                ? (prev.documents || []).map((d) =>
-                    d.id === updatedDoc.id ? updatedDoc : d
-                  )
-                : [...(prev.documents || []), updatedDoc],
-            }
+            ...prev,
+            documents: editingDocument
+              ? (prev.documents || []).map((d) =>
+                d.id === updatedDoc.id ? updatedDoc : d
+              )
+              : [...(prev.documents || []), updatedDoc],
+          }
           : prev
       );
 
@@ -1039,11 +1039,11 @@ const OrderDetailPage: React.FC = () => {
       setOrder((prev) =>
         prev
           ? {
-              ...prev,
-              documents: (prev.documents || []).filter(
-                (d) => d.id !== documentToDelete.id
-              ),
-            }
+            ...prev,
+            documents: (prev.documents || []).filter(
+              (d) => d.id !== documentToDelete.id
+            ),
+          }
           : prev
       );
 
@@ -1217,11 +1217,10 @@ const OrderDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTab(0)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 0
+                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 0
                       ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
                       : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
-                  }`}
+                    }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">dashboard</i>
                   Overview
@@ -1232,11 +1231,10 @@ const OrderDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTab(1)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 1
+                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 1
                       ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
                       : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
-                  }`}
+                    }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">list_alt</i>
                   Order Items
@@ -1247,11 +1245,10 @@ const OrderDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTab(2)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 2
+                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 2
                       ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
                       : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
-                  }`}
+                    }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">description</i>
                   Documents
@@ -1262,11 +1259,10 @@ const OrderDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTab(3)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 3
+                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 3
                       ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
                       : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
-                  }`}
+                    }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">work</i>
                   Order Project
@@ -1359,13 +1355,13 @@ const OrderDetailPage: React.FC = () => {
                                 Qty
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Unit Price({ currencySymbols[order.currency]})
+                                Unit Price({currencySymbols[order.currency]})
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Tax({ currencySymbols[order.currency]})
+                                Tax({currencySymbols[order.currency]})
                               </th>
                               <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
-                                Subtotal({ currencySymbols[order.currency]})
+                                Subtotal({currencySymbols[order.currency]})
                               </th>
                             </tr>
                           </thead>
@@ -2032,169 +2028,176 @@ const OrderDetailPage: React.FC = () => {
         {isEditing && order && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[700px] max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-[20px]">
-              <h6 className="font-semibold text-black dark:text-white">Edit Order</h6>
-              {isEditSubmitting && (
-                <div className="flex items-center gap-[8px]">
-                  <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Saving...</span>
-                </div>
-              )}
-            </div>
+              <div className="flex items-center justify-between mb-[20px]">
+                <h6 className="font-semibold text-black dark:text-white">Edit Order</h6>
+                {isEditSubmitting && (
+                  <div className="flex items-center gap-[8px]">
+                    <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Saving...</span>
+                  </div>
+                )}
+              </div>
 
-            {editError && (
-              <div className="mb-[20px] p-[12px] rounded-md bg-danger-50 dark:bg-[#2a1a1a] border border-danger-200 dark:border-danger-900">
-                <div className="flex gap-[10px]">
-                  <i className="material-symbols-outlined text-danger-500 !text-[20px]">error</i>
-                  <div>
-                    <p className="text-sm font-medium text-danger-700 dark:text-danger-400 whitespace-pre-wrap">
-                      {editError}
-                    </p>
+              {editError && (
+                <div className="mb-[20px] p-[12px] rounded-md bg-danger-50 dark:bg-[#2a1a1a] border border-danger-200 dark:border-danger-900">
+                  <div className="flex gap-[10px]">
+                    <i className="material-symbols-outlined text-danger-500 !text-[20px]">error</i>
+                    <div>
+                      <p className="text-sm font-medium text-danger-700 dark:text-danger-400 whitespace-pre-wrap">
+                        {editError}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <form onSubmit={handleSubmitEdit} className="space-y-[20px]">
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Title <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editData.title ?? order.title}
-                  onChange={(e) => handleEditFieldChange("title", e.target.value)}
-                  disabled={isEditSubmitting}
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="Order title"
-                />
-              </div>
-
-              <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
-                <div>
+              <form onSubmit={handleSubmitEdit} className="space-y-[20px]">
+                <div className="sm:grid sm:grid-cols-3 sm:gap-[15px]">
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Title <span className="text-danger-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editData.title ?? order.title}
+                      onChange={(e) => handleEditFieldChange("title", e.target.value)}
+                      disabled={isEditSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder="Order title"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Job Reference ID
+                    </label>
+                    <input
+                      type="text"
+                      value={editData.job_reference_id ?? order.job_reference_id ?? ""}
+                      onChange={(e) => handleEditFieldChange("job_reference_id", e.target.value)}
+                      disabled={true}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder="E.g. JOB12345"
+                    />
+                  </div>
+                  <div>
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Status
+                    Creation Date <span className="text-danger-500">*</span>
                   </label>
-                  <select
-                    value={editData.status ?? order.status}
-                    onChange={(e) => handleEditFieldChange("status", e.target.value)}
-                    disabled={isEditSubmitting}
+                  <input
+                    type="date"
+                    value={(editData.created_at ? new Date(editData.created_at).toISOString().split("T")[0] : "")}
+                    onChange={(e) => handleEditFieldChange("created_at", e.target.value)}
                     className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="sent">Sent</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
-                  <p
-                    className={`mt-[6px] text-[11px] ${
-                      (editData.status ?? order.status) === "approved"
-                        ? "text-primary-500"
-                        : "text-gray-500 dark:text-gray-400"
-                    }`}
-                  >
-                    Note: When status is set to
-                    {" "}
-                    <span className="font-semibold">Approved</span>, a draft customer
-                    invoice will be generated automatically if one does not already
-                    exist.
-                  </p>
+                  />
+                </div>
+                </div>
+                <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Status
+                    </label>
+                    <select
+                      value={editData.status ?? order.status}
+                      onChange={(e) => handleEditFieldChange("status", e.target.value)}
+                      disabled={isEditSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="sent">Sent</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                    <p
+                      className={`mt-[6px] text-[11px] ${(editData.status ?? order.status) === "approved"
+                          ? "text-primary-500"
+                          : "text-gray-500 dark:text-gray-400"
+                        }`}
+                    >
+                      Note: When status is set to
+                      {" "}
+                      <span className="font-semibold">Approved</span>, a draft customer
+                      invoice will be generated automatically if one does not already
+                      exist.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Currency
+                    </label>
+                    <input
+                      type="text"
+                      value={editData.currency ?? order.currency}
+                      onChange={(e) => handleEditFieldChange("currency", e.target.value)}
+                      disabled={true}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder="e.g. USD"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Currency
+                    Payment Terms
                   </label>
                   <input
                     type="text"
-                    value={editData.currency ?? order.currency}
-                    onChange={(e) => handleEditFieldChange("currency", e.target.value)}
+                    value={editData.payment_terms ?? order.payment_terms ?? ""}
+                    onChange={(e) => handleEditFieldChange("payment_terms", e.target.value)}
                     disabled={isEditSubmitting}
                     className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    placeholder="e.g. USD"
+                    placeholder="e.g. 30 days from invoice date"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Job Reference ID
-                </label>
-                <input
-                  type="text"
-                  value={editData.job_reference_id ?? order.job_reference_id ?? ""}
-                  onChange={(e) => handleEditFieldChange("job_reference_id", e.target.value)}
-                  disabled={isEditSubmitting}
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="E.g. JOB12345"
-                />
-                <p className="mt-[6px] text-[11px] text-gray-500 dark:text-gray-400">
-                  Used to link this order to an external job or project reference.
-                </p>
-              </div>
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Description
+                  </label>
+                  <textarea
+                    value={editData.description ?? order.description ?? ""}
+                    onChange={(e) => handleEditFieldChange("description", e.target.value)}
+                    disabled={isEditSubmitting}
+                    className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    rows={3}
+                    placeholder="Short description of this order"
+                  />
+                </div>
 
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Payment Terms
-                </label>
-                <input
-                  type="text"
-                  value={editData.payment_terms ?? order.payment_terms ?? ""}
-                  onChange={(e) => handleEditFieldChange("payment_terms", e.target.value)}
-                  disabled={isEditSubmitting}
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="e.g. 30 days from invoice date"
-                />
-              </div>
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Notes to Customer
+                  </label>
+                  <textarea
+                    value={editData.notes_to_customer ?? order.notes_to_customer ?? ""}
+                    onChange={(e) => handleEditFieldChange("notes_to_customer", e.target.value)}
+                    disabled={isEditSubmitting}
+                    className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    rows={3}
+                    placeholder="Any additional notes that will appear on the order"
+                  />
+                </div>
 
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Description
-                </label>
-                <textarea
-                  value={editData.description ?? order.description ?? ""}
-                  onChange={(e) => handleEditFieldChange("description", e.target.value)}
-                  disabled={isEditSubmitting}
-                  className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  rows={3}
-                  placeholder="Short description of this order"
-                />
-              </div>
-
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Notes to Customer
-                </label>
-                <textarea
-                  value={editData.notes_to_customer ?? order.notes_to_customer ?? ""}
-                  onChange={(e) => handleEditFieldChange("notes_to_customer", e.target.value)}
-                  disabled={isEditSubmitting}
-                  className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  rows={3}
-                  placeholder="Any additional notes that will appear on the order"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-[10px] mt-[10px]">
-                <button
-                  type="button"
-                  onClick={closeEditModal}
-                  disabled={isEditSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isEditSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
+                <div className="flex items-center justify-end gap-[10px] mt-[10px]">
+                  <button
+                    type="button"
+                    onClick={closeEditModal}
+                    disabled={isEditSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isEditSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
         )}
       </Can>
 
@@ -2203,145 +2206,145 @@ const OrderDetailPage: React.FC = () => {
         {editingItem && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[650px] max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-[20px]">
-              <h6 className="font-semibold text-black dark:text-white">Edit Order Item</h6>
-              {isItemSubmitting && (
-                <div className="flex items-center gap-[8px]">
-                  <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Saving...</span>
-                </div>
-              )}
-            </div>
+              <div className="flex items-center justify-between mb-[20px]">
+                <h6 className="font-semibold text-black dark:text-white">Edit Order Item</h6>
+                {isItemSubmitting && (
+                  <div className="flex items-center gap-[8px]">
+                    <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Saving...</span>
+                  </div>
+                )}
+              </div>
 
-            {itemEditError && (
-              <div className="mb-[20px] p-[12px] rounded-md bg-danger-50 dark:bg-[#2a1a1a] border border-danger-200 dark:border-danger-900">
-                <div className="flex gap-[10px]">
-                  <i className="material-symbols-outlined text-danger-500 !text-[20px]">error</i>
-                  <div>
-                    <p className="text-sm font-medium text-danger-700 dark:text-danger-400 whitespace-pre-wrap">
-                      {itemEditError}
-                    </p>
+              {itemEditError && (
+                <div className="mb-[20px] p-[12px] rounded-md bg-danger-50 dark:bg-[#2a1a1a] border border-danger-200 dark:border-danger-900">
+                  <div className="flex gap-[10px]">
+                    <i className="material-symbols-outlined text-danger-500 !text-[20px]">error</i>
+                    <div>
+                      <p className="text-sm font-medium text-danger-700 dark:text-danger-400 whitespace-pre-wrap">
+                        {itemEditError}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <form onSubmit={handleSubmitItemEdit} className="space-y-[20px]">
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Item Name <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={itemEditData.item_name ?? editingItem.item_name}
-                  onChange={(e) => handleItemFieldChange("item_name", e.target.value)}
-                  disabled={isItemSubmitting}
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="Item name"
-                />
-              </div>
-
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Description
-                </label>
-                <textarea
-                  value={itemEditData.item_description ?? editingItem.item_description ?? ""}
-                  onChange={(e) => handleItemFieldChange("item_description", e.target.value)}
-                  disabled={isItemSubmitting}
-                  className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  rows={3}
-                  placeholder="Short description of this item"
-                />
-              </div>
-
-              <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
+              <form onSubmit={handleSubmitItemEdit} className="space-y-[20px]">
                 <div>
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Unit Amount
+                    Item Name <span className="text-danger-500">*</span>
                   </label>
                   <input
-                    type="number"
-                    step="0.01"
-                    value={
-                      itemEditData.order_amount ?? editingItem.order_amount ?? 0
-                    }
-                    onChange={(e) =>
-                      handleItemFieldChange("order_amount", Number(e.target.value))
-                    }
+                    type="text"
+                    value={itemEditData.item_name ?? editingItem.item_name}
+                    onChange={(e) => handleItemFieldChange("item_name", e.target.value)}
                     disabled={isItemSubmitting}
                     className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="Item name"
                   />
                 </div>
 
                 <div>
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Quantity
+                    Description
                   </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={itemEditData.quantity ?? editingItem.quantity ?? 1}
-                    onChange={(e) =>
-                      handleItemFieldChange("quantity", Number(e.target.value))
-                    }
+                  <textarea
+                    value={itemEditData.item_description ?? editingItem.item_description ?? ""}
+                    onChange={(e) => handleItemFieldChange("item_description", e.target.value)}
                     disabled={isItemSubmitting}
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    rows={3}
+                    placeholder="Short description of this item"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Custom Note
-                </label>
-                <textarea
-                  value={itemEditData.custom_note ?? editingItem.custom_note ?? ""}
-                  onChange={(e) => handleItemFieldChange("custom_note", e.target.value)}
-                  disabled={isItemSubmitting}
-                  className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  rows={2}
-                  placeholder="Any notes for this item"
-                />
-              </div>
+                <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Unit Amount
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={
+                        itemEditData.order_amount ?? editingItem.order_amount ?? 0
+                      }
+                      onChange={(e) =>
+                        handleItemFieldChange("order_amount", Number(e.target.value))
+                      }
+                      disabled={isItemSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
 
-              <div className="flex items-center gap-[10px]">
-                <input
-                  id="edit-item-taxable"
-                  type="checkbox"
-                  checked={Boolean(itemEditData.is_taxable ?? editingItem.is_taxable)}
-                  onChange={(e) => handleItemFieldChange("is_taxable", e.target.checked)}
-                  disabled={isItemSubmitting}
-                  className="w-[16px] h-[16px] rounded border border-gray-300 dark:border-[#172036] text-primary-500 focus:ring-primary-500"
-                />
-                <label
-                  htmlFor="edit-item-taxable"
-                  className="text-sm text-black dark:text-white cursor-pointer"
-                >
-                  Taxable
-                </label>
-              </div>
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Quantity
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={itemEditData.quantity ?? editingItem.quantity ?? 1}
+                      onChange={(e) =>
+                        handleItemFieldChange("quantity", Number(e.target.value))
+                      }
+                      disabled={isItemSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                </div>
 
-              <div className="flex items-center justify-end gap-[10px] mt-[10px]">
-                <button
-                  type="button"
-                  onClick={closeEditItemModal}
-                  disabled={isItemSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isItemSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Custom Note
+                  </label>
+                  <textarea
+                    value={itemEditData.custom_note ?? editingItem.custom_note ?? ""}
+                    onChange={(e) => handleItemFieldChange("custom_note", e.target.value)}
+                    disabled={isItemSubmitting}
+                    className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    rows={2}
+                    placeholder="Any notes for this item"
+                  />
+                </div>
+
+                <div className="flex items-center gap-[10px]">
+                  <input
+                    id="edit-item-taxable"
+                    type="checkbox"
+                    checked={Boolean(itemEditData.is_taxable ?? editingItem.is_taxable)}
+                    onChange={(e) => handleItemFieldChange("is_taxable", e.target.checked)}
+                    disabled={isItemSubmitting}
+                    className="w-[16px] h-[16px] rounded border border-gray-300 dark:border-[#172036] text-primary-500 focus:ring-primary-500"
+                  />
+                  <label
+                    htmlFor="edit-item-taxable"
+                    className="text-sm text-black dark:text-white cursor-pointer"
+                  >
+                    Taxable
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-end gap-[10px] mt-[10px]">
+                  <button
+                    type="button"
+                    onClick={closeEditItemModal}
+                    disabled={isItemSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isItemSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
         )}
       </Can>
 
@@ -2356,146 +2359,146 @@ const OrderDetailPage: React.FC = () => {
         {isTaxModalOpen && order && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[520px] max-h-[90vh] overflow-y-auto shadow-xl shadow-black/10 dark:shadow-black/40">
-            <h5 className="mb-[8px] text-black dark:text-white font-semibold">
-              {editingTaxItem ? "Edit Tax Item" : "Add Tax Item"}
-            </h5>
-            <p className="mb-[16px] text-xs text-gray-500 dark:text-gray-400">
-              Configure an additional tax line that will be applied on top
-              of your current order items.
-            </p>
+              <h5 className="mb-[8px] text-black dark:text-white font-semibold">
+                {editingTaxItem ? "Edit Tax Item" : "Add Tax Item"}
+              </h5>
+              <p className="mb-[16px] text-xs text-gray-500 dark:text-gray-400">
+                Configure an additional tax line that will be applied on top
+                of your current order items.
+              </p>
 
-            {taxItemEditError && (
-              <div className="mb-[15px] text-sm font-medium text-danger-500 bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/40 rounded-md px-[12px] py-[8px]">
-                {taxItemEditError}
-              </div>
-            )}
+              {taxItemEditError && (
+                <div className="mb-[15px] text-sm font-medium text-danger-500 bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/40 rounded-md px-[12px] py-[8px]">
+                  {taxItemEditError}
+                </div>
+              )}
 
-            <form onSubmit={handleSubmitTaxItem} className="space-y-[20px] mt-[5px]">
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Tax Name <span className="text-danger-500">*</span>
-                </label>
-                <select
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
-                  value={(taxItemEditData as any).tax_id ?? ""}
-                  onChange={(e) => {
-                    const selectedId = e.target.value ? Number(e.target.value) : undefined;
-                    const selectedTax = taxes.find((t) => t.id === selectedId) || null;
-                    handleTaxItemFieldChange("item_name", selectedTax ? selectedTax.name : "");
-                    // @ts-expect-error extend with tax_id for editing state only
-                    handleTaxItemFieldChange("tax_id", selectedId ?? null);
-                  }}
-                  required
-                  disabled={loadingTaxes || taxes.length === 0}
-                >
-                  <option value="" disabled>
-                    {loadingTaxes
-                      ? "Loading taxes..."
-                      : taxes.length === 0
-                      ? "No taxes configured"
-                      : "Select tax"}
-                  </option>
-                  {taxes.map((tax) => (
-                    <option key={tax.id} value={tax.id}>
-                      {tax.name}
-                    </option>
-                  ))}
-                </select>
-                {taxesError && (
-                  <p className="mt-[6px] text-[11px] text-danger-500">
-                    {taxesError}
-                  </p>
-                )}
-              </div>
-
-              <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
+              <form onSubmit={handleSubmitTaxItem} className="space-y-[20px] mt-[5px]">
                 <div>
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Type <span className="text-danger-500">*</span>
+                    Tax Name <span className="text-danger-500">*</span>
                   </label>
                   <select
                     className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
-                    value={taxItemEditData.item_type || "fixed"}
-                    onChange={(e) =>
-                      handleTaxItemFieldChange("item_type", e.target.value)
-                    }
+                    value={(taxItemEditData as any).tax_id ?? ""}
+                    onChange={(e) => {
+                      const selectedId = e.target.value ? Number(e.target.value) : undefined;
+                      const selectedTax = taxes.find((t) => t.id === selectedId) || null;
+                      handleTaxItemFieldChange("item_name", selectedTax ? selectedTax.name : "");
+                      // @ts-expect-error extend with tax_id for editing state only
+                      handleTaxItemFieldChange("tax_id", selectedId ?? null);
+                    }}
                     required
+                    disabled={loadingTaxes || taxes.length === 0}
                   >
-                    <option value="fixed">Fixed Amount</option>
-                    <option value="percent">Percentage</option>
+                    <option value="" disabled>
+                      {loadingTaxes
+                        ? "Loading taxes..."
+                        : taxes.length === 0
+                          ? "No taxes configured"
+                          : "Select tax"}
+                    </option>
+                    {taxes.map((tax) => (
+                      <option key={tax.id} value={tax.id}>
+                        {tax.name}
+                      </option>
+                    ))}
                   </select>
-                  <p className="mt-[6px] text-[11px] text-gray-500 dark:text-gray-400">
-                    Fixed adds a flat amount; Percentage applies on the
-                    total of order items.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Value{" "}
-                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-                      { (taxItemEditData.item_type || "fixed") === "percent"
-                        ? "as % of items total"
-                        : `in ${order.currency}` }
-                    </span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={taxItemEditData.item_value ?? ""}
-                    onChange={(e) =>
-                      handleTaxItemFieldChange(
-                        "item_value",
-                        e.target.value === "" ? null : Number(e.target.value)
-                      )
-                    }
-                    required
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
-                  />
-
-                  {previewTaxAmount != null && (
-                    <div className="mt-[6px] rounded-md border border-dashed border-primary-200 dark:border-primary-500/40 bg-primary-50/70 dark:bg-primary-500/10 px-[12px] py-[8px] text-xs">
-                      <p className="text-gray-800 dark:text-gray-100">
-                        Estimated tax on current items:{" "}
-                        <span className="font-semibold">
-                          {formatCurrency(previewTaxAmount, order.currency)}
-                        </span>
-                      </p>
-                      {(taxItemEditData.item_type || "fixed") === "percent" && (
-                        <p className="mt-[2px] text-[11px] text-gray-600 dark:text-gray-300">
-                          Calculated from the sum of all order line items.
-                        </p>
-                      )}
-                    </div>
+                  {taxesError && (
+                    <p className="mt-[6px] text-[11px] text-danger-500">
+                      {taxesError}
+                    </p>
                   )}
                 </div>
-              </div>
 
-              <div className="flex items-center justify-end gap-[10px] mt-[10px]">
-                <button
-                  type="button"
-                  onClick={closeTaxItemModal}
-                  disabled={isTaxSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isTaxSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isTaxSubmitting
-                    ? "Saving..."
-                    : editingTaxItem
-                    ? "Update Tax Item"
-                    : "Add Tax Item"}
-                </button>
-              </div>
-            </form>
+                <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Type <span className="text-danger-500">*</span>
+                    </label>
+                    <select
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
+                      value={taxItemEditData.item_type || "fixed"}
+                      onChange={(e) =>
+                        handleTaxItemFieldChange("item_type", e.target.value)
+                      }
+                      required
+                    >
+                      <option value="fixed">Fixed Amount</option>
+                      <option value="percent">Percentage</option>
+                    </select>
+                    <p className="mt-[6px] text-[11px] text-gray-500 dark:text-gray-400">
+                      Fixed adds a flat amount; Percentage applies on the
+                      total of order items.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Value{" "}
+                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                        {(taxItemEditData.item_type || "fixed") === "percent"
+                          ? "as % of items total"
+                          : `in ${order.currency}`}
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={taxItemEditData.item_value ?? ""}
+                      onChange={(e) =>
+                        handleTaxItemFieldChange(
+                          "item_value",
+                          e.target.value === "" ? null : Number(e.target.value)
+                        )
+                      }
+                      required
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                    />
+
+                    {previewTaxAmount != null && (
+                      <div className="mt-[6px] rounded-md border border-dashed border-primary-200 dark:border-primary-500/40 bg-primary-50/70 dark:bg-primary-500/10 px-[12px] py-[8px] text-xs">
+                        <p className="text-gray-800 dark:text-gray-100">
+                          Estimated tax on current items:{" "}
+                          <span className="font-semibold">
+                            {formatCurrency(previewTaxAmount, order.currency)}
+                          </span>
+                        </p>
+                        {(taxItemEditData.item_type || "fixed") === "percent" && (
+                          <p className="mt-[2px] text-[11px] text-gray-600 dark:text-gray-300">
+                            Calculated from the sum of all order line items.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-[10px] mt-[10px]">
+                  <button
+                    type="button"
+                    onClick={closeTaxItemModal}
+                    disabled={isTaxSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isTaxSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isTaxSubmitting
+                      ? "Saving..."
+                      : editingTaxItem
+                        ? "Update Tax Item"
+                        : "Add Tax Item"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
         )}
       </Can>
 
@@ -2510,114 +2513,114 @@ const OrderDetailPage: React.FC = () => {
         {isDocumentModalOpen && order && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[520px] max-h-[90vh] overflow-y-auto shadow-xl shadow-black/10 dark:shadow-black/40">
-            <h5 className="mb-[8px] text-black dark:text-white font-semibold">
-              {editingDocument ? "Edit Document" : "Add Document"}
-            </h5>
-            <p className="mb-[16px] text-xs text-gray-500 dark:text-gray-400">
-              Attach supporting files such as proposals, signed terms, or
-              other documents to this order record.
-            </p>
+              <h5 className="mb-[8px] text-black dark:text-white font-semibold">
+                {editingDocument ? "Edit Document" : "Add Document"}
+              </h5>
+              <p className="mb-[16px] text-xs text-gray-500 dark:text-gray-400">
+                Attach supporting files such as proposals, signed terms, or
+                other documents to this order record.
+              </p>
 
-            {documentEditError && (
-              <div className="mb-[15px] text-sm font-medium text-danger-500 bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/40 rounded-md px-[12px] py-[8px]">
-                {documentEditError}
-              </div>
-            )}
+              {documentEditError && (
+                <div className="mb-[15px] text-sm font-medium text-danger-500 bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/40 rounded-md px-[12px] py-[8px]">
+                  {documentEditError}
+                </div>
+              )}
 
-            <form onSubmit={handleSubmitDocument} className="space-y-[20px] mt-[5px]">
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Document Type <span className="text-danger-500">*</span>
-                </label>
-                <select
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
-                  value={documentEditData.document_type || "attachments"}
-                  onChange={(e) =>
-                    handleDocumentFieldChange("document_type", e.target.value)
-                  }
-                  required
-                >
-                  <option value="proposal">Proposal</option>
-                  <option value="terms">Terms</option>
-                  <option value="attachments">Attachments</option>
-                </select>
-                <p className="mt-[6px] text-[11px] text-gray-500 dark:text-gray-400">
-                  Use a descriptive type so collaborators can quickly
-                  identify what this document represents.
-                </p>
-              </div>
-
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Choose file <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  type="file"
-                  accept=".doc,.docx,.xls,.xlsx,.pdf,.png,.jpg,.jpeg,.webp,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,image/png,image/jpeg,image/webp"
-                  onChange={(e) => {
-                    const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
-                    if (file) {
-                      const allowedTypes = [
-                        'application/msword',
-                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                        'application/vnd.ms-excel',
-                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                        'application/pdf',
-                        'image/png',
-                        'image/jpeg',
-                        'image/webp',
-                      ];
-                      const allowedExts = ['.doc', '.docx', '.xls', '.xlsx', '.pdf', '.png', '.jpg', '.jpeg', '.webp'];
-                      const fileName = file.name.toLowerCase();
-                      const hasAllowedExt = allowedExts.some(ext => fileName.endsWith(ext));
-                      if (!allowedTypes.includes(file.type) && !hasAllowedExt) {
-                        addToast('Invalid file type. Allowed: doc, docx, xls, xlsx, pdf, png, jpg, jpeg, webp.', 'error');
-                        e.target.value = '';
-                        setDocumentFile(null);
-                        return;
-                      }
-                      if (file.size > 5 * 1024 * 1024) {
-                        addToast('File size exceeds 5MB limit.', 'error');
-                        e.target.value = '';
-                        setDocumentFile(null);
-                        return;
-                      }
+              <form onSubmit={handleSubmitDocument} className="space-y-[20px] mt-[5px]">
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Document Type <span className="text-danger-500">*</span>
+                  </label>
+                  <select
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
+                    value={documentEditData.document_type || "attachments"}
+                    onChange={(e) =>
+                      handleDocumentFieldChange("document_type", e.target.value)
                     }
-                    setDocumentFile(file);
-                  }}
-                  className="block w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-primary-50 file:text-primary-600 hover:file:bg-primary-100 cursor-pointer"
-                  required
-                />
-                <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
-                  Allowed file types: doc, docx, xls, xlsx, pdf, png, jpg, jpeg, webp. Max size: 5MB.<br/>
-                  The file will be uploaded and its stored path will be saved automatically.
-                </p>
-              </div>
+                    required
+                  >
+                    <option value="proposal">Proposal</option>
+                    <option value="terms">Terms</option>
+                    <option value="attachments">Attachments</option>
+                  </select>
+                  <p className="mt-[6px] text-[11px] text-gray-500 dark:text-gray-400">
+                    Use a descriptive type so collaborators can quickly
+                    identify what this document represents.
+                  </p>
+                </div>
 
-              <div className="flex items-center justify-end gap-[10px] mt-[10px]">
-                <button
-                  type="button"
-                  onClick={closeDocumentModal}
-                  disabled={isDocumentSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isDocumentSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isDocumentSubmitting
-                    ? "Saving..."
-                    : editingDocument
-                    ? "Update Document"
-                    : "Add Document"}
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Choose file <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept=".doc,.docx,.xls,.xlsx,.pdf,.png,.jpg,.jpeg,.webp,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,image/png,image/jpeg,image/webp"
+                    onChange={(e) => {
+                      const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+                      if (file) {
+                        const allowedTypes = [
+                          'application/msword',
+                          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                          'application/vnd.ms-excel',
+                          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                          'application/pdf',
+                          'image/png',
+                          'image/jpeg',
+                          'image/webp',
+                        ];
+                        const allowedExts = ['.doc', '.docx', '.xls', '.xlsx', '.pdf', '.png', '.jpg', '.jpeg', '.webp'];
+                        const fileName = file.name.toLowerCase();
+                        const hasAllowedExt = allowedExts.some(ext => fileName.endsWith(ext));
+                        if (!allowedTypes.includes(file.type) && !hasAllowedExt) {
+                          addToast('Invalid file type. Allowed: doc, docx, xls, xlsx, pdf, png, jpg, jpeg, webp.', 'error');
+                          e.target.value = '';
+                          setDocumentFile(null);
+                          return;
+                        }
+                        if (file.size > 5 * 1024 * 1024) {
+                          addToast('File size exceeds 5MB limit.', 'error');
+                          e.target.value = '';
+                          setDocumentFile(null);
+                          return;
+                        }
+                      }
+                      setDocumentFile(file);
+                    }}
+                    className="block w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-primary-50 file:text-primary-600 hover:file:bg-primary-100 cursor-pointer"
+                    required
+                  />
+                  <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                    Allowed file types: doc, docx, xls, xlsx, pdf, png, jpg, jpeg, webp. Max size: 5MB.<br />
+                    The file will be uploaded and its stored path will be saved automatically.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-[10px] mt-[10px]">
+                  <button
+                    type="button"
+                    onClick={closeDocumentModal}
+                    disabled={isDocumentSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isDocumentSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isDocumentSubmitting
+                      ? "Saving..."
+                      : editingDocument
+                        ? "Update Document"
+                        : "Add Document"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
         )}
       </Can>
     </AuthenticatedLayout>

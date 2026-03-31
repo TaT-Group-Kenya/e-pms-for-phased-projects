@@ -37,6 +37,8 @@ class OrderUpdateRequest extends FormRequest
             'currency' => ['sometimes', 'required', 'string', 'max:255'],
             'payment_terms' => ['sometimes', 'nullable', 'string', 'max:255'],
             'notes_to_customer' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'created_at' => ['sometimes', 'required', 'date'],
+
         ];
     }
 

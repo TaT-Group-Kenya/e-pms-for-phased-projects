@@ -224,7 +224,6 @@ class CustCreditNoteController extends Controller
                 'transaction_number' => $transactionNumber,
                 'direction' => 'outgoing',
                 'transaction_type' => 'refund',
-                'invoice_id' => $custCreditNote->invoice_id,
                 'amount_paid' => $amount,
                 'tax_amount' => $taxPortion,
                 'net_amount' => $netPortion,

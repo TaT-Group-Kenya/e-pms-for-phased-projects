@@ -9,33 +9,20 @@ import { ToastContainer } from "../../common/Toast";
 
 interface CompanyPaymentSummary {
   id: number;
-  transaction_number?: string | null;
   amount_paid: number;
-  tax_amount?: number | null;
-  net_amount?: number | null;
   payment_date?: string | null;
   payment_method?: string | null;
   payment_status?: string | null;
   currency?: string | null;
-  invoice_id?: number | null;
-  exchange_rate?: number | null;
-  bank_name?: string | null;
-  check_number?: string | null;
-  transaction_reference?: string | null;
-  receipt_number?: string | null;
-  reconciled?: boolean | null;
-  reconciliation_date?: string | null;
-  updated_at?: string | null;
-  updated_by?: string | null;
-  created_at?: string | null;
-  created_by?: string | null;
-  transaction_id?: number | null;
+  transaction_number?: string | null;
   companyName?: string | null;
   companyId?: number | null;
   projectName?: string | null;
   projectId?: number | null;
   invoiceNumber?: string | null;
   invoiceId?: number | null;
+  jobReferenceId?: string | null;
+  transactedBy?: string | null;
 }
 
 const AccountPayablesReportTable: React.FC = () => {
@@ -99,6 +86,7 @@ const AccountPayablesReportTable: React.FC = () => {
           let projectId: number | null = null;
           let invoiceNumber: string | null = null;
           let invoiceId: number | null = null;
+          let jobReferenceId: string | null = null;
 
           if (invoice) {
             if (invoice.invoice_number) {
@@ -125,6 +113,9 @@ const AccountPayablesReportTable: React.FC = () => {
               if (invoice.project.id != null) {
                 projectId = Number(invoice.project.id);
               }
+              if (invoice.project.job_reference_id) {
+                jobReferenceId = String(invoice.project.job_reference_id);
+              }
             }
           }
 
@@ -132,36 +123,18 @@ const AccountPayablesReportTable: React.FC = () => {
             id: Number(p.id),
             transaction_number: p.transaction_number ?? null,
             amount_paid: Number(p.amount_paid ?? 0),
-            tax_amount: p.tax_amount != null ? Number(p.tax_amount) : null,
-            net_amount: p.net_amount != null ? Number(p.net_amount) : null,
             payment_date: p.payment_date ?? null,
             payment_method: p.payment_method ?? null,
             payment_status: p.payment_status ?? null,
             currency: p.currency ?? null,
-            invoice_id: p.invoice_id != null ? Number(p.invoice_id) : null,
-            exchange_rate: p.exchange_rate != null ? Number(p.exchange_rate) : null,
-            bank_name: p.bank_name ?? null,
-            check_number: p.check_number ?? null,
-            transaction_reference: p.transaction_reference ?? null,
-            receipt_number: p.receipt_number ?? null,
-            reconciled:
-              typeof p.reconciled === "boolean"
-                ? p.reconciled
-                : p.reconciled != null
-                ? Boolean(p.reconciled)
-                : null,
-            reconciliation_date: p.reconciliation_date ?? null,
-            updated_at: p.updated_at ?? null,
-            updated_by: p.updated_by ?? null,
-            created_at: p.created_at ?? null,
-            created_by: p.created_by ?? null,
-            transaction_id: p.transaction_id != null ? Number(p.transaction_id) : null,
+            transactedBy: p.created_by_user ? `${p.created_by_user.first_name} ${p.created_by_user.last_name}` : null,
             companyName,
             companyId,
             projectName,
             projectId,
             invoiceNumber,
             invoiceId,
+            jobReferenceId,
           };
         });
 
@@ -345,58 +318,22 @@ const AccountPayablesReportTable: React.FC = () => {
 
     const headers = [
       "ID",
-      "TransactionNumber",
-      "InvoiceId",
-      "InvoiceNumber",
-      "PaymentDate",
-      "PaymentMethod",
-      "PaymentStatus",
-      "Currency",
-      "AmountPaid",
-      "TaxAmount",
-      "NetAmount",
-      "ExchangeRate",
-      "BankName",
-      "CheckNumber",
-      "TransactionReference",
-      "ReceiptNumber",
-      "Reconciled",
-      "ReconciliationDate",
-      "TransactionId",
-      "CreatedAt",
-      "CreatedBy",
-      "UpdatedAt",
-      "UpdatedBy",
-      "CompanyName",
-      "ProjectName",
+      "Date",
+      "Company",
+      "Job Reference ID",
+      "Invoice Number",
+      "Amount Paid",
+      "Transacted By",
     ];
 
     const csvRows = rowsSource.map((p) => [
       p.id,
-      p.transaction_number ?? "",
-      p.invoice_id ?? "",
-      p.invoiceNumber ?? "",
       p.payment_date ?? "",
-      p.payment_method ?? "",
-      p.payment_status ?? "",
-      p.currency ?? "",
-      p.amount_paid,
-      p.tax_amount ?? "",
-      p.net_amount ?? "",
-      p.exchange_rate ?? "",
-      p.bank_name ?? "",
-      p.check_number ?? "",
-      p.transaction_reference ?? "",
-      p.receipt_number ?? "",
-      p.reconciled != null ? (p.reconciled ? "Yes" : "No") : "",
-      p.reconciliation_date ?? "",
-      p.transaction_id ?? "",
-      p.created_at ?? "",
-      p.created_by ?? "",
-      p.updated_at ?? "",
-      p.updated_by ?? "",
       p.companyName ?? "",
-      p.projectName ?? "",
+      p.jobReferenceId ?? "",
+      p.invoiceNumber ?? "",
+      formatCurrency(p.amount_paid, p.currency) ?? "",
+      p.transactedBy ?? "",
     ]);
 
     const csv = [headers, ...csvRows]
@@ -418,8 +355,7 @@ const AccountPayablesReportTable: React.FC = () => {
     <>
       <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md overflow-hidden mb-[20px]">
         <div className="trezo-card-header flex flex-col md:flex-row items-start md:items-center justify-between p-5 gap-[15px]">
-          <div className="flex flex-col w-full md:flex-1 mt-[10px] md:mt-0 gap-2">
-            <div className="flex flex-wrap items-center gap-2 justify-start w-full">
+          <div className="flex flex-wrap items-center gap-2 justify-start w-full md:flex-1 mt-[10px] md:mt-0">
               <input
                 type="text"
                 placeholder="Search ..."
@@ -487,9 +423,7 @@ const AccountPayablesReportTable: React.FC = () => {
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div className="flex flex-wrap items-center gap-2 justify-start w-full">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500 dark:text-gray-400">Date from:</span>
                 <input
@@ -528,7 +462,6 @@ const AccountPayablesReportTable: React.FC = () => {
               >
                 Clear filters
               </button>
-            </div>
 
           </div>
 
@@ -544,41 +477,23 @@ const AccountPayablesReportTable: React.FC = () => {
         </div>
 
         <div className="table-responsive overflow-x-auto">
-          <table className="min-w-[1500px] w-full text-sm">
+          <table className="min-w-[1000px] w-full text-sm">
             <thead className="bg-gray-50 dark:bg-[#15203c]">
               <tr>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">ID</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Date</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Transaction #</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Invoice ID</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Invoice #</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Company</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Project</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Method</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Status</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Amount Paid</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Tax Amount</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Net Amount</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Exchange Rate</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Currency</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Bank</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Cheque #</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Txn Ref</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Receipt #</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Reconciled</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Reconciliation Date</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Transaction ID</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Created At</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Created By</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Updated At</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Updated By</th>
+                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Job Reference ID</th>
+                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Invoice Number</th>
+                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Amount Paid</th>
+                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Transacted By</th>
                 <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={5} className="text-center text-sm px-[15px] py-[12px]">
+                  <td colSpan={8} className="text-center text-sm px-[15px] py-[12px]">
                     Loading company payments...
                   </td>
                 </tr>
@@ -586,7 +501,7 @@ const AccountPayablesReportTable: React.FC = () => {
 
               {!loading && filteredRows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-center text-sm px-[15px] py-[12px] text-gray-500">
+                  <td colSpan={8} className="text-center text-sm px-[15px] py-[12px] text-gray-500">
                     No company payments found.
                   </td>
                 </tr>
@@ -605,79 +520,19 @@ const AccountPayablesReportTable: React.FC = () => {
                         : "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.transaction_number || "-"}
+                      {p.companyName || "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.invoice_id != null ? p.invoice_id : "-"}
+                      {p.jobReferenceId || "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
                       {p.invoiceNumber || "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.companyName || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.projectName || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.payment_method || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap capitalize">
-                      {p.payment_status || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
                       {formatCurrency(p.amount_paid, p.currency)}
                     </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
-                      {p.tax_amount != null ? formatCurrency(p.tax_amount, p.currency) : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
-                      {p.net_amount != null ? formatCurrency(p.net_amount, p.currency) : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
-                      {p.exchange_rate != null ? p.exchange_rate.toFixed(4) : "-"}
-                    </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.currency || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.bank_name || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.check_number || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.transaction_reference || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.receipt_number || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.reconciled != null ? (p.reconciled ? "Yes" : "No") : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.reconciliation_date
-                        ? new Date(p.reconciliation_date).toLocaleDateString()
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.transaction_id != null ? p.transaction_id : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.created_at
-                        ? new Date(p.created_at).toLocaleString()
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.created_by || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.updated_at
-                        ? new Date(p.updated_at).toLocaleString()
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.updated_by || "-"}
+                      {p.transactedBy ? p.transactedBy : "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
                       {p.id != null ? (

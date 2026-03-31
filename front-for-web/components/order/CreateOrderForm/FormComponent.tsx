@@ -33,6 +33,7 @@ const orderSchema = z.object({
     .max(1000, "Notes must not exceed 1000 characters")
     .optional()
     .or(z.literal("")),
+  created_at: z.string().min(7, "Creation date is required"),
 });
 
 export type OrderFormData = z.infer<typeof orderSchema>;
@@ -141,6 +142,7 @@ const CreateOrderForm: React.FC = () => {
         description: data.description || "",
         payment_terms: data.payment_terms || "",
         notes_to_customer: data.notes_to_customer || "",
+        created_at: data.created_at || new Date().toISOString(),
         job_reference_id: jobRef,
       };
 
@@ -210,62 +212,75 @@ const CreateOrderForm: React.FC = () => {
             )}
 
             <div className="mb-[25px]">
-              <div className="mb-[20px]">
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Quotation
-                </label>
-                <select
-                  {...register("quotation_id")}
-                  className={`h-[44px] rounded-md text-black dark:text-white border ${
-                    errors.quotation_id ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
-                  } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                  disabled={isLoadingQuotations || quotations.length === 0}
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    {isLoadingQuotations
-                      ? "Loading quotations..."
-                      : quotations.length === 0
-                      ? "No quotations available"
-                      : "Select a quotation"}
-                  </option>
-                  {quotations.map((q) => (
-                    <option key={q.id} value={q.id.toString()}>
-                      {q.quotation_number}
-                      {q.title ? ` - ${q.title}` : ""}
+              <div className="sm:grid sm:grid-cols-4 sm:gap-[25px] mb-[20px]">
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Quotation
+                  </label>
+                  <select
+                    {...register("quotation_id")}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${errors.quotation_id ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                      } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
+                    disabled={isLoadingQuotations || quotations.length === 0}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      {isLoadingQuotations
+                        ? "Loading quotations..."
+                        : quotations.length === 0
+                          ? "No quotations available"
+                          : "Select a quotation"}
                     </option>
-                  ))}
-                </select>
-                {renderFieldError("quotation_id")}
-              </div>
+                    {quotations.map((q) => (
+                      <option key={q.id} value={q.id.toString()}>
+                        {q.quotation_number}
+                        {q.title ? ` - ${q.title}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {renderFieldError("quotation_id")}
+                </div>
+                {/* Job Reference ID (derived from quotation) */}
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Job Reference ID
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedQuotation?.job_reference_id || ""}
+                    readOnly
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-gray-50 dark:bg-[#15203c] px-[17px] block w-full outline-0 cursor-not-allowed"
+                    placeholder="Select a quotation to see its Job Reference ID"
+                  />
+                </div>
 
-              {/* Job Reference ID (derived from quotation) */}
-              <div className="mb-[20px]">
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Job Reference ID
-                </label>
-                <input
-                  type="text"
-                  value={selectedQuotation?.job_reference_id || ""}
-                  readOnly
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-gray-50 dark:bg-[#15203c] px-[17px] block w-full outline-0 cursor-not-allowed"
-                  placeholder="Select a quotation to see its Job Reference ID"
-                />
-              </div>
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Order Title
+                  </label>
+                  <input
+                    type="text"
+                    {...register("title")}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${errors.title ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                      } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
+                    placeholder="E.g. Website Development Order"
+                  />
+                  {renderFieldError("title")}
+                </div>
 
-              <div className="mb-[20px]">
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Order Title
-                </label>
-                <input
-                  type="text"
-                  {...register("title")}
-                  className={`h-[44px] rounded-md text-black dark:text-white border ${
-                    errors.title ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
-                  } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                  placeholder="E.g. Website Development Order"
-                />
-                {renderFieldError("title")}
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Creation Date <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    {...register("created_at")}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${
+                      errors.created_at ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500`}
+                  />
+                  {renderFieldError("created_at")}
+                </div>
               </div>
 
               <div className="mb-[20px]">

@@ -61,6 +61,7 @@ class ProjectController extends Controller
 
         $validated['code'] = $code;
         $validated['created_by'] = Auth::id();
+        $validated['created_at'] = $validated['created_at'] ?? now();
         $validated['quote_item_id'] = null;
         $validated['start_date'] = is_null($validated['start_date']) ? new \DateTime() : $validated['start_date'];
         $validated['end_date'] = is_null($validated['end_date']) ? new \DateTime() : $validated['end_date'];
@@ -115,6 +116,8 @@ class ProjectController extends Controller
 
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
+        $validated['created_at'] = $validated['created_at'] ?? $project->created_at;
+        $validated['updated_at'] = $validated['updated_at'] ?? now();
         
         // If this project is linked to an order, prevent changing the customer
         // to anything other than the order's customer

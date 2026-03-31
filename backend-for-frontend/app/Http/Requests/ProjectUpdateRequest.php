@@ -33,6 +33,7 @@ class ProjectUpdateRequest extends FormRequest
             'progress' => ['sometimes', 'required', 'string', 'max:255'],
             'tags' => ['sometimes', 'required', 'string', 'max:255'],
             'currency' => ['sometimes', 'required', 'string', 'max:255'],
+            'created_at' => ['sometimes', 'nullable', 'date'],
         ];
     }
 

@@ -1,0 +1,26 @@
+import DocsLayout from '../../components/docs/DocsLayout';
+
+export default function CompaniesDoc() {
+  return (
+    <DocsLayout>
+      <h1 className="text-2xl font-bold mb-4">Companies</h1>
+      <ol className="list-decimal pl-6 space-y-4">
+        <li>
+          <strong>View Companies List</strong>
+          <div className="mt-2">Navigate to the Companies page. You will see a list of all companies.</div>
+          <img src="https://placehold.co/600x300?text=Companies+List" alt="Companies List" className="my-4 rounded shadow" />
+        </li>
+        <li>
+          <strong>Create a New Company</strong>
+          <div className="mt-2">Click on the "Create Company" button. Fill in the required details.</div>
+          <img src="https://placehold.co/600x300?text=Create+Company+Form" alt="Create Company Form" className="my-4 rounded shadow" />
+        </li>
+        <li>
+          <strong>Edit Company</strong>
+          <div className="mt-2">Click the "Edit" icon next to a company. Update the details and save.</div>
+          <img src="https://placehold.co/600x300?text=Edit+Company" alt="Edit Company" className="my-4 rounded shadow" />
+        </li>
+      </ol>
+    </DocsLayout>
+  );
+}

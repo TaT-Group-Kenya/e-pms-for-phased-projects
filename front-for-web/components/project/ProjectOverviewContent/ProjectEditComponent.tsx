@@ -186,6 +186,13 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
 
     setIsSubmitting(true);
     try {
+      // Ensure created_at is sent as a full datetime string if only date is present
+      let createdAtToSend = editFormData.created_at || "";
+      if (createdAtToSend && createdAtToSend.length === 10) {
+        // If only date, append current time for ISO string
+        createdAtToSend = `${createdAtToSend}T00:00:00Z`;
+      }
+
       const response = await fetch(`/api/projects/${projectId}`, {
         method: "PUT",
         headers: {
@@ -194,6 +201,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
         },
         body: JSON.stringify({
           ...editFormData,
+          created_at: createdAtToSend,
           tags: tags.join(","),
         }),
       });
@@ -318,19 +326,30 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
 
         {isEditMode && editFormData ? (
           <div className="space-y-[20px]">
-            <div className="sm:grid sm:grid-cols-2 sm:gap-[25px]">
-              {/* Project Name */}
-              <div className="mb-[20px] sm:mb-0">
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Name <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editFormData.name || ""}
-                  onChange={(e) => handleFormChange("name", e.target.value)}
-                  className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
-                />
-              </div>
+            <div className="sm:grid sm:grid-cols-3 sm:gap-[25px]">
+                <div className="flex-1">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Project Name <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.name || ""}
+                    onChange={(e) => handleFormChange("name", e.target.value)}
+                    className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                  />
+                </div>
+                <div className="flex-1 sm:ml-[20px] mt-[20px] sm:mt-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Creation Date <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={editFormData.created_at ? editFormData.created_at.slice(0, 10) : ""}
+                    onChange={e => handleFormChange("created_at", e.target.value)}
+                    className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
+                    required
+                  />
+                </div>
 
               {/* Project Code */}
               <div className="mb-[20px] sm:mb-0">

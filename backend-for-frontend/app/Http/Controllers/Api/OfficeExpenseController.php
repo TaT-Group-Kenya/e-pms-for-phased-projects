@@ -33,7 +33,7 @@
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page', 'search');
-        $query = \App\Models\OfficeExpense::query();
+        $query = \App\Models\OfficeExpense::with(['category', 'costCenter', 'payments', 'payments.transaction','payments.transaction.debitAccount','payments.transaction.creditAccount', 'createdByUser']);
         if ($request->get('with_trashed')) {
             $query->withTrashed();
         }
@@ -47,7 +47,9 @@
         if ($search = $request->get('search')) {
             $query->where(function($q) use ($search) {
                 $q->where('description', 'like', "%$search%")
-                  ->orWhere('category', 'like', "%$search%");
+                  ->orWhereHas('category', function($q) use ($search) {
+                      $q->where('name', 'like', "%$search%");
+                  });
             });
         }
         $data = $query->paginate($perPage, ['*'], 'page', $page);
@@ -65,7 +67,7 @@
 
     public function show($id)
     {
-        $expense = \App\Models\OfficeExpense::with(['payments'])->findOrFail($id);
+        $expense = \App\Models\OfficeExpense::with(['payments', 'payments.transaction','payments.transaction.debitAccount','payments.transaction.creditAccount', 'createdByUser', 'updatedByUser'])->findOrFail($id);
         $this->authorize('view', $expense);
         return new OfficeExpenseResource($expense);
     }

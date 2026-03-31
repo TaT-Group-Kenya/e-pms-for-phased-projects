@@ -48,6 +48,7 @@ class QuotationController extends Controller
         
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
+        $validated['created_at'] = $validated['creationDate'] ?? now();
         $validated['quotation_number'] = $quotationNumber;
         $validated['description'] = $validated['description'] ?? $validated['title'];
 
@@ -81,6 +82,7 @@ class QuotationController extends Controller
 
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
+        $validated['created_at'] = $validated['created_at'] ?? $quotation->created_at;
 
         $originalStatus = $quotation->status;
         $originalCustomerId = $quotation->customer_id;

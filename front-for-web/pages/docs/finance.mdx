@@ -1,0 +1,21 @@
+import DocsLayout from '../../components/docs/DocsLayout';
+
+export default function FinanceDoc() {
+  return (
+    <DocsLayout>
+      <h1 className="text-2xl font-bold mb-4">Finance</h1>
+      <ol className="list-decimal pl-6 space-y-4">
+        <li>
+          <strong>View Invoices</strong>
+          <div className="mt-2">Go to the Finance section.</div>
+          <img src="https://placehold.co/600x300?text=Invoices" alt="Invoices" className="my-4 rounded shadow" />
+        </li>
+        <li>
+          <strong>Record a Payment</strong>
+          <div className="mt-2">Click "Add Payment" and fill in the details.</div>
+          <img src="https://placehold.co/600x300?text=Add+Payment" alt="Add Payment" className="my-4 rounded shadow" />
+        </li>
+      </ol>
+    </DocsLayout>
+  );
+}

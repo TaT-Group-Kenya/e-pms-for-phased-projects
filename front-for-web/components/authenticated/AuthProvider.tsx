@@ -31,7 +31,10 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         const hasToken = !!accessToken
         const isExpired = typeof expiry === 'number' && expiry <= Date.now()
 
-        if (!hasToken || isExpired) {
+        if (!hasToken) {
+          setIsAuthenticated(false)
+          performLogout()
+        }else if(isExpired) {
           setIsAuthenticated(false)
           performLogout()
         } else {

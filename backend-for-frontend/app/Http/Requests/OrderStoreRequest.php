@@ -26,6 +26,8 @@ class OrderStoreRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:1000'],
             'payment_terms' => ['nullable', 'string', 'max:255'],
             'notes_to_customer' => ['nullable', 'string', 'max:1000'],
+            'created_at' => ['required', 'date'],
+
         ];
     }
 

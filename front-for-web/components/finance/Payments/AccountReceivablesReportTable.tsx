@@ -6,6 +6,7 @@ import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
+import { tr } from "zod/v4/locales";
 
 interface CustReceiptSummary {
   id: number;
@@ -36,6 +37,9 @@ interface CustReceiptSummary {
   projectNames?: string[];
   projectIds?: number[];
   invoiceNumbers?: string[];
+  created_by_user?: any;
+  transactedBy?: string;
+  jobRefIds: any[];
   invoiceIds?: number[];
 }
 
@@ -92,6 +96,7 @@ const AccountReceivablesReportTable: React.FC = () => {
           : [];
 
         const mapped: CustReceiptSummary[] = (items || []).map((p: any) => {
+        
           const invoices = Array.isArray(p.invoices) ? p.invoices : [];
 
           const customerNames: string[] = [];
@@ -100,6 +105,7 @@ const AccountReceivablesReportTable: React.FC = () => {
           const projectIds: number[] = [];
           const invoiceNumbers: string[] = [];
           const invoiceIds: number[] = [];
+          const jobRefIds: string[] = [];
 
           invoices.forEach((inv: any) => {
             if (inv.customer) {
@@ -124,6 +130,11 @@ const AccountReceivablesReportTable: React.FC = () => {
             if (inv.invoice_number) {
               invoiceNumbers.push(String(inv.invoice_number));
             }
+
+            if (inv.job_reference_id) {
+              jobRefIds.push(String(inv.job_reference_id));
+            }
+
             if (inv.id != null) {
               invoiceIds.push(Number(inv.id));
             }
@@ -159,12 +170,14 @@ const AccountReceivablesReportTable: React.FC = () => {
             created_at: p.created_at ?? null,
             created_by: p.created_by ?? null,
             transaction_id: p.transaction_id != null ? Number(p.transaction_id) : null,
+            transactedBy: p.created_by_user ? `${p.created_by_user.first_name} ${p.created_by_user.last_name}` : null,
             customerNames,
             customerIds,
             projectNames,
             projectIds,
             invoiceNumbers,
             invoiceIds,
+            jobRefIds,
           };
         });
 
@@ -348,54 +361,22 @@ const AccountReceivablesReportTable: React.FC = () => {
 
     const headers = [
       "ID",
-      "TransactionNumber",
-      "ReceiptNumber",
-      "PaymentDate",
-      "PaymentMethod",
-      "PaymentStatus",
-      "Currency",
-      "AmountPaid",
-      "TaxAmount",
-      "NetAmount",
-      "InvoiceTotalAmount",
-      "ExchangeRate",
-      "FeeOrCharge",
-      "BankName",
-      "CheckNumber",
-      "TransactionReference",
-      "Reconciled",
-      "ReconciliationDate",
-      "TransactionId",
-      "CreatedAt",
-      "CreatedBy",
-      "UpdatedAt",
-      "UpdatedBy",
+      "Date",
+      "Customer",
+      "Job Reference ID",
+      "Invoice Number",
+      "Amount Paid",
+      "Transacted By",
     ];
 
     const csvRows = rowsSource.map((p) => [
       p.id,
-      p.transaction_number ?? "",
-      p.receipt_number ?? "",
-      p.payment_date ?? "",
-      p.payment_method ?? "",
-      p.payment_status ?? "",
-      p.currency ?? "",
-      p.amount_paid,
-      p.tax_amount ?? "",
-      p.net_amount ?? "",
-      p.invoice_total_amount ?? "",
-      p.exchange_rate ?? "",
-      p.fee_or_charge ?? "",
-      p.bank_name ?? "",
-      p.check_number ?? "",
-      p.transaction_reference ?? "",
-      p.reconciled != null ? (p.reconciled ? "Yes" : "No") : "",
-      p.reconciliation_date ?? "",
-      p.transaction_id ?? "",
       p.created_at ?? "",
-      p.created_by ?? "",
-      p.updated_at ?? "",
-      p.updated_by ?? "",
+      p.customerNames?.[0] ?? "",
+      p.jobRefIds?.[0] ?? "",
+      p.invoiceNumbers?.[0] ?? "",
+      formatCurrency(p.amount_paid, p.currency) ?? "",
+      p.transactedBy ?? "",
     ]);
 
     const csv = [headers, ...csvRows]
@@ -539,35 +520,16 @@ const AccountReceivablesReportTable: React.FC = () => {
         </div>
 
         <div className="table-responsive overflow-x-auto">
-          <table className="min-w-[1500px] w-full text-sm">
+          <table className="min-w-[1000px] w-full text-sm">
             <thead className="bg-gray-50 dark:bg-[#15203c]">
               <tr>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">ID</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Date</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Transaction #</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Receipt #</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Customer</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Project</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Invoice #</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Method</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Status</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Amount Paid</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Tax Amount</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Net Amount</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Invoice Total</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Exchange Rate</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Fee / Charge</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Currency</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Bank</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Cheque #</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Txn Ref</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Reconciled</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Reconciliation Date</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Transaction ID</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Created At</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Created By</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Updated At</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Updated By</th>
+                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Job Reference ID</th>
+                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Invoice Number</th>
+                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Amount Paid</th>
+                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Transacted By</th>
                 <th className="text-xs font-semibold text-right px-[15px] py-[8px] whitespace-nowrap">Actions</th>
               </tr>
             </thead>
@@ -601,86 +563,19 @@ const AccountReceivablesReportTable: React.FC = () => {
                         : "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.transaction_number || "-"}
+                      {p.customerNames?.[0] ?? "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.receipt_number || "-"}
+                      {p.jobRefIds?.[0] ?? "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {(p.customerNames && p.customerNames[0]) || "-"}
+                      {p.invoiceNumbers?.[0] ?? "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {(p.projectNames && p.projectNames[0]) || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {(p.invoiceNumbers && p.invoiceNumbers[0]) || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.payment_method || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap capitalize">
-                      {p.payment_status || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
                       {formatCurrency(p.amount_paid, p.currency)}
                     </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
-                      {p.tax_amount != null ? formatCurrency(p.tax_amount, p.currency) : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
-                      {p.net_amount != null ? formatCurrency(p.net_amount, p.currency) : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
-                      {p.invoice_total_amount != null
-                        ? formatCurrency(p.invoice_total_amount, p.currency)
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
-                      {p.exchange_rate != null ? p.exchange_rate.toFixed(4) : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
-                      {p.fee_or_charge != null
-                        ? formatCurrency(p.fee_or_charge, p.currency)
-                        : "-"}
-                    </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.currency || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.bank_name || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.check_number || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.transaction_reference || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.reconciled != null ? (p.reconciled ? "Yes" : "No") : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.reconciliation_date
-                        ? new Date(p.reconciliation_date).toLocaleDateString()
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.transaction_id != null ? p.transaction_id : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.created_at
-                        ? new Date(p.created_at).toLocaleString()
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.created_by || "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.updated_at
-                        ? new Date(p.updated_at).toLocaleString()
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.updated_by || "-"}
+                      {p.transactedBy ? p.transactedBy : "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap text-right">
                       {p.id != null ? (

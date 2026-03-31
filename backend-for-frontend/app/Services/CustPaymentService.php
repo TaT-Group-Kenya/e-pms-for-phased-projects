@@ -35,6 +35,8 @@ class CustPaymentService
             $query->where($key, $value);
         }
 
+        $query->where('transaction_type', 'receipt');
+
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
 
         return $query->paginate($perPage, ['*'], 'page', $page);

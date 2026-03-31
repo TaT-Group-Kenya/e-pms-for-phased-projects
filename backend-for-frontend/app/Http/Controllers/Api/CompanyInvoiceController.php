@@ -47,6 +47,7 @@ class CompanyInvoiceController extends Controller
     {
         $this->authorize('create', \App\Models\CompanyInvoice::class);
         $validated = $request->validated();
+        $validated['created_at'] = $validated['created_at'] ?? now();
 
         // Ensure the selected company has at least one configured bank/payment method
         if (! empty($validated['company_id'])) {
@@ -659,6 +660,8 @@ class CompanyInvoiceController extends Controller
         $this->authorize('update', $companyInvoice);
 
         $validated = $request->validated();
+        $validated['created_at'] = $validated['created_at'] ?? $companyInvoice->created_at;
+        $validated['updated_at'] = $validated['updated_at'] ?? now();
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($companyInvoice->id, $validated);
         return new CompanyInvoiceResource($updated);

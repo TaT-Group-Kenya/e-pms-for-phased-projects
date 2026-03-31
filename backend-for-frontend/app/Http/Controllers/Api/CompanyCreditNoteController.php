@@ -59,7 +59,8 @@ class CompanyCreditNoteController extends Controller
         } while (CompanyCreditNote::where('credit_note_number', $number)->exists());
 
         $validated['credit_note_number'] = $number;
-        $validated['description'] = $validated['description'] ?? $validated['title'];
+        $validated['title'] = $validated['reason'] ?? 'Credit Note for Invoice ' . ($invoice->invoice_number);
+        $validated['description'] = $validated['title'];
         $validated['notes_to_customer'] = $validated['notes_to_customer'] ?? 'Correction for invoice ' . ($invoice->invoice_number);
         
 
@@ -104,6 +105,12 @@ class CompanyCreditNoteController extends Controller
             'date' => ['required', 'date'],
             'receiving_account' => ['required', 'integer', 'exists:accounts,id'],
             'narration' => ['nullable', 'string'],
+        ]);
+
+        \Log::info('Initiating refund for Company Credit Note', [
+            'company_credit_note_id' => $companyCreditNote->id,
+            'invoice_id' => $companyCreditNote->invoice_id,
+            'validated_data' => $validated,
         ]);
 
         // Ensure refund date is not older than credit note creation date

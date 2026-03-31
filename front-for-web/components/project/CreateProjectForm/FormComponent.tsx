@@ -14,6 +14,7 @@ import { formatApiError } from "../../../utils/errorHandler";
 // Zod schema for form validation - based on ProjectStoreRequest
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required").max(255, "Project name must not exceed 255 characters"),
+  creationDate: z.string().min(1, "Creation date is required"),
   description: z.string().min(1, "Description is required").max(255, "Description must not exceed 255 characters"),
   customer_id: z.string().min(1, "Customer is required"),
   project_category_id: z.string().min(1, "Project category is required"),
@@ -70,8 +71,8 @@ const CreateProjectForm: React.FC = () => {
   const [formError, setFormError] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [projectCategories, setProjectCategories] = useState<ProjectCategory[]>([]);
-    const [projectSources, setProjectSources] = useState<ProjectSourceOrigin[]>([]);
-    const [projectLocations, setProjectLocations] = useState<ProjectLocation[]>([]);
+  const [projectSources, setProjectSources] = useState<ProjectSourceOrigin[]>([]);
+  const [projectLocations, setProjectLocations] = useState<ProjectLocation[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -84,6 +85,9 @@ const CreateProjectForm: React.FC = () => {
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     mode: "onBlur",
+    defaultValues: {
+      creationDate: new Date().toISOString().split('T')[0],
+    },
   });
 
   // Load customers and project categories
@@ -170,12 +174,21 @@ const CreateProjectForm: React.FC = () => {
     return () => controller.abort();
   }, [accessToken, addToast]);
 
+
   const onSubmit = async (data: ProjectFormData) => {
     setIsSubmitting(true);
     setFormError("");
     setSuccessMessage("");
 
     try {
+      // Combine creationDate (date) with current time to get full datetime string
+      const now = new Date();
+      const [year, month, day] = data.creationDate.split("-");
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+      const created_at = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+
       const bodyData = {
         name: data.name,
         description: data.description,
@@ -196,6 +209,7 @@ const CreateProjectForm: React.FC = () => {
         progress: data.progress,
         tags: tags.join(","),
         currency: data.currency,
+        created_at,
       };
 
       const response = await fetch("/api/projects/create", {
@@ -264,20 +278,35 @@ const CreateProjectForm: React.FC = () => {
             )}
 
             <div className="sm:grid sm:grid-cols-2 sm:gap-[25px]">
-              {/* Name - Required */}
-              <div className="mb-[20px] sm:mb-0">
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Name <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  {...register("name")}
-                  className={`h-[44px] rounded-md text-black dark:text-white border ${
-                    errors.name ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
-                  } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                  placeholder="E.g. Website Redesign"
-                />
-                {renderFieldError("name")}
+              {/* Name & Creation Date - Required */}
+              <div className="mb-[20px] sm:mb-0 flex gap-4">
+                <div className="flex-1">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Project Name <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    {...register("name")}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${
+                      errors.name ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
+                    placeholder="E.g. Website Redesign"
+                  />
+                  {renderFieldError("name")}
+                </div>
+                <div className="flex-1">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Creation Date <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    {...register("creationDate")}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${
+                      errors.creationDate ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500`}
+                  />
+                  {renderFieldError("creationDate")}
+                </div>
               </div>
 
               {/* Description - Required */}

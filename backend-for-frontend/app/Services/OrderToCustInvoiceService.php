@@ -54,6 +54,7 @@ class OrderToCustInvoiceService
             'valid_until'         => now()->addDays(30),
             'payment_receiving_method_id' => $paymentReceivingMethodId,
             'created_by'          => $userId,
+            'created_at'          => $order->created_at,
             'updated_by'          => $userId,
         ]);
 

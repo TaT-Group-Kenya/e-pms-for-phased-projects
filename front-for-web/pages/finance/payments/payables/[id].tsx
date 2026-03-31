@@ -37,6 +37,7 @@ interface CompanyPaymentSummary {
   projectId?: number | null;
   invoiceNumber?: string | null;
   invoiceId?: number | null;
+  createdByUserName?: string | null;
 }
 
 const CompanyPaymentDetailPageInner: React.FC = () => {
@@ -121,6 +122,10 @@ const CompanyPaymentDetailPageInner: React.FC = () => {
           }
         }
 
+        if(src.created_by_user && src.created_by_user.first_name && src.created_by_user.last_name) {
+          src.createdByUserName = `${src.created_by_user.first_name} ${src.created_by_user.last_name}`;
+        }
+
         setEntry({
           id: Number(src.id),
           transaction_number: src.transaction_number ?? null,
@@ -160,6 +165,7 @@ const CompanyPaymentDetailPageInner: React.FC = () => {
           projectId,
           invoiceNumber,
           invoiceId,
+          createdByUserName: src.createdByUserName ?? null,
         });
       } catch (err: any) {
         if (err?.name === "AbortError") return;
@@ -244,12 +250,6 @@ const CompanyPaymentDetailPageInner: React.FC = () => {
             <h1 className="text-base font-semibold text-black dark:text-white">
               Company Payment #{titleNumber}
             </h1>
-            {entry && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-[4px]">
-                {entry.companyName || "-"}
-                {entry.projectName ? ` · ${entry.projectName}` : ""}
-              </p>
-            )}
           </div>
 
           {entry && (
@@ -472,7 +472,7 @@ const CompanyPaymentDetailPageInner: React.FC = () => {
                               entry.created_at
                             ).toLocaleString()}${
                               entry.created_by
-                                ? ` · By ${entry.created_by}`
+                                ? ` · By ${entry.createdByUserName || entry.created_by}`
                                 : ""
                             }`
                           : "-"}
@@ -488,7 +488,7 @@ const CompanyPaymentDetailPageInner: React.FC = () => {
                               entry.updated_at
                             ).toLocaleString()}${
                               entry.updated_by
-                                ? ` · By ${entry.updated_by}`
+                                ? ` · By ${entry.createdByUserName || entry.updated_by}`
                                 : ""
                             }`
                           : "-"}

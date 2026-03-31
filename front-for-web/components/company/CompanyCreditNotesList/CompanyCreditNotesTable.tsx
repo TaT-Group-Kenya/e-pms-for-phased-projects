@@ -5,6 +5,7 @@ import { useToast } from '../../../hooks/useToast'
 import { selectAccessToken } from '../../../store/auth/selectors'
 import { ToastContainer } from '../../common/Toast'
 import Can from '../../auth/Can'
+import { title } from 'process'
 
 interface CompanyCreditNoteSummary {
   id: number
@@ -249,6 +250,7 @@ const CompanyCreditNotesTable: React.FC = () => {
         body: JSON.stringify({
           invoice_id: selectedInvoiceId,
           credit_note_date: creditNoteDate || today,
+          title: creditNoteReason || `Credit Note for Invoice ${selectedInvoice.invoice_number}`,
           reason: creditNoteReason,
           subtotal_amount: 0,
           tax_amount: 0,
@@ -361,9 +363,6 @@ const CompanyCreditNotesTable: React.FC = () => {
                       Invoice ID
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Reason
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Subtotal
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -400,11 +399,6 @@ const CompanyCreditNotesTable: React.FC = () => {
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           {cn.invoice_id ?? '-'}
-                        </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] max-w-[260px]">
-                          <span className="line-clamp-2 text-sm text-gray-700 dark:text-gray-300">
-                            {cn.reason || '(No reason provided)'}
-                          </span>
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <span className="font-semibold">

@@ -33,6 +33,8 @@ class CompanyInvoiceUpdateRequest extends FormRequest
             'payment_terms' => ['sometimes', 'required', 'string', 'max:255'],
             'notes_to_customer' => ['sometimes', 'required', 'string', 'max:255'],
             'valid_until' => ['sometimes', 'required', 'string', 'max:255'],
+            'created_at' => ['sometimes', 'nullable', 'date'],
+
         ];
     }
 
