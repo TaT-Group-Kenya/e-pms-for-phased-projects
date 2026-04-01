@@ -42,9 +42,7 @@ class QuotationController extends Controller
     {
         $this->authorize('create', Quotation::class);
         $commonService = new CommonService();
-        do {
-            $quotationNumber = $commonService->generateUniqueCode('QUO-');
-        }while (Quotation::where('quotation_number', $quotationNumber)->exists());
+        $quotationNumber = $commonService->getNextQuotationNumber();
         
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();

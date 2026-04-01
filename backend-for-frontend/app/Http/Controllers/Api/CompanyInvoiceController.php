@@ -140,9 +140,7 @@ class CompanyInvoiceController extends Controller
         $commonService = new CommonService();
 
         // Generate a unique invoice number for the company invoice.
-        do {
-            $invoiceNumber = $commonService->generateUniqueCode('CMPINV-');
-        } while (CompanyInvoice::where('invoice_number', $invoiceNumber)->exists());
+       $invoiceNumber = $commonService->getNextCompanyInvoiceNumber();
 
         $project = $phase->project;
 

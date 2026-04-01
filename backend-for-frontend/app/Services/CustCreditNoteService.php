@@ -59,9 +59,7 @@ class CustCreditNoteService
 
         // Generate unique credit_note_number
         $commonService = new \App\Services\CommonService();
-        do {
-            $creditNoteNumber = $commonService->generateUniqueCode('CCN-');
-        } while (CustCreditNote::where('credit_note_number', $creditNoteNumber)->exists());
+        $creditNoteNumber = $commonService->getNextCustCreditNoteNumber();
         $data['credit_note_number'] = $creditNoteNumber;
 
         return CustCreditNote::create($data);

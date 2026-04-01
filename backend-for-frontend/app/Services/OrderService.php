@@ -79,9 +79,7 @@ class OrderService
     public function createFromQuotation(Quotation $quotation, array $overrides = [], ?int $userId = null): Order
     {
         $commonService = new CommonService();
-        do {
-            $orderNumber = $commonService->generateUniqueCode('ORD-');
-        } while (Order::where('order_number', $orderNumber)->exists());
+        $orderNumber = $commonService->getNextOrderNumber();
 
         $data = [
             'order_number'        => $orderNumber,

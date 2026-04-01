@@ -22,9 +22,7 @@ class OrderToCustInvoiceService
         return DB::transaction(function () use ($order, $userId, $overrides) {
             $commonService = new CommonService();
 
-            do {
-                $invoiceNumber = $commonService->generateUniqueCode('CINV-');
-            } while (CustInvoice::where('invoice_number', $invoiceNumber)->exists());
+            $invoiceNumber = $commonService->getNextCustInvoiceNumber();
 
             // Determine payment_receiving_method_id: use override, or first active, or null
             $paymentReceivingMethodId = $overrides['payment_receiving_method_id'] ?? null;

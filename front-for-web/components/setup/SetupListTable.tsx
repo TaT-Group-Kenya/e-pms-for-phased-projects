@@ -91,7 +91,7 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
 
   const [reloadKey, setReloadKey] = useState(0);
 
-  const perPage = 15;
+  const perPage = 15000;
 
   const effectiveSearchKeys = useMemo(
     () => searchableKeys && searchableKeys.length ? searchableKeys : columns.filter(c => c.key !== "id").map(c => c.key),
