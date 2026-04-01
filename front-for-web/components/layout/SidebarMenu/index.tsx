@@ -299,10 +299,16 @@ const SECTIONS: SidebarSection[] = [
       //   requiredRoles: ["ROLE_VIEW_CUST_PAYMENT", "ROLE_VIEW_TAX"],
       // },
       {
-        label: "Invoice Payments",
-        href: "/reports/invoice-payments",
+        label: "Invoice Payments Cust",
+        href: "/reports/invoice-payments-customer",
         matchStrategy: "exact",
-        requiredRoles: ["ROLE_VIEW_COMPANY_INVOICE", "ROLE_VIEW_COMPANY_PAYMENT", "ROLE_VIEW_CUST_INVOICE", "ROLE_VIEW_CUST_PAYMENT"],
+        requiredRoles: ["ROLE_VIEW_CUST_INVOICE", "ROLE_VIEW_CUST_PAYMENT"],
+      },
+      {
+        label: "Invoice Payments Co",
+        href: "/reports/invoice-payments-company",
+        matchStrategy: "exact",
+        requiredRoles: ["ROLE_VIEW_COMPANY_INVOICE", "ROLE_VIEW_COMPANY_PAYMENT"],
       },
       {
         label: "General Ledger",

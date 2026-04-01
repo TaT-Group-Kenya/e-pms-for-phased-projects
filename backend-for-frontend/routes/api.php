@@ -148,6 +148,8 @@ Route::prefix('/')->group(function () {
 			Route::get('margin-per-project', [App\Http\Controllers\ReportingController::class, 'marginPerProject']);
 			Route::get('general-ledger', [App\Http\Controllers\ReportingController::class, 'generalLedger']);
 			Route::get('invoice-payments', [App\Http\Controllers\ReportingController::class, 'invoicePayments']);
+				Route::get('invoice-payments-customer', [App\Http\Controllers\ReportingController::class, 'invoicePaymentsCustomer']);
+				Route::get('invoice-payments-company', [App\Http\Controllers\ReportingController::class, 'invoicePaymentsCompany']);
 			Route::get('tax-payments-customer', [App\Http\Controllers\ReportingController::class, 'taxPaymentsCustomer']);
 			Route::get('tax-payments-company', [App\Http\Controllers\ReportingController::class, 'taxPaymentsCompany']);
 			Route::get('expense', [App\Http\Controllers\ReportingController::class, 'expenseReport']);

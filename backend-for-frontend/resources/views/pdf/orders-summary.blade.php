@@ -42,45 +42,31 @@
     <table class="table">
         <thead>
             <tr>
-                <th>Order #</th>
-                <th>Project</th>
-                <th>Customer</th>
+                <th>Date</th>
                 <th>Job Ref</th>
-                <th>Quotation</th>
+                <th>Customer</th>
                 <th>Title</th>
-                <th>Status</th>
-                <th>Total Amount</th>
                 <th>Currency</th>
-                <th>Created At</th>
+                <th>Total Amount</th>
+                <th>Status</th>
+                <th>Created By</th>
             </tr>
         </thead>
         <tbody>
         @foreach($data as $order)
             <tr>
-                <td><strong>{{ $order['order_number'] ?? '' }}</strong></td>
-                <td>
-                    @if(isset($order['project']))
-                        @if(is_array($order['project']) && isset($order['project']['name']))
-                            {{ $order['project']['name'] }}
-                        @elseif(is_object($order['project']) && isset($order['project']->name))
-                            {{ $order['project']->name }}
-                        @else
-                            {{ $order['project'] }}
-                        @endif
-                    @endif
-                </td>
-                <td>{{ $order['customer_name'] ?? '' }}</td>
-                <td>{{ $order['job_reference_id'] ?? '' }}</td>
-                <td>{{ $order['quotation_title'] ?? '' }}</td>
-                <td>{{ $order['title'] ?? '' }}</td>
-                <td>{{ $order['status'] ?? '' }}</td>
-                <td><strong>{{ isset($order['total_amount']) ? number_format((float) $order['total_amount'], 2) : '' }}</strong></td>
-                <td>{{ $order['currency'] ?? '' }}</td>
                 <td>
                     @if(!empty($order['created_at']))
                         {{ \Carbon\Carbon::parse($order['created_at'])->format('M d, Y h:i A') }}
                     @endif
                 </td>
+                <td>{{ $order['job_reference_id'] ?? '' }}</td>
+                <td>{{ $order['customer_name'] ?? '' }}</td>
+                <td>{{ $order['title'] ?? '' }}</td>
+                <td>{{ $order['currency'] ?? '' }}</td>
+                <td><strong>{{ isset($order['total_amount']) ? number_format((float) $order['total_amount'], 2) : '' }}</strong></td>
+                <td>{{ $order['status'] ?? '' }}</td>
+                <td>{{ $order['created_by_name'] ?? '' }}</td>
             </tr>
         @endforeach
         </tbody>

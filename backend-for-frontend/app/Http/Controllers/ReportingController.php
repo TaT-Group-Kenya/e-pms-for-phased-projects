@@ -178,6 +178,44 @@ class ReportingController extends Controller
         }
     }
 
+    // Invoice Payments - Customer
+    public function invoicePaymentsCustomer(Request $request)
+    {
+        try {
+            $filters = $request->all();
+            $data = $this->reportingService->invoicePaymentsCustomer($filters);
+            if (isset($data['error'])) {
+                return response()->json(['error' => $data['error']], 400);
+            }
+            return [
+                'payments' => \App\Http\Resources\Reporting\InvoicePaymentsResource::collection($data['payments']),
+                'totals' => $data['totals'],
+            ];
+        } catch (\Exception $e) {
+            \Log::error('Invoice Payments Customer Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal server error.'], 500);
+        }
+    }
+
+    // Invoice Payments - Company
+    public function invoicePaymentsCompany(Request $request)
+    {
+        try {
+            $filters = $request->all();
+            $data = $this->reportingService->invoicePaymentsCompany($filters);
+            if (isset($data['error'])) {
+                return response()->json(['error' => $data['error']], 400);
+            }
+            return [
+                'payments' => \App\Http\Resources\Reporting\InvoicePaymentsResource::collection($data['payments']),
+                'totals' => $data['totals'],
+            ];
+        } catch (\Exception $e) {
+            \Log::error('Invoice Payments Company Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal server error.'], 500);
+        }
+    }
+
     // Tax Payments Customer
     public function taxPaymentsCustomer(Request $request)
     {

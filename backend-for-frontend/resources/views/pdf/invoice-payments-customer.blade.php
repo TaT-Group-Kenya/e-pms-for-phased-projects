@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Customer History Report</title>
+    <title>Invoice Payments Customer Report</title>
     <style>
         @page { margin: 40px 40px 60px 40px; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111827; }
@@ -33,7 +33,7 @@
         @endif
     </div>
     <div style="text-align: right;">
-        <h1>Customer History Report</h1>
+        <h1>Invoice Payments Customer Report</h1>
         <div class="muted">Generated on {{ $generatedAt->format('d M Y H:i') }}</div>
     </div>
 </div>
@@ -42,47 +42,37 @@
     <table class="table">
         <thead>
             <tr>
+                <th>ID</th>
                 <th>Date</th>
-                <th>Job Reference ID</th>
                 <th>Customer</th>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Source Origin</th>
-                <th>Location</th>
+                <th>Job Reference ID</th>
+                <th>Invoice #</th>
                 <th>Currency</th>
                 <th>Amount</th>
-                <th>Created By</th>
+                <th>Transacted By</th>
             </tr>
         </thead>
         <tbody>
-        @foreach($data as $row)
+        @foreach($data['payments'] as $payment)
             <tr>
-                <td>
-                    @if(!empty($row['created_at']))
-                        {{ is_string($row['created_at']) ? \Carbon\Carbon::parse($row['created_at'])->format('d M Y') : optional($row['created_at'])->format('d M Y') }}
-                    @else
-                        -
-                    @endif
-                </td>
-                <td>{{ $row['job_reference_id'] ?? '-' }}</td>
-                <td>{{ $row['customer_name'] ?? '-' }}</td>
-                <td>{{ $row['title'] ?? '-' }}</td>
-                <td>{{ $row['project_category'] ?? '-' }}</td>
-                <td>{{ $row['project_source_origin'] ?? '-' }}</td>
-                <td>{{ $row['project_location'] ?? '-' }}</td>
-                <td>{{ $row['currency'] ?? '-' }}</td>
-                <td>
-                    @if(isset($row['amount']))
-                        {{ number_format((float) $row['amount'], 2) }}
-                    @else
-                        -
-                    @endif
-                </td>
-                <td>{{ $row['created_by_name'] ?? '-' }}</td>
+                <td><strong>{{ $payment->id }}</strong></td>
+                <td>{{ optional($payment->created_at)->format('d M Y') }}</td>
+                <td>{{ $payment->customer_name ?? '-' }}</td>
+                <td>{{ $payment->job_reference_id ?? '-' }}</td>
+                <td>{{ $payment->invoice_number ?? '-' }}</td>
+                <td>{{ $payment->currency ?? '-' }}</td>
+                <td><strong>{{ number_format((float) ($payment->amount ?? 0), 2) }}</strong></td>
+                <td>{{ $payment->transacted_by_name ?? '-' }}</td>
             </tr>
         @endforeach
         </tbody>
     </table>
+    @if(isset($data['totals']))
+        <div class="section">
+            <span style="font-size:14px;font-weight:bold;">Total Amount:</span>
+            <strong>{{ number_format((float) ($data['totals']['total'] ?? 0), 2) }}</strong><br>
+        </div>
+    @endif
 </div>
 
 <div class="footer">

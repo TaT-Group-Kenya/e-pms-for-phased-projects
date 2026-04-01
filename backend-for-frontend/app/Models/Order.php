@@ -72,4 +72,9 @@ class Order extends Model
             ? strtoupper((string) $value)
             : null;
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

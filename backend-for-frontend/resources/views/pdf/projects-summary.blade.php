@@ -42,37 +42,43 @@
     <table class="table">
         <thead>
             <tr>
-                <th>Project #</th>
-                <th>Name</th>
+                <th>Date</th>
+                <th>Job Ref</th>
                 <th>Customer</th>
+                <th>Project Name</th>
                 <th>Category</th>
-                <th>Status</th>
-                <th>Start Date</th>
-                <th>End Date</th>
+                <th>Source Origin</th>
+                <th>Location</th>
                 <th>Currency</th>
-                <th>Assigned Companies</th>
+                <th>Amount</th>
+                <th>Created By</th>
             </tr>
         </thead>
         <tbody>
         @foreach($data as $project)
             <tr>
-                <td><strong>{{ $project['id'] }}</strong></td>
-                <td><strong>{{ $project['name'] }}</strong></td>
-                <td>{{ $project['customer_name'] ?? '-' }}</td>
-                <td>{{ $project['project_category'] ?? '-' }}</td>
-                <td>{{ $project['status'] ?? '-' }}</td>
-                <td>{{ $project['start_date'] ? \Carbon\Carbon::parse($project['start_date'])->format('d M Y') : '-' }}</td>
-                <td>{{ $project['end_date'] ? \Carbon\Carbon::parse($project['end_date'])->format('d M Y') : '-' }}</td>
-                <td>{{ $project['currency'] ?? '-' }}</td>
                 <td>
-                    @if(isset($project['assigned_companies']) && is_array($project['assigned_companies']) && count($project['assigned_companies']))
-                        @foreach($project['assigned_companies'] as $company)
-                            <span><strong>{{ $company['name'] }}</strong></span>@if(!$loop->last), @endif
-                        @endforeach
+                    @if(!empty($project['start_date']))
+                        {{ \Carbon\Carbon::parse($project['start_date'])->format('d M Y') }}
                     @else
                         -
                     @endif
                 </td>
+                <td>{{ $project['job_reference_id'] ?? '-' }}</td>
+                <td>{{ $project['customer_name'] ?? '-' }}</td>
+                <td><strong>{{ $project['name'] ?? '-' }}</strong></td>
+                <td>{{ $project['project_category'] ?? '-' }}</td>
+                <td>{{ $project['project_source_origin'] ?? '-' }}</td>
+                <td>{{ $project['project_location'] ?? '-' }}</td>
+                <td>{{ $project['currency'] ?? '-' }}</td>
+                <td>
+                    @if(isset($project['budget_estimate']))
+                        {{ number_format((float) $project['budget_estimate'], 2) }}
+                    @else
+                        -
+                    @endif
+                </td>
+                <td>{{ $project['created_by_name'] ?? '-' }}</td>
             </tr>
         @endforeach
         </tbody>

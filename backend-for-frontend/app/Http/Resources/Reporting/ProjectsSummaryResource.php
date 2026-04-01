@@ -8,6 +8,18 @@ class ProjectsSummaryResource extends JsonResource
 {
     public function toArray($request)
     {
+        $creator = $this->creator;
+        $createdByName = null;
+
+        if ($creator) {
+            $fullName = trim(($creator->first_name ?? '') . ' ' . ($creator->last_name ?? ''));
+            if ($fullName !== '') {
+                $createdByName = $fullName;
+            } else {
+                $createdByName = $creator->email ?? null;
+            }
+        }
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -34,6 +46,7 @@ class ProjectsSummaryResource extends JsonResource
                 ];
             }) : [],
             'created_at' => $this->created_at,
+            'created_by_name' => $createdByName,
         ];
     }
 }
