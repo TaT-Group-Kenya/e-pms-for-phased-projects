@@ -223,6 +223,7 @@ class CompanyInvoiceController extends Controller
             'bank_name' => ['nullable', 'string', 'max:255'],
             'check_number' => ['nullable', 'string', 'max:255'],
             'receipt_number' => ['required', 'string', 'max:255'],
+            'forex_rate' => ['required', 'numeric', 'min:0'],
             'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
 
@@ -287,6 +288,9 @@ class CompanyInvoiceController extends Controller
             $accountCurrencyCode = $account->currency;
             $invoiceCurrencyCode = $invoice->currency;
 
+            // Determine project currency from the linked project (if any)
+            $projectCurrencyCode = $invoice->project ? $invoice->project->currency : null;
+
             // Enforce that the selected account uses the same currency as the invoice
             if ($accountCurrencyCode !== $invoiceCurrencyCode) {
                 throw ValidationException::withMessages([
@@ -301,6 +305,27 @@ class CompanyInvoiceController extends Controller
             $conversion = $conversionService->convertToBaseFromInvoice($amountPaid, $invoiceCurrencyCode, $accountCurrencyCode);
             $exchangeRate = $conversion['exchange_rate'];
             $convertedAmount = $conversion['converted_amount'];
+
+            // Compute forex_rate and project currency value for margin-per-project reporting
+            // forex_rate represents KES to project currency when project currency is not KES.
+            $forexRate = null;
+            $projectCurrencyValue = null;
+
+            if ($projectCurrencyCode) {
+                if ($projectCurrencyCode === 'KES') {
+                    $forexRate = 1.0;
+                    $projectCurrencyValue = round($amountPaid / $forexRate, 2);
+                } else {
+                    $forexRateInput = $validated['forex_rate'] ?? null;
+                    if (! $forexRateInput || (float) $forexRateInput <= 0) {
+                        throw ValidationException::withMessages([
+                            'forex_rate' => ['A valid forex rate is required for non-KES project currency.'],
+                        ]);
+                    }
+                    $forexRate = (float) $forexRateInput;
+                    $projectCurrencyValue = round($amountPaid / $forexRate, 2);
+                }
+            }
 
             $currentBalance = (float) $account->balance;
 
@@ -328,6 +353,9 @@ class CompanyInvoiceController extends Controller
                 'payment_status' => 'complete',
                 'currency' => $invoiceCurrencyCode,
                 'exchange_rate' => $exchangeRate,
+                'forex_rate' => $forexRate,
+                'project_currency_value' => $projectCurrencyValue,
+                'project_currency' => $projectCurrencyCode,
                 'bank_name' => $validated['bank_name'] ?? null,
                 'check_number' => $validated['check_number'] ?? null,
                 'transaction_reference' => $validated['receipt_number'],

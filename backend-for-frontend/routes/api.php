@@ -144,6 +144,8 @@ Route::prefix('/')->group(function () {
 			Route::get('customer-history', [App\Http\Controllers\ReportingController::class, 'customerHistory']);
 			Route::get('revenue', [App\Http\Controllers\ReportingController::class, 'revenueSnapshot']);
 			Route::get('invoices', [App\Http\Controllers\ReportingController::class, 'invoicesReport']);
+			Route::get('invoices-customer', [App\Http\Controllers\ReportingController::class, 'invoicesReportCustomer']);
+			Route::get('invoices-company', [App\Http\Controllers\ReportingController::class, 'invoicesReportCompany']);
 			Route::get('payments-to-companies', [App\Http\Controllers\ReportingController::class, 'paymentsToCompanies']);
 			Route::get('margin-per-project', [App\Http\Controllers\ReportingController::class, 'marginPerProject']);
 			Route::get('general-ledger', [App\Http\Controllers\ReportingController::class, 'generalLedger']);

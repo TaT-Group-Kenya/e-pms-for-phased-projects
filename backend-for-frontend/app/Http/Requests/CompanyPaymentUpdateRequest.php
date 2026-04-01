@@ -24,6 +24,7 @@ class CompanyPaymentUpdateRequest extends FormRequest
             'payment_status' => ['sometimes', 'required', Rule::in(['pending','complete'])],
             'currency' => ['sometimes', 'required', 'string', 'max:255'],
             'exchange_rate' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'forex_rate' => ['sometimes', 'numeric', 'min:0'],
             'bank_name' => ['sometimes', 'required', 'string', 'max:255'],
             'check_number' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('company_payments')->ignore(
                     $this->route('company_payment')

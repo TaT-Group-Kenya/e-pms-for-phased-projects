@@ -24,6 +24,7 @@ class CompanyPaymentStoreRequest extends FormRequest
             'payment_status' => ['required', Rule::in(['pending','complete'])],
             'currency' => ['required', 'string', 'max:255'],
             'exchange_rate' => ['required', 'numeric', 'min:0'],
+            'forex_rate' => ['nullable', 'numeric', 'min:0'],
             'bank_name' => ['required', 'string', 'max:255'],
             'check_number' => ['required', 'string', 'max:255'],
             'transaction_reference' => ['required', 'string', 'max:255'],

@@ -107,6 +107,64 @@ class ReportingController extends Controller
         }
     }
 
+    // Invoices Report - Customer
+    public function invoicesReportCustomer(Request $request)
+    {
+        try {
+            $filters = $request->all();
+            $data = $this->reportingService->invoicesReportCustomer($filters);
+            if (isset($data['error'])) {
+                return response()->json(['error' => $data['error']], 400);
+            }
+
+            $invoices = $data['invoices'];
+            $authorized = $invoices->filter(function ($invoice) {
+                return \Gate::allows('view', $invoice);
+            });
+
+            $totalAmount = $authorized->sum('total_amount');
+
+            return [
+                'invoices' => \App\Http\Resources\Reporting\InvoicesReportCustomerResource::collection($authorized),
+                'totals' => [
+                    'amount' => $totalAmount,
+                ],
+            ];
+        } catch (\Exception $e) {
+            \Log::error('Invoices Report Customer Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal server error.'], 500);
+        }
+    }
+
+    // Invoices Report - Company
+    public function invoicesReportCompany(Request $request)
+    {
+        try {
+            $filters = $request->all();
+            $data = $this->reportingService->invoicesReportCompany($filters);
+            if (isset($data['error'])) {
+                return response()->json(['error' => $data['error']], 400);
+            }
+
+            $invoices = $data['invoices'];
+            $authorized = $invoices->filter(function ($invoice) {
+                return \Gate::allows('view', $invoice);
+            });
+
+            $totalAmount = $authorized->sum('total_amount');
+
+            return [
+                'invoices' => \App\Http\Resources\Reporting\InvoicesReportCompanyResource::collection($authorized),
+                'totals' => [
+                    'amount' => $totalAmount,
+                ],
+            ];
+        } catch (\Exception $e) {
+            \Log::error('Invoices Report Company Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal server error.'], 500);
+        }
+    }
+
     // Payments to Companies
     public function paymentsToCompanies(Request $request)
     {
@@ -135,7 +193,17 @@ class ReportingController extends Controller
             if (isset($data['error'])) {
                 return response()->json(['error' => $data['error']], 400);
             }
-            return \App\Http\Resources\Reporting\MarginPerProjectResource::collection($data);
+            $rows = $data['rows'] ?? [];
+            $totals = $data['totals'] ?? [
+                'revenue' => 0,
+                'cost' => 0,
+                'margin' => 0,
+            ];
+
+            return [
+                'data' => \App\Http\Resources\Reporting\MarginPerProjectResource::collection($rows),
+                'totals' => $totals,
+            ];
         } catch (\Exception $e) {
             \Log::error('Margin Per Project Error: ' . $e->getMessage());
             return response()->json(['error' => 'Internal server error.'], 500);
@@ -278,7 +346,20 @@ class ReportingController extends Controller
     {
         // try {
             $reportType = $request->input('reportType');
+
+            // Start with all request query parameters
             $filters = $request->all();
+
+            // If a JSON-encoded "filters" payload is provided (from frontend),
+            // decode and merge it so report methods receive flat filter keys
+            if ($request->has('filters') && is_string($request->input('filters'))) {
+                $decoded = json_decode($request->input('filters'), true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    unset($filters['filters']);
+                    $filters = array_merge($filters, $decoded);
+                }
+            }
+
             $pdf = $this->reportingService->exportPdf($reportType, $filters);
             if (is_array($pdf) && isset($pdf['error'])) {
                 return response()->json(['error' => $pdf['error']], 400);

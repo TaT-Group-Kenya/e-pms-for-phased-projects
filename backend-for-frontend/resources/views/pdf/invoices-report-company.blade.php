@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Margin Per Project Report</title>
+    <title>Invoices Report - Company</title>
     <style>
         @page { margin: 40px 40px 60px 40px; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111827; }
@@ -33,7 +33,7 @@
         @endif
     </div>
     <div style="text-align: right;">
-        <h1>Margin Per Project Report</h1>
+        <h1>Invoices Report - Company</h1>
         <div class="muted">Generated on {{ $generatedAt->format('d M Y H:i') }}</div>
     </div>
 </div>
@@ -44,35 +44,43 @@
             <tr>
                 <th>Date</th>
                 <th>Job Reference ID</th>
-                <th>Customer</th>
+                <th>Company</th>
+                <th>Invoice #</th>
                 <th>Project Name</th>
-                <th>Revenue ({{ $filters['currency_code'] ?? '' }})</th>
-                <th>Cost ({{ $filters['currency_code'] ?? '' }})</th>
-                <th>Margin ({{ $filters['currency_code'] ?? '' }})</th>
+                <th>Currency</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Created By</th>
             </tr>
         </thead>
         <tbody>
-        @php
-            $rows = $data['rows'] ?? $data;
-            $totals = $data['totals'] ?? null;
-        @endphp
-        @foreach($rows as $row)
+        @foreach($data['invoices'] as $invoice)
             <tr>
-                <td>{{ \Carbon\Carbon::parse($row['date'] ?? '')->format('d M Y') }}</td>
-                <td>{{ $row['job_reference_id'] ?? '' }}</td>
-                <td>{{ $row['customer'] ?? '' }}</td>
-                <td>{{ $row['project_name'] ?? '' }}</td>
-                <td>{{ number_format((float) ($row['revenue'] ?? 0), 2) }}</td>
-                <td>{{ number_format((float) ($row['cost'] ?? 0), 2) }}</td>
-                <td>{{ number_format((float) ($row['margin'] ?? 0), 2) }}</td>
+                <td>
+                    @php
+                        $dateValue = $invoice['date'] ?? $invoice['created_at'] ?? null;
+                    @endphp
+                    @if($dateValue)
+                        {{ \Carbon\Carbon::parse($dateValue)->format('d M Y') }}
+                    @else
+                        -
+                    @endif
+                </td>
+                <td>{{ $invoice['job_reference_id'] ?? '-' }}</td>
+                <td>{{ $invoice['company'] ?? '-' }}</td>
+                <td>{{ $invoice['invoice_number'] ?? '-' }}</td>
+                <td>{{ $invoice['project_name'] ?? '-' }}</td>
+                <td>{{ $invoice['currency'] ?? '-' }}</td>
+                <td><strong>{{ number_format((float) ($invoice['amount'] ?? 0), 2) }}</strong></td>
+                <td>{{ $invoice['status'] ?? '-' }}</td>
+                <td>{{ $invoice['created_by_name'] ?? '-' }}</td>
             </tr>
         @endforeach
-        @if($totals)
+        @if(isset($data['totals']))
             <tr>
-                <td colspan="4" style="font-weight: 600;">Totals</td>
-                <td>{{ number_format((float) ($totals['revenue'] ?? 0), 2) }}</td>
-                <td>{{ number_format((float) ($totals['cost'] ?? 0), 2) }}</td>
-                <td>{{ number_format((float) ($totals['margin'] ?? 0), 2) }}</td>
+                <td colspan="6" style="text-align: right; font-weight: bold;">Total Amount:</td>
+                <td><strong>{{ number_format((float) ($data['totals']['amount'] ?? 0), 2) }}</strong></td>
+                <td colspan="2"></td>
             </tr>
         @endif
         </tbody>
