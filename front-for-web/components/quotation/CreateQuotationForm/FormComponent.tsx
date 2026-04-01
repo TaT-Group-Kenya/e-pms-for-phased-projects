@@ -319,7 +319,7 @@ const CreateQuotationForm: React.FC = () => {
             </div>
 
             <div className="mb-[25px]">
-              <div className="sm:grid sm:grid-cols-4 sm:gap-[25px] mb-[20px]">
+              <div className="sm:grid sm:grid-cols-3 sm:gap-[25px] mb-[20px]">
                 {/* Valid Until Date - Required */}
                 <div className="mb-[20px] sm:mb-0">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
@@ -359,7 +359,7 @@ const CreateQuotationForm: React.FC = () => {
                 </div>
 
                 {/* Discount Percentage */}
-                <div className="mb-[20px]">
+                {/* <div className="mb-[20px]">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
                     Discount Percentage (%)
                   </label>
@@ -373,7 +373,7 @@ const CreateQuotationForm: React.FC = () => {
                     className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
                     placeholder="0.00"
                   />
-                </div>
+                </div> */}
 
                 {/* Min Approval Count */}
                 <div className="mb-[20px]">

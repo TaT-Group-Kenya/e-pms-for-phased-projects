@@ -184,6 +184,44 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
   const handleUpdateProject = async () => {
     if (!editFormData || !project) return;
 
+    const missingFields: string[] = [];
+
+    if (!editFormData.name || !editFormData.name.trim()) {
+      missingFields.push("Project Name");
+    }
+
+    if (!editFormData.created_at || !editFormData.created_at.toString().trim()) {
+      missingFields.push("Creation Date");
+    }
+
+    if (!editFormData.customer_id) {
+      missingFields.push("Customer");
+    }
+
+    if (!editFormData.project_category_id) {
+      missingFields.push("Project Category");
+    }
+
+    if (!editFormData.priority || !editFormData.priority.toString().trim()) {
+      missingFields.push("Priority");
+    }
+
+    if (!editFormData.currency || !editFormData.currency.toString().trim()) {
+      missingFields.push("Currency");
+    }
+
+    if (!tags || tags.length === 0) {
+      missingFields.push("Tags");
+    }
+
+    if (missingFields.length > 0) {
+      setUpdateMessage({
+        type: 'error',
+        text: `Please fill all required fields: ${missingFields.join(', ')}.`,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Ensure created_at is sent as a full datetime string if only date is present
@@ -598,7 +636,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
             {/* Tags */}
             <div>
               <label className="mb-[10px] text-black dark:text-white font-medium block">
-                Tags
+                Tags <span className="text-danger-500">*</span>
               </label>
               <div className="rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[12px] py-[8px] block w-full outline-0 transition-all focus:border-primary-500">
                 <div className="flex flex-wrap gap-[8px] mb-[8px]">
@@ -630,6 +668,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                       }
                     }
                   }}
+                  required
                   className="w-full outline-0 bg-transparent text-black dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
                   placeholder={tags.length === 0 ? "E.g. web, frontend, api (Press Enter to add)" : "Press Enter to add"}
                 />

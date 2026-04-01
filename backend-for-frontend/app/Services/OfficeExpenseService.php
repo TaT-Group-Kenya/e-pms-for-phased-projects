@@ -12,6 +12,7 @@ class OfficeExpenseService
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
+        $query->orderByDesc('id');
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 

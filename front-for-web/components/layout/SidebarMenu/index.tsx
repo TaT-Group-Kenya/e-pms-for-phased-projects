@@ -280,24 +280,24 @@ const SECTIONS: SidebarSection[] = [
         matchStrategy: "exact",
         requiredRoles: ["ROLE_VIEW_CUSTOMER"],
       },
-      {
-        label: "Expense Report",
-        href: "/reports/expense-report",
-        matchStrategy: "exact",
-        requiredRoles: ["ROLE_VIEW_OFFICE_EXPENSE"],
-      },
-      {
-        label: "Tax Payments (Company)",
-        href: "/reports/tax-payments-company",
-        matchStrategy: "exact",
-        requiredRoles: ["ROLE_VIEW_COMPANY_PAYMENT", "ROLE_VIEW_TAX"],
-      },
-      {
-        label: "Tax Payments (Customer)",
-        href: "/reports/tax-payments-customer",
-        matchStrategy: "exact",
-        requiredRoles: ["ROLE_VIEW_CUST_PAYMENT", "ROLE_VIEW_TAX"],
-      },
+      // {
+      //   label: "Expense Report",
+      //   href: "/reports/expense-report",
+      //   matchStrategy: "exact",
+      //   requiredRoles: ["ROLE_VIEW_OFFICE_EXPENSE"],
+      // },
+      // {
+      //   label: "Tax Payments (Company)",
+      //   href: "/reports/tax-payments-company",
+      //   matchStrategy: "exact",
+      //   requiredRoles: ["ROLE_VIEW_COMPANY_PAYMENT", "ROLE_VIEW_TAX"],
+      // },
+      // {
+      //   label: "Tax Payments (Customer)",
+      //   href: "/reports/tax-payments-customer",
+      //   matchStrategy: "exact",
+      //   requiredRoles: ["ROLE_VIEW_CUST_PAYMENT", "ROLE_VIEW_TAX"],
+      // },
       {
         label: "Invoice Payments",
         href: "/reports/invoice-payments",
