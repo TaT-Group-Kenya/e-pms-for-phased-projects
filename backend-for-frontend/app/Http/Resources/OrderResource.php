@@ -40,6 +40,8 @@ class OrderResource extends BaseResource
 
             'documents' => OrderDocumentResource::collection($this->whenLoaded('documents')),
 
+            'created_by_user' => new UserResource($this->whenLoaded('creator')),
+
         ];
     }
 }

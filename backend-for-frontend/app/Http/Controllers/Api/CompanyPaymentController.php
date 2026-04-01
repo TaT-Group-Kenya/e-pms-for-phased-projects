@@ -44,8 +44,8 @@ class CompanyPaymentController extends Controller
         $this->authorize('create', \App\Models\CompanyPayment::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
-        $model = $this->service->create($validated);
-        return new CompanyPaymentResource($model);
+        // $model = $this->service->create($validated);
+        // return new CompanyPaymentResource($model);
     }
 
     public function show(CompanyPayment $companyPayment)
@@ -63,7 +63,7 @@ class CompanyPaymentController extends Controller
 
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
-        $updated = $this->service->update($companyPayment->id, $validated);
+        //$updated = $this->service->update($companyPayment->id, $validated);
         return new CompanyPaymentResource($updated);
     }
 

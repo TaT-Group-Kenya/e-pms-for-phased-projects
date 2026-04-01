@@ -8,6 +8,7 @@ import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal";
 import Can from "../../auth/Can";
+import { formatCurrency } from "../../../utils/format";
 
 interface Quotation {
   id: number;
@@ -24,6 +25,12 @@ interface Quotation {
   total_amount: number;
   currency: string;
   customer?: { name: string };
+  created_at?: string;
+  created_by_user?: {
+    first_name?: string;
+    middle_name?: string;
+    last_name?: string;
+  };
 }
 
 interface PaginationData {
@@ -200,6 +207,7 @@ const QuotationsList: React.FC = () => {
   const filteredQuotations = quotations.filter((quotation) =>
     quotation.quotation_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (quotation.job_reference_id || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (quotation.customer?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     quotation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quotation.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -299,34 +307,40 @@ const QuotationsList: React.FC = () => {
               <table className="w-full">
                 <thead className="text-black dark:text-white">
                   <tr>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Date
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Quotation #
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Job Ref
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Customer
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       <span style={{ minWidth: 200, display: 'inline-block' }}>Title</span>
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Amount
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Tax Amount
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Tax
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Discount
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Net Amount
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Valid Until
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Status
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Valid Until
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Created By
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Actions
                     </th>
                   </tr>
@@ -335,7 +349,10 @@ const QuotationsList: React.FC = () => {
                   {filteredQuotations.length > 0 ? (
                     filteredQuotations.map((quotation) => (
                       <tr key={quotation.id} className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors">
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {quotation.created_at ? new Date(quotation.created_at).toLocaleDateString() : ""}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <Link
                             href={`/quotation/${quotation.id}`}
                             className="font-medium text-sm text-primary-500 hover:text-primary-600 hover:underline"
@@ -343,10 +360,13 @@ const QuotationsList: React.FC = () => {
                             {quotation.quotation_number}
                           </Link>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {quotation.job_reference_id || "-"}
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px]">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {quotation.customer?.name || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <Link
                             href={`/quotation/${quotation.id}`}
                             className="text-primary-500 hover:text-primary-600 hover:underline font-medium"
@@ -361,35 +381,39 @@ const QuotationsList: React.FC = () => {
                             {quotation.title}
                           </Link>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <span className="font-semibold">
-                            {quotation.currency} {quotation.subtotal_amount?.toLocaleString()}
+                            {formatCurrency(quotation.total_amount, quotation.currency)}
                           </span>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <span className="font-semibold">
-                            {quotation.currency} {quotation.tax_amount?.toLocaleString()}
+                            {formatCurrency(quotation.tax_amount, quotation.currency)}
                           </span>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <span className="font-semibold">
-                            {quotation.currency} {quotation.discount_amount?.toLocaleString()}
+                            {formatCurrency(quotation.subtotal_amount, quotation.currency)}
                           </span>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
-                          <span className="font-semibold text-primary-500">
-                            {quotation.currency} {quotation.total_amount?.toLocaleString()}
-                          </span>
-                        </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
-                          {quotation.valid_until_date ? new Date(quotation.valid_until_date).toLocaleDateString() : "N/A"}
-                        </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <span className={`inline-block px-[10px] py-[5px] rounded-full text-xs font-medium ${getStatusColor(quotation.status)}`}>
                             {quotation.status}
                           </span>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {quotation.valid_until_date ? new Date(quotation.valid_until_date).toLocaleDateString() : "N/A"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
+                          {[
+                            quotation.created_by_user?.first_name,
+                            quotation.created_by_user?.middle_name,
+                            quotation.created_by_user?.last_name,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <div className="flex items-center gap-[10px]">
                             <Link
                               href={`/quotation/${quotation.id}`}
@@ -414,7 +438,7 @@ const QuotationsList: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={10}
+                        colSpan={12}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm || statusFilter !== "all" ? "No quotations match your criteria" : "No quotations found"}

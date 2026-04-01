@@ -129,12 +129,12 @@ class ReportingService
         }
         $paymentsQuery->where('currency', $filters['currency_code']);
         $invoicesQuery->where('currency', $filters['currency_code']);
-        // Date range filter
-        if (isset($filters['from'])) {
+        // Date range filter - skip empty strings so behaviour matches UI
+        if (!empty($filters['from'])) {
             $paymentsQuery->whereDate('created_at', '>=', $filters['from']);
             $invoicesQuery->whereDate('created_at', '>=', $filters['from']);
         }
-        if (isset($filters['to'])) {
+        if (!empty($filters['to'])) {
             $paymentsQuery->whereDate('created_at', '<=', $filters['to']);
             $invoicesQuery->whereDate('created_at', '<=', $filters['to']);
         }
@@ -176,6 +176,157 @@ class ReportingService
             $query->whereDate('created_at', '<=', $to);
         }
         return $query->get();
+    }
+
+    public function invoicesReportCustomer($filters) {
+        $currency = $filters['currency_code'] ?? null;
+        $status = $filters['status'] ?? null;
+        $customerId = $filters['customer_id'] ?? null;
+        $jobReferenceId = $filters['job_reference_id'] ?? null;
+        $invoiceNumber = $filters['invoice_number'] ?? null;
+        $from = $filters['from'] ?? null;
+        $to = $filters['to'] ?? null;
+
+        if (!$currency) {
+            return [
+                'error' => 'currency is required for invoices report customer.'
+            ];
+        }
+
+        $query = \App\Models\CustInvoice::with(['customer', 'project']);
+
+        $query->where('currency', $currency);
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+        if ($customerId) {
+            $query->where('customer_id', $customerId);
+        }
+        if ($jobReferenceId) {
+            $query->where('job_reference_id', 'like', "%{$jobReferenceId}%");
+        }
+        if ($invoiceNumber) {
+            $query->where('invoice_number', 'like', "%{$invoiceNumber}%");
+        }
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+
+        $invoices = $query->get();
+
+        // Resolve created by names in bulk
+        $userIds = $invoices->pluck('created_by')->filter()->unique()->all();
+        $usersById = !empty($userIds)
+            ? \App\Models\User::whereIn('id', $userIds)->get()->keyBy('id')
+            : collect();
+
+        foreach ($invoices as $invoice) {
+            $customer = $invoice->customer;
+            $project = $invoice->project;
+            $invoice->customer_name = $customer ? $customer->name : null;
+            $invoice->project_name = $project ? $project->name : null;
+
+            $createdByName = null;
+            if ($invoice->created_by && $usersById->has($invoice->created_by)) {
+                $user = $usersById->get($invoice->created_by);
+                $fullName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+                if ($fullName !== '') {
+                    $createdByName = $fullName;
+                } else {
+                    $createdByName = $user->email ?? null;
+                }
+            }
+            $invoice->created_by_name = $createdByName;
+        }
+
+        $totalAmount = $invoices->sum('total_amount');
+
+        return [
+            'invoices' => $invoices,
+            'totals' => [
+                'amount' => $totalAmount,
+            ],
+        ];
+    }
+
+    public function invoicesReportCompany($filters) {
+        $currency = $filters['currency_code'] ?? null;
+        $status = $filters['status'] ?? null;
+        $companyId = $filters['company_id'] ?? null;
+        $jobReferenceId = $filters['job_reference_id'] ?? null;
+        $invoiceNumber = $filters['invoice_number'] ?? null;
+        $from = $filters['from'] ?? null;
+        $to = $filters['to'] ?? null;
+
+        if (!$currency) {
+            return [
+                'error' => 'currency is required for invoices report company.'
+            ];
+        }
+
+        $query = \App\Models\CompanyInvoice::with(['company', 'project']);
+
+        $query->where('currency', $currency);
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+        if ($companyId) {
+            $query->where('company_id', $companyId);
+        }
+        if ($jobReferenceId) {
+            $query->whereHas('project', function ($q) use ($jobReferenceId) {
+                $q->where('job_reference_id', 'like', "%{$jobReferenceId}%");
+            });
+        }
+        if ($invoiceNumber) {
+            $query->where('invoice_number', 'like', "%{$invoiceNumber}%");
+        }
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+
+        $invoices = $query->get();
+
+        $userIds = $invoices->pluck('created_by')->filter()->unique()->all();
+        $usersById = !empty($userIds)
+            ? \App\Models\User::whereIn('id', $userIds)->get()->keyBy('id')
+            : collect();
+
+        foreach ($invoices as $invoice) {
+            $company = $invoice->company;
+            $project = $invoice->project;
+            $invoice->company_name = $company ? $company->name : null;
+            $invoice->project_name = $project ? $project->name : null;
+
+            $createdByName = null;
+            if ($invoice->created_by && $usersById->has($invoice->created_by)) {
+                $user = $usersById->get($invoice->created_by);
+                $fullName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+                if ($fullName !== '') {
+                    $createdByName = $fullName;
+                } else {
+                    $createdByName = $user->email ?? null;
+                }
+            }
+            $invoice->created_by_name = $createdByName;
+        }
+
+        $totalAmount = $invoices->sum('total_amount');
+
+        return [
+            'invoices' => $invoices,
+            'totals' => [
+                'amount' => $totalAmount,
+            ],
+        ];
     }
     
     public function paymentsToCompanies($filters) {
@@ -221,8 +372,8 @@ class ReportingService
     
     public function marginPerProject($filters) {
         $projectId = $filters['project_id'] ?? null;
+        $customerId = $filters['customer_id'] ?? null;
         $currency = $filters['currency_code'] ?? null;
-        $forexToKes = $filters['forex_to_kes'] ?? null;
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
@@ -232,59 +383,82 @@ class ReportingService
             ];
         }
 
-        if ($currency !== 'KES' && !$forexToKes) {
-            return [
-                'error' => 'forex to KES is required for margin per project report.'
-            ];
-        } 
-        
-        if ($currency === 'KES') {
-            $forexToKes = 1;
-        }
+        $projectsQuery = \App\Models\Project::with(['customer']);
 
-        $projects = \App\Models\Project::query();
+        // Filter by project currency
+        $projectsQuery = $this->filterByCurrency($projectsQuery, $currency);
+
         if ($projectId) {
-            $projects->where('id', $projectId);
+            $projectsQuery->where('id', $projectId);
         }
-        if ($currency) {
-            $projects->where('currency', $currency);
+        if ($customerId) {
+            $projectsQuery->where('customer_id', $customerId);
         }
         if ($from) {
-            $projects->whereDate('created_at', '>=', $from);
+            $projectsQuery->whereDate('created_at', '>=', $from);
         }
         if ($to) {
-            $projects->whereDate('created_at', '<=', $to);
+            $projectsQuery->whereDate('created_at', '<=', $to);
         }
-        $projects = $projects->get();
 
-        $result = [];
-        foreach ($projects as $project) {
-            // Revenue: sum of invoices for project (convert to KES if not KES)
-            $invoices = \App\Models\CustInvoice::where('project_id', $project->id)
-                ->when($currency, function($q) use ($currency) { $q->where('currency', $currency); })
-                ->get();
-            $revenueKes = 0;
-            foreach ($invoices as $invoice) {
-                if ($invoice->currency === 'KES') {
-                    $revenueKes += $invoice->total_amount;
-                } else {
-                    $revenueKes += $invoice->total_amount * $forexToKes;
-                }
-            }
-            // Cost: sum of company invoices for project (all in KES)
-            $costKes = \App\Models\CompanyInvoice::where('project_id', $project->id)
-                ->sum('total_amount');
-            $marginKes = $revenueKes - $costKes;
-            $result[] = [
-                'project_id' => $project->id,
-                'project_name' => $project->name,
-                'revenue_kes' => $revenueKes,
-                'cost_kes' => $costKes,
-                'margin_kes' => $marginKes,
-                'forex_to_kes' => $forexToKes,
-            ];
+        $projects = $projectsQuery->get();
+
+        $projectIds = $projects->pluck('id')->all();
+
+        // Pre-compute cost per project using project currency value from company payments
+        $costsByProject = [];
+        if (!empty($projectIds)) {
+            $costsByProject = \App\Models\CompanyPayment::query()
+                ->join('company_invoices', 'company_invoices.id', '=', 'company_payments.invoice_id')
+                ->where('company_payments.direction', 'outgoing')
+                ->whereNotNull('company_payments.project_currency_value')
+                ->whereIn('company_invoices.project_id', $projectIds)
+                ->when($from, function ($q) use ($from) {
+                    $q->whereDate('company_payments.created_at', '>=', $from);
+                })
+                ->when($to, function ($q) use ($to) {
+                    $q->whereDate('company_payments.created_at', '<=', $to);
+                })
+                ->selectRaw('company_invoices.project_id as project_id, SUM(company_payments.project_currency_value) as total_cost')
+                ->groupBy('company_invoices.project_id')
+                ->pluck('total_cost', 'project_id')
+                ->toArray();
         }
-        return $result;
+
+        $rows = [];
+        $totalRevenue = 0.0;
+        $totalCost = 0.0;
+        $totalMargin = 0.0;
+
+        foreach ($projects as $project) {
+            $revenue = (float) ($project->budget_estimate ?? 0);
+            $cost = (float) ($costsByProject[$project->id] ?? 0);
+            $margin = $revenue - $cost;
+
+            $rows[] = [
+                'project_id' => $project->id,
+                'date' => optional($project->created_at)->toDateTimeString(),
+                'job_reference_id' => $project->job_reference_id,
+                'customer' => optional($project->customer)->name,
+                'project_name' => $project->name,
+                'revenue' => $revenue,
+                'cost' => $cost,
+                'margin' => $margin,
+            ];
+
+            $totalRevenue += $revenue;
+            $totalCost += $cost;
+            $totalMargin += $margin;
+        }
+
+        return [
+            'rows' => $rows,
+            'totals' => [
+                'revenue' => $totalRevenue,
+                'cost' => $totalCost,
+                'margin' => $totalMargin,
+            ],
+        ];
     }
     
     public function generalLedger($filters) {
@@ -859,6 +1033,10 @@ class ReportingService
                 return $this->exportRevenueSnapshotPdf($filters);
             case 'invoicesReport':
                 return $this->exportInvoicesReportPdf($filters);
+            case 'invoicesReportCustomer':
+                return $this->exportInvoicesReportCustomerPdf($filters);
+            case 'invoicesReportCompany':
+                return $this->exportInvoicesReportCompanyPdf($filters);
             case 'paymentsToCompanies':
                 return $this->exportPaymentsToCompaniesPdf($filters);
             case 'marginPerProject':
@@ -930,7 +1108,13 @@ class ReportingService
     private function exportRevenueSnapshotPdf($filters) {
         $userId = Auth::id() ?? null;
         $rawData = $this->revenueSnapshot($filters);
-        $data = new \App\Http\Resources\Reporting\RevenueSnapshotResource($rawData);
+        if (isset($rawData['error'])) {
+            return $rawData;
+        }
+
+        $resource = new \App\Http\Resources\Reporting\RevenueSnapshotResource($rawData);
+        $data = $resource->toArray(null);
+
         return $this->renderPdf('pdf.revenue-snapshot', $data, $filters, $userId, 'revenueSnapshot');
     }
 
@@ -939,6 +1123,48 @@ class ReportingService
         $rawData = $this->invoicesReport($filters);
         $resourceCollection = \App\Http\Resources\Reporting\InvoicesReportResource::collection($rawData);
         return $this->renderPdf('pdf.invoices-report', $resourceCollection, $filters, $userId, 'invoicesReport');
+    }
+
+    private function exportInvoicesReportCustomerPdf($filters) {
+        $userId = Auth::id() ?? null;
+        $rawData = $this->invoicesReportCustomer($filters);
+        if (isset($rawData['error'])) {
+            return $rawData;
+        }
+
+        $resourceCollection = \App\Http\Resources\Reporting\InvoicesReportCustomerResource::collection($rawData['invoices']);
+        $invoicesArray = [];
+        foreach ($resourceCollection as $item) {
+            $invoicesArray[] = $item->toArray(null);
+        }
+
+        $data = [
+            'invoices' => $invoicesArray,
+            'totals' => $rawData['totals'],
+        ];
+
+        return $this->renderPdf('pdf.invoices-report-customer', $data, $filters, $userId, 'invoicesReportCustomer');
+    }
+
+    private function exportInvoicesReportCompanyPdf($filters) {
+        $userId = Auth::id() ?? null;
+        $rawData = $this->invoicesReportCompany($filters);
+        if (isset($rawData['error'])) {
+            return $rawData;
+        }
+
+        $resourceCollection = \App\Http\Resources\Reporting\InvoicesReportCompanyResource::collection($rawData['invoices']);
+        $invoicesArray = [];
+        foreach ($resourceCollection as $item) {
+            $invoicesArray[] = $item->toArray(null);
+        }
+
+        $data = [
+            'invoices' => $invoicesArray,
+            'totals' => $rawData['totals'],
+        ];
+
+        return $this->renderPdf('pdf.invoices-report-company', $data, $filters, $userId, 'invoicesReportCompany');
     }
 
     private function exportPaymentsToCompaniesPdf($filters) {
@@ -955,11 +1181,28 @@ class ReportingService
     private function exportMarginPerProjectPdf($filters) {
         $userId = Auth::id() ?? null;
         $rawData = $this->marginPerProject($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\MarginPerProjectResource::collection($rawData);
-        $data = [];
-        foreach ($resourceCollection as $item) {
-            $data[] = $item->toArray(null);
+        if (isset($rawData['error'])) {
+            return $rawData;
         }
+
+        $rows = $rawData['rows'] ?? [];
+        $totals = $rawData['totals'] ?? [
+            'revenue' => 0,
+            'cost' => 0,
+            'margin' => 0,
+        ];
+
+        $resourceCollection = \App\Http\Resources\Reporting\MarginPerProjectResource::collection($rows);
+        $rowsArray = [];
+        foreach ($resourceCollection as $item) {
+            $rowsArray[] = $item->toArray(null);
+        }
+
+        $data = [
+            'rows' => $rowsArray,
+            'totals' => $totals,
+        ];
+
         return $this->renderPdf('pdf.margin-per-project', $data, $filters, $userId, 'marginPerProject');
     }
 

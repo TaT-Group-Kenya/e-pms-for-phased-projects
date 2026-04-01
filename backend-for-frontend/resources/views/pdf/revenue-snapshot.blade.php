@@ -40,18 +40,16 @@
     <table style="width:100%; border-collapse:collapse;">
         <thead>
             <tr style="background:#f3f4f6;">
-                <th style="border:1px solid #e5e7eb; padding:8px; text-align:left;">Total Payments Received</th>
-                <th style="border:1px solid #e5e7eb; padding:8px; text-align:left;">Total Refunds</th>
                 <th style="border:1px solid #e5e7eb; padding:8px; text-align:left;">Total Invoices Issued</th>
+                <th style="border:1px solid #e5e7eb; padding:8px; text-align:left;">Total Payments Received</th>
                 <th style="border:1px solid #e5e7eb; padding:8px; text-align:left;">Outstanding Invoices</th>
                 <th style="border:1px solid #e5e7eb; padding:8px; text-align:left;">Currency</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td style="border:1px solid #e5e7eb; padding:8px;">{{ number_format($data['total_payments_received'] ?? 0, 2) }}</td>
-                <td style="border:1px solid #e5e7eb; padding:8px;">{{ number_format($data['total_refunds'] ?? 0, 2) }}</td>
                 <td style="border:1px solid #e5e7eb; padding:8px;">{{ number_format($data['total_invoices_issued'] ?? 0, 2) }}</td>
+                <td style="border:1px solid #e5e7eb; padding:8px;">{{ number_format($data['total_payments_received'] ?? 0, 2) }}</td>
                 <td style="border:1px solid #e5e7eb; padding:8px;">{{ number_format($data['outstanding_invoices'] ?? 0, 2) }}</td>
                 <td style="border:1px solid #e5e7eb; padding:8px;">{{ $data['currency'] ?? '' }}</td>
             </tr>

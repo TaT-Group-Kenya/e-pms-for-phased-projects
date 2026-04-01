@@ -11,6 +11,7 @@ class SysConfig extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'readonly',
         'name',
         'value',
         'updated_at',

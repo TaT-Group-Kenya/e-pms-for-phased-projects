@@ -27,6 +27,12 @@ interface Project {
   tags?: string;
   currency?: string;
   customer?: { name: string };
+  created_at?: string;
+  order?: { title?: string } | null;
+  created_by_user?: {
+    first_name?: string;
+    last_name?: string;
+  };
 }
 
 interface PaginationData {
@@ -213,6 +219,8 @@ const ProjectsList: React.FC = () => {
     project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     project.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     project.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (project.customer?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (project.order?.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     project.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (project.job_reference_id || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -294,43 +302,43 @@ const ProjectsList: React.FC = () => {
               <table className="w-full">
                 <thead className="text-black dark:text-white">
                   <tr>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Code
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Date
                     </th>
-                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Job Ref ID
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Name
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Order
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Project Name
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Customer
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Status
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Priority
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Tags
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Phases
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Currency
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Amount
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Progress
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Start Date
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Status
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      End Date
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Priority
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Created By
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Actions
                     </th>
                   </tr>
@@ -339,18 +347,16 @@ const ProjectsList: React.FC = () => {
                   {filteredProjects.length > 0 ? (
                     filteredProjects.map((project) => (
                       <tr key={project.id} className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors">
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
-                          <Link
-                            href={`/project/${project.id}`}
-                            className="text-primary-500 hover:text-primary-600 hover:underline font-medium text-sm"
-                          >
-                            {project.code}
-                          </Link>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {project.created_at ? new Date(project.created_at).toLocaleDateString() : ""}
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           {project.job_reference_id || ""}
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px]">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {project.order?.title || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <Link
                             href={`/project/${project.id}`}
                             className="text-primary-500 hover:text-primary-600 hover:underline font-medium"
@@ -358,38 +364,40 @@ const ProjectsList: React.FC = () => {
                             {project.name}
                           </Link>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           {project.customer?.name || "N/A"}
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {project.tags || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {project.currency || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {project.budget_estimate ? `${project.currency || ""} ${project.budget_estimate}` : "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {project.progress != null ? `${project.progress}%` : "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <span className={`inline-block px-[10px] py-[5px] rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
                             {project.status}
                           </span>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <span className={`inline-block px-[10px] py-[5px] rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
                             {project.priority}
                           </span>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
-                          {project.tags || "-"}
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {[
+                            project.created_by_user?.first_name,
+                            project.created_by_user?.last_name,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
-                          {project.no_of_phases ?? "-"}
-                        </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
-                          {project.currency || "-"}
-                        </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
-                          {project.progress != null ? `${project.progress}%` : "-"}
-                        </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
-                          {project.start_date ? new Date(project.start_date).toLocaleDateString() : "N/A"}
-                        </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
-                          {project.end_date ? new Date(project.end_date).toLocaleDateString() : "N/A"}
-                        </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <div className="flex items-center gap-[10px]">
                             <Link
                               href={`/project/${project.id}`}
@@ -414,7 +422,7 @@ const ProjectsList: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={12}
+                        colSpan={13}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm ? "No projects match your search" : "No projects found"}

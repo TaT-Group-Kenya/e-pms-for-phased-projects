@@ -39,6 +39,9 @@ class QuotationResource extends BaseResource
 
             'order' => new OrderResource($this->whenLoaded('order')),
 
+            'created_by_user' => new UserResource($this->whenLoaded('createdByUser')),
+            'updated_by_user' => new UserResource($this->whenLoaded('updatedByUser')),
+
         ];
     }
 }

@@ -14,7 +14,7 @@ class OrderService
         int $perPage = 15,
         int $page = 1,
         int $offset = 0,
-        array $with = []
+        array $with = ['customer', 'creator']
     ) {
         // optimized query: apply eager loading and simple filters
         $query = Order::query();
@@ -79,9 +79,7 @@ class OrderService
     public function createFromQuotation(Quotation $quotation, array $overrides = [], ?int $userId = null): Order
     {
         $commonService = new CommonService();
-        do {
-            $orderNumber = $commonService->generateUniqueCode('ORD-');
-        } while (Order::where('order_number', $orderNumber)->exists());
+        $orderNumber = $commonService->getNextOrderNumber();
 
         $data = [
             'order_number'        => $orderNumber,

@@ -11,7 +11,7 @@ class QuotationService
         int $perPage = 15,
         int $page = 1,
         int $offset = 0,
-        array $with = []
+        array $with = ['customer', 'createdByUser', 'updatedByUser']
     ) {
         // optimized query: apply eager loading and simple filters
         $query = Quotation::query();
@@ -65,8 +65,10 @@ class QuotationService
         return $model;
     }
 
-    public function delete(int $id)
+    public function delete(int $id, ?int $deletedBy = null)
     {
-        return Quotation::destroy($id);
+        $model = Quotation::findOrFail($id);
+
+        return $model->softDelete($deletedBy);
     }
 }

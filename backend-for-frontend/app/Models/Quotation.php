@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasLogicalDeletion;
 
 class Quotation extends Model
 {
+    use HasLogicalDeletion;
+    use HasLogicalDeletion;
     protected $table = 'quotations';
 
     protected $fillable = [
@@ -64,5 +67,15 @@ class Quotation extends Model
         $this->attributes['job_reference_id'] = $value !== null
             ? strtoupper((string) $value)
             : null;
+    }
+
+    public function createdByUser()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedByUser()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

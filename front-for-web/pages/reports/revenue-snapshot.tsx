@@ -79,14 +79,14 @@ const RevenueSnapshotPage: React.FC = () => {
     if (!data) return;
     if (type === 'csv') {
       const columns = [
-        'Total Payments Received',
         'Total Invoices Issued',
+        'Total Payments Received',
         'Outstanding Invoices',
         'Currency',
       ];
       const row = [
-        data.total_payments_received,
         data.total_invoices_issued,
+        data.total_payments_received,
         data.outstanding_invoices,
         data.currency,
       ];
@@ -229,8 +229,8 @@ const RevenueSnapshotPage: React.FC = () => {
                 <table className="table table-bordered table-sm min-w-max w-full">
                   <thead>
                     <tr>
-                      <th className="whitespace-nowrap min-w-[180px] text-left px-4 py-2">Total Payments Received</th>
                       <th className="whitespace-nowrap min-w-[180px] text-left px-4 py-2">Total Invoices Issued</th>
+                      <th className="whitespace-nowrap min-w-[180px] text-left px-4 py-2">Total Payments Received</th>
                       <th className="whitespace-nowrap min-w-[180px] text-left px-4 py-2">Outstanding Invoices</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Currency</th>
                     </tr>
@@ -244,8 +244,8 @@ const RevenueSnapshotPage: React.FC = () => {
                       <tr><td colSpan={4} className="whitespace-nowrap px-4 py-2">No data found</td></tr>
                     ) : (
                       <tr className="bg-gray-50 border-b border-gray-200">
-                        <td className="whitespace-nowrap min-w-[180px] text-left px-4 py-2">{formatCurrency(data.total_payments_received, data.currency)}</td>
                         <td className="whitespace-nowrap min-w-[180px] text-left px-4 py-2">{formatCurrency(data.total_invoices_issued, data.currency)}</td>
+                        <td className="whitespace-nowrap min-w-[180px] text-left px-4 py-2">{formatCurrency(data.total_payments_received, data.currency)}</td>
                         <td className="whitespace-nowrap min-w-[180px] text-left px-4 py-2">{formatCurrency(data.outstanding_invoices, data.currency)}</td>
                         <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{data.currency}</td>
                       </tr>

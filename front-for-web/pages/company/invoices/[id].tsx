@@ -95,6 +95,7 @@ interface ProjectSummary {
   code: string
   name: string
   status?: string | null
+  currency?: string | null
 }
 
 interface ProjectWithPhasesSummary extends ProjectSummary {
@@ -173,6 +174,7 @@ export default function CompanyInvoiceDetailPage() {
   const [paymentDate, setPaymentDate] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa' | 'bank_transfer' | 'check'>('cash')
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'complete'>('complete')
+  const [paymentForexRate, setPaymentForexRate] = useState('')
   const [bankName, setBankName] = useState('')
   const [checkNumber, setCheckNumber] = useState('')
   const [receiptNumber, setReceiptNumber] = useState('')
@@ -806,6 +808,8 @@ export default function CompanyInvoiceDetailPage() {
     setPaymentDate(new Date().toISOString().slice(0, 10))
     setPaymentMethod('cash')
     setPaymentStatus('complete')
+    const projectCurrency = invoice.project?.currency || 'KES'
+    setPaymentForexRate(projectCurrency === 'KES' ? '1' : '')
     setBankName('')
     setCheckNumber('')
     setReceiptNumber('')
@@ -846,6 +850,17 @@ export default function CompanyInvoiceDetailPage() {
       return
     }
 
+    const projectCurrency = invoice.project?.currency || 'KES'
+    let forexRateToSend = 1
+    if (projectCurrency !== 'KES') {
+      const rate = Number(paymentForexRate)
+      if (!paymentForexRate || Number.isNaN(rate) || rate <= 0) {
+        addToast('Enter a valid forex rate for the project currency.', 'error')
+        return
+      }
+      forexRateToSend = rate
+    }
+
     setSavingPayment(true)
     try {
       const resp = await fetch('/api/company-invoices/add-payment', {
@@ -863,6 +878,7 @@ export default function CompanyInvoiceDetailPage() {
           bank_name: bankName || null,
           check_number: checkNumber || null,
           receipt_number: receiptNumber,
+          forex_rate: forexRateToSend,
           account_id: Number(selectedAccountId),
         }),
       })
@@ -2267,9 +2283,16 @@ export default function CompanyInvoiceDetailPage() {
               Make payment 
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
+            <p className="mt-[2px] text-[11px] text-gray-500 dark:text-gray-400">
+              <i>Outstanding balance on this invoice:{' '}
+              <strong>{formatCurrency(outstandingBalance, invoice?.currency || 'USD')}</strong>.</i>
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[10px]">
               <div>
-                <label className="block text-xs font-medium mb-[5px]">Amount Paid</label>
+                <label className="block text-xs font-medium mb-[5px]">
+                  Amount Paid <span className="text-danger-500 dark:text-gray-400">*</span>
+                </label>
                 <input
                   type="number"
                   min="0"
@@ -2279,11 +2302,7 @@ export default function CompanyInvoiceDetailPage() {
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
                 <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
-                  Amount is in the invoice currency ({invoice?.currency}).
-                </p>
-                <p className="mt-[2px] text-[11px] text-gray-500 dark:text-gray-400">
-                  Outstanding balance on this invoice:{' '}
-                  {formatCurrency(outstandingBalance, invoice?.currency || 'USD')}.
+                  Amount in ({invoice?.currency}).
                 </p>
               </div>
 
@@ -2296,6 +2315,27 @@ export default function CompanyInvoiceDetailPage() {
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
+
+              {invoice?.project?.currency && invoice.project.currency !== 'KES' && (
+                <div>
+                  <label className="block text-xs font-medium mb-[5px]">
+                    Forex Rate <span className="text-danger-500 dark:text-gray-400">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.000001"
+                    value={paymentForexRate}
+                    onChange={(e) => setPaymentForexRate(e.target.value)}
+                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                  <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
+                    <i>Forex rate from KES to <strong>{invoice.project.currency}</strong>.</i>
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-medium mb-[5px]">Method</label>
@@ -2313,7 +2353,7 @@ export default function CompanyInvoiceDetailPage() {
                 </select>
               </div>
 
-              <div>
+              <div className='hidden'>
                 <label className="block text-xs font-medium mb-[5px]">Status</label>
                 <select
                   value={paymentStatus}

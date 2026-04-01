@@ -9,12 +9,14 @@ class MarginPerProjectResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'project_id' => $this['project_id'],
-            'project_name' => $this['project_name'],
-            'revenue_kes' => $this['revenue_kes'],
-            'cost_kes' => $this['cost_kes'],
-            'margin_kes' => $this['margin_kes'],
-            'forex_to_kes' => $this['forex_to_kes'],
+            'project_id' => $this['project_id'] ?? null,
+            'date' => $this['date'] ?? null,
+            'job_reference_id' => $this['job_reference_id'] ?? null,
+            'customer' => $this['customer'] ?? null,
+            'project_name' => $this['project_name'] ?? null,
+            'revenue' => $this['revenue'] ?? 0,
+            'cost' => $this['cost'] ?? 0,
+            'margin' => $this['margin'] ?? 0,
         ];
     }
 }
