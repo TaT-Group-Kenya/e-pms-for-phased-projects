@@ -40,6 +40,72 @@ interface CompanyLedgerDetail {
   narration?: string | null;
   fiscal_year?: number | null;
   accounting_period?: string | null;
+  is_recurring?: boolean | null;
+  is_adjusting_entry?: boolean | null;
+  cost_center_id?: number | null;
+  related_transaction_id?: number | null;
+  is_deleted?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  deleted_at?: string | null;
+  created_by?: number | string | null;
+  updated_by?: number | string | null;
+  deleted_by?: number | string | null;
+  account_debit_name?: string | null;
+  account_credit_name?: string | null;
+
+  // Flattened payment details
+  payment_id?: number | null;
+  payment_direction?: string | null;
+  payment_status?: string | null;
+  payment_amount_paid?: number | null;
+  payment_currency?: string | null;
+  payment_date?: string | null;
+  payment_bank_name?: string | null;
+  payment_check_number?: string | null;
+  payment_transaction_reference?: string | null;
+  payment_receipt_number?: string | null;
+  payment_reconciled?: boolean | null;
+  payment_reconciliation_date?: string | null;
+
+  // Flattened company invoice details
+  invoice_id?: number | null;
+  invoice_number?: string | null;
+  invoice_status?: string | null;
+  invoice_subtotal_amount?: number | null;
+  invoice_tax_amount?: number | null;
+  invoice_total_amount?: number | null;
+  invoice_currency?: string | null;
+  invoice_title?: string | null;
+  invoice_description?: string | null;
+  invoice_payment_terms?: string | null;
+  invoice_valid_until?: string | null;
+
+  // Flattened project details for the invoice
+  project_id?: number | null;
+  project_code?: string | null;
+  project_name?: string | null;
+  project_job_reference_id?: string | null;
+  project_status?: string | null;
+  project_priority?: string | null;
+  project_progress?: string | null;
+  project_currency?: string | null;
+
+  // Flattened company contact details
+  company_email?: string | null;
+  company_phone?: string | null;
+  company_contact_person_name?: string | null;
+  company_address?: string | null;
+  company_city?: string | null;
+  company_state?: string | null;
+  company_country?: string | null;
+  company_kra_pin?: string | null;
+
+  // Flattened created/updated user details
+  created_by_user_name?: string | null;
+  created_by_user_email?: string | null;
+  updated_by_user_name?: string | null;
+  updated_by_user_email?: string | null;
 }
 
 const CompanyLedgerDetailPageInner: React.FC = () => {
@@ -117,6 +183,272 @@ const CompanyLedgerDetailPageInner: React.FC = () => {
           narration: src.narration ?? null,
           fiscal_year: src.fiscal_year != null ? Number(src.fiscal_year) : null,
           accounting_period: src.accounting_period ?? null,
+          is_recurring:
+            src.is_recurring !== undefined && src.is_recurring !== null
+              ? Boolean(src.is_recurring)
+              : null,
+          is_adjusting_entry:
+            src.is_adjusting_entry !== undefined && src.is_adjusting_entry !== null
+              ? Boolean(src.is_adjusting_entry)
+              : null,
+          cost_center_id: src.cost_center_id != null ? Number(src.cost_center_id) : null,
+          related_transaction_id:
+            src.related_transaction_id != null
+              ? Number(src.related_transaction_id)
+              : null,
+          is_deleted:
+            src.is_deleted !== undefined && src.is_deleted !== null
+              ? Boolean(src.is_deleted)
+              : null,
+          created_at: src.created_at ?? null,
+          updated_at: src.updated_at ?? null,
+          deleted_at: src.deleted_at ?? null,
+          created_by: src.created_by ?? null,
+          updated_by: src.updated_by ?? null,
+          deleted_by: src.deleted_by ?? null,
+
+          // Payment
+          payment_id:
+            src.payment && typeof src.payment === "object" && src.payment.id != null
+              ? Number(src.payment.id)
+              : null,
+          payment_direction:
+            src.payment && typeof src.payment === "object"
+              ? src.payment.direction ?? null
+              : null,
+          payment_status:
+            src.payment && typeof src.payment === "object"
+              ? src.payment.payment_status ?? null
+              : null,
+          payment_amount_paid:
+            src.payment && typeof src.payment === "object"
+              ? src.payment.amount_paid != null
+                ? Number(src.payment.amount_paid)
+                : null
+              : null,
+          payment_currency:
+            src.payment && typeof src.payment === "object"
+              ? src.payment.currency ?? null
+              : null,
+          payment_date:
+            src.payment && typeof src.payment === "object"
+              ? src.payment.payment_date ?? null
+              : null,
+          payment_bank_name:
+            src.payment && typeof src.payment === "object"
+              ? src.payment.bank_name ?? null
+              : null,
+          payment_check_number:
+            src.payment && typeof src.payment === "object"
+              ? src.payment.check_number ?? null
+              : null,
+          payment_transaction_reference:
+            src.payment && typeof src.payment === "object"
+              ? src.payment.transaction_reference ?? null
+              : null,
+          payment_receipt_number:
+            src.payment && typeof src.payment === "object"
+              ? src.payment.receipt_number ?? null
+              : null,
+          payment_reconciled:
+            src.payment && typeof src.payment === "object"
+              ? src.payment.reconciled != null
+                ? Boolean(src.payment.reconciled)
+                : null
+              : null,
+          payment_reconciliation_date:
+            src.payment && typeof src.payment === "object"
+              ? src.payment.reconciliation_date ?? null
+              : null,
+
+          // Company invoice
+          invoice_id:
+            src.companyInvoice && typeof src.companyInvoice === "object"
+              ? src.companyInvoice.id != null
+                ? Number(src.companyInvoice.id)
+                : null
+              : null,
+          invoice_number:
+            src.companyInvoice && typeof src.companyInvoice === "object"
+              ? src.companyInvoice.invoice_number ?? null
+              : null,
+          invoice_status:
+            src.companyInvoice && typeof src.companyInvoice === "object"
+              ? src.companyInvoice.status ?? null
+              : null,
+          invoice_subtotal_amount:
+            src.companyInvoice && typeof src.companyInvoice === "object"
+              ? src.companyInvoice.subtotal_amount != null
+                ? Number(src.companyInvoice.subtotal_amount)
+                : null
+              : null,
+          invoice_tax_amount:
+            src.companyInvoice && typeof src.companyInvoice === "object"
+              ? src.companyInvoice.tax_amount != null
+                ? Number(src.companyInvoice.tax_amount)
+                : null
+              : null,
+          invoice_total_amount:
+            src.companyInvoice && typeof src.companyInvoice === "object"
+              ? src.companyInvoice.total_amount != null
+                ? Number(src.companyInvoice.total_amount)
+                : null
+              : null,
+          invoice_currency:
+            src.companyInvoice && typeof src.companyInvoice === "object"
+              ? src.companyInvoice.currency ?? null
+              : null,
+          invoice_title:
+            src.companyInvoice && typeof src.companyInvoice === "object"
+              ? src.companyInvoice.title ?? null
+              : null,
+          invoice_description:
+            src.companyInvoice && typeof src.companyInvoice === "object"
+              ? src.companyInvoice.description ?? null
+              : null,
+          invoice_payment_terms:
+            src.companyInvoice && typeof src.companyInvoice === "object"
+              ? src.companyInvoice.payment_terms ?? null
+              : null,
+          invoice_valid_until:
+            src.companyInvoice && typeof src.companyInvoice === "object"
+              ? src.companyInvoice.valid_until ?? null
+              : null,
+
+          // Project (via companyInvoice)
+          project_id:
+            src.companyInvoice &&
+            typeof src.companyInvoice === "object" &&
+            src.companyInvoice.project &&
+            typeof src.companyInvoice.project === "object"
+              ? src.companyInvoice.project.id != null
+                ? Number(src.companyInvoice.project.id)
+                : null
+              : null,
+          project_code:
+            src.companyInvoice &&
+            typeof src.companyInvoice === "object" &&
+            src.companyInvoice.project &&
+            typeof src.companyInvoice.project === "object"
+              ? src.companyInvoice.project.code ?? null
+              : null,
+          project_name:
+            src.companyInvoice &&
+            typeof src.companyInvoice === "object" &&
+            src.companyInvoice.project &&
+            typeof src.companyInvoice.project === "object"
+              ? src.companyInvoice.project.name ?? null
+              : null,
+          project_job_reference_id:
+            src.companyInvoice &&
+            typeof src.companyInvoice === "object" &&
+            src.companyInvoice.project &&
+            typeof src.companyInvoice.project === "object"
+              ? src.companyInvoice.project.job_reference_id ?? null
+              : null,
+          project_status:
+            src.companyInvoice &&
+            typeof src.companyInvoice === "object" &&
+            src.companyInvoice.project &&
+            typeof src.companyInvoice.project === "object"
+              ? src.companyInvoice.project.status ?? null
+              : null,
+          project_priority:
+            src.companyInvoice &&
+            typeof src.companyInvoice === "object" &&
+            src.companyInvoice.project &&
+            typeof src.companyInvoice.project === "object"
+              ? src.companyInvoice.project.priority ?? null
+              : null,
+          project_progress:
+            src.companyInvoice &&
+            typeof src.companyInvoice === "object" &&
+            src.companyInvoice.project &&
+            typeof src.companyInvoice.project === "object"
+              ? src.companyInvoice.project.progress ?? null
+              : null,
+          project_currency:
+            src.companyInvoice &&
+            typeof src.companyInvoice === "object" &&
+            src.companyInvoice.project &&
+            typeof src.companyInvoice.project === "object"
+              ? src.companyInvoice.project.currency ?? null
+              : null,
+
+          // Company contact details
+          company_email:
+            src.company && typeof src.company === "object"
+              ? src.company.email ?? null
+              : null,
+          company_phone:
+            src.company && typeof src.company === "object"
+              ? src.company.phone ?? null
+              : null,
+          company_contact_person_name:
+            src.company && typeof src.company === "object"
+              ? src.company.contact_person_name ?? null
+              : null,
+          company_address:
+            src.company && typeof src.company === "object"
+              ? src.company.address ?? null
+              : null,
+          company_city:
+            src.company && typeof src.company === "object"
+              ? src.company.city ?? null
+              : null,
+          company_state:
+            src.company && typeof src.company === "object"
+              ? src.company.state ?? null
+              : null,
+          company_country:
+            src.company && typeof src.company === "object"
+              ? src.company.country ?? null
+              : null,
+          company_kra_pin:
+            src.company && typeof src.company === "object"
+              ? src.company.kra_pin ?? null
+              : null,
+
+          account_debit_name:
+            src.debitAccount && typeof src.debitAccount === "object" && src.debitAccount.name
+              ? String(src.debitAccount.name)
+              : null,
+          account_credit_name:
+            src.creditAccount && typeof src.creditAccount === "object" && src.creditAccount.name
+              ? String(src.creditAccount.name)
+              : null,
+
+          // Created/updated users
+          created_by_user_name:
+            src.createdByUser && typeof src.createdByUser === "object"
+              ? ([
+                  src.createdByUser.first_name,
+                  src.createdByUser.middle_name,
+                  src.createdByUser.last_name,
+                ]
+                  .filter((p: any) => !!p)
+                  .join(" ")
+                  .trim() || src.createdByUser.email || null)
+              : null,
+          created_by_user_email:
+            src.createdByUser && typeof src.createdByUser === "object"
+              ? src.createdByUser.email ?? null
+              : null,
+          updated_by_user_name:
+            src.updatedByUser && typeof src.updatedByUser === "object"
+              ? ([
+                  src.updatedByUser.first_name,
+                  src.updatedByUser.middle_name,
+                  src.updatedByUser.last_name,
+                ]
+                  .filter((p: any) => !!p)
+                  .join(" ")
+                  .trim() || src.updatedByUser.email || null)
+              : null,
+          updated_by_user_email:
+            src.updatedByUser && typeof src.updatedByUser === "object"
+              ? src.updatedByUser.email ?? null
+              : null,
         });
       } catch (err: any) {
         if (err?.name === "AbortError") return;
@@ -360,6 +692,150 @@ const CompanyLedgerDetailPageInner: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Linked invoice & project */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mt-[10px]">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Invoice</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.invoice_number || "-"} {entry.invoice_status ? `(${entry.invoice_status})` : ""}
+                      </p>
+                      {(entry.invoice_total_amount != null || entry.invoice_currency) && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-[2px]">
+                          Total: {entry.invoice_total_amount != null
+                            ? entry.invoice_total_amount.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })
+                            : "-"} {entry.invoice_currency || ""}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Project</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.project_name || "-"}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-[2px]">
+                        {entry.project_code ? `Code: ${entry.project_code}` : ""}
+                        {entry.project_job_reference_id
+                          ? `${entry.project_code ? " · " : ""}Job Ref: ${entry.project_job_reference_id}`
+                          : ""}
+                      </p>
+                      {(entry.project_status || entry.project_priority || entry.project_progress) && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-[2px]">
+                          {entry.project_status ? `Status: ${entry.project_status}` : ""}
+                          {entry.project_priority ? ` · Priority: ${entry.project_priority}` : ""}
+                          {entry.project_progress ? ` · Progress: ${entry.project_progress}%` : ""}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Payment details */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mt-[10px]">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Payment Status</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.payment_status || "-"}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-[2px]">
+                        {entry.payment_direction ? `Direction: ${entry.payment_direction}` : ""}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Payment Amount</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.payment_amount_paid != null
+                          ? `${entry.payment_amount_paid.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })} ${entry.payment_currency || ""}`
+                          : "-"}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-[2px]">
+                        {entry.payment_date
+                          ? `Paid on ${new Date(entry.payment_date).toLocaleDateString()}`
+                          : ""}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Receipt / Reference</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.payment_receipt_number || entry.payment_transaction_reference || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Reconciliation</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.payment_reconciled != null
+                          ? entry.payment_reconciled
+                            ? "Reconciled"
+                            : "Not reconciled"
+                          : "-"}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-[2px]">
+                        {entry.payment_reconciliation_date
+                          ? `On ${new Date(entry.payment_reconciliation_date).toLocaleDateString()}`
+                          : ""}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Company details */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mt-[10px]">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Company Contact</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.company_contact_person_name || "-"}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-[2px]">
+                        {entry.company_email || ""}
+                        {entry.company_phone ? ` · ${entry.company_phone}` : ""}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Company Location</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {[entry.company_address, entry.company_city, entry.company_country]
+                          .filter(Boolean)
+                          .join(", ") || "-"}
+                      </p>
+                      {entry.company_kra_pin && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-[2px]">
+                          KRA PIN: {entry.company_kra_pin}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Audit trail */}
+                  <div className="mt-[10px] grid grid-cols-1 md:grid-cols-2 gap-[15px]">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Created</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.created_at
+                          ? new Date(entry.created_at).toLocaleString()
+                          : "-"}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-[2px]">
+                        {entry.created_by_user_name || entry.created_by_user_email ||
+                          (entry.created_by != null ? String(entry.created_by) : "")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Last Updated</p>
+                      <p className="text-sm text-black dark:text-white font-medium">
+                        {entry.updated_at
+                          ? new Date(entry.updated_at).toLocaleString()
+                          : "-"}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-[2px]">
+                        {entry.updated_by_user_name || entry.updated_by_user_email ||
+                          (entry.updated_by != null ? String(entry.updated_by) : "")}
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="mt-[10px]">
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-[4px]">Narration</p>
                     <div className="rounded-md border border-gray-100 dark:border-[#172036] bg-gray-50 dark:bg-[#111827] px-[12px] py-[10px]">
@@ -442,7 +918,7 @@ const CompanyLedgerDetailPageInner: React.FC = () => {
                     <div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-[2px]">Accounts</p>
                       <p className="text-sm text-black dark:text-white font-medium">
-                        Dr {entry.account_debit ?? "-"} / Cr {entry.account_credit ?? "-"}
+                        Dr {entry.account_debit_name ?? "-"} / Cr {entry.account_credit_name ?? "-"}
                       </p>
                     </div>
                     <div>

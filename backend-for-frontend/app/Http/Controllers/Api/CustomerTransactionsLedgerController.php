@@ -37,6 +37,9 @@ class CustomerTransactionsLedgerController extends Controller
             'customer',
             'payment',
             'relatedTransaction',
+            'createdByUser',
+            'updatedByUser',
+            'deletedByUser',
         ];
 
         $data = $this->service->index($filters, $perPage, $page, 0, $with);
@@ -63,6 +66,11 @@ class CustomerTransactionsLedgerController extends Controller
             'customer',
             'payment',
             'relatedTransaction',
+            'createdByUser',
+            'updatedByUser',
+            'deletedByUser',
+            'creditAccount',
+            'debitAccount',
         ]);
 
         return new CustomerTransactionsLedgerResource($customerTransactionsLedger);
@@ -117,6 +125,9 @@ class CustomerTransactionsLedgerController extends Controller
             'customer',
             'payment',
             'relatedTransaction',
+            'createdByUser',
+            'updatedByUser',
+            'deletedByUser',
         ]);
 
         $configValues = SysConfig::whereIn('name', [

@@ -1675,7 +1675,7 @@ const OrderDetailPage: React.FC = () => {
                             </i>
                             {isGeneratingInvoice
                               ? "Generating Invoice..."
-                              : "Generate Invoice & Project"}
+                              : "Approve (Generate Invoice & Project)"}
                           </button>
                         )}
 

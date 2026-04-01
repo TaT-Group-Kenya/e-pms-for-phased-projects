@@ -43,6 +43,7 @@ class CompanyInvoiceService
     public function update(int $id, array $data)
     {
         $model = CompanyInvoice::findOrFail($id);
+        unset($data['subtotal_amount'], $data['tax_amount'], $data['discount_amount'], $data['total_amount']); // prevent updating these fields
         $model->update($data);
         return $model;
     }

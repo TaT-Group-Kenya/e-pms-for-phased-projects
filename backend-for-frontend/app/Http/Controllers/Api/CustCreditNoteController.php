@@ -131,7 +131,7 @@ class CustCreditNoteController extends Controller
         }
 
         // Extra guard: do not allow another refund if a refund ledger already exists
-        $existingRefund = CustomerTransactionsLedger::where('source_type', 'customer credit note')
+        $existingRefund = CustomerTransactionsLedger::where('source_type', 'customer_credit_note')
             ->where('source_id', $custCreditNote->id)
             ->where('transaction_type', 'refund')
             ->where('is_deleted', false)
@@ -265,7 +265,7 @@ class CustCreditNoteController extends Controller
                 'net_amount' => $netPortion,
                 'converted_net_amount' => $netPortion * $exchangeRate,
                 'customer_id' => $custCreditNote->invoice?->customer_id,
-                'source_type' => 'customer credit note',
+                'source_type' => 'customer_credit_note',
                 'source_id' => $custCreditNote->id,
                 'account_debit' => (string) $account->id,
                 'account_credit' => null,
@@ -419,7 +419,7 @@ class CustCreditNoteController extends Controller
         ]);
 
         // Fetch ledger rows for this credit note (refunds)
-        $ledgerRows = \App\Models\CustomerTransactionsLedger::where('source_type', 'customer credit note')
+        $ledgerRows = \App\Models\CustomerTransactionsLedger::where('source_type', 'customer_credit_note')
             ->where('source_id', $custCreditNote->id)
             ->where('transaction_type', 'refund')
             ->where('is_deleted', false)

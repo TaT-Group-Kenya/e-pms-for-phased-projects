@@ -34,7 +34,6 @@ class CompanyTransactionsLedgerUpdateRequest extends FormRequest
             'net_amount' => ['sometimes', 'required', 'numeric'],
             'company_id' => ['sometimes', 'required', 'exists:companies,id'],
             'customer_id' => ['nullable', 'exists:customers,id'],
-            'source_type' => ['sometimes', 'required', Rule::in(['customer invoice', 'customer credit note', 'company invoice', 'expense'])],
             'source_id' => ['nullable', 'integer'],
             'account_debit' => ['nullable', 'string', 'max:255'],
             'account_credit' => ['nullable', 'string', 'max:255'],

@@ -6,7 +6,9 @@
     <style>
         @page { margin: 40px 40px 60px 40px; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111827; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header { width: 100%; margin-bottom: 20px; }
+        .header .logo { float: left; }
+        .header > div:last-child { float: right; text-align: right; }
         .logo img { height: 40px; width: auto; }
         .brand-name { font-size: 18px; font-weight: 700; color: #111827; }
         .muted { color: #6b7280; }
@@ -15,12 +17,16 @@
         h1 { font-size: 20px; margin: 0 0 4px 0; }
         h2 { font-size: 14px; margin: 0 0 4px 0; }
         h3 { font-size: 13px; margin: 0 0 4px 0; }
-        .section { margin-bottom: 16px; }
-        .two-col { display: flex; justify-content: space-between; gap: 24px; }
-        .card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; }
-        .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
-        .label { color: #4b5563; font-size: 11px; }
-        .value { font-size: 12px; }
+        .section { margin-bottom: 12px; clear: both; }
+        .two-col { width: 100%; }
+        .two-col .card { display: block; width: 100%; margin-bottom: 8px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 6px 8px; }
+        table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
+        table.meta-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        table.meta-table th,
+        table.meta-table td { padding: 3px 4px; text-align: left; }
+        table.meta-table th { color: #4b5563; font-weight: 600; border-bottom: 1px solid #e5e7eb; }
+        table.meta-table td { font-size: 11px; }
         .text-sm { font-size: 11px; }
         .font-semibold { font-weight: 600; }
         .mt-1 { margin-top: 4px; }
@@ -54,136 +60,130 @@
 </div>
 
 <div class="section two-col">
-    <div class="card" style="flex: 1;">
+    <div class="card">
         <h2>Parties</h2>
-        <div class="row">
-            <div class="label">Company</div>
-            <div class="value">
-                @if($entry->company)
-                    <span class="font-semibold">{{ $entry->company->name }}</span>
-                @else
-                    -
-                @endif
-            </div>
-        </div>
-        <div class="row">
-            <div class="label">Customer</div>
-            <div class="value">
-                @if($entry->customer)
-                    <span class="font-semibold">{{ $entry->customer->name }}</span>
-                @else
-                    -
-                @endif
-            </div>
-        </div>
-        <div class="row mt-1">
-            <div class="label">Payment Ref</div>
-            <div class="value">
-                @if($entry->payment)
-                    {{ $entry->payment->transaction_number ?? $entry->payment->id }}
-                @else
-                    -
-                @endif
-            </div>
-        </div>
-        <div class="row">
-            <div class="label">Source</div>
-            <div class="value">{{ $entry->source_type ?? '-' }} @if($entry->source_id) #{{ $entry->source_id }} @endif</div>
-        </div>
-        <div class="row">
-            <div class="label">Related Entry</div>
-            <div class="value">
-                @if($entry->relatedTransaction)
-                    {{ $entry->relatedTransaction->transaction_number ?? ('COMP-LEDGER-' . $entry->relatedTransaction->id) }}
-                @else
-                    -
-                @endif
-            </div>
-        </div>
+        <table class="meta-table">
+            <tr>
+                <th>Company</th>
+                <th>Customer</th>
+                <th>Payment Ref</th>
+                <th>Source</th>
+                <th>Related Entry</th>
+            </tr>
+            <tr>
+                <td>
+                    @if($entry->company)
+                        <span class="font-semibold">{{ $entry->company->name }}</span>
+                    @else
+                        -
+                    @endif
+                </td>
+                <td>
+                    @if($entry->customer)
+                        <span class="font-semibold">{{ $entry->customer->name }}</span>
+                    @else
+                        -
+                    @endif
+                </td>
+                <td>
+                    @if($entry->payment)
+                        {{ $entry->payment->transaction_number ?? $entry->payment->id }}
+                    @else
+                        -
+                    @endif
+                </td>
+                <td>
+                    {{ $entry->source_type ?? '-' }} @if($entry->source_id) #{{ $entry->source_id }} @endif
+                </td>
+                <td>
+                    @if($entry->relatedTransaction)
+                        {{ $entry->relatedTransaction->transaction_number ?? ('COMP-LEDGER-' . $entry->relatedTransaction->id) }}
+                    @else
+                        -
+                    @endif
+                </td>
+            </tr>
+        </table>
     </div>
-    <div class="card" style="flex: 1;">
+    <div class="card">
         <h2>Amounts</h2>
-        <div class="row">
-            <div class="label">Transaction Amount</div>
-            <div class="value font-semibold">
-                {{ $entry->transaction_currency ?? '' }} {{ number_format((float) $entry->amount, 2) }}
-            </div>
-        </div>
-        <div class="row">
-            <div class="label">Base Amount</div>
-            <div class="value font-semibold">
-                {{ $entry->base_currency ?? '' }} {{ number_format((float) $entry->converted_amount, 2) }}
-            </div>
-        </div>
-        <div class="row">
-            <div class="label">Exchange Rate</div>
-            <div class="value">{{ number_format((float) ($entry->exchange_rate ?? 1), 4) }}</div>
-        </div>
-        <div class="row mt-1">
-            <div class="label">Tax (Transaction)</div>
-            <div class="value">{{ number_format((float) $entry->tax_amount, 2) }}</div>
-        </div>
-        <div class="row">
-            <div class="label">Tax (Base)</div>
-            <div class="value">{{ number_format((float) ($entry->converted_tax_amount ?? 0), 2) }}</div>
-        </div>
-        <div class="row mt-1">
-            <div class="label">Net (Transaction)</div>
-            <div class="value font-semibold">{{ number_format((float) $entry->net_amount, 2) }}</div>
-        </div>
-        <div class="row">
-            <div class="label">Net (Base)</div>
-            <div class="value font-semibold">{{ number_format((float) ($entry->converted_net_amount ?? 0), 2) }}</div>
-        </div>
+        <table class="meta-table">
+            <tr>
+                <th>Transaction Amount</th>
+                <th>Base Amount</th>
+                <th>Exchange Rate</th>
+                <th>Tax (Txn)</th>
+                <th>Tax (Base)</th>
+                <th>Net (Txn)</th>
+                <th>Net (Base)</th>
+            </tr>
+            <tr>
+                <td class="font-semibold">
+                    {{ $entry->transaction_currency ?? '' }} {{ number_format((float) $entry->amount, 2) }}
+                </td>
+                <td class="font-semibold">
+                    {{ $entry->base_currency ?? '' }} {{ number_format((float) $entry->converted_amount, 2) }}
+                </td>
+                <td>{{ number_format((float) ($entry->exchange_rate ?? 1), 4) }}</td>
+                <td>{{ number_format((float) $entry->tax_amount, 2) }}</td>
+                <td>{{ number_format((float) ($entry->converted_tax_amount ?? 0), 2) }}</td>
+                <td class="font-semibold">{{ number_format((float) $entry->net_amount, 2) }}</td>
+                <td class="font-semibold">{{ number_format((float) ($entry->converted_net_amount ?? 0), 2) }}</td>
+            </tr>
+        </table>
     </div>
 </div>
 
 <div class="section two-col">
-    <div class="card" style="flex: 1;">
+    <div class="card">
         <h2>Classification</h2>
-        <div class="row">
-            <div class="label">Type</div>
-            <div class="value">{{ $entry->transaction_type ?? '-' }}</div>
-        </div>
-        <div class="row">
-            <div class="label">Category</div>
-            <div class="value">{{ $entry->category ?? '-' }}</div>
-        </div>
-        <div class="row mt-1">
-            <div class="label">Fiscal Year</div>
-            <div class="value">{{ $entry->fiscal_year ?? '-' }}</div>
-        </div>
-        <div class="row">
-            <div class="label">Accounting Period</div>
-            <div class="value">{{ $entry->accounting_period ?? '-' }}</div>
-        </div>
+        <table class="meta-table">
+            <tr>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Fiscal Year</th>
+                <th>Accounting Period</th>
+            </tr>
+            <tr>
+                <td>{{ $entry->transaction_type ?? '-' }}</td>
+                <td>{{ $entry->category ?? '-' }}</td>
+                <td>{{ $entry->fiscal_year ?? '-' }}</td>
+                <td>{{ $entry->accounting_period ?? '-' }}</td>
+            </tr>
+        </table>
     </div>
-    <div class="card" style="flex: 1;">
+    <div class="card">
         <h2>Accounts & Channel</h2>
-        <div class="row">
-            <div class="label">Debit Account</div>
-            <div class="value">{{ $entry->account_debit ?? '-' }}</div>
-        </div>
-        <div class="row">
-            <div class="label">Credit Account</div>
-            <div class="value">{{ $entry->account_credit ?? '-' }}</div>
-        </div>
-        <div class="row mt-1">
-            <div class="label">Bank Account</div>
-            <div class="value">{{ $entry->bank_account ?? '-' }}</div>
-        </div>
-        <div class="row">
-            <div class="label">Cheque #</div>
-            <div class="value">{{ $entry->check_number ?? '-' }}</div>
-        </div>
-        <div class="row mt-1">
-            <div class="label">Recurring?</div>
-            <div class="value">{{ $entry->is_recurring ? 'Yes' : 'No' }}</div>
-        </div>
-        <div class="row">
-            <div class="label">Adjusting Entry?</div>
-            <div class="value">{{ $entry->is_adjusting_entry ? 'Yes' : 'No' }}</div>
-        </div>
+        <table class="meta-table">
+            <tr>
+                <th>Debit Account</th>
+                <th>Credit Account</th>
+                <th>Bank Account</th>
+                <th>Cheque #</th>
+                <th>Recurring?</th>
+                <th>Adjusting?</th>
+            </tr>
+            <tr>
+                <td>
+                    @if($entry->debitAccount)
+                        {{ $entry->debitAccount->code }} - {{ $entry->debitAccount->name }}
+                    @else
+                        {{ $entry->account_debit ?? '-' }}
+                    @endif
+                </td>
+                <td>
+                    @if($entry->creditAccount)
+                        {{ $entry->creditAccount->code }} - {{ $entry->creditAccount->name }}
+                    @else
+                        {{ $entry->account_credit ?? '-' }}
+                    @endif
+                </td>
+                <td>{{ $entry->bank_account ?? '-' }}</td>
+                <td>{{ $entry->check_number ?? '-' }}</td>
+                <td>{{ $entry->is_recurring ? 'Yes' : 'No' }}</td>
+                <td>{{ $entry->is_adjusting_entry ? 'Yes' : 'No' }}</td>
+            </tr>
+        </table>
     </div>
 </div>
 

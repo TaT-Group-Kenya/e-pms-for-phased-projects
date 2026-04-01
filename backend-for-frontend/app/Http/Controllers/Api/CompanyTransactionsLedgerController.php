@@ -38,6 +38,9 @@ class CompanyTransactionsLedgerController extends Controller
             'customer',
             'payment',
             'relatedTransaction',
+            'createdByUser',
+            'updatedByUser',
+            'deletedByUser',
         ];
 
         $data = $this->service->index($filters, $perPage, $page, 0, $with);
@@ -61,10 +64,15 @@ class CompanyTransactionsLedgerController extends Controller
         $this->authorize('view', $companyTransactionsLedger);
 
         $companyTransactionsLedger->loadMissing([
-            'company',
+           'company',
             'customer',
             'payment',
             'relatedTransaction',
+            'createdByUser',
+            'updatedByUser',
+            'deletedByUser',
+            'debitAccount',
+            'creditAccount',
         ]);
 
         return new CompanyTransactionsLedgerResource($companyTransactionsLedger);
@@ -120,6 +128,9 @@ class CompanyTransactionsLedgerController extends Controller
             'customer',
             'payment',
             'relatedTransaction',
+            'createdByUser',
+            'updatedByUser',
+            'deletedByUser',
         ]);
 
         $configValues = SysConfig::whereIn('name', [

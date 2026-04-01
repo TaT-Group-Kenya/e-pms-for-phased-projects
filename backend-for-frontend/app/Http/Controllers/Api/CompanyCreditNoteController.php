@@ -132,7 +132,7 @@ class CompanyCreditNoteController extends Controller
             ], 422);
         }
 
-        $existingRefund = \App\Models\CompanyTransactionsLedger::where('source_type', 'company credit note')
+        $existingRefund = \App\Models\CompanyTransactionsLedger::where('source_type', 'company_credit_note')
             ->where('source_id', $companyCreditNote->id)
             ->where('transaction_type', 'refund')
             ->where('is_deleted', false)
@@ -246,7 +246,7 @@ class CompanyCreditNoteController extends Controller
                 'converted_net_amount' => $netPortion * $exchangeRate,
                 'company_id' => $companyCreditNote->invoice?->company_id,
                 'customer_id' => $companyCreditNote->invoice?->customer_id,
-                'source_type' => 'company credit note',
+                'source_type' => 'company_credit_note',
                 'source_id' => $companyCreditNote->id,
                 'account_debit' => null,
                 'account_credit' => (string) $account->id,
@@ -397,7 +397,7 @@ class CompanyCreditNoteController extends Controller
         ]);
 
         // Fetch ledger rows for this company credit note (refunds)
-        $ledgerRows = \App\Models\CompanyTransactionsLedger::where('source_type', 'company credit note')
+        $ledgerRows = \App\Models\CompanyTransactionsLedger::where('source_type', 'company_credit_note')
             ->where('source_id', $companyCreditNote->id)
             ->where('transaction_type', 'refund')
             ->where('is_deleted', false)

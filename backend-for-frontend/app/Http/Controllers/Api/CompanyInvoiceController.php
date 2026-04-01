@@ -663,6 +663,105 @@ class CompanyInvoiceController extends Controller
         $validated['created_at'] = $validated['created_at'] ?? $companyInvoice->created_at;
         $validated['updated_at'] = $validated['updated_at'] ?? now();
         $validated['updated_by'] = Auth::id();
+        $hasStatusInPayload = array_key_exists('status', $validated);
+
+        // Prevent marking an invoice as draft if it already has any ledger entries
+        if ($hasStatusInPayload && $validated['status'] === 'draft') {
+            $hasLedgerEntries = CompanyTransactionsLedger::where('source_type', 'company_invoice')
+                ->where('source_id', $companyInvoice->id)
+                ->where('is_deleted', false)
+                ->exists();
+
+            if ($hasLedgerEntries) {
+                return response()->json([
+                    'message' => 'Cannot mark invoice as draft because it already has ledger entries.',
+                    'errors' => [
+                        'status' => ['We cannot mark draft invoices that have ledger entries.'],
+                    ],
+                ], 422);
+            }
+        }
+
+        // When marking the invoice as sent, ensure it has line items and
+        // create a corresponding company ledger entry if one does not exist yet.
+        if ($hasStatusInPayload && $validated['status'] === 'sent') {
+            $hasLineItems = $companyInvoice->invoiceItems()->exists();
+            if (!$hasLineItems) {
+                return response()->json([
+                    'message' => 'Cannot mark invoice as sent without any line items.',
+                    'errors'  => [
+                        'status' => ['Add at least one invoice line item before marking as sent.'],
+                    ],
+                ], 422);
+            }
+
+            $userId = Auth::id();
+
+            $updated = DB::transaction(function () use ($companyInvoice, $validated, $userId) {
+                // First update the invoice itself
+                $updatedInvoice = $this->service->update($companyInvoice->id, $validated);
+
+                // Check if an invoice-level ledger entry already exists for this invoice
+                $hasInvoiceLedger = CompanyTransactionsLedger::where('source_type', 'company_invoice')
+                    ->where('source_id', $updatedInvoice->id)
+                    ->where('transaction_type', 'invoice')
+                    ->where('is_deleted', false)
+                    ->exists();
+
+                if (!$hasInvoiceLedger) {
+                    $invoiceTotal   = (float) $updatedInvoice->total_amount;
+                    $invoiceTax     = (float) $updatedInvoice->tax_amount;
+                    $invoiceSubtotal = (float) $updatedInvoice->subtotal_amount;
+                    $invoiceDiscount = (float) $updatedInvoice->discount_amount;
+                    $netAmount      = $invoiceSubtotal - $invoiceDiscount;
+
+                    $currencyCode = $updatedInvoice->currency;
+
+                    CompanyTransactionsLedger::create([
+                        'company_payment_id'     => null,
+                        'transaction_number'     => $updatedInvoice->invoice_number,
+                        'transaction_type'       => 'invoice',
+                        'transaction_date'       => $updatedInvoice->created_at ?? now(),
+                        'posted_date'            => now(),
+                        'amount'                 => $invoiceTotal,
+                        'transaction_currency'   => $currencyCode,
+                        'base_currency'          => 'KES',
+                        'exchange_rate'          => 1.0,
+                        'converted_amount'       => 0.0,
+                        'converted_tax_amount'   => 0.0,
+                        'converted_net_amount'   => 0.0,
+                        'tax_amount'             => $invoiceTax,
+                        'net_amount'             => $netAmount,
+                        'company_id'             => $updatedInvoice->company_id,
+                        'customer_id'            => null,
+                        'source_type'            => 'company_invoice',
+                        'source_id'              => $updatedInvoice->id,
+                        'account_debit'          => null,
+                        'account_credit'         => null,
+                        'category'               => 'expense',
+                        'payment_method'         => null,
+                        'bank_account'           => null,
+                        'check_number'           => null,
+                        'transaction_status'     => 'cleared',
+                        'related_transaction_id' => null,
+                        'narration'              => 'Company invoice ' . $updatedInvoice->invoice_number . ' posted to ledger.',
+                        'is_recurring'           => false,
+                        'fiscal_year'            => now()->year,
+                        'accounting_period'      => now()->format('Ym'),
+                        'is_adjusting_entry'     => false,
+                        'cost_center_id'         => null,
+                        'created_by'             => $userId,
+                        'updated_by'             => $userId,
+                    ]);
+                }
+
+                return $updatedInvoice;
+            });
+
+            return new CompanyInvoiceResource($updated);
+        }
+
+        // For all other updates, fall back to the standard update flow
         $updated = $this->service->update($companyInvoice->id, $validated);
         return new CompanyInvoiceResource($updated);
     }

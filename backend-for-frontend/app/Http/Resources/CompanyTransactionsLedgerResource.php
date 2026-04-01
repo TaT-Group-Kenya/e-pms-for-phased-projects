@@ -49,6 +49,14 @@ class CompanyTransactionsLedgerResource extends BaseResource
             'deleted_by' => $this->deleted_by,
             'payment' => new CompanyPaymentResource($this->whenLoaded('payment')),
             'company' => new CompanyResource($this->whenLoaded('company')),
+            'companyInvoice' => ($invoice = $this->companyInvoice())
+                ? new CompanyInvoiceResource($invoice)
+                : null,
+            'createdByUser' => new UserResource($this->whenLoaded('createdByUser')),
+            'updatedByUser' => new UserResource($this->whenLoaded('updatedByUser')),
+            'deletedByUser' => new UserResource($this->whenLoaded('deletedByUser')),
+            'debitAccount' => new AccountResource($this->whenLoaded('debitAccount')),
+            'creditAccount' => new AccountResource($this->whenLoaded('creditAccount')),
         ];
     }
 }
