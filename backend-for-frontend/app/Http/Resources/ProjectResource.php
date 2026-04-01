@@ -58,6 +58,8 @@ class ProjectResource extends BaseResource
 
             'out_going_payments' => CompanyPaymentResource::collection(collect($this->out_going_payments ?? [])),
 
+            'created_by_user' => new UserResource($this->whenLoaded('creator')),
+
         ];
     }
 }

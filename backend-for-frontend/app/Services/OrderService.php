@@ -14,7 +14,7 @@ class OrderService
         int $perPage = 15,
         int $page = 1,
         int $offset = 0,
-        array $with = []
+        array $with = ['customer', 'creator']
     ) {
         // optimized query: apply eager loading and simple filters
         $query = Order::query();

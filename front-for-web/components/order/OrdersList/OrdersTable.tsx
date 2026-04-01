@@ -22,6 +22,12 @@ interface OrderSummary {
   total_amount: number;
   currency: string;
   created_at: string;
+  customer?: { name: string };
+  created_by_user?: {
+    first_name?: string;
+    middle_name?: string;
+    last_name?: string;
+  };
 }
 
 interface PaginatedResponse<T> {
@@ -146,6 +152,7 @@ const OrdersTable: React.FC = () => {
     const matchesSearch =
       order.order_number.toLowerCase().includes(lowerSearch) ||
       (order.job_reference_id || "").toLowerCase().includes(lowerSearch) ||
+      (order.customer?.name || "").toLowerCase().includes(lowerSearch) ||
       order.title.toLowerCase().includes(lowerSearch) ||
       order.status.toLowerCase().includes(lowerSearch);
 
@@ -234,34 +241,37 @@ const OrdersTable: React.FC = () => {
               <table className="w-full">
                 <thead className="text-black dark:text-white">
                   <tr>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Date
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Order #
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Job Ref
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Customer
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       <span style={{ minWidth: 200, display: 'inline-block' }}>Title</span>
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Subtotal
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Sub Total
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Tax
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Discount
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Total
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Created
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Status
                     </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Created By
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Actions
                     </th>
                   </tr>
@@ -273,7 +283,12 @@ const OrdersTable: React.FC = () => {
                         key={order.id}
                         className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
                       >
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {order.created_at
+                            ? new Date(order.created_at).toLocaleDateString()
+                            : "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <Link
                             href={`/orders/${order.id}`}
                             className="font-medium text-sm text-primary-500 hover:text-primary-600 hover:underline"
@@ -281,10 +296,13 @@ const OrdersTable: React.FC = () => {
                             {order.order_number}
                           </Link>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {order.job_reference_id || "-"}
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px]">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {order.customer?.name || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <Link
                             href={`/orders/${order.id}`}
                             className="text-primary-500 hover:text-primary-600 hover:underline font-medium"
@@ -299,32 +317,22 @@ const OrdersTable: React.FC = () => {
                             {order.title}
                           </Link>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <span className="font-semibold">
                             {formatCurrency(order.subtotal_amount, order.currency)}
                           </span>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <span className="font-semibold">
                             {formatCurrency(order.tax_amount, order.currency)}
                           </span>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
-                          <span className="font-semibold">
-                            {formatCurrency(order.discount_amount, order.currency)}
-                          </span>
-                        </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <span className="font-semibold text-primary-500">
                             {formatCurrency(order.total_amount, order.currency)}
                           </span>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
-                          {order.created_at
-                            ? new Date(order.created_at).toLocaleDateString()
-                            : "-"}
-                        </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <span
                             className={`inline-block px-[10px] py-[5px] rounded-full text-xs font-medium ${getStatusBadgeClass(
                               order.status
@@ -333,7 +341,16 @@ const OrdersTable: React.FC = () => {
                             {order.status}
                           </span>
                         </td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
+                          {[
+                            order.created_by_user?.first_name,
+                            order.created_by_user?.middle_name,
+                            order.created_by_user?.last_name,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <div className="flex items-center gap-[10px]">
                             <Link
                               href={`/orders/${order.id}`}
@@ -349,7 +366,7 @@ const OrdersTable: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={10}
+                        colSpan={11}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm || statusFilter !== "all"

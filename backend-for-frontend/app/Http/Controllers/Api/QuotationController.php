@@ -197,7 +197,17 @@ class QuotationController extends Controller
     {
         $this->authorize('delete', $quotation);
 
-        $this->service->delete($quotation->id);
+        if ($quotation->status !== 'draft') {
+            return response()->json([
+                'message' => 'Only draft quotations can be deleted.',
+                'errors' => [
+                    'status' => ['Quotation must be in draft status to be deleted.'],
+                ],
+            ], 422);
+        }
+
+        $this->service->delete($quotation->id, Auth::id());
+
         return response()->noContent();
     }
 

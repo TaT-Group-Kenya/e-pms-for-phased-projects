@@ -100,11 +100,11 @@ const SECTIONS: SidebarSection[] = [
         href: "/quotation/create-quotation",
         requiredRoles: ["ROLE_ADD_QUOTATION"],
       },
-      {
-        label: "Reports",
-        href: "/quotation/report",
-        requiredRoles: ["ROLE_VIEW_QUOTATION"],
-      },
+      // {
+      //   label: "Reports",
+      //   href: "/quotation/report",
+      //   requiredRoles: ["ROLE_VIEW_QUOTATION"],
+      // },
     ],
   },
   {
