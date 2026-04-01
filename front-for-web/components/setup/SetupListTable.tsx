@@ -543,16 +543,17 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
             )}
 
             <form onSubmit={handleSubmitForm} className="space-y-[15px]">
-              {effectiveFormFields.map((field) => (
+              {effectiveFormFields.map((field) => field !== "readonly" && (
                 <div key={field}>
                   <label className="block text-sm font-medium mb-[6px] text-gray-700 dark:text-gray-300 capitalize">
                     {field.replace(/_/g, " ")}
                   </label>
                   <input
                     type="text"
+                    disabled={Number(formData["readonly"]) === 1 && field === "name"}
                     value={formData[field] ?? ""}
                     onChange={(e) => handleFormChange(field, e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-[#15203c] border border-gray-200 dark:border-[#172036] rounded-md px-[13px] py-[9px] text-sm text-black dark:text-white outline-0"
+                    className="w-full bg-gray-50 dark:bg-[#15203c] border border-gray-200 dark:border-[#172036] rounded-md px-[13px] py-[9px] text-sm text-black dark:text-white outline-0 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   />
                 </div>
               ))}
