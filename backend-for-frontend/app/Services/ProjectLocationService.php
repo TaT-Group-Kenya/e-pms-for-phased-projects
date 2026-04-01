@@ -32,6 +32,8 @@ class ProjectLocationService
             $query->where($key, $value);
         }
 
+        $query->orderByDesc('id');
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 

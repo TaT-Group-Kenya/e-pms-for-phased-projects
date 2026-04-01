@@ -42,6 +42,8 @@ class TransactionResource extends BaseResource
             'customer' => new CustomerResource($this->whenLoaded('customer')),
             'company' => new CompanyResource($this->whenLoaded('company')),
             'paymentMethod' => new PaymentMethodResource($this->whenLoaded('paymentMethod')),
+            'creditAccount' => new AccountResource($this->whenLoaded('creditAccount')),
+            'debitAccount' => new AccountResource($this->whenLoaded('debitAccount')),
             'costCenter' => new DepartmentResource($this->whenLoaded('costCenter')),
             'relatedTransaction' => new TransactionResource($this->whenLoaded('relatedTransaction')),
             'created_at' => $this->formatTimestamp($this->created_at),

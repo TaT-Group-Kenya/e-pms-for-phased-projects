@@ -184,8 +184,53 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
   const handleUpdateProject = async () => {
     if (!editFormData || !project) return;
 
+    const missingFields: string[] = [];
+
+    if (!editFormData.name || !editFormData.name.trim()) {
+      missingFields.push("Project Name");
+    }
+
+    if (!editFormData.created_at || !editFormData.created_at.toString().trim()) {
+      missingFields.push("Creation Date");
+    }
+
+    if (!editFormData.customer_id) {
+      missingFields.push("Customer");
+    }
+
+    if (!editFormData.project_category_id) {
+      missingFields.push("Project Category");
+    }
+
+    if (!editFormData.priority || !editFormData.priority.toString().trim()) {
+      missingFields.push("Priority");
+    }
+
+    if (!editFormData.currency || !editFormData.currency.toString().trim()) {
+      missingFields.push("Currency");
+    }
+
+    if (!tags || tags.length === 0) {
+      missingFields.push("Tags");
+    }
+
+    if (missingFields.length > 0) {
+      setUpdateMessage({
+        type: 'error',
+        text: `Please fill all required fields: ${missingFields.join(', ')}.`,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      // Ensure created_at is sent as a full datetime string if only date is present
+      let createdAtToSend = editFormData.created_at || "";
+      if (createdAtToSend && createdAtToSend.length === 10) {
+        // If only date, append current time for ISO string
+        createdAtToSend = `${createdAtToSend}T00:00:00Z`;
+      }
+
       const response = await fetch(`/api/projects/${projectId}`, {
         method: "PUT",
         headers: {
@@ -194,6 +239,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
         },
         body: JSON.stringify({
           ...editFormData,
+          created_at: createdAtToSend,
           tags: tags.join(","),
         }),
       });
@@ -318,19 +364,30 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
 
         {isEditMode && editFormData ? (
           <div className="space-y-[20px]">
-            <div className="sm:grid sm:grid-cols-2 sm:gap-[25px]">
-              {/* Project Name */}
-              <div className="mb-[20px] sm:mb-0">
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Name <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editFormData.name || ""}
-                  onChange={(e) => handleFormChange("name", e.target.value)}
-                  className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
-                />
-              </div>
+            <div className="sm:grid sm:grid-cols-3 sm:gap-[25px]">
+                <div className="flex-1">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Project Name <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.name || ""}
+                    onChange={(e) => handleFormChange("name", e.target.value)}
+                    className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
+                  />
+                </div>
+                <div className="flex-1 sm:ml-[20px] mt-[20px] sm:mt-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Creation Date <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={editFormData.created_at ? editFormData.created_at.slice(0, 10) : ""}
+                    onChange={e => handleFormChange("created_at", e.target.value)}
+                    className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
+                    required
+                  />
+                </div>
 
               {/* Project Code */}
               <div className="mb-[20px] sm:mb-0">
@@ -579,7 +636,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
             {/* Tags */}
             <div>
               <label className="mb-[10px] text-black dark:text-white font-medium block">
-                Tags
+                Tags <span className="text-danger-500">*</span>
               </label>
               <div className="rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[12px] py-[8px] block w-full outline-0 transition-all focus:border-primary-500">
                 <div className="flex flex-wrap gap-[8px] mb-[8px]">
@@ -611,6 +668,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                       }
                     }
                   }}
+                  required
                   className="w-full outline-0 bg-transparent text-black dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
                   placeholder={tags.length === 0 ? "E.g. web, frontend, api (Press Enter to add)" : "Press Enter to add"}
                 />

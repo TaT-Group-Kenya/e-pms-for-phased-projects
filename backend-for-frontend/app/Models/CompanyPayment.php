@@ -50,4 +50,9 @@ class CompanyPayment extends Model
     {
         return $this->hasMany(CompanyTransactionsLedger::class, 'company_payment_id');
     }
+
+    public function createdByUser()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

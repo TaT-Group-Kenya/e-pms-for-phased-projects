@@ -5,6 +5,7 @@ import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../../components/common/Toast';
 import Can from '../../components/auth/Can';
 import AuthenticatedLayout from '../../components/authenticated/AuthenticatedLayout';
+import { formatCurrency } from '../../utils/format';
 
 function formatDateTime(dateString: string): string {
   const date = new Date(dateString);
@@ -170,30 +171,28 @@ export default function ProjectsSummaryReportPage() {
 
   function exportCsv() {
     const columns = [
-      'Project Name',
-      'Status',
+      'Date',
+      'Job Reference ID',
       'Customer',
+      'Project Name',
       'Category',
       'Source Origin',
       'Location',
-      'Job Ref',
       'Currency',
-      'Start Date',
-      'End Date',
-      'Assigned Companies',
+      'Amount',
+      'Created By',
     ];
     const rows = data.map(row => [
-      row.name,
-      row.status,
-      row.customer_name,
+      row.start_date ? formatDateTime(row.start_date) : '',
+      row.job_reference_id ?? '',
+      row.customer_name ?? '',
+      row.name ?? '',
       row.project_category ?? '',
       row.project_source_origin ?? '',
       row.project_location ?? '',
-      row.job_reference_id ?? '',
       row.currency ?? '',
-      row.start_date ? formatDateTime(row.start_date) : '',
-      row.end_date ? formatDateTime(row.end_date) : '',
-      Array.isArray(row.assigned_companies) ? row.assigned_companies.map((c: any) => c.name).join('; ') : '',
+      formatCurrency(row.budget_estimate, row.currency) ?? '',
+      row.created_by_name ?? '',
     ]);
     const csv = [columns.join(','), ...rows.map(r => r.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -370,38 +369,36 @@ export default function ProjectsSummaryReportPage() {
                 <table className="table table-bordered table-sm min-w-max w-full">
                   <thead>
                     <tr>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Project Name</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Status</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Date</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Reference ID</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Customer</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Project Name</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Category</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Source Origin</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Location</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Ref</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Currency</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Start Date</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">End Date</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Assigned Companies</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Amount</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Created By</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={11} className="whitespace-nowrap px-4 py-2">Loading...</td></tr>
+                      <tr><td colSpan={10} className="whitespace-nowrap px-4 py-2">Loading...</td></tr>
                     ) : data.length === 0 ? (
-                      <tr><td colSpan={11} className="whitespace-nowrap px-4 py-2">No data found</td></tr>
+                      <tr><td colSpan={10} className="whitespace-nowrap px-4 py-2">No data found</td></tr>
                     ) : (
                       data.map((row, idx) => (
                         <tr key={idx} className={idx % 2 === 0 ? "bg-gray-50 border-b border-gray-200" : "bg-white border-b border-gray-200"}>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.name}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.status}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.start_date ? formatDateTime(row.start_date) : ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.job_reference_id ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.customer_name}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.name}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_category ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_source_origin ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_location ?? ''}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.job_reference_id ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.currency ?? ''}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.start_date ? formatDateTime(row.start_date) : ''}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.end_date ? formatDateTime(row.end_date) : ''}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{Array.isArray(row.assigned_companies) ? row.assigned_companies.map((c: any) => c.name).join('; ') : ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{formatCurrency(row.budget_estimate, row.currency) ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.created_by_name ?? ''}</td>
                         </tr>
                       ))
                     )}

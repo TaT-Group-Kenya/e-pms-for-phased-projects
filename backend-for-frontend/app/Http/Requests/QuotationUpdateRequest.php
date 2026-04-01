@@ -38,6 +38,7 @@ class QuotationUpdateRequest extends FormRequest
             'payment_terms' => ['sometimes', 'nullable', 'string', 'max:255'],
             'min_approval_count' => ['sometimes', 'required', 'numeric', 'min:1'],
             'notes_to_customer' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'created_at' => ['sometimes', 'required', 'date'],
         ];
     }
 

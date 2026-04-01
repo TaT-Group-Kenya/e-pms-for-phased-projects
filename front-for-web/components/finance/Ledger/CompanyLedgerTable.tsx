@@ -1,15 +1,14 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
+import Link from "next/link";
 
 interface CompanyLedgerRow {
   id: number;
-  company_payment_id?: number | null;
   transaction_number?: string | null;
   transaction_type?: string | null;
   transaction_date?: string | null;
@@ -18,38 +17,13 @@ interface CompanyLedgerRow {
   tax_amount?: number | null;
   net_amount?: number | null;
   transaction_currency?: string | null;
-  base_currency?: string | null;
-  exchange_rate?: number | null;
-  converted_amount?: number | null;
-  converted_tax_amount?: number | null;
-  converted_net_amount?: number | null;
   company_id?: number | null;
-  customer_id?: number | null;
   company_name?: string | null;
-  customer_name?: string | null;
-  source_type?: string | null;
-  source_id?: number | null;
-  account_debit?: number | null;
-  account_credit?: number | null;
   category?: string | null;
-  payment_method?: string | null;
-  bank_account?: string | null;
-  check_number?: string | null;
   transaction_status?: string | null;
-  related_transaction_id?: number | null;
-  narration?: string | null;
-  is_recurring?: boolean | null;
-  fiscal_year?: number | null;
-  accounting_period?: string | null;
-  is_adjusting_entry?: boolean | null;
-  cost_center_id?: number | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-  created_by?: string | number | null;
-  updated_by?: string | number | null;
-  is_deleted?: boolean | null;
-  deleted_at?: string | null;
-  deleted_by?: string | number | null;
+  company_invoice_invoice_number?: string | null;
+  company_invoice_project_job_reference_id?: string | null;
+  created_by_user_name?: string | null;
 }
 
 const CompanyLedgerTable: React.FC = () => {
@@ -112,8 +86,6 @@ const CompanyLedgerTable: React.FC = () => {
 
         const mapped: CompanyLedgerRow[] = (items || []).map((r: any) => ({
           id: Number(r.id),
-          company_payment_id:
-            r.company_payment_id != null ? Number(r.company_payment_id) : null,
           transaction_number: r.transaction_number ?? null,
           transaction_type: r.transaction_type ?? null,
           transaction_date: r.transaction_date ?? null,
@@ -128,66 +100,45 @@ const CompanyLedgerTable: React.FC = () => {
               ? Number(r.net_amount)
               : null,
           transaction_currency: r.transaction_currency ?? null,
-          base_currency: r.base_currency ?? null,
-          exchange_rate:
-            r.exchange_rate !== undefined && r.exchange_rate !== null
-              ? Number(r.exchange_rate)
-              : null,
-          converted_amount:
-            r.converted_amount !== undefined && r.converted_amount !== null
-              ? Number(r.converted_amount)
-              : null,
-          converted_tax_amount:
-            r.converted_tax_amount !== undefined && r.converted_tax_amount !== null
-              ? Number(r.converted_tax_amount)
-              : null,
-          converted_net_amount:
-            r.converted_net_amount !== undefined && r.converted_net_amount !== null
-              ? Number(r.converted_net_amount)
-              : null,
           company_id: r.company_id != null ? Number(r.company_id) : null,
-          customer_id: r.customer_id != null ? Number(r.customer_id) : null,
           company_name:
             r.company && typeof r.company === "object" && r.company.name
               ? String(r.company.name)
               : null,
-          customer_name:
-            r.customer && typeof r.customer === "object" && r.customer.name
-              ? String(r.customer.name)
-              : null,
-          source_type: r.source_type ?? null,
-          source_id: r.source_id != null ? Number(r.source_id) : null,
-          account_debit: r.account_debit != null ? Number(r.account_debit) : null,
-          account_credit: r.account_credit != null ? Number(r.account_credit) : null,
           category: r.category ?? null,
-          payment_method: r.payment_method ?? null,
-          bank_account: r.bank_account ?? null,
-          check_number: r.check_number ?? null,
           transaction_status: r.transaction_status ?? null,
-          related_transaction_id:
-            r.related_transaction_id != null ? Number(r.related_transaction_id) : null,
-          narration: r.narration ?? null,
-          is_recurring:
-            r.is_recurring !== undefined && r.is_recurring !== null
-              ? Boolean(r.is_recurring)
+          company_invoice_invoice_number:
+            r.companyInvoice && typeof r.companyInvoice === "object"
+              ? r.companyInvoice.invoice_number ?? null
               : null,
-          fiscal_year: r.fiscal_year != null ? Number(r.fiscal_year) : null,
-          accounting_period: r.accounting_period ?? null,
-          is_adjusting_entry:
-            r.is_adjusting_entry !== undefined && r.is_adjusting_entry !== null
-              ? Boolean(r.is_adjusting_entry)
+          company_invoice_project_job_reference_id:
+            r.companyInvoice &&
+            typeof r.companyInvoice === "object" &&
+            r.companyInvoice.project &&
+            typeof r.companyInvoice.project === "object"
+              ? r.companyInvoice.project.job_reference_id ?? null
               : null,
-          cost_center_id: r.cost_center_id != null ? Number(r.cost_center_id) : null,
-          created_at: r.created_at ?? null,
-          updated_at: r.updated_at ?? null,
-          created_by: r.created_by ?? null,
-          updated_by: r.updated_by ?? null,
-          is_deleted:
-            r.is_deleted !== undefined && r.is_deleted !== null
-              ? Boolean(r.is_deleted)
-              : null,
-          deleted_at: r.deleted_at ?? null,
-          deleted_by: r.deleted_by ?? null,
+          created_by_user_name: (() => {
+            if (r.createdByUser && typeof r.createdByUser === "object") {
+              const fullName = [
+                r.createdByUser.first_name,
+                r.createdByUser.middle_name,
+                r.createdByUser.last_name,
+              ]
+                .filter((p: any) => !!p)
+                .join(" ")
+                .trim();
+
+              if (fullName) return fullName;
+              if (r.createdByUser.email) return r.createdByUser.email;
+            }
+
+            if (r.created_by != null) {
+              return String(r.created_by);
+            }
+
+            return null;
+          })(),
         }));
 
         setRows(mapped);
@@ -270,7 +221,13 @@ const CompanyLedgerTable: React.FC = () => {
         (r.transaction_number || "").toLowerCase().includes(term) ||
         (r.transaction_type || "").toLowerCase().includes(term) ||
         (r.category || "").toLowerCase().includes(term) ||
-        (r.transaction_status || "").toLowerCase().includes(term)
+        (r.transaction_status || "").toLowerCase().includes(term) ||
+        (r.company_name || "").toLowerCase().includes(term) ||
+        (r.company_invoice_invoice_number || "").toLowerCase().includes(term) ||
+        (r.company_invoice_project_job_reference_id || "")
+          .toLowerCase()
+          .includes(term) ||
+        (r.created_by_user_name || "").toLowerCase().includes(term)
       );
     });
   }, [rows, searchTerm, companyFilterId, postedFrom, postedTo, currencyFilter]);
@@ -329,89 +286,27 @@ const CompanyLedgerTable: React.FC = () => {
     }
 
     const headers = [
-      "ID",
-      "CompanyPaymentId",
-      "TransactionNumber",
-      "Type",
       "Date",
-      "PostedDate",
-      "Amount",
-      "TaxAmount",
-      "NetAmount",
-      "TransactionCurrency",
-      "BaseCurrency",
-      "ExchangeRate",
-      "ConvertedAmount",
-      "ConvertedTaxAmount",
-      "ConvertedNetAmount",
-      "CompanyName",
-      "CustomerName",
-      "SourceType",
-      "SourceId",
-      "AccountDebit",
-      "AccountCredit",
-      "Category",
-      "PaymentMethod",
-      "BankAccount",
-      "CheckNumber",
-      "Status",
-      "RelatedTransactionId",
-      "Narration",
-      "IsRecurring",
-      "FiscalYear",
-      "AccountingPeriod",
-      "IsAdjustingEntry",
-      "CostCenterId",
-      "CreatedAt",
-      "UpdatedAt",
-      "CreatedBy",
-      "UpdatedBy",
-      "IsDeleted",
-      "DeletedAt",
-      "DeletedBy",
+      "Invoice Number",
+      "Company",
+      "Type",
+      "Job Reference ID",
+      "Amount (Net)",
+      "Tax Amount",
+      "Total Amount",
+      "Created By",
     ];
 
     const dataRows = rows.map((r) => [
-      r.id,
-      r.company_payment_id ?? "",
-      r.transaction_number ?? "",
-      r.transaction_type ?? "",
       r.transaction_date ?? "",
-      r.posted_date ?? "",
-      r.amount,
-      r.tax_amount ?? "",
-      r.net_amount ?? "",
-      r.transaction_currency ?? "",
-      r.base_currency ?? "",
-      r.exchange_rate ?? "",
-      r.converted_amount ?? "",
-      r.converted_tax_amount ?? "",
-      r.converted_net_amount ?? "",
-      r.company_name ?? r.company_id ?? "",
-      r.customer_name ?? r.customer_id ?? "",
-      r.source_type ?? "",
-      r.source_id ?? "",
-      r.account_debit ?? "",
-      r.account_credit ?? "",
-      r.category ?? "",
-      r.payment_method ?? "",
-      r.bank_account ?? "",
-      r.check_number ?? "",
-      r.transaction_status ?? "",
-      r.related_transaction_id ?? "",
-      r.narration ?? "",
-      r.is_recurring != null ? (r.is_recurring ? "Yes" : "No") : "",
-      r.fiscal_year ?? "",
-      r.accounting_period ?? "",
-      r.is_adjusting_entry != null ? (r.is_adjusting_entry ? "Yes" : "No") : "",
-      r.cost_center_id ?? "",
-      r.created_at ?? "",
-      r.updated_at ?? "",
-      r.created_by ?? "",
-      r.updated_by ?? "",
-      r.is_deleted != null ? (r.is_deleted ? "Yes" : "No") : "",
-      r.deleted_at ?? "",
-      r.deleted_by ?? "",
+      r.company_invoice_invoice_number ?? "",
+      r.company_name ?? (r.company_id != null ? String(r.company_id) : ""),
+      r.transaction_type ?? "",
+      r.company_invoice_project_job_reference_id ?? "",
+      r.net_amount != null ? r.net_amount : "",
+      r.tax_amount != null ? r.tax_amount : "",
+      r.amount != null ? r.amount : "",
+      r.created_by_user_name ?? "",
     ]);
 
     const csv = [headers, ...dataRows]
@@ -545,86 +440,35 @@ const CompanyLedgerTable: React.FC = () => {
 
       <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md overflow-hidden">
         <div className="table-responsive overflow-x-auto">
-          <table className="w-full min-w-[1800px]">
+          <table className="w-full min-w-[900px]">
             <thead className="text-black dark:text-white">
               <tr>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                   Date
                 </th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Posted
-                </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Number
-                </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Type
-                </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Category
-                </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Status
-                </th>
-                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Amount
-                </th>
-                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Tax (Trans)
-                </th>
-                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Net (Trans)
-                </th>
-                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Converted Amount
-                </th>
-                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Tax (Base)
-                </th>
-                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Net (Base)
-                </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Txn Currency
-                </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Base Currency
-                </th>
-                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Exchange Rate
+                  Invoice #
                 </th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                   Company
                 </th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Customer
+                  Type
                 </th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Source
+                  Job Ref ID
                 </th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Accounts (Dr/Cr)
+                  Amount (Net)
                 </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Payment
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Tax
                 </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Bank / Check
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Total
                 </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Recurring / Adj.
-                </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  FY / Period
-                </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Cost Center
-                </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Narration
-                </th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Audit
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Created By
                 </th>
                 <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                   Actions
@@ -635,7 +479,7 @@ const CompanyLedgerTable: React.FC = () => {
               {loading && (
                 <tr>
                   <td
-                    colSpan={24}
+                    colSpan={9}
                     className="text-center text-sm px-[10px] py-[8px] text-gray-500 dark:text-gray-400"
                   >
                     Loading company ledger...
@@ -646,7 +490,7 @@ const CompanyLedgerTable: React.FC = () => {
               {!loading && filteredRows.length === 0 && (
                 <tr>
                   <td
-                    colSpan={24}
+                    colSpan={9}
                     className="text-center text-sm px-[10px] py-[16px] text-gray-500 dark:text-gray-400"
                   >
                     No ledger entries found.
@@ -666,34 +510,16 @@ const CompanyLedgerTable: React.FC = () => {
                         : "-"}
                     </td>
                     <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      {r.posted_date ? new Date(r.posted_date).toLocaleDateString() : "-"}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      {r.transaction_number || "-"}
+                      {r.company_invoice_invoice_number || "-"}
                     </td>
                     <td className="text-sm px-[10px] py-[6px] capitalize whitespace-nowrap">
+                      {r.company_name || r.company_id || "-"}
+                    </td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
                       {r.transaction_type || "-"}
                     </td>
-                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      {r.category || "-"}
-                    </td>
                     <td className="text-sm px-[10px] py-[6px] capitalize whitespace-nowrap">
-                      {r.transaction_status || "-"}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
-                      {r.amount.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      {r.transaction_currency || ""}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
-                      {r.tax_amount != null
-                        ? `${r.tax_amount.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })} ${r.transaction_currency || ""}`
-                        : "-"}
+                      {r.company_invoice_project_job_reference_id || "-"}
                     </td>
                     <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
                       {r.net_amount != null
@@ -704,103 +530,23 @@ const CompanyLedgerTable: React.FC = () => {
                         : "-"}
                     </td>
                     <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
-                      {r.converted_amount != null
-                        ? `${r.converted_amount.toLocaleString(undefined, {
+                      {r.tax_amount != null
+                        ? `${r.tax_amount.toLocaleString(undefined, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
-                          })} ${r.base_currency || ""}`
-                        : r.base_currency || ""}
+                          })} ${r.transaction_currency || ""}`
+                        : "-"}
                     </td>
                     <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
-                      {r.converted_tax_amount != null
-                        ? `${r.converted_tax_amount.toLocaleString(undefined, {
+                      {r.amount != null
+                        ? `${r.amount.toLocaleString(undefined, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
-                          })} ${r.base_currency || ""}`
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[20px] py-[15px] text-right whitespace-nowrap">
-                      {r.converted_net_amount != null
-                        ? `${r.converted_net_amount.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })} ${r.base_currency || ""}`
+                          })} ${r.transaction_currency || ""}`
                         : "-"}
                     </td>
                     <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      {r.transaction_currency || ""}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      {r.base_currency || ""}
-                    </td>
-                    <td className="text-sm px-[20px] py-[15px] text-right whitespace-nowrap">
-                      {r.exchange_rate != null
-                        ? r.exchange_rate.toLocaleString(undefined, {
-                            minimumFractionDigits: 4,
-                            maximumFractionDigits: 4,
-                          })
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      {r.company_name || r.company_id || "-"}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      {r.customer_name || r.customer_id || "-"}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      {r.source_type || "-"} {r.source_id ? `#${r.source_id}` : ""}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      {r.account_debit != null || r.account_credit != null
-                        ? `Dr ${r.account_debit ?? "-"} / Cr ${r.account_credit ?? "-"}`
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      {r.payment_method || "-"}
-                    </td>
-                    <td className="text-sm px-[20px] py-[15px] whitespace-nowrap">
-                      {r.bank_account || r.check_number
-                        ? `${r.bank_account || "-"} / ${r.check_number || "-"}`
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[20px] py-[15px] whitespace-nowrap">
-                      {r.is_recurring != null || r.is_adjusting_entry != null
-                        ? [
-                            r.is_recurring != null
-                              ? `Recurring: ${r.is_recurring ? "Yes" : "No"}`
-                              : null,
-                            r.is_adjusting_entry != null
-                              ? `Adj: ${r.is_adjusting_entry ? "Yes" : "No"}`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" | ")
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[20px] py-[15px] whitespace-nowrap">
-                      {r.fiscal_year || r.accounting_period
-                        ? `${r.fiscal_year ?? "-"} / ${r.accounting_period ?? "-"}`
-                        : "-"}
-                    </td>
-                    <td className="text-sm px-[20px] py-[15px] whitespace-nowrap">
-                      {r.cost_center_id ?? "-"}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      {r.narration || "-"}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      <div className="flex flex-col gap-[2px] text-xs">
-                        <span>
-                          C: {r.created_at || "-"} {r.created_by ? `(${r.created_by})` : ""}
-                        </span>
-                        <span>
-                          U: {r.updated_at || "-"} {r.updated_by ? `(${r.updated_by})` : ""}
-                        </span>
-                        <span>
-                          D: {r.is_deleted ? r.deleted_at || "Yes" : "-"}{" "}
-                          {r.deleted_by ? `(${r.deleted_by})` : ""}
-                        </span>
-                      </div>
+                      {r.created_by_user_name || "-"}
                     </td>
                     <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
                       <Link

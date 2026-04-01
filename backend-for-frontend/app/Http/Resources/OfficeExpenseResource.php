@@ -24,6 +24,8 @@ class OfficeExpenseResource extends JsonResource
             'payments' => OfficeExpensePaymentResource::collection($this->whenLoaded('payments', function () {
                 return $this->payments;
             }, $this->payments ?? [])),
+            'created_by_user' => new UserResource($this->whenLoaded('createdByUser')),
+            'updated_by_user' => new UserResource($this->whenLoaded('updatedByUser')),
         ];
     }
 }

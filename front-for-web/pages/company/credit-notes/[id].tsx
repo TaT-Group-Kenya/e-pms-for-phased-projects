@@ -1186,7 +1186,7 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
                           <span className="text-gray-600 dark:text-gray-400">Invoice #</span>
                           <span className="text-black dark:text-white font-medium">
                             <Link
-                              href={`/cust-invoices/${creditNote.invoice.id}`}
+                              href={`/company/invoices/${creditNote.invoice.id}`}
                               className="text-primary-500 hover:underline"
                             >
                               {creditNote.invoice.invoice_number}
@@ -1209,7 +1209,7 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
                           <span className="text-gray-600 dark:text-gray-400">Invoice: </span>
                           <span className="text-black dark:text-white font-medium w-64">
                             <Link
-                              href={`/cust-invoices/${creditNote.invoice.id}`}
+                              href={`/company/invoices/${creditNote.invoice.id}`}
                               className="text-primary-500 hover:underline"
                             >
                               {creditNote.invoice.title || creditNote.invoice.invoice_number}

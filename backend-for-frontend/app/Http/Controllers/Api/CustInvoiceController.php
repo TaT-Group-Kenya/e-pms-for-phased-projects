@@ -128,6 +128,7 @@ class CustInvoiceController extends Controller
         }
 
         $validated = $request->validated();
+        $validated['created_at'] = $validated['created_at'] ?? $custInvoice->created_at;
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($custInvoice->id, $validated);
         $updated->loadMissing([

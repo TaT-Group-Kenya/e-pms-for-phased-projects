@@ -127,6 +127,7 @@ interface CustInvoice {
   project?: ProjectSummary
   order?: OrderSummary
   receivingPaymentMethod?: ReceivingPaymentMethod
+  created_at?: string | null
 }
 
 export default function CustInvoiceDetailPage() {
@@ -140,6 +141,7 @@ export default function CustInvoiceDetailPage() {
   const [downloading, setDownloading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
+  const [editCreatedAt, setEditCreatedAt] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editPaymentTerms, setEditPaymentTerms] = useState('')
   const [editNotes, setEditNotes] = useState('')
@@ -339,7 +341,8 @@ export default function CustInvoiceDetailPage() {
     setEditDescription(invoice.description || '')
     setEditPaymentTerms(invoice.payment_terms || '')
     setEditNotes(invoice.notes_to_customer || '')
-      setEditPaymentReceivingMethodId(invoice.payment_receiving_method_id || '');
+    setEditCreatedAt(invoice.created_at ? invoice.created_at.slice(0, 10) : '');
+    setEditPaymentReceivingMethodId(invoice.payment_receiving_method_id || '');
     setIsEditing(true)
   }
 
@@ -367,6 +370,7 @@ export default function CustInvoiceDetailPage() {
           payment_terms: editPaymentTerms || null,
           notes_to_customer: editNotes || null,
           payment_receiving_method_id: editPaymentReceivingMethodId,
+          created_at: editCreatedAt || null,
         }),
       });
       const data = await resp.json().catch(() => null);
@@ -1691,6 +1695,15 @@ export default function CustInvoiceDetailPage() {
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full border rounded px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Creation Date</label>
+                <input
+                  type="date"
+                  value={editCreatedAt}
+                  onChange={(e) => setEditCreatedAt(e.target.value)}
                   className="w-full border rounded px-3 py-2 text-sm"
                 />
               </div>

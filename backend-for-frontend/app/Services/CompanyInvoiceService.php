@@ -21,6 +21,7 @@ class CompanyInvoiceService
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
+        $query->orderByDesc('id');
         
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
@@ -43,6 +44,7 @@ class CompanyInvoiceService
     public function update(int $id, array $data)
     {
         $model = CompanyInvoice::findOrFail($id);
+        unset($data['subtotal_amount'], $data['tax_amount'], $data['discount_amount'], $data['total_amount']); // prevent updating these fields
         $model->update($data);
         return $model;
     }

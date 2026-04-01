@@ -9,9 +9,10 @@ import ProjectsOverview from '../../components/dashboard/ProjectsOverview'
 import ProjectsRoadmap from '../../components/dashboard/ProjectsRoadmap'
 import ProjectsProgress from '../../components/dashboard/ProjectsProgress'
 import MyTasks from '../../components/dashboard/MyTasks'
-import AllProjects from '../../components/dashboard/AllProjects'
 import ProjectsAnalysis from '../../components/dashboard/ProjectsAnalysis'
-import TeamMembers from '../../components/dashboard/TeamMembers'
+import CurrencyPreference from '../../components/dashboard/CurrencyPreference'
+import PendingCustInvoices from '../../components/dashboard/PendingCustInvoices'
+import PendingCompanyInvoices from '../../components/dashboard/PendingCompanyInvoices'
 import ToDoList from '../../components/dashboard/ToDoList'
 import TasksOverview from '../../components/dashboard/TasksOverview'
 import { DashboardFiltersProvider, useDashboardFilters, DASHBOARD_RANGE_OPTIONS } from '../../components/dashboard/DashboardFiltersContext'
@@ -21,6 +22,7 @@ const ROLE_VIEW_PROJECT: RoleName = 'ROLE_VIEW_PROJECT'
 const ROLE_VIEW_PROJECT_PROGRESS_UPDATE: RoleName = 'ROLE_VIEW_PROJECT_PROGRESS_UPDATE'
 const ROLE_VIEW_COMPANY_PAYMENT: RoleName = 'ROLE_VIEW_COMPANY_PAYMENT'
 const ROLE_VIEW_CUST_INVOICE: RoleName = 'ROLE_VIEW_CUST_INVOICE'
+const ROLE_VIEW_COMPANY_INVOICE: RoleName = 'ROLE_VIEW_COMPANY_INVOICE'
 const ROLE_VIEW_CUSTOMER: RoleName = 'ROLE_VIEW_CUSTOMER'
 const ROLE_VIEW_ORDER: RoleName = 'ROLE_VIEW_ORDER'
 const ROLE_VIEW_QUOTATION: RoleName = 'ROLE_VIEW_QUOTATION'
@@ -50,14 +52,13 @@ const Dashboard: NextPage = () => {
         <MenuItems
           transition
           className="transition-all bg-white shadow-3xl rounded-md top-full py-[15px] absolute ltr:right-0 rtl:left-0 w-[195px] z-[50] dark:bg-dark dark:shadow-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-100 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
-       >
+        >
           {DASHBOARD_RANGE_OPTIONS.map((option) => (
             <MenuItem
               key={option.value}
               as="div"
-              className={`block w-full transition-all text-black cursor-pointer ltr:text-left rtl:text-right relative py-[8px] px-[20px] hover:bg-gray-50 dark:text-white dark:hover:bg-black ${
-                selectedOption.value === option.value ? 'font-semibold' : ''
-              }`}
+              className={`block w-full transition-all text-black cursor-pointer ltr:text-left rtl:text-right relative py-[8px] px-[20px] hover:bg-gray-50 dark:text-white dark:hover:bg-black ${selectedOption.value === option.value ? 'font-semibold' : ''
+                }`}
               onClick={() => setRange(option.value)}
             >
               {option.label}
@@ -81,55 +82,54 @@ const Dashboard: NextPage = () => {
             </div>
           </Can>
 
-          <Can any={[ROLE_VIEW_PROJECT]}>
+          <Can any={[ROLE_VIEW_CUST_INVOICE]}>
             <div>
-              <ProjectsRoadmap />
+              <PendingCustInvoices />
             </div>
           </Can>
+
+          <Can any={[ROLE_VIEW_COMPANY_INVOICE]}>
+            <div>
+              <PendingCompanyInvoices />
+            </div>
+          </Can>
+
+          <div className="lg:grid lg:grid-cols-2 gap-[25px]">
+            <Can any={[ROLE_VIEW_PROJECT]}>
+              <div>
+                <ProjectsRoadmap />
+              </div>
+            </Can>
+            <Can any={[ROLE_VIEW_PROJECT]}>
+              <div>
+                <ProjectsProgress />
+              </div>
+            </Can>
+          </div>
         </div>
 
-        <div className="lg:grid lg:grid-cols-2 gap-[25px]">
-          <Can any={[ROLE_VIEW_PROJECT]}>
-            <div>
-              <ProjectsProgress />
-            </div>
-          </Can>
-
+        <div className="lg:grid lg:grid-cols-1 gap-[25px]">
           <Can any={[ROLE_VIEW_PROJECT_PROGRESS_UPDATE]}>
             <div>
               <MyTasks />
             </div>
           </Can>
         </div>
-        <Can any={[ROLE_VIEW_PROJECT]}>
-          <AllProjects />
-        </Can>
 
         <div className="lg:grid lg:grid-cols-2 gap-[25px]">
-          <Can any={[ROLE_VIEW_PROJECT, ROLE_VIEW_COMPANY_PAYMENT, ROLE_VIEW_CUST_INVOICE]}>
-            <div>
-              <ProjectsAnalysis />
-            </div>
-          </Can>
-
           <Can any={[ROLE_VIEW_CUSTOMER, ROLE_VIEW_CUST_INVOICE]}>
             <div>
-              <TeamMembers />
+              <CurrencyPreference />
             </div>
           </Can>
-        </div>
-        <div className="lg:grid lg:grid-cols-2 gap-[25px]">
-          <Can any={[ROLE_VIEW_ORDER]}>
-            <div>
-              <ToDoList />
-            </div>
-          </Can>
-
           <Can any={[ROLE_VIEW_QUOTATION]}>
             <div>
               <TasksOverview />
             </div>
           </Can>
+        </div>
+        <div className="lg:grid lg:grid-cols-2 gap-[25px]">
+          
         </div>
       </DashboardFiltersProvider>
     </AuthenticatedLayout>

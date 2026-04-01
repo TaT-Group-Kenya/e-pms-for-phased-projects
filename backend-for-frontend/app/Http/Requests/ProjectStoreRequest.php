@@ -32,6 +32,7 @@ class ProjectStoreRequest extends FormRequest
             'progress' => ['required', 'string', 'max:255'],
             'tags' => ['nullable', 'string', 'max:255'],
             'currency' => ['required', 'string', 'max:255'],
+            'created_at' => ['nullable', 'date'],
         ];
     }
 

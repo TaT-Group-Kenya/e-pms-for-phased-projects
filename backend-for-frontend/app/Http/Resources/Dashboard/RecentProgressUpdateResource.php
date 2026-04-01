@@ -11,6 +11,7 @@ class RecentProgressUpdateResource extends BaseResource
         return [
             'id' => $this->resource['id'],
             'project_id' => $this->resource['project_id'],
+            'job_reference_id' => $this->resource['job_reference_id'],
             'project_name' => $this->resource['project_name'],
             'phase_name' => $this->resource['phase_name'],
             'comment' => $this->resource['comment'],

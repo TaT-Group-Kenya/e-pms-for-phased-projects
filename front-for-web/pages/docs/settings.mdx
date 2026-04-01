@@ -1,0 +1,21 @@
+import DocsLayout from '../../components/docs/DocsLayout';
+
+export default function SettingsDoc() {
+  return (
+    <DocsLayout>
+      <h1 className="text-2xl font-bold mb-4">Settings</h1>
+      <ol className="list-decimal pl-6 space-y-4">
+        <li>
+          <strong>Access Settings</strong>
+          <div className="mt-2">Go to the Settings page from the sidebar.</div>
+          <img src="https://placehold.co/600x300?text=Settings+Page" alt="Settings Page" className="my-4 rounded shadow" />
+        </li>
+        <li>
+          <strong>Update Account Info</strong>
+          <div className="mt-2">Edit your profile and save changes.</div>
+          <img src="https://placehold.co/600x300?text=Edit+Profile" alt="Edit Profile" className="my-4 rounded shadow" />
+        </li>
+      </ol>
+    </DocsLayout>
+  );
+}

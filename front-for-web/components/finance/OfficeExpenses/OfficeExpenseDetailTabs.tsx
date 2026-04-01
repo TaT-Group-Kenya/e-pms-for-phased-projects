@@ -12,13 +12,40 @@ interface OfficeExpenseDetailTabsProps {
   expenseId: string | number;
 }
 
+type DebitAccount = {
+  code: number;
+  name: string;
+}
+type ExpTrxn = {
+  id: number;
+  debitAccount: DebitAccount;
+}
+type ExpPayment = {
+  id: number;
+  transaction: ExpTrxn;
+}
+interface OfficeExpense {
+  id: number;
+  category: { id: number; name: string } | null;
+  costCenter: { id: number; name: string } | null;
+  payments: ExpPayment[]; 
+  description: string;
+  amount: number;
+  currency: string;
+  date: string;
+  status: string;
+  created_by_user: { id: number; first_name: string } | null;
+  updated_by_user: { id: number; first_name: string } | null;
+  created_at: string;
+  updated_at: string;
+}
+
 const OfficeExpenseDetailTabs = ({ expenseId }: OfficeExpenseDetailTabsProps) => {
-  const [activeTab, setActiveTab] = useState("overview");
   const [showSettle, setShowSettle] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(false);
   const [accountsError, setAccountsError] = useState<string | null>(null);
-  const [expense, setExpense] = useState<any>(null);
+  const [expense, setExpense] = useState<OfficeExpense | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const accessToken = useSelector(selectAccessToken);
@@ -61,132 +88,7 @@ const OfficeExpenseDetailTabs = ({ expenseId }: OfficeExpenseDetailTabsProps) =>
       .finally(() => setAccountsLoading(false));
   }, [showSettle, accessToken]);
 
-  // Overview Tab
-  const OverviewTab = () => (
-    <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
-      <h6 className="text-black dark:text-white font-semibold mb-[15px]">Basic Information</h6>
-      {expense && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-            <span className="text-gray-500 dark:text-gray-400 font-medium">ID</span>
-            <span className="text-black dark:text-white font-semibold">{expense.id}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Status</span>
-            <span
-              className={`inline-block px-3 py-1 rounded-full text-xs font-semibold text-white ${
-                expense.status === 'paid'
-                  ? 'bg-green-600'
-                  : expense.status === 'pending'
-                  ? 'bg-red-600'
-                  : 'bg-gray-700'
-              }`}
-            >
-              {expense.status}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Category</span>
-            {expense.category?.name || expense.category ? (
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary-600 text-white">
-                {expense.category?.name || expense.category}
-              </span>
-            ) : (
-              <span className="text-gray-400">-</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Cost Center</span>
-            {expense.costCenter?.name || expense.costCenter ? (
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-gray-700 text-white">
-                {expense.costCenter?.name || expense.costCenter}
-              </span>
-            ) : (
-              <span className="text-gray-400">-</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Currency</span>
-            <span className="text-black dark:text-white font-semibold">{expense.currency}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Amount</span>
-            <span className="text-black dark:text-white font-semibold">{expense.amount}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Date</span>
-            <span className="text-black dark:text-white font-semibold">{expense.date ? new Date(expense.date).toLocaleDateString() : '-'}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Description</span>
-            <span className="text-black dark:text-white text-sm truncate max-w-[220px] md:max-w-[260px]">{expense.description || 'No description provided.'}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Created By</span>
-            <span className="text-black dark:text-white font-semibold">{expense.created_by || '-'}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Updated By</span>
-            <span className="text-black dark:text-white font-semibold">{expense.updated_by || '-'}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Created At</span>
-            <span className="text-black dark:text-white font-semibold">{expense.created_at ? new Date(expense.created_at).toLocaleString() : '-'}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-            <span className="text-gray-500 dark:text-gray-400 font-medium">Updated At</span>
-            <span className="text-black dark:text-white font-semibold">{expense.updated_at ? new Date(expense.updated_at).toLocaleString() : '-'}</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 
-  // Payment Tab
-  const PaymentTab = () => (
-    <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
-      <div className="flex items-center justify-between mb-[15px]">
-        <h6 className="text-black dark:text-white font-semibold">Payment</h6>
-        <button
-          type="button"
-          disabled={expense?.status === 'paid'}
-          className="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={() => setShowSettle(true)}
-        >
-          <i className="material-symbols-outlined !text-[18px]">add</i>
-          Settle Expense
-        </button>
-      </div>
-      {expense && Array.isArray(expense.payments) && expense.payments.length > 0 ? (
-        <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md mb-[10px]">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-[#15203c]">
-              <tr>
-                <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">Date</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Amount</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Currency</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Method</th>
-                <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Reference</th>
-              </tr>
-            </thead>
-            <tbody>
-              {expense.payments.map((p: any) => (
-                <tr key={p.id} className="border-b border-gray-100 dark:border-[#172036] align-middle">
-                  <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">{p.payment_date || p.paid_at}</td>
-                  <td className="text-sm text-right px-[15px] py-[12px]">{p.amount_paid || p.amount}</td>
-                  <td className="text-sm text-right px-[15px] py-[12px]">{p.currency}</td>
-                  <td className="text-sm text-right px-[15px] py-[12px]">{p.payment_method || p.method}</td>
-                  <td className="text-sm text-right px-[15px] py-[12px]">{p.transaction_number || p.reference || '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p className="text-xs text-gray-500">No payment found for this expense.</p>
-      )}
-    </div>
-  );
 
   if (loading) {
     return <div className="p-8 text-center text-gray-500">Loading expense details...</div>;
@@ -220,28 +122,125 @@ const OfficeExpenseDetailTabs = ({ expenseId }: OfficeExpenseDetailTabsProps) =>
       <div className="lg:col-span-3">
         {/* Tabs Navigation */}
         <div className="trezo-tabs mb-[20px] md:mb-[25px]">
-          <ul className="navs border-b border-gray-100 dark:border-[#172036] overflow-x-auto flex">
-            {TABS.map((tab) => (
-              <li key={tab.key} className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === tab.key
-                      ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                  }`}
-                >
-                  <i className="material-symbols-outlined !text-[20px]">{tab.icon}</i>
-                  {tab.label}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className="flex items-center justify-between mb-[15px]">
+            <h6 className="text-black dark:text-white font-semibold"> </h6>
+            <button
+              type="button"
+              disabled={expense?.status === 'paid'}
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setShowSettle(true)}
+            >
+              <i className="material-symbols-outlined !text-[18px]">add</i>
+              Settle Expense
+            </button>
+          </div>
         </div>
         {/* Tab Content */}
-        {activeTab === "overview" && <OverviewTab />}
-        {activeTab === "payment" && <PaymentTab />}
+        <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+          {expense && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Source Account</span>
+                <span className="text-black dark:text-white font-semibold">{expense.payments?.[0]?.transaction?.debitAccount?.name || '-'}</span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Status</span>
+                <span
+                  className={`inline-block px-3 py-1 rounded-full text-xs font-semibold text-white ${expense.status === 'paid'
+                    ? 'bg-green-600'
+                    : expense.status === 'pending'
+                      ? 'bg-red-600'
+                      : 'bg-gray-700'
+                    }`}
+                >
+                  {expense.status}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Category</span>
+                {expense.category?.name || expense.category ? (
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary-600 text-white">
+                    {expense.category?.name || '-'}
+                  </span>
+                ) : (
+                  <span className="text-gray-400">-</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Cost Center</span>
+                {expense.costCenter?.name || expense.costCenter ? (
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-gray-700 text-white">
+                    {expense.costCenter?.name || '-'}
+                  </span>
+                ) : (
+                  <span className="text-gray-400">-</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Currency</span>
+                <span className="text-black dark:text-white font-semibold">{expense.currency}</span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Amount</span>
+                <span className="text-black dark:text-white font-semibold">{expense.amount}</span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Date</span>
+                <span className="text-black dark:text-white font-semibold">{expense.date ? new Date(expense.date).toLocaleDateString() : '-'}</span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Description</span>
+                <span className="text-black dark:text-white text-sm truncate max-w-[220px] md:max-w-[260px]">{expense.description || 'No description provided.'}</span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Created By</span>
+                <span className="text-black dark:text-white font-semibold">{expense.created_by_user?.first_name || '-'}</span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Updated By</span>
+                <span className="text-black dark:text-white font-semibold">{expense.updated_by_user?.first_name || '-'}</span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Created At</span>
+                <span className="text-black dark:text-white font-semibold">{expense.created_at ? new Date(expense.created_at).toLocaleString() : '-'}</span>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Updated At</span>
+                <span className="text-black dark:text-white font-semibold">{expense.updated_at ? new Date(expense.updated_at).toLocaleString() : '-'}</span>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+          {expense && Array.isArray(expense.payments) && expense.payments.length > 0 ? (
+            <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md mb-[10px]">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-[#15203c]">
+                  <tr>
+                    <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">Date</th>
+                    <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Amount</th>
+                    <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Currency</th>
+                    <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Method</th>
+                    <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Reference</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expense.payments.map((p: any) => (
+                    <tr key={p.id} className="border-b border-gray-100 dark:border-[#172036] align-middle">
+                      <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">{p.payment_date || p.paid_at}</td>
+                      <td className="text-sm text-right px-[15px] py-[12px]">{p.amount_paid || p.amount}</td>
+                      <td className="text-sm text-right px-[15px] py-[12px]">{p.currency}</td>
+                      <td className="text-sm text-right px-[15px] py-[12px]">{p.payment_method || p.method}</td>
+                      <td className="text-sm text-right px-[15px] py-[12px]">{p.transaction_number || p.reference || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">No payment found for this expense.</p>
+          )}
+        </div>
       </div>
 
       {/* Settle Modal */}
@@ -306,20 +305,19 @@ function SettleExpenseModal({ expense, accounts, loading, error, onClose, refetc
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-full max-w-[500px] max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-[20px]">
-                  <div className="mb-[15px] flex justify-end">
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 dark:bg-[#15203c] text-gray-700 dark:text-white font-medium border border-gray-200 dark:border-[#172036] hover:bg-gray-200 dark:hover:bg-[#1a2948] transition"
-                      onClick={() => {
-                        // Use Next.js router to go back to expenses list
-                        const router = useRouter();
-                        router.push('/finance/office-expenses');
-                      }}
-                    >
-                      <i className="material-symbols-outlined !text-[18px]">arrow_back</i>
-                      Back to expenses
-                    </button>
-                  </div>
+          <div className="mb-[15px] flex justify-end">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gray-100 dark:bg-[#15203c] text-gray-700 dark:text-white font-medium border border-gray-200 dark:border-[#172036] hover:bg-gray-200 dark:hover:bg-[#1a2948] transition"
+              onClick={() => {
+                const router = useRouter();
+                router.push('/finance/office-expenses');
+              }}
+            >
+              <i className="material-symbols-outlined !text-[18px]">arrow_back</i>
+              Back to expenses
+            </button>
+          </div>
           <h6 className="font-semibold text-black dark:text-white">Settle Expense</h6>
         </div>
         <form onSubmit={handleSubmit} className="space-y-[16px]">

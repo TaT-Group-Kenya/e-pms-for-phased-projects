@@ -1,0 +1,21 @@
+import DocsLayout from '../../components/docs/DocsLayout';
+
+export default function CustomersDoc() {
+  return (
+    <DocsLayout>
+      <h1 className="text-2xl font-bold mb-4">Customers</h1>
+      <ol className="list-decimal pl-6 space-y-4">
+        <li>
+          <strong>View Customers List</strong>
+          <div className="mt-2">Go to the Customers page.</div>
+          <img src="https://placehold.co/600x300?text=Customers+List" alt="Customers List" className="my-4 rounded shadow" />
+        </li>
+        <li>
+          <strong>Add a Customer</strong>
+          <div className="mt-2">Click "Add Customer" and fill in the form.</div>
+          <img src="https://placehold.co/600x300?text=Add+Customer" alt="Add Customer" className="my-4 rounded shadow" />
+        </li>
+      </ol>
+    </DocsLayout>
+  );
+}

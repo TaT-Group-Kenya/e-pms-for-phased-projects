@@ -33,7 +33,6 @@ class CustomerTransactionsLedgerUpdateRequest extends FormRequest
             'tax_amount' => ['sometimes', 'required', 'numeric'],
             'net_amount' => ['sometimes', 'required', 'numeric'],
             'customer_id' => ['sometimes', 'required', 'exists:customers,id'],
-            'source_type' => ['sometimes', 'required', Rule::in(['customer invoice', 'customer credit note', 'company invoice', 'expense'])],
             'source_id' => ['nullable', 'integer'],
             'account_debit' => ['nullable', 'string', 'max:255'],
             'account_credit' => ['nullable', 'string', 'max:255'],

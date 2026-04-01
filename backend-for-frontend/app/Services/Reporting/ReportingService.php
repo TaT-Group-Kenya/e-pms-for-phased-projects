@@ -25,7 +25,7 @@ class ReportingService
 
     // Placeholder methods for each report
     public function ordersSummary($filters) {
-        $query = \App\Models\Order::with(['customer', 'quotation', 'project']);
+        $query = \App\Models\Order::with(['customer', 'creator']);
         // Authorization: Only show orders user is allowed to view
         // (Assume policy is set up for Order model)
         // Apply currency filter
@@ -35,9 +35,6 @@ class ReportingService
         // Additional filters (status, project, customer, date range)
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);
-        }
-        if (isset($filters['project_id'])) {
-            $query->where('project_id', $filters['project_id']);
         }
         if (isset($filters['customer_id'])) {
             $query->where('customer_id', $filters['customer_id']);
@@ -58,7 +55,8 @@ class ReportingService
             'customer',
             'category',
             'sourceOrigin',
-            'location'
+            'location',
+            'creator',
         ]);
         // Apply currency filter
         if (isset($filters['currency_code'])) {
@@ -102,13 +100,20 @@ class ReportingService
     }
 
     public function customerHistory($filters) {
-        $query = \App\Models\Customer::query();
+        $query = \App\Models\Project::with([
+            'customer.creator',
+            'category',
+            'sourceOrigin',
+            'location',
+        ]);
+
         if (isset($filters['from'])) {
             $query->whereDate('created_at', '>=', $filters['from']);
         }
         if (isset($filters['to'])) {
             $query->whereDate('created_at', '<=', $filters['to']);
         }
+
         return $query->get();
     }
     
@@ -428,6 +433,175 @@ class ReportingService
             ],
         ];
     }
+
+    public function invoicePaymentsCustomer($filters) {
+        \Log::info('Generating Invoice Payments Customer Report', ['filters' => $filters]);
+
+        $currency = $filters['currency_code'] ?? null;
+        $customerId = $filters['customer_id'] ?? null;
+        $jobReferenceId = $filters['job_reference_id'] ?? null;
+        $invoiceNumber = $filters['invoice_number'] ?? null;
+        $from = $filters['from'] ?? null;
+        $to = $filters['to'] ?? null;
+
+        // Mandatory filter
+        if (!$currency) {
+            return [
+                'error' => 'currency is required for invoice payments customer report.'
+            ];
+        }
+
+        $query = \App\Models\CustPayment::with(['invoices.customer', 'createdByUser'])
+            ->where('transaction_type', 'receipt');
+
+        if ($currency) {
+            $query->where('currency', $currency);
+        }
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+        if ($customerId) {
+            $query->whereHas('invoices', function ($q) use ($customerId) {
+                $q->where('customer_id', $customerId);
+            });
+        }
+        if ($jobReferenceId) {
+            $query->whereHas('invoices', function ($q) use ($jobReferenceId) {
+                $q->where('job_reference_id', 'like', "%{$jobReferenceId}%");
+            });
+        }
+        if ($invoiceNumber) {
+            $query->whereHas('invoices', function ($q) use ($invoiceNumber) {
+                $q->where('invoice_number', 'like', "%{$invoiceNumber}%");
+            });
+        }
+
+        $payments = $query->get();
+
+        foreach ($payments as $payment) {
+            $invoice = $payment->invoices->first();
+            $customer = $invoice ? $invoice->customer : null;
+
+            $payment->customer_name = $customer ? $customer->name : null;
+            $payment->job_reference_id = $invoice ? $invoice->job_reference_id : null;
+            $payment->invoice_number = $invoice ? $invoice->invoice_number : null;
+
+            $payment->amount = $payment->amount_paid;
+
+            $createdBy = $payment->createdByUser;
+            $transactedByName = null;
+            if ($createdBy) {
+                $fullName = trim(($createdBy->first_name ?? '') . ' ' . ($createdBy->last_name ?? ''));
+                if ($fullName !== '') {
+                    $transactedByName = $fullName;
+                } else {
+                    $transactedByName = $createdBy->email ?? null;
+                }
+            }
+            $payment->transacted_by_name = $transactedByName;
+        }
+
+        $totalAmount = $payments->sum('amount_paid');
+        $totalTax = $payments->sum('tax_amount');
+        $totalNet = $payments->sum('net_amount');
+
+        return [
+            'payments' => $payments,
+            'totals' => [
+                'total' => $totalAmount,
+                'taxes' => $totalTax,
+                'net' => $totalNet,
+            ],
+        ];
+    }
+
+    public function invoicePaymentsCompany($filters) {
+        \Log::info('Generating Invoice Payments Company Report', ['filters' => $filters]);
+
+        $currency = $filters['currency_code'] ?? null;
+        $companyId = $filters['company_id'] ?? null;
+        $jobReferenceId = $filters['job_reference_id'] ?? null;
+        $invoiceNumber = $filters['invoice_number'] ?? null;
+        $from = $filters['from'] ?? null;
+        $to = $filters['to'] ?? null;
+
+        // Mandatory filter
+        if (!$currency) {
+            return [
+                'error' => 'currency is required for invoice payments company report.'
+            ];
+        }
+
+        $query = \App\Models\CompanyPayment::with(['invoice.company', 'invoice.project', 'createdByUser'])
+            ->where('transaction_type', 'receipt');
+
+        if ($currency) {
+            $query->where('currency', $currency);
+        }
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+        if ($companyId) {
+            $query->whereHas('invoice', function ($q) use ($companyId) {
+                $q->where('company_id', $companyId);
+            });
+        }
+        if ($jobReferenceId) {
+            $query->whereHas('invoice.project', function ($q) use ($jobReferenceId) {
+                $q->where('job_reference_id', 'like', "%{$jobReferenceId}%");
+            });
+        }
+        if ($invoiceNumber) {
+            $query->whereHas('invoice', function ($q) use ($invoiceNumber) {
+                $q->where('invoice_number', 'like', "%{$invoiceNumber}%");
+            });
+        }
+
+        $payments = $query->get();
+
+        foreach ($payments as $payment) {
+            $invoice = $payment->invoice;
+            $company = $invoice ? $invoice->company : null;
+            $project = $invoice ? $invoice->project : null;
+
+            $payment->company_name = $company ? $company->name : null;
+            $payment->job_reference_id = $project ? $project->job_reference_id : null;
+            $payment->invoice_number = $invoice ? $invoice->invoice_number : null;
+
+            $payment->amount = $payment->amount_paid;
+
+            $createdBy = $payment->createdByUser;
+            $transactedByName = null;
+            if ($createdBy) {
+                $fullName = trim(($createdBy->first_name ?? '') . ' ' . ($createdBy->last_name ?? ''));
+                if ($fullName !== '') {
+                    $transactedByName = $fullName;
+                } else {
+                    $transactedByName = $createdBy->email ?? null;
+                }
+            }
+            $payment->transacted_by_name = $transactedByName;
+        }
+
+        $totalAmount = $payments->sum('amount_paid');
+        $totalTax = $payments->sum('tax_amount');
+        $totalNet = $payments->sum('net_amount');
+
+        return [
+            'payments' => $payments,
+            'totals' => [
+                'total' => $totalAmount,
+                'taxes' => $totalTax,
+                'net' => $totalNet,
+            ],
+        ];
+    }
     
     public function invoicePayments($filters) {
         \Log::info('Generating Invoice Payments Report', ['filters' => $filters]);
@@ -693,6 +867,10 @@ class ReportingService
                 return $this->exportGeneralLedgerPdf($filters);
             case 'invoicePayments':
                 return $this->exportInvoicePaymentsPdf($filters);
+            case 'invoicePaymentsCustomer':
+                return $this->exportInvoicePaymentsCustomerPdf($filters);
+            case 'invoicePaymentsCompany':
+                return $this->exportInvoicePaymentsCompanyPdf($filters);
             case 'taxPaymentsCustomer':
                 return $this->exportTaxPaymentsCustomerPdf($filters);
             case 'taxPaymentsCompany':
@@ -796,6 +974,28 @@ class ReportingService
         $userId = Auth::id() ?? null;
         $rawData = $this->invoicePayments($filters);
         return $this->renderPdf('pdf.invoice-payments', $rawData, $filters, $userId, 'invoicePayments');
+    }
+
+    private function exportInvoicePaymentsCustomerPdf($filters) {
+        $userId = Auth::id() ?? null;
+        $rawData = $this->invoicePaymentsCustomer($filters);
+        $resourceCollection = \App\Http\Resources\Reporting\InvoicePaymentsResource::collection($rawData['payments']);
+        $data = [
+            'payments' => $resourceCollection,
+            'totals' => $rawData['totals'],
+        ];
+        return $this->renderPdf('pdf.invoice-payments-customer', $data, $filters, $userId, 'invoicePaymentsCustomer');
+    }
+
+    private function exportInvoicePaymentsCompanyPdf($filters) {
+        $userId = Auth::id() ?? null;
+        $rawData = $this->invoicePaymentsCompany($filters);
+        $resourceCollection = \App\Http\Resources\Reporting\InvoicePaymentsResource::collection($rawData['payments']);
+        $data = [
+            'payments' => $resourceCollection,
+            'totals' => $rawData['totals'],
+        ];
+        return $this->renderPdf('pdf.invoice-payments-company', $data, $filters, $userId, 'invoicePaymentsCompany');
     }
 
     private function exportTaxPaymentsCustomerPdf($filters) {

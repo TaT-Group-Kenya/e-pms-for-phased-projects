@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useToast } from "../../../hooks/useToast";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { ToastContainer } from "../../common/Toast";
+import { formatCurrency } from "../../../utils/format";
 // Fix implicit any types
 type Category = { id: number; name: string };
 type Department = { id: number; name: string };
@@ -16,10 +16,23 @@ type FormState = {
   currency: string;
   date: string;
 };
+type DebitAccount = {
+  code: number;
+  name: string;
+}
+type ExpTrxn = {
+  id: number;
+  debitAccount: DebitAccount;
+}
+type ExpPayment = {
+  id: number;
+  transaction: ExpTrxn;
+}
 interface OfficeExpense {
   id: number;
   category: { id: number; name: string } | null;
   costCenter: { id: number; name: string } | null;
+  payments: ExpPayment[]; 
   description: string;
   amount: number;
   currency: string;
@@ -35,8 +48,6 @@ const OfficeExpensesTable: React.FC = () => {
   const [editExpense, setEditExpense] = useState<OfficeExpense | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteExpense, setDeleteExpense] = useState<OfficeExpense | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
   const { toasts, addToast, removeToast } = useToast();
   const accessToken = useSelector(selectAccessToken);
   const accessTokenStr = typeof accessToken === "string" ? accessToken : "";
@@ -74,11 +85,11 @@ const OfficeExpensesTable: React.FC = () => {
           <thead className="text-black dark:text-white">
             <tr>
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Date</th>
+              <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Source Account</th>
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Category</th>
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Cost Center</th>
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Description</th>
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Amount</th>
-              <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Currency</th>
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Status</th>
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Actions</th>
             </tr>
@@ -93,19 +104,26 @@ const OfficeExpensesTable: React.FC = () => {
                 <td colSpan={8} className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400">No expenses found.</td>
               </tr>
             ) : (
-              expenses.map((expense) => (
+              expenses.map((expense) => {
+                const payEntry = expense.payments?.[0];
+                let sourceAccountName = "-";
+                if(payEntry && payEntry.transaction && payEntry.transaction.debitAccount){
+                  const {name } = payEntry.transaction.debitAccount;
+                  sourceAccountName = name;
+                }
+                return (
                 <tr
                   key={expense.id}
                   className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
                 >
                   <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{expense.date}</td>
+                  <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{sourceAccountName}</td>
                   <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{expense.category ? expense.category.name : "-"}</td>
                   <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{expense.costCenter ? expense.costCenter.name : "-"}</td>
                   <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{expense.description}</td>
                   <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
-                    <span className="font-semibold">{expense.amount.toLocaleString()}</span>
+                    <span className="font-semibold">{formatCurrency(expense.amount, expense.currency)}</span>
                   </td>
-                  <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{expense.currency}</td>
                   <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{expense.status ? expense.status : '-'}</td>
                   <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap flex gap-2">
                     <Link
@@ -142,7 +160,7 @@ const OfficeExpensesTable: React.FC = () => {
                     </button>
                   </td>
                 </tr>
-              ))
+              )})
             )}
           </tbody>
         </table>

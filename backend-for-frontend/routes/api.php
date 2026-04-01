@@ -129,7 +129,9 @@ Route::prefix('/')->group(function () {
 		Route::get('dashboard/recent-progress-updates', [App\Http\Controllers\Api\DashboardInformationController::class, 'recentProgressUpdates']);
 		Route::get('dashboard/latest-projects', [App\Http\Controllers\Api\DashboardInformationController::class, 'latestProjects']);
 		Route::get('dashboard/projects-analysis', [App\Http\Controllers\Api\DashboardInformationController::class, 'projectsAnalysis']);
-		Route::get('dashboard/top-customers-by-revenue', [App\Http\Controllers\Api\DashboardInformationController::class, 'topCustomersByRevenue']);
+		Route::get('dashboard/currency-preference', [App\Http\Controllers\Api\DashboardInformationController::class, 'currencyPreference']);
+		Route::get('dashboard/pending-cust-invoices', [App\Http\Controllers\Api\DashboardInformationController::class, 'pendingCustInvoices']);
+		Route::get('dashboard/pending-company-invoices', [App\Http\Controllers\Api\DashboardInformationController::class, 'pendingCompanyInvoices']);
 		Route::get('dashboard/recent-orders', [App\Http\Controllers\Api\DashboardInformationController::class, 'recentOrders']);
 		Route::get('dashboard/quotations-overview', [App\Http\Controllers\Api\DashboardInformationController::class, 'quotationsOverview']);
 		Route::apiResource('office-expenses', App\Http\Controllers\Api\OfficeExpenseController::class);
@@ -146,6 +148,8 @@ Route::prefix('/')->group(function () {
 			Route::get('margin-per-project', [App\Http\Controllers\ReportingController::class, 'marginPerProject']);
 			Route::get('general-ledger', [App\Http\Controllers\ReportingController::class, 'generalLedger']);
 			Route::get('invoice-payments', [App\Http\Controllers\ReportingController::class, 'invoicePayments']);
+				Route::get('invoice-payments-customer', [App\Http\Controllers\ReportingController::class, 'invoicePaymentsCustomer']);
+				Route::get('invoice-payments-company', [App\Http\Controllers\ReportingController::class, 'invoicePaymentsCompany']);
 			Route::get('tax-payments-customer', [App\Http\Controllers\ReportingController::class, 'taxPaymentsCustomer']);
 			Route::get('tax-payments-company', [App\Http\Controllers\ReportingController::class, 'taxPaymentsCompany']);
 			Route::get('expense', [App\Http\Controllers\ReportingController::class, 'expenseReport']);

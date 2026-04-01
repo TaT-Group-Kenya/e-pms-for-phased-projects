@@ -18,6 +18,10 @@ class InvoicePaymentsResource extends JsonResource
             'invoice_number' => $this->invoice_number ?? null,
             'customer_id' => $this->customer_id ?? null,
             'company_id' => $this->company_id ?? null,
+            'customer_name' => $this->customer_name ?? null,
+            'company_name' => $this->company_name ?? null,
+            'job_reference_id' => $this->job_reference_id ?? null,
+            'transacted_by_name' => $this->transacted_by_name ?? null,
             'created_at' => $this->created_at,
         ];
     }

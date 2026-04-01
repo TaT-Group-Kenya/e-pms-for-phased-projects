@@ -11,7 +11,9 @@ use App\Http\Resources\Dashboard\ProjectsProgressOverviewResource;
 use App\Http\Resources\Dashboard\RecentProgressUpdateResource;
 use App\Http\Resources\Dashboard\LatestProjectResource;
 use App\Http\Resources\Dashboard\ProjectsAnalysisResource;
-use App\Http\Resources\Dashboard\TopCustomerByRevenueResource;
+use App\Http\Resources\Dashboard\CurrencyPreferenceResource;
+use App\Http\Resources\Dashboard\PendingCustInvoicesResource;
+use App\Http\Resources\Dashboard\PendingCompanyInvoicesResource;
 use App\Http\Resources\Dashboard\RecentOrderResource;
 use App\Http\Resources\Dashboard\QuotationsOverviewResource;
 
@@ -79,15 +81,34 @@ class DashboardInformationController extends Controller
         return new ProjectsAnalysisResource($data);
     }
 
-    public function topCustomersByRevenue(Request $request)
+    public function currencyPreference(Request $request)
     {
         $this->authorize('viewAny', \App\Models\CustInvoice::class);
 
         $range = $request->get('range', 'last_7_days');
-        $limit = (int) $request->get('limit', 5);
-        $items = $this->service->getTopCustomersByRevenue($range, $limit);
+        $data = $this->service->getCurrencyPreference($range);
 
-        return TopCustomerByRevenueResource::collection(collect($items));
+        return new CurrencyPreferenceResource($data);
+    }
+
+    public function pendingCustInvoices(Request $request)
+    {
+        $this->authorize('viewAny', \App\Models\CustInvoice::class);
+
+        $range = $request->get('range', 'last_7_days');
+        $data = $this->service->getPendingCustInvoices($range);
+
+        return new PendingCustInvoicesResource($data);
+    }
+
+    public function pendingCompanyInvoices(Request $request)
+    {
+        $this->authorize('viewAny', \App\Models\CompanyInvoice::class);
+
+        $range = $request->get('range', 'last_7_days');
+        $data = $this->service->getPendingCompanyInvoices($range);
+
+        return new PendingCompanyInvoicesResource($data);
     }
 
     public function recentOrders(Request $request)

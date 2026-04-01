@@ -48,6 +48,15 @@ class CustomerTransactionsLedgerResource extends BaseResource
             'deleted_by' => $this->deleted_by,
             'payment' => new CustPaymentResource($this->whenLoaded('payment')),
             'customer' => new CustomerResource($this->whenLoaded('customer')),
+            'relatedTransaction' => new CustomerTransactionsLedgerResource($this->whenLoaded('relatedTransaction')),
+            'customerInvoice' => ($invoice = $this->customerInvoice())
+                ? new CustInvoiceResource($invoice)
+                : null,
+            'createdByUser' => new UserResource($this->whenLoaded('createdByUser')),
+            'updatedByUser' => new UserResource($this->whenLoaded('updatedByUser')),
+            'deletedByUser' => new UserResource($this->whenLoaded('deletedByUser')),
+            'debitAccount' => new AccountResource($this->whenLoaded('debitAccount')),
+            'creditAccount' => new AccountResource($this->whenLoaded('creditAccount')),
         ];
     }
 }

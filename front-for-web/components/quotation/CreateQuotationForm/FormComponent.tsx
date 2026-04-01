@@ -20,7 +20,7 @@ const quotationSchema = z.object({
     .string()
     .min(1, "Job reference ID is required")
     .max(32, "Job reference ID must not exceed 32 characters"),
-  status: z.string().min(1, "Status is required"),
+  // status is hidden, set in API call
   description: z.string().optional(),
   customer_id: z.string().min(1, "Customer is required"),
   valid_until_date: z.string().min(1, "Valid until date is required"),
@@ -29,6 +29,7 @@ const quotationSchema = z.object({
   notes_to_customer: z.string().optional(),
   discount_percentage: z.string().optional(),
   min_approval_count: z.string().min(1, "Minimum approval count is required"),
+  creationDate: z.string().min(7, "Creation date is required"),
 });
 
 type QuotationFormData = z.infer<typeof quotationSchema>;
@@ -66,8 +67,9 @@ const CreateQuotationForm: React.FC = () => {
     resolver: zodResolver(quotationSchema),
     mode: "onBlur",
     defaultValues: {
-      status: "draft",
+      // status is not shown, set in API call
       min_approval_count: "1",
+      creationDate: new Date().toISOString().split('T')[0],
     },
   });
 
@@ -133,10 +135,18 @@ const CreateQuotationForm: React.FC = () => {
     setSuccessMessage("");
 
     try {
+      // Combine creationDate (date) with current time to get full datetime string
+      const now = new Date();
+      const [year, month, day] = data.creationDate.split("-");
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+      const creation_datetime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+
       const bodyData = {
         title: data.title,
         job_reference_id: data.job_reference_id,
-        status: data.status || "draft",
+        status: "draft", // always set to draft
         description: data.description || "",
         customer_id: data.customer_id ? parseInt(data.customer_id) : null,
         valid_until_date: data.valid_until_date,
@@ -149,6 +159,7 @@ const CreateQuotationForm: React.FC = () => {
         discount_amount: 0,
         total_amount: 0,
         min_approval_count: parseInt(data.min_approval_count || "1") || 1,
+        creationDate: creation_datetime,
       };
 
       const response = await fetch("/api/quotations/create", {
@@ -276,18 +287,20 @@ const CreateQuotationForm: React.FC = () => {
                   {renderFieldError("customer_id")}
                 </div>
 
-                {/* Status - Draft Only */}
+                {/* Creation Date - Required */}
                 <div className="mb-[20px] sm:mb-0">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Status
+                    Creation Date <span className="text-danger-500">*</span>
                   </label>
-                  <select
-                    {...register("status")}
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
-                    disabled
-                  >
-                    <option value="draft">Draft</option>
-                  </select>
+                  <input
+                    type="date"
+                    {...register("creationDate")}
+                    max={today}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${
+                      errors.creationDate ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500`}
+                  />
+                  {renderFieldError("creationDate")}
                 </div>
               </div>
 
@@ -306,7 +319,7 @@ const CreateQuotationForm: React.FC = () => {
             </div>
 
             <div className="mb-[25px]">
-              <div className="sm:grid sm:grid-cols-4 sm:gap-[25px] mb-[20px]">
+              <div className="sm:grid sm:grid-cols-3 sm:gap-[25px] mb-[20px]">
                 {/* Valid Until Date - Required */}
                 <div className="mb-[20px] sm:mb-0">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
@@ -315,7 +328,7 @@ const CreateQuotationForm: React.FC = () => {
                   <input
                     type="date"
                     {...register("valid_until_date")}
-                    min={today}
+                    // min={today}
                     className={`h-[44px] rounded-md text-black dark:text-white border ${
                       errors.valid_until_date ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
                     } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500`}
@@ -346,7 +359,7 @@ const CreateQuotationForm: React.FC = () => {
                 </div>
 
                 {/* Discount Percentage */}
-                <div className="mb-[20px]">
+                {/* <div className="mb-[20px]">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
                     Discount Percentage (%)
                   </label>
@@ -360,7 +373,7 @@ const CreateQuotationForm: React.FC = () => {
                     className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
                     placeholder="0.00"
                   />
-                </div>
+                </div> */}
 
                 {/* Min Approval Count */}
                 <div className="mb-[20px]">

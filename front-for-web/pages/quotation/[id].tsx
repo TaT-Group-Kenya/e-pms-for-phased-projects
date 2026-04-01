@@ -475,6 +475,10 @@ const QuotationDetail: React.FC = () => {
           typeof editData.min_approval_count === "number"
             ? editData.min_approval_count
             : quotation.min_approval_count ?? 1,
+        created_at:
+          typeof editData.created_at === "string" && editData.created_at
+            ? editData.created_at
+            : quotation.created_at,
       };
 
       const response = await fetch(`/api/quotations/update?id=${quotationId}`, {
@@ -950,9 +954,9 @@ const QuotationDetail: React.FC = () => {
   const itemsSubtotal =
     quotation?.quoteItems && quotation.quoteItems.length > 0
       ? quotation.quoteItems.reduce(
-          (sum, item) => sum + Number(item.total ?? 0),
-          0
-        )
+        (sum, item) => sum + Number(item.total ?? 0),
+        0
+      )
       : quotation?.subtotal_amount ?? 0;
 
 
@@ -982,8 +986,8 @@ const QuotationDetail: React.FC = () => {
         prev.item_value !== ""
           ? prev.item_value
           : defaultTax.rate != null
-          ? String(defaultTax.rate)
-          : prev.item_value,
+            ? String(defaultTax.rate)
+            : prev.item_value,
     }));
   }, [itemForm.is_taxable, itemForm.tax_id, defaultTax]);
 
@@ -1082,8 +1086,8 @@ const QuotationDetail: React.FC = () => {
         itemName=""
         isDeleting={false}
         error={null}
-        onConfirm={() => {}}
-        onCancel={() => {}}
+        onConfirm={() => { }}
+        onCancel={() => { }}
       />
 
       <div className="mb-[25px] md:flex items-center justify-between">
@@ -1168,8 +1172,8 @@ const QuotationDetail: React.FC = () => {
                   type="button"
                   onClick={() => setActiveTab(0)}
                   className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 0
-                      ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
-                      : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+                    ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
+                    : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                     }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">dashboard</i>
@@ -1182,8 +1186,8 @@ const QuotationDetail: React.FC = () => {
                   type="button"
                   onClick={() => setActiveTab(1)}
                   className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 1
-                      ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
-                      : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+                    ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
+                    : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                     }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">list_alt</i>
@@ -1195,8 +1199,8 @@ const QuotationDetail: React.FC = () => {
                   type="button"
                   onClick={() => setActiveTab(2)}
                   className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 2
-                      ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
-                      : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+                    ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
+                    : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                     }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">task_alt</i>
@@ -1209,8 +1213,8 @@ const QuotationDetail: React.FC = () => {
                   type="button"
                   onClick={() => setActiveTab(3)}
                   className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 3
-                      ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
-                      : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+                    ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
+                    : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
                     }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">shopping_cart</i>
@@ -1301,8 +1305,8 @@ const QuotationDetail: React.FC = () => {
                                   ? itemType === "percent" && itemValue != null && hasTaxAmount
                                     ? `${formatCurrency(itemAmount as number, '')}`
                                     : hasTaxAmount
-                                    ? `${formatCurrency(itemAmount as number, '')}`
-                                    : "Not taxable"
+                                      ? `${formatCurrency(itemAmount as number, '')}`
+                                      : "Not taxable"
                                   : "Not taxable";
 
                                 return (
@@ -1546,8 +1550,8 @@ const QuotationDetail: React.FC = () => {
                               ? itemType === "percent" && itemValue != null && hasTaxAmount
                                 ? `${formatCurrency(itemAmount as number, '')}`
                                 : hasTaxAmount
-                                ? `${formatCurrency(itemAmount as number, '')}`
-                                : "Not taxable"
+                                  ? `${formatCurrency(itemAmount as number, '')}`
+                                  : "Not taxable"
                               : "Not taxable";
 
                             return (
@@ -1857,67 +1861,67 @@ const QuotationDetail: React.FC = () => {
         {isApprovalModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[500px] max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-[20px]">
-              <h6 className="font-semibold text-black dark:text-white">Approve Quotation</h6>
-              {isApprovalSubmitting && (
-                <div className="flex items-center gap-[8px]">
-                  <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Processing...</span>
-                </div>
-              )}
-            </div>
+              <div className="flex items-center justify-between mb-[20px]">
+                <h6 className="font-semibold text-black dark:text-white">Approve Quotation</h6>
+                {isApprovalSubmitting && (
+                  <div className="flex items-center gap-[8px]">
+                    <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Processing...</span>
+                  </div>
+                )}
+              </div>
 
-            {approvalError && (
-              <div className="mb-[20px] p-[12px] rounded-md bg-danger-50 dark:bg-[#2a1a1a] border border-danger-200 dark:border-danger-900">
-                <div className="flex gap-[10px]">
-                  <i className="material-symbols-outlined text-danger-500 !text-[20px]">error</i>
-                  <div>
-                    <p className="text-sm font-medium text-danger-700 dark:text-danger-400">{approvalError}</p>
+              {approvalError && (
+                <div className="mb-[20px] p-[12px] rounded-md bg-danger-50 dark:bg-[#2a1a1a] border border-danger-200 dark:border-danger-900">
+                  <div className="flex gap-[10px]">
+                    <i className="material-symbols-outlined text-danger-500 !text-[20px]">error</i>
+                    <div>
+                      <p className="text-sm font-medium text-danger-700 dark:text-danger-400">{approvalError}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
               <form onSubmit={handleSubmitApproval} className="space-y-[20px]">
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Approval Type
-                </label>
-                <select
-                  value={approvalAction}
-                  onChange={(e) => setApprovalAction(e.target.value)}
-                  disabled={isApprovalSubmitting}
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {getAvailableApprovalActions(quotation).includes("make") && (
-                    <option value="make">Maker</option>
-                  )}
-                  {getAvailableApprovalActions(quotation).includes("check") && (
-                    <option value="check">Checker</option>
-                  )}
-                </select>
-              </div>
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Approval Type
+                  </label>
+                  <select
+                    value={approvalAction}
+                    onChange={(e) => setApprovalAction(e.target.value)}
+                    disabled={isApprovalSubmitting}
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {getAvailableApprovalActions(quotation).includes("make") && (
+                      <option value="make">Maker</option>
+                    )}
+                    {getAvailableApprovalActions(quotation).includes("check") && (
+                      <option value="check">Checker</option>
+                    )}
+                  </select>
+                </div>
 
-              <div className="flex items-center justify-end gap-[10px] mt-[10px]">
-                <button
-                  type="button"
-                  onClick={handleCloseApprovalModal}
-                  disabled={isApprovalSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isApprovalSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Confirm Approval
-                </button>
-              </div>
-            </form>
+                <div className="flex items-center justify-end gap-[10px] mt-[10px]">
+                  <button
+                    type="button"
+                    onClick={handleCloseApprovalModal}
+                    disabled={isApprovalSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isApprovalSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Confirm Approval
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
         )}
       </Can>
 
@@ -1932,254 +1936,254 @@ const QuotationDetail: React.FC = () => {
         {isItemModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-[20px]">
-              <h6 className="font-semibold text-black dark:text-white">
-                {editingItem ? "Edit Line Item" : "Add Line Item"}
-              </h6>
-              {isItemSubmitting && (
-                <div className="flex items-center gap-[8px]">
-                  <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Processing...</span>
+              <div className="flex items-center justify-between mb-[20px]">
+                <h6 className="font-semibold text-black dark:text-white">
+                  {editingItem ? "Edit Line Item" : "Add Line Item"}
+                </h6>
+                {isItemSubmitting && (
+                  <div className="flex items-center gap-[8px]">
+                    <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Processing...</span>
+                  </div>
+                )}
+              </div>
+
+              {itemError && (
+                <div className="mb-[20px] p-[12px] rounded-md bg-danger-50 dark:bg-[#2a1a1a] border border-danger-200 dark:border-danger-900">
+                  <div className="flex gap-[10px]">
+                    <i className="material-symbols-outlined text-danger-500 !text-[20px]">error</i>
+                    <div>
+                      <p className="text-sm font-medium text-danger-700 dark:text-danger-400">{itemError}</p>
+                    </div>
+                  </div>
                 </div>
               )}
-            </div>
-
-            {itemError && (
-              <div className="mb-[20px] p-[12px] rounded-md bg-danger-50 dark:bg-[#2a1a1a] border border-danger-200 dark:border-danger-900">
-                <div className="flex gap-[10px]">
-                  <i className="material-symbols-outlined text-danger-500 !text-[20px]">error</i>
-                  <div>
-                    <p className="text-sm font-medium text-danger-700 dark:text-danger-400">{itemError}</p>
-                  </div>
-                </div>
-              </div>
-            )}
 
               <form onSubmit={handleSubmitItem} className="space-y-[20px]">
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Item Name <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={itemForm.item_name}
-                  onChange={(e) => handleItemFormChange("item_name", e.target.value)}
-                  disabled={isItemSubmitting}
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="E.g. Design work for phase"
-                />
-              </div>
-
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Description
-                </label>
-                <textarea
-                  value={itemForm.description}
-                  onChange={(e) => handleItemFormChange("description", e.target.value)}
-                  disabled={isItemSubmitting}
-                  className="min-h-[80px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="Optional description for this item"
-                />
-              </div>
-
-              <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
                 <div>
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Quoted Amount <span className="text-danger-500">*</span>
+                    Item Name <span className="text-danger-500">*</span>
                   </label>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={itemForm.quoted_amount}
-                    onChange={(e) => handleItemFormChange("quoted_amount", e.target.value)}
+                    type="text"
+                    value={itemForm.item_name}
+                    onChange={(e) => handleItemFormChange("item_name", e.target.value)}
                     disabled={isItemSubmitting}
                     className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    placeholder="0.00"
+                    placeholder="E.g. Design work for phase"
                   />
                 </div>
 
                 <div>
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Quantity
+                    Description
                   </label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={itemForm.quantity}
-                    onChange={(e) => handleItemFormChange("quantity", e.target.value)}
+                  <textarea
+                    value={itemForm.description}
+                    onChange={(e) => handleItemFormChange("description", e.target.value)}
                     disabled={isItemSubmitting}
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="min-h-[80px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="Optional description for this item"
                   />
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-[8px] text-black dark:text-white font-medium">
-                  <input
-                    type="checkbox"
-                    checked={itemForm.is_taxable}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      if (!checked) {
-                        setItemForm((prev) => ({
-                          ...prev,
-                          is_taxable: false,
-                          tax_id: "",
-                          tax_item_name: "",
-                          item_type: "percent",
-                          item_value: "",
-                        }));
-                        return;
-                      }
-
-                      if (itemForm.tax_id || !defaultTax) {
-                        setItemForm((prev) => ({
-                          ...prev,
-                          is_taxable: true,
-                        }));
-                        return;
-                      }
-
-                      setItemForm((prev) => ({
-                        ...prev,
-                        is_taxable: true,
-                        tax_id: String(defaultTax.id),
-                        tax_item_name: defaultTax.name,
-                        item_type: "percent",
-                        item_value:
-                          defaultTax.rate != null
-                            ? String(defaultTax.rate)
-                            : prev.item_value || "",
-                      }));
-                    }}
-                    disabled={isItemSubmitting}
-                    className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-                  />
-                  <span>Is Taxable</span>
-                </label>
-              </div>
-
-              {itemForm.is_taxable && (
-                <div className="mt-[15px] border border-primary-100 dark:border-primary-900 rounded-md p-[15px] bg-primary-50/40 dark:bg-primary-900/10 space-y-[12px]">
-                  <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
-                    <div>
-                      <label className="mb-[10px] text-black dark:text-white font-medium block">
-                        Tax Name <span className="text-danger-500">*</span>
-                      </label>
-                      <select
-                        value={itemForm.tax_id}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          const selectedTax =
-                            taxes.find((t) => String(t.id) === value) || null;
-                          setItemForm((prev) => ({
-                            ...prev,
-                            tax_id: value,
-                            tax_item_name: selectedTax ? selectedTax.name : "",
-                            item_value:
-                              selectedTax && selectedTax.rate != null
-                                ? String(selectedTax.rate)
-                                : prev.item_value,
-                          }));
-                        }}
-                        disabled={isItemSubmitting || loadingTaxes || taxes.length === 0}
-                        required
-                        className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <option value="" disabled>
-                          {loadingTaxes
-                            ? "Loading taxes..."
-                            : taxes.length === 0
-                            ? "No taxes configured"
-                            : "Select tax"}
-                        </option>
-                        {taxes.map((tax) => (
-                          <option key={tax.id} value={tax.id}>
-                            {tax.name}
-                          </option>
-                        ))}
-                      </select>
-                      {taxesError && (
-                        <p className="mt-[6px] text-[11px] text-danger-500">
-                          {taxesError}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="mb-[10px] text-black dark:text-white font-medium block">
-                        Type <span className="text-danger-500">*</span>
-                      </label>
-                      <select
-                        value={itemForm.item_type}
-                        onChange={(e) =>
-                          setItemForm((prev) => ({
-                            ...prev,
-                            item_type: e.target.value as "fixed" | "percent",
-                          }))
-                        }
-                        disabled={isItemSubmitting}
-                        required
-                        className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <option value="percent">Percentage</option>
-                        <option disabled value="fixed">Fixed Amount</option>
-                      </select>
-                    </div>
-                  </div>
-
+                <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
                   <div>
                     <label className="mb-[10px] text-black dark:text-white font-medium block">
-                      Value
-                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-[6px]">
-                        {itemForm.item_type === "percent"
-                          ? "as % of line total"
-                          : `in ${quotation.currency}`}
-                      </span>
+                      Quoted Amount <span className="text-danger-500">*</span>
                     </label>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
-                      value={itemForm.item_value}
-                      onChange={(e) =>
-                        setItemForm((prev) => ({
-                          ...prev,
-                          item_value: e.target.value,
-                        }))
-                      }
+                      value={itemForm.quoted_amount}
+                      onChange={(e) => handleItemFormChange("quoted_amount", e.target.value)}
                       disabled={isItemSubmitting}
-                      required
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      placeholder={itemForm.item_type === "percent" ? "0.00" : "0.00"}
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Quantity
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={itemForm.quantity}
+                      onChange={(e) => handleItemFormChange("quantity", e.target.value)}
+                      disabled={isItemSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                 </div>
-              )}
 
-              <div className="flex items-center justify-end gap-[10px] mt-[10px]">
-                <button
-                  type="button"
-                  onClick={handleCloseItemModal}
-                  disabled={isItemSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isItemSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {editingItem ? "Update Item" : "Add Item"}
-                </button>
-              </div>
-            </form>
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-[8px] text-black dark:text-white font-medium">
+                    <input
+                      type="checkbox"
+                      checked={itemForm.is_taxable}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        if (!checked) {
+                          setItemForm((prev) => ({
+                            ...prev,
+                            is_taxable: false,
+                            tax_id: "",
+                            tax_item_name: "",
+                            item_type: "percent",
+                            item_value: "",
+                          }));
+                          return;
+                        }
+
+                        if (itemForm.tax_id || !defaultTax) {
+                          setItemForm((prev) => ({
+                            ...prev,
+                            is_taxable: true,
+                          }));
+                          return;
+                        }
+
+                        setItemForm((prev) => ({
+                          ...prev,
+                          is_taxable: true,
+                          tax_id: String(defaultTax.id),
+                          tax_item_name: defaultTax.name,
+                          item_type: "percent",
+                          item_value:
+                            defaultTax.rate != null
+                              ? String(defaultTax.rate)
+                              : prev.item_value || "",
+                        }));
+                      }}
+                      disabled={isItemSubmitting}
+                      className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                    />
+                    <span>Is Taxable</span>
+                  </label>
+                </div>
+
+                {itemForm.is_taxable && (
+                  <div className="mt-[15px] border border-primary-100 dark:border-primary-900 rounded-md p-[15px] bg-primary-50/40 dark:bg-primary-900/10 space-y-[12px]">
+                    <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
+                      <div>
+                        <label className="mb-[10px] text-black dark:text-white font-medium block">
+                          Tax Name <span className="text-danger-500">*</span>
+                        </label>
+                        <select
+                          value={itemForm.tax_id}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const selectedTax =
+                              taxes.find((t) => String(t.id) === value) || null;
+                            setItemForm((prev) => ({
+                              ...prev,
+                              tax_id: value,
+                              tax_item_name: selectedTax ? selectedTax.name : "",
+                              item_value:
+                                selectedTax && selectedTax.rate != null
+                                  ? String(selectedTax.rate)
+                                  : prev.item_value,
+                            }));
+                          }}
+                          disabled={isItemSubmitting || loadingTaxes || taxes.length === 0}
+                          required
+                          className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <option value="" disabled>
+                            {loadingTaxes
+                              ? "Loading taxes..."
+                              : taxes.length === 0
+                                ? "No taxes configured"
+                                : "Select tax"}
+                          </option>
+                          {taxes.map((tax) => (
+                            <option key={tax.id} value={tax.id}>
+                              {tax.name}
+                            </option>
+                          ))}
+                        </select>
+                        {taxesError && (
+                          <p className="mt-[6px] text-[11px] text-danger-500">
+                            {taxesError}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="mb-[10px] text-black dark:text-white font-medium block">
+                          Type <span className="text-danger-500">*</span>
+                        </label>
+                        <select
+                          value={itemForm.item_type}
+                          onChange={(e) =>
+                            setItemForm((prev) => ({
+                              ...prev,
+                              item_type: e.target.value as "fixed" | "percent",
+                            }))
+                          }
+                          disabled={isItemSubmitting}
+                          required
+                          className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <option value="percent">Percentage</option>
+                          <option disabled value="fixed">Fixed Amount</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-[10px] text-black dark:text-white font-medium block">
+                        Value
+                        <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-[6px]">
+                          {itemForm.item_type === "percent"
+                            ? "as % of line total"
+                            : `in ${quotation.currency}`}
+                        </span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={itemForm.item_value}
+                        onChange={(e) =>
+                          setItemForm((prev) => ({
+                            ...prev,
+                            item_value: e.target.value,
+                          }))
+                        }
+                        disabled={isItemSubmitting}
+                        required
+                        className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        placeholder={itemForm.item_type === "percent" ? "0.00" : "0.00"}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-[10px] mt-[10px]">
+                  <button
+                    type="button"
+                    onClick={handleCloseItemModal}
+                    disabled={isItemSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isItemSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {editingItem ? "Update Item" : "Add Item"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
         )}
       </Can>
 
@@ -2190,91 +2194,123 @@ const QuotationDetail: React.FC = () => {
         {isEditing && quotation && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[700px] max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-[20px]">
-              <h6 className="font-semibold text-black dark:text-white">Edit Quotation</h6>
-              {isEditSubmitting && (
-                <div className="flex items-center gap-[8px]">
-                  <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Saving...</span>
-                </div>
-              )}
-            </div>
+              <div className="flex items-center justify-between mb-[20px]">
+                <h6 className="font-semibold text-black dark:text-white">Edit Quotation</h6>
+                {isEditSubmitting && (
+                  <div className="flex items-center gap-[8px]">
+                    <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Saving...</span>
+                  </div>
+                )}
+              </div>
 
-            {editError && (
-              <div className="mb-[20px] p-[12px] rounded-md bg-danger-50 dark:bg-[#2a1a1a] border border-danger-200 dark:border-danger-900">
-                <div className="flex gap-[10px]">
-                  <i className="material-symbols-outlined text-danger-500 !text-[20px]">error</i>
-                  <div>
-                    <p className="text-sm font-medium text-danger-700 dark:text-danger-400 whitespace-pre-wrap">{editError}</p>
+              {editError && (
+                <div className="mb-[20px] p-[12px] rounded-md bg-danger-50 dark:bg-[#2a1a1a] border border-danger-200 dark:border-danger-900">
+                  <div className="flex gap-[10px]">
+                    <i className="material-symbols-outlined text-danger-500 !text-[20px]">error</i>
+                    <div>
+                      <p className="text-sm font-medium text-danger-700 dark:text-danger-400 whitespace-pre-wrap">{editError}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="mb-[15px] p-[12px] rounded-md bg-warning-50 dark:bg-[#2a2410] border border-warning-200 dark:border-warning-900 text-sm text-warning-800 dark:text-warning-300">
-              Changing the customer will clear all existing quote line items and reset quote totals.
-            </div>
+              <div className="mb-[15px] p-[12px] rounded-md bg-warning-50 dark:bg-[#2a2410] border border-warning-200 dark:border-warning-900 text-sm text-warning-800 dark:text-warning-300">
+                Changing the customer will clear all existing quote line items and reset quote totals.
+              </div>
 
               <form onSubmit={handleSubmitEdit} className="space-y-[20px]">
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Title <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editData.title ?? quotation.title}
-                  onChange={(e) => handleEditFieldChange("title", e.target.value)}
-                  disabled={isEditSubmitting}
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="Quotation title"
-                />
-              </div>
+                <div className="sm:grid sm:grid-cols-3 sm:gap-[15px]">
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Title <span className="text-danger-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editData.title ?? quotation.title}
+                      onChange={(e) => handleEditFieldChange("title", e.target.value)}
+                      disabled={isEditSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder="Quotation title"
+                    />
+                  </div>
 
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Customer
-                </label>
-                <select
-                  value={editData.customer_id != null ? String(editData.customer_id) : quotation.customer_id ? String(quotation.customer_id) : ""}
-                  onChange={(e) =>
-                    handleEditFieldChange(
-                      "customer_id",
-                      e.target.value ? Number(e.target.value) : undefined
-                    )
-                  }
-                  disabled={isEditSubmitting}
-                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select customer</option>
-                  {customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
-                <div>
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Valid Until
-                  </label>
-                  <input
-                    type="date"
-                    value={(() => {
-                      const value = editData.valid_until_date ?? quotation.valid_until_date;
-                      if (!value) return "";
-                      const date = new Date(value);
-                      if (Number.isNaN(date.getTime())) return "";
-                      return date.toISOString().split("T")[0];
-                    })()}
-                    onChange={(e) => handleEditFieldChange("valid_until_date", e.target.value)}
-                    disabled={isEditSubmitting}
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Customer
+                    </label>
+                    <select
+                      value={editData.customer_id != null ? String(editData.customer_id) : quotation.customer_id ? String(quotation.customer_id) : ""}
+                      onChange={(e) =>
+                        handleEditFieldChange(
+                          "customer_id",
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
+                      }
+                      disabled={isEditSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">Select customer</option>
+                      {customers.map((customer) => (
+                        <option key={customer.id} value={customer.id}>
+                          {customer.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Creation Date
+                    </label>
+                    <input
+                      type="date"
+                      value={(() => {
+                        const value = editData.created_at ?? quotation.created_at;
+                        if (!value) return "";
+                        const date = new Date(value);
+                        if (Number.isNaN(date.getTime())) return "";
+                        return date.toISOString().split("T")[0];
+                      })()}
+                      onChange={e => {
+                        // preserve time if present, otherwise set to 00:00:00
+                        const oldValue = editData.created_at ?? quotation.created_at;
+                        let time = "00:00:00";
+                        if (oldValue) {
+                          const t = new Date(oldValue);
+                          if (!Number.isNaN(t.getTime())) {
+                            time = t.toISOString().split("T")[1]?.split(".")[0] || "00:00:00";
+                          }
+                        }
+                        // Compose new ISO string
+                        const newDate = e.target.value;
+                        let newIso = newDate ? `${newDate}T${time}` : "";
+                        handleEditFieldChange("created_at", newIso);
+                      }}
+                      disabled={isEditSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
                 </div>
 
-                <div className="sm:grid sm:grid-cols-2 sm:gap-[10px]">
+                <div className="sm:grid sm:grid-cols-3 sm:gap-[15px]">
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Valid Until
+                    </label>
+                    <input
+                      type="date"
+                      value={(() => {
+                        const value = editData.valid_until_date ?? quotation.valid_until_date;
+                        if (!value) return "";
+                        const date = new Date(value);
+                        if (Number.isNaN(date.getTime())) return "";
+                        return date.toISOString().split("T")[0];
+                      })()}
+                      onChange={(e) => handleEditFieldChange("valid_until_date", e.target.value)}
+                      disabled={isEditSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
                   <div>
                     <label className="mb-[10px] text-black dark:text-white font-medium block">
                       Tax %
@@ -2325,112 +2361,109 @@ const QuotationDetail: React.FC = () => {
                     />
                   </div>
                 </div>
-              </div>
 
-              <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
-                <div>
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Minimum Approvals
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={
-                      editData.min_approval_count != null
-                        ? String(editData.min_approval_count)
-                        : String(quotation.min_approval_count ?? 1)
-                    }
-                    onChange={(e) =>
-                      handleEditFieldChange(
-                        "min_approval_count",
-                        e.target.value === "" ? 1 : Number(e.target.value)
-                      )
-                    }
-                    disabled={isEditSubmitting}
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
+                <div className="sm:grid sm:grid-cols-3 sm:gap-[15px]">
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Job Reference ID
+                    </label>
+                    <input
+                      type="text"
+                      value={editData.job_reference_id ?? quotation.job_reference_id ?? ""}
+                      onChange={(e) => handleEditFieldChange("job_reference_id", e.target.value)}
+                      disabled={isEditSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder="E.g. JOB12345"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Minimum Approvals
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={
+                        editData.min_approval_count != null
+                          ? String(editData.min_approval_count)
+                          : String(quotation.min_approval_count ?? 1)
+                      }
+                      onChange={(e) =>
+                        handleEditFieldChange(
+                          "min_approval_count",
+                          e.target.value === "" ? 1 : Number(e.target.value)
+                        )
+                      }
+                      disabled={isEditSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Payment Terms
+                    </label>
+                    <input
+                      type="text"
+                      value={editData.payment_terms ?? quotation.payment_terms ?? ""}
+                      onChange={(e) => handleEditFieldChange("payment_terms", e.target.value)}
+                      disabled={isEditSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder="e.g. 30 days from invoice date"
+                    />
+                  </div>
+                </div>
+
+                <div className="sm:grid sm:grid-cols-1 sm:gap-[15px]">
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Description
+                    </label>
+                    <textarea
+                      value={editData.description ?? quotation.description ?? ""}
+                      onChange={(e) => handleEditFieldChange("description", e.target.value)}
+                      disabled={isEditSubmitting}
+                      className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      rows={3}
+                      placeholder="Short description of this quotation"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Payment Terms
-                  </label>
-                  <input
-                    type="text"
-                    value={editData.payment_terms ?? quotation.payment_terms ?? ""}
-                    onChange={(e) => handleEditFieldChange("payment_terms", e.target.value)}
-                    disabled={isEditSubmitting}
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    placeholder="e.g. 30 days from invoice date"
-                  />
-                </div>
-              </div>
-
-              <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
-                <div>
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Job Reference ID
-                  </label>
-                  <input
-                    type="text"
-                    value={editData.job_reference_id ?? quotation.job_reference_id ?? ""}
-                    onChange={(e) => handleEditFieldChange("job_reference_id", e.target.value)}
-                    disabled={isEditSubmitting}
-                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    placeholder="E.g. JOB12345"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Description
+                    Notes to Customer
                   </label>
                   <textarea
-                    value={editData.description ?? quotation.description ?? ""}
-                    onChange={(e) => handleEditFieldChange("description", e.target.value)}
+                    value={editData.notes_to_customer ?? quotation.notes_to_customer ?? ""}
+                    onChange={(e) => handleEditFieldChange("notes_to_customer", e.target.value)}
                     disabled={isEditSubmitting}
                     className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     rows={3}
-                    placeholder="Short description of this quotation"
+                    placeholder="Any additional notes that will appear on the quote"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Notes to Customer
-                </label>
-                <textarea
-                  value={editData.notes_to_customer ?? quotation.notes_to_customer ?? ""}
-                  onChange={(e) => handleEditFieldChange("notes_to_customer", e.target.value)}
-                  disabled={isEditSubmitting}
-                  className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[10px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  rows={3}
-                  placeholder="Any additional notes that will appear on the quote"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-[10px] mt-[10px]">
-                <button
-                  type="button"
-                  onClick={closeEditModal}
-                  disabled={isEditSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isEditSubmitting}
-                  className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
+                <div className="flex items-center justify-end gap-[10px] mt-[10px]">
+                  <button
+                    type="button"
+                    onClick={closeEditModal}
+                    disabled={isEditSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] text-gray-500 border border-gray-200 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isEditSubmitting}
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
         )}
       </Can>
     </AuthenticatedLayout>

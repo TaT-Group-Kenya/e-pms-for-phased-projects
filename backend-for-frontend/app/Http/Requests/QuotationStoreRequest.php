@@ -36,6 +36,7 @@ class QuotationStoreRequest extends FormRequest
             'payment_terms' => ['nullable', 'string', 'max:255'],
             'min_approval_count' => ['nullable', 'numeric', 'min:1'],
             'notes_to_customer' => ['nullable', 'string', 'max:255'],
+            'creationDate' => ['required', 'date'],
         ];
     }
 

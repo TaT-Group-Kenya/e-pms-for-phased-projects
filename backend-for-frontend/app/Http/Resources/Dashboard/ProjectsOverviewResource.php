@@ -12,7 +12,7 @@ class ProjectsOverviewResource extends BaseResource
             'total_projects' => $this->resource['total_projects'] ?? null,
             'active_projects' => $this->resource['active_projects'] ?? null,
             'finished_projects' => $this->resource['finished_projects'] ?? null,
-            'deleted_projects' => $this->resource['deleted_projects'] ?? null,
+            'orders_count' => $this->resource['orders_count'] ?? null,
         ];
     }
 }

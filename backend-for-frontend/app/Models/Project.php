@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use App\Models\User;
 
 class Project extends Model
 {
@@ -76,5 +77,10 @@ class Project extends Model
     public function company_invoices()
     {
         return $this->hasMany(CompanyInvoice::class, 'project_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

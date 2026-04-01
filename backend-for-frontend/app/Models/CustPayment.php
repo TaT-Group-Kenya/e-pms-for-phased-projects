@@ -61,6 +61,11 @@ class CustPayment extends Model
             'id',
             'id',
             'invoice_id'
-        );
+        )->with(['customer', 'project']);
+    }
+
+    public function createdByUser()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

@@ -1,0 +1,21 @@
+import DocsLayout from '../../components/docs/DocsLayout';
+
+export default function DashboardDoc() {
+  return (
+    <DocsLayout>
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+      <ol className="list-decimal pl-6 space-y-4">
+        <li>
+          <strong>View Dashboard</strong>
+          <div className="mt-2">The dashboard is the first page after login.</div>
+          <img src="https://placehold.co/600x300?text=Dashboard" alt="Dashboard" className="my-4 rounded shadow" />
+        </li>
+        <li>
+          <strong>Use Filters and Widgets</strong>
+          <div className="mt-2">Interact with filters and widgets for custom views.</div>
+          <img src="https://placehold.co/600x300?text=Dashboard+Filters" alt="Dashboard Filters" className="my-4 rounded shadow" />
+        </li>
+      </ol>
+    </DocsLayout>
+  );
+}

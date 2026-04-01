@@ -59,7 +59,8 @@ class CompanyCreditNoteController extends Controller
         } while (CompanyCreditNote::where('credit_note_number', $number)->exists());
 
         $validated['credit_note_number'] = $number;
-        $validated['description'] = $validated['description'] ?? $validated['title'];
+        $validated['title'] = $validated['reason'] ?? 'Credit Note for Invoice ' . ($invoice->invoice_number);
+        $validated['description'] = $validated['title'];
         $validated['notes_to_customer'] = $validated['notes_to_customer'] ?? 'Correction for invoice ' . ($invoice->invoice_number);
         
 
@@ -106,6 +107,12 @@ class CompanyCreditNoteController extends Controller
             'narration' => ['nullable', 'string'],
         ]);
 
+        \Log::info('Initiating refund for Company Credit Note', [
+            'company_credit_note_id' => $companyCreditNote->id,
+            'invoice_id' => $companyCreditNote->invoice_id,
+            'validated_data' => $validated,
+        ]);
+
         // Ensure refund date is not older than credit note creation date
         $refundDate = \Carbon\Carbon::parse($validated['date'])->toDateString();
         $creditNoteCreatedAt = $companyCreditNote->created_at instanceof \Carbon\Carbon
@@ -125,7 +132,7 @@ class CompanyCreditNoteController extends Controller
             ], 422);
         }
 
-        $existingRefund = \App\Models\CompanyTransactionsLedger::where('source_type', 'company credit note')
+        $existingRefund = \App\Models\CompanyTransactionsLedger::where('source_type', 'company_credit_note')
             ->where('source_id', $companyCreditNote->id)
             ->where('transaction_type', 'refund')
             ->where('is_deleted', false)
@@ -239,7 +246,7 @@ class CompanyCreditNoteController extends Controller
                 'converted_net_amount' => $netPortion * $exchangeRate,
                 'company_id' => $companyCreditNote->invoice?->company_id,
                 'customer_id' => $companyCreditNote->invoice?->customer_id,
-                'source_type' => 'company credit note',
+                'source_type' => 'company_credit_note',
                 'source_id' => $companyCreditNote->id,
                 'account_debit' => null,
                 'account_credit' => (string) $account->id,
@@ -390,7 +397,7 @@ class CompanyCreditNoteController extends Controller
         ]);
 
         // Fetch ledger rows for this company credit note (refunds)
-        $ledgerRows = \App\Models\CompanyTransactionsLedger::where('source_type', 'company credit note')
+        $ledgerRows = \App\Models\CompanyTransactionsLedger::where('source_type', 'company_credit_note')
             ->where('source_id', $companyCreditNote->id)
             ->where('transaction_type', 'refund')
             ->where('is_deleted', false)

@@ -28,7 +28,7 @@ class CompanyTransactionsLedgerStoreRequest extends FormRequest
             'net_amount' => ['required', 'numeric'],
             'company_id' => ['required', 'exists:companies,id'],
             'customer_id' => ['nullable', 'exists:customers,id'],
-            'source_type' => ['required', Rule::in(['customer invoice', 'customer credit note', 'company invoice', 'expense'])],
+            'source_type' => ['required', Rule::in(['company_invoice', 'company_credit_note', 'company_invoice', 'expense'])],
             'source_id' => ['nullable', 'integer'],
             'account_debit' => ['nullable', 'string', 'max:255'],
             'account_credit' => ['nullable', 'string', 'max:255'],

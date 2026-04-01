@@ -43,4 +43,8 @@ class OfficeExpensePayment extends Model
     {
         return $this->belongsTo(OfficeExpense::class, 'expense_id');
     }
+
+    public function transaction(){
+        return $this->belongsTo(Transaction::class, 'transaction_id');
+    }
 }

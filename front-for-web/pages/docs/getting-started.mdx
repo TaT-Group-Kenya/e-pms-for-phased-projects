@@ -1,0 +1,26 @@
+import DocsLayout from '../../components/docs/DocsLayout';
+
+export default function GettingStartedDoc() {
+  return (
+    <DocsLayout>
+      <h1 className="text-2xl font-bold mb-4">Getting Started</h1>
+      <ol className="list-decimal pl-6 space-y-4">
+        <li>
+          <strong>Access the Application</strong>
+          <div className="mt-2">Go to the main URL in your browser.</div>
+          <img src="https://placehold.co/600x300?text=Login+Page" alt="Login Page" className="my-4 rounded shadow" />
+        </li>
+        <li>
+          <strong>Login</strong>
+          <div className="mt-2">Enter your credentials and click 'Sign In'.</div>
+          <img src="https://placehold.co/600x300?text=Sign+In" alt="Sign In" className="my-4 rounded shadow" />
+        </li>
+        <li>
+          <strong>Navigate the Dashboard</strong>
+          <div className="mt-2">After login, you will see the dashboard with quick links and stats.</div>
+          <img src="https://placehold.co/600x300?text=Dashboard" alt="Dashboard" className="my-4 rounded shadow" />
+        </li>
+      </ol>
+    </DocsLayout>
+  );
+}

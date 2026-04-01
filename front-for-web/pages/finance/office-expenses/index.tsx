@@ -60,9 +60,6 @@ export default function OfficeExpensesListPage() {
         }).then(r => r.json()),
       ]).then(([catData, deptData]) => {
         if (!isMounted) return;
-        // Debug log
-        console.log('Fetched categories:', catData);
-        console.log('Fetched departments:', deptData);
         setCategories(Array.isArray(catData.data) ? catData.data : []);
         setDepartments(Array.isArray(deptData.data) ? deptData.data : []);
         setLoadingOptions(false);

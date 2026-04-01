@@ -21,6 +21,7 @@ import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../../components/common/Toast';
 import Can from '../../components/auth/Can';
 import AuthenticatedLayout from '../../components/authenticated/AuthenticatedLayout';
+import { formatCurrency } from '../../utils/format';
 
 const statusOptions = [
     { value: '', label: 'All Statuses' },
@@ -35,7 +36,6 @@ export default function OrdersSummaryReportPage() {
     const [filters, setFilters] = useState({
         currency_code: '',
         status: '',
-        project_id: '',
         customer_id: '',
         from_date: '',
         to_date: '',
@@ -45,7 +45,6 @@ export default function OrdersSummaryReportPage() {
     const [error, setError] = useState('');
     const [hasRun, setHasRun] = useState(false);
     const [currencyOptions, setCurrencyOptions] = useState<any[]>([]);
-    const [projectOptions, setProjectOptions] = useState<any[]>([]);
     const [customerOptions, setCustomerOptions] = useState<any[]>([]);
 
     const accessToken = useSelector(selectAccessToken);
@@ -58,18 +57,13 @@ export default function OrdersSummaryReportPage() {
             fetch('/api/currencies/list', { headers: { Authorization: `Bearer ${accessToken}` } })
                 .then(res => res.json().then(json => ({ ok: res.ok, data: Array.isArray(json.data) ? json.data : json })))
                 .catch(() => ({ ok: false, data: null, error: 'Error loading currencies' })),
-            fetch('/api/projects/list', { headers: { Authorization: `Bearer ${accessToken}` } })
-                .then(res => res.json().then(json => ({ ok: res.ok, data: Array.isArray(json.data) ? json.data : json })))
-                .catch(() => ({ ok: false, data: null, error: 'Error loading projects' })),
             fetch('/api/customers/list', { headers: { Authorization: `Bearer ${accessToken}` } })
                 .then(res => res.json().then(json => ({ ok: res.ok, data: Array.isArray(json.data) ? json.data : json })))
                 .catch(() => ({ ok: false, data: null, error: 'Error loading customers' })),
-        ]).then(([currencies, projects, customers]) => {
+        ]).then(([currencies, customers]) => {
             if (!isMounted) return;
             if (currencies.ok && Array.isArray(currencies.data)) setCurrencyOptions(currencies.data);
             else addToast('Failed to load currencies', 'error');
-            if (projects.ok && Array.isArray(projects.data)) setProjectOptions(projects.data);
-            else addToast('Failed to load projects', 'error');
             if (customers.ok && Array.isArray(customers.data)) setCustomerOptions(customers.data);
             else addToast('Failed to load customers', 'error');
         });
@@ -157,31 +151,25 @@ export default function OrdersSummaryReportPage() {
     }
 
     function exportCsv() {
-        // Define columns as shown in the table
         const columns = [
-            'Order #',
-            'Project', // Uncomment if project column is visible
+            'Date',
+            'Job Reference ID',
             'Customer',
-            'Job Ref',
-            'Quotation',
             'Title',
-            'Status',
-            'Total Amount',
             'Currency',
-            'Created At',
+            'Total Amount',
+            'Status',
+            'Created By',
         ];
-        // Map data to CSV rows
         const rows = data.map(row => [
-            row.order_number,
-            row.project, // Uncomment if project column is visible
-            row.customer_name,
-            row.job_reference_id,
-            row.quotation_title,
-            row.title,
-            row.status,
-            row.total_amount,
-            row.currency,
             row.created_at ? formatDateTime(row.created_at) : '',
+            row.job_reference_id,
+            row.customer_name,
+            row.title,
+            row.currency,
+            formatCurrency(row.total_amount, row.currency),
+            row.status,
+            row.created_by_name,
         ]);
         // Build CSV string
         const csv = [columns.join(','), ...rows.map(r => r.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(','))].join('\n');
@@ -245,19 +233,6 @@ export default function OrdersSummaryReportPage() {
                                 className="form-select rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 py-3 px-4"
                             >
                                 {statusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                            </select>
-                            <select
-                                name="project_id"
-                                value={filters.project_id}
-                                onChange={handleFilterChange}
-                                className="form-select rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 py-3 px-4"
-                            >
-                                <option value="">All Projects</option>
-                                {projectOptions.map((p: any) => (
-                                    <option key={p.id || p.value} value={p.id || p.value}>
-                                        {p.name || p.title || p.label}
-                                    </option>
-                                ))}
                             </select>
                             <select
                                 name="customer_id"
@@ -326,38 +301,32 @@ export default function OrdersSummaryReportPage() {
                                 <table className="table table-bordered table-sm min-w-max w-full">
                                     <thead>
                                         <tr>
-                                            <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Order #</th>
-                                            <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Project</th>
-                                            <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Customer</th>
-                                            <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Ref</th>
-                                            <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Quotation</th>
-                                            <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Title</th>
-                                            <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Status</th>
+                                            <th className="whitespace-nowrap min-w-[140px] text-left px-4 py-2">Date</th>
+                                            <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Reference ID</th>
+                                            <th className="whitespace-nowrap min-w-[160px] text-left px-4 py-2">Customer</th>
+                                            <th className="whitespace-nowrap min-w-[200px] text-left px-4 py-2">Title</th>
+                                            <th className="whitespace-nowrap min-w-[100px] text-left px-4 py-2">Currency</th>
                                             <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Total Amount</th>
-                                            <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Currency</th>
-                                            <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Created At</th>
+                                            <th className="whitespace-nowrap min-w-[100px] text-left px-4 py-2">Status</th>
+                                            <th className="whitespace-nowrap min-w-[160px] text-left px-4 py-2">Created By</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {loading ? (
-                                            <tr><td colSpan={10} className="whitespace-nowrap px-4 py-2">Loading...</td></tr>
+                                            <tr><td colSpan={8} className="whitespace-nowrap px-4 py-2">Loading...</td></tr>
                                         ) : data.length === 0 ? (
-                                            <tr><td colSpan={10} className="whitespace-nowrap px-4 py-2">No data found</td></tr>
+                                            <tr><td colSpan={8} className="whitespace-nowrap px-4 py-2">No data found</td></tr>
                                         ) : (
                                             data.map((row, idx) => (
                                                 <tr key={idx} className={idx % 2 === 0 ? "bg-gray-50 border-b border-gray-200" : "bg-white border-b border-gray-200"}>
-                                                    <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.order_number}</td>
-                                                    <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project}</td>
-                                                    <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.customer_name}</td>
+                                                    <td className="whitespace-nowrap min-w-[140px] text-left px-4 py-2">{row.created_at ? formatDateTime(row.created_at) : ''}</td>
                                                     <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.job_reference_id}</td>
-                                                    <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.quotation_title}</td>
-                                                    <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.title}</td>
-                                                    <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.status}</td>
-                                                    <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.total_amount}</td>
-                                                    <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.currency}</td>
-                                                    <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">
-                                                        {row.created_at ? formatDateTime(row.created_at) : ''}
-                                                    </td>
+                                                    <td className="whitespace-nowrap min-w-[160px] text-left px-4 py-2">{row.customer_name}</td>
+                                                    <td className="whitespace-nowrap min-w-[200px] text-left px-4 py-2">{row.title}</td>
+                                                    <td className="whitespace-nowrap min-w-[100px] text-left px-4 py-2">{row.currency}</td>
+                                                    <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{formatCurrency(row.total_amount, row.currency)}</td>
+                                                    <td className="whitespace-nowrap min-w-[100px] text-left px-4 py-2">{row.status}</td>
+                                                    <td className="whitespace-nowrap min-w-[160px] text-left px-4 py-2">{row.created_by_name}</td>
                                                 </tr>
                                             ))
                                         )}

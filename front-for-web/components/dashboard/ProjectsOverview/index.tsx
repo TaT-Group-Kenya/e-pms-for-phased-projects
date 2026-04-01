@@ -4,10 +4,10 @@ import React, { useEffect, useState } from "react";
 import TotalProjects from "./TotalProjects";
 import ActiveProjects from "./ActiveProjects";
 import FinishedProjects from "./FinishedProjects";
-import DeletedProjects from "./DeletedProjects";
 import { useAppSelector } from "../../../store/hooks";
 import { useToast } from "../../../hooks/useToast";
 import { useDashboardFilters } from "../DashboardFiltersContext";
+import RecentOrders from "./RecentOrders";
 
 type CountWithDelta = {
   current: number;
@@ -19,7 +19,7 @@ type ProjectsOverviewResponse = {
   total_projects: CountWithDelta;
   active_projects: CountWithDelta;
   finished_projects: CountWithDelta;
-  deleted_projects: CountWithDelta;
+  orders_count: CountWithDelta;
 };
 
 const ProjectsOverview: React.FC = () => {
@@ -75,7 +75,7 @@ const ProjectsOverview: React.FC = () => {
 
   return (
     <>
-      <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md h-[500px] flex flex-col">
+      <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md h-[250px] flex flex-col">
         <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-center justify-between">
           <div className="trezo-card-title">
             <h5 className="!mb-0">Projects Overview</h5>
@@ -86,7 +86,7 @@ const ProjectsOverview: React.FC = () => {
         </div>
 
         <div className="trezo-card-content flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-[25px]">
+          <div className="grid grid-cols-4 sm:grid-cols-4 gap-[25px]">
             <div>
               <TotalProjects value={data?.total_projects} />
             </div>
@@ -100,7 +100,7 @@ const ProjectsOverview: React.FC = () => {
             </div>
 
             <div>
-              <DeletedProjects value={data?.deleted_projects} />
+              <RecentOrders value={data?.orders_count} />
             </div>
           </div>
           {loading && (

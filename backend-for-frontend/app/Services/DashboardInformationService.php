@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Project;
 use App\Models\ProjectProgressUpdate;
 use App\Models\CustInvoice;
+use App\Models\CustPaymentAllocation;
+use App\Models\CompanyInvoice;
 use App\Models\CompanyPayment;
 use App\Models\Customer;
 use App\Models\Order;
@@ -51,6 +53,8 @@ class DashboardInformationService
         // can derive consistent totals and status-based counts.
         $currentAll = Project::whereBetween('created_at', [$currentStart, $currentEnd])->get();
         $previousAll = Project::whereBetween('created_at', [$previousStart, $previousEnd])->get();
+        $currentAllOrders = Order::whereBetween('created_at', [$currentStart, $currentEnd])->where('is_deleted', 0)->count();
+        $previousAllOrders = Order::whereBetween('created_at', [$previousStart, $previousEnd])->where('is_deleted', 0)->count();
 
         // Active projects are simply those that are not deleted.
         $currentActive = $currentAll->where('is_deleted', 0);
@@ -75,9 +79,9 @@ class DashboardInformationService
                 $currentFinishedCount,
                 $previousFinishedCount,
             ),
-            'deleted_projects' => $this->buildCountWithDelta(
-                $deletedCurrent->count(),
-                $deletedPrevious->count(),
+            'orders_count' => $this->buildCountWithDelta(
+                $currentAllOrders,
+                $previousAllOrders,
             ),
         ];
     }
@@ -91,11 +95,12 @@ class DashboardInformationService
             $query->whereBetween('created_at', [$start, $end]);
         }
 
-        $projects = $query->orderByDesc('created_at')->limit(7)->get(['id', 'name', 'progress']);
+        $projects = $query->orderByDesc('created_at')->limit(7)->get(['id', 'job_reference_id', 'name', 'progress']);
 
         return $projects->map(function (Project $project) {
             return [
                 'id' => $project->id,
+                'job_reference_id' => $project->job_reference_id,
                 'name' => $project->name,
                 'progress' => (float) ($project->progress ?? 0),
             ];
@@ -106,11 +111,9 @@ class DashboardInformationService
     {
         $now = Carbon::now();
 
-        // Use the common range resolver so this aligns with other dashboard widgets
         [$start, $end] = $this->resolveRange($range);
 
         if (!$start || !$end) {
-            // Fallback to last 6 months if an unsupported range is provided
             $start = $now->copy()->subMonths(5)->startOfMonth();
             $end = $now->copy()->endOfMonth();
         }
@@ -119,66 +122,15 @@ class DashboardInformationService
             [$start, $end] = [$end, $start];
         }
 
-        // Build month buckets between start and end (max 24 to avoid runaway loops)
-        $months = [];
-        $cursor = $start->copy()->startOfMonth();
-        $endMonth = $end->copy()->endOfMonth();
-        $safety = 24;
-
-        while ($cursor->lessThanOrEqualTo($endMonth) && $safety-- > 0) {
-            $months[] = [
-                'key' => $cursor->format('Y-m'),
-                'label' => $cursor->format('M'),
-            ];
-            $cursor->addMonth();
-        }
-
-        // If for some reason we couldn't build any months, fall back to the last 6 months behaviour
-        if (empty($months)) {
-            $months = [];
-            for ($i = 5; $i >= 0; $i--) {
-                $month = $now->copy()->subMonths($i);
-                $months[] = [
-                    'key' => $month->format('Y-m'),
-                    'label' => $month->format('M'),
-                ];
-            }
-            $start = $now->copy()->subMonths(5)->startOfMonth();
-            $end = $now->copy()->endOfMonth();
-        }
-
         $projects = Project::where('is_deleted', 0)
             ->whereBetween('created_at', [$start, $end])
-            ->get(['id', 'status', 'created_at']);
-
-        // Buckets aligned with projects.status enum: ['new', 'progress', 'draft', 'complete']
-        $statusBuckets = [
-            'complete' => 'Completed',
-            'progress' => 'In Progress',
-            'new' => 'New',
-            'draft' => 'Draft',
-        ];
-
-        $series = [];
-        foreach ($statusBuckets as $statusKey => $label) {
-            $data = [];
-            foreach ($months as $month) {
-                $count = $projects->filter(function (Project $project) use ($statusKey, $month) {
-                    $projectMonth = Carbon::parse($project->created_at)->format('Y-m');
-                    return $projectMonth === $month['key'] && $project->status === $statusKey;
-                })->count();
-                $data[] = $count;
-            }
-
-            $series[] = [
-                'name' => $label,
-                'data' => $data,
-            ];
-        }
+            ->get(['id', 'status']);
 
         return [
-            'categories' => array_column($months, 'label'),
-            'series' => $series,
+            'new' => $projects->where('status', 'new')->count(),
+            'progress' => $projects->where('status', 'progress')->count(),
+            'draft' => $projects->where('status', 'draft')->count(),
+            'complete' => $projects->where('status', 'complete')->count(),
         ];
     }
 
@@ -194,6 +146,7 @@ class DashboardInformationService
             return [
                 'id' => $update->id,
                 'project_id' => $update->project_id,
+                'job_reference_id' => $update->project?->job_reference_id,
                 'project_name' => $update->project?->name,
                 'phase_name' => $update->projectPhase?->name,
                 'comment' => $update->comment,
@@ -385,7 +338,7 @@ class DashboardInformationService
         ];
     }
 
-    public function getTopCustomersByRevenue(string $range = 'last_7_days', int $limit = 5): array
+    public function getCurrencyPreference(string $range = 'last_7_days'): array
     {
         [$start, $end] = $this->resolveRange($range);
 
@@ -394,37 +347,116 @@ class DashboardInformationService
             $query->whereBetween('created_at', [$start, $end]);
         }
 
-        $invoices = $query->get(['customer_id', 'total_amount', 'currency']);
+        $counts = $query->selectRaw('currency, COUNT(*) as total')
+            ->whereNotNull('currency')
+            ->groupBy('currency')
+            ->pluck('total', 'currency')
+            ->toArray();
 
-        $totals = [];
-        foreach ($invoices as $invoice) {
-            if (!$invoice->total_amount || !$invoice->customer_id) {
-                continue;
-            }
-            $converted = $this->currencyConversionService->convertToBaseFromInvoice(
-                (float) $invoice->total_amount,
-                $invoice->currency
-            );
-            $totals[$invoice->customer_id] = ($totals[$invoice->customer_id] ?? 0) + $converted['converted_amount'];
+        return $counts;
+    }
+
+    public function getPendingCustInvoices(string $range = 'last_7_days'): array
+    {
+        [$start, $end] = $this->resolveRange($range);
+
+        $query = CustInvoice::where('is_deleted', 0)
+            ->whereIn('status', ['sent', 'partial-paid']);
+
+        if ($start && $end) {
+            $query->whereBetween('created_at', [$start, $end]);
         }
 
-        arsort($totals);
-        $topIds = array_slice(array_keys($totals), 0, $limit);
+        $invoices = $query->get(['id', 'status', 'total_amount', 'currency']);
 
-        $customers = Customer::whereIn('id', $topIds)->get(['id', 'name', 'email']);
+        $invoiceIds = $invoices->pluck('id')->all();
+
+        $paidByInvoice = [];
+        if (!empty($invoiceIds)) {
+            $paidByInvoice = CustPaymentAllocation::whereIn('cust_payment_allocations.invoice_id', $invoiceIds)
+                ->where(function ($q) {
+                    $q->where('cust_payment_allocations.is_deleted', 0)->orWhereNull('cust_payment_allocations.is_deleted');
+                })
+                ->join('cust_payments', 'cust_payments.id', '=', 'cust_payment_allocations.payment_id')
+                ->where('cust_payments.transaction_type', 'receipt')
+                ->selectRaw('cust_payment_allocations.invoice_id, SUM(cust_payment_allocations.allocated_amount) as total_paid')
+                ->groupBy('cust_payment_allocations.invoice_id')
+                ->pluck('total_paid', 'cust_payment_allocations.invoice_id')
+                ->toArray();
+        }
 
         $result = [];
-        foreach ($topIds as $id) {
-            $customer = $customers->firstWhere('id', $id);
-            if (!$customer) {
+        foreach ($invoices as $invoice) {
+            $currency = $invoice->currency;
+            if (!$currency) {
                 continue;
             }
-            $result[] = [
-                'customer_id' => $customer->id,
-                'name' => $customer->name,
-                'email' => $customer->email,
-                'total_revenue' => $totals[$id],
-            ];
+
+            $total = (float) $invoice->total_amount;
+            $paid = (float) ($paidByInvoice[$invoice->id] ?? 0);
+            $pending = $total - $paid;
+
+            if ($pending <= 0) {
+                continue;
+            }
+
+            $result[$currency] = ($result[$currency] ?? 0) + $pending;
+        }
+
+        // Round to 2 decimal places
+        foreach ($result as $currency => $amount) {
+            $result[$currency] = round($amount, 2);
+        }
+
+        return $result;
+    }
+
+    public function getPendingCompanyInvoices(string $range = 'last_7_days'): array
+    {
+        [$start, $end] = $this->resolveRange($range);
+
+        $query = CompanyInvoice::where('is_deleted', 0)
+            ->whereIn('status', ['sent', 'partial-paid']);
+
+        if ($start && $end) {
+            $query->whereBetween('created_at', [$start, $end]);
+        }
+
+        $invoices = $query->get(['id', 'status', 'total_amount', 'currency']);
+
+        $invoiceIds = $invoices->pluck('id')->all();
+
+        $paidByInvoice = [];
+        if (!empty($invoiceIds)) {
+            $paidByInvoice = CompanyPayment::whereIn('invoice_id', $invoiceIds)
+                ->where('is_deleted', 0)
+                ->where('transaction_type', 'receipt')
+                ->selectRaw('invoice_id, SUM(amount_paid) as total_paid')
+                ->groupBy('invoice_id')
+                ->pluck('total_paid', 'invoice_id')
+                ->toArray();
+        }
+
+        $result = [];
+        foreach ($invoices as $invoice) {
+            $currency = $invoice->currency;
+            if (!$currency) {
+                continue;
+            }
+
+            $total = (float) $invoice->total_amount;
+            $paid = (float) ($paidByInvoice[$invoice->id] ?? 0);
+            $pending = $total - $paid;
+
+            if ($pending <= 0) {
+                continue;
+            }
+
+            $result[$currency] = ($result[$currency] ?? 0) + $pending;
+        }
+
+        foreach ($result as $currency => $amount) {
+            $result[$currency] = round($amount, 2);
         }
 
         return $result;

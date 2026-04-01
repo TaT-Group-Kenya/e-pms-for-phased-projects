@@ -52,11 +52,11 @@ const SECTIONS: SidebarSection[] = [
         href: "/customer/create-customer",
         requiredRoles: ["ROLE_ADD_CUSTOMER"],
       },
-      {
-        label: "Reports",
-        href: "/customer/report",
-        requiredRoles: ["ROLE_VIEW_CUSTOMER"],
-      },
+      // {
+      //   label: "Reports",
+      //   href: "/customer/report",
+      //   requiredRoles: ["ROLE_VIEW_CUSTOMER"],
+      // },
     ],
   },
   {
@@ -76,11 +76,11 @@ const SECTIONS: SidebarSection[] = [
         href: "/company/create-company",
         requiredRoles: ["ROLE_ADD_COMPANY"],
       },
-      {
-        label: "Reports",
-        href: "/company/report",
-        requiredRoles: ["ROLE_VIEW_COMPANY"],
-      },
+      // {
+      //   label: "Reports",
+      //   href: "/company/report",
+      //   requiredRoles: ["ROLE_VIEW_COMPANY"],
+      // },
     ],
   },
   {
@@ -138,11 +138,11 @@ const SECTIONS: SidebarSection[] = [
         href: "/project/create-project",
         requiredRoles: ["ROLE_ADD_PROJECT"],
       },
-      {
-        label: "Reports",
-        href: "/project/report",
-        requiredRoles: ["ROLE_VIEW_PROJECT"],
-      },
+      // {
+      //   label: "Reports",
+      //   href: "/project/report",
+      //   requiredRoles: ["ROLE_VIEW_PROJECT"],
+      // },
       {
         label: "Categories",
         href: "/project/category",
@@ -219,10 +219,16 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_PAYMENT_RECEIVING_METHOD"],
       },
       {
-        label: "Payments",
-        href: "/finance/payments/",
+        label: "Receivables",
+        href: "/finance/payments/receivables/",
         matchStrategy: "startsWith",
-        requiredRoles: ["ROLE_VIEW_CUST_PAYMENT", "ROLE_VIEW_COMPANY_PAYMENT"],
+        requiredRoles: ["ROLE_VIEW_CUST_PAYMENT"],
+      },
+      {
+        label: "Payables",
+        href: "/finance/payments/payables/",
+        matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_COMPANY_PAYMENT"],
       },
       {
         label: "Office Expenses",
@@ -274,29 +280,35 @@ const SECTIONS: SidebarSection[] = [
         matchStrategy: "exact",
         requiredRoles: ["ROLE_VIEW_CUSTOMER"],
       },
+      // {
+      //   label: "Expense Report",
+      //   href: "/reports/expense-report",
+      //   matchStrategy: "exact",
+      //   requiredRoles: ["ROLE_VIEW_OFFICE_EXPENSE"],
+      // },
+      // {
+      //   label: "Tax Payments (Company)",
+      //   href: "/reports/tax-payments-company",
+      //   matchStrategy: "exact",
+      //   requiredRoles: ["ROLE_VIEW_COMPANY_PAYMENT", "ROLE_VIEW_TAX"],
+      // },
+      // {
+      //   label: "Tax Payments (Customer)",
+      //   href: "/reports/tax-payments-customer",
+      //   matchStrategy: "exact",
+      //   requiredRoles: ["ROLE_VIEW_CUST_PAYMENT", "ROLE_VIEW_TAX"],
+      // },
       {
-        label: "Expense Report",
-        href: "/reports/expense-report",
+        label: "Invoice Payments Cust",
+        href: "/reports/invoice-payments-customer",
         matchStrategy: "exact",
-        requiredRoles: ["ROLE_VIEW_OFFICE_EXPENSE"],
+        requiredRoles: ["ROLE_VIEW_CUST_INVOICE", "ROLE_VIEW_CUST_PAYMENT"],
       },
       {
-        label: "Tax Payments (Company)",
-        href: "/reports/tax-payments-company",
+        label: "Invoice Payments Co",
+        href: "/reports/invoice-payments-company",
         matchStrategy: "exact",
-        requiredRoles: ["ROLE_VIEW_COMPANY_PAYMENT", "ROLE_VIEW_TAX"],
-      },
-      {
-        label: "Tax Payments (Customer)",
-        href: "/reports/tax-payments-customer",
-        matchStrategy: "exact",
-        requiredRoles: ["ROLE_VIEW_CUST_PAYMENT", "ROLE_VIEW_TAX"],
-      },
-      {
-        label: "Invoice Payments",
-        href: "/reports/invoice-payments",
-        matchStrategy: "exact",
-        requiredRoles: ["ROLE_VIEW_COMPANY_INVOICE", "ROLE_VIEW_COMPANY_PAYMENT", "ROLE_VIEW_CUST_INVOICE", "ROLE_VIEW_CUST_PAYMENT"],
+        requiredRoles: ["ROLE_VIEW_COMPANY_INVOICE", "ROLE_VIEW_COMPANY_PAYMENT"],
       },
       {
         label: "General Ledger",

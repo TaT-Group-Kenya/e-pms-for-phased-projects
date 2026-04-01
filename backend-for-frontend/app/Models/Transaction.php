@@ -78,4 +78,15 @@ class Transaction extends Model
     {
         return $this->belongsTo(Transaction::class, 'related_transaction_id');
     }
+
+    public function debitAccount()
+    {
+        return $this->belongsTo(Account::class, 'account_debit');
+    }
+
+    public function creditAccount()
+    {
+        return $this->belongsTo(Account::class, 'account_credit');
+    }
+
 }

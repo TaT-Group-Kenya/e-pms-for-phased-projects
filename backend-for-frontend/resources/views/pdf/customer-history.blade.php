@@ -42,21 +42,43 @@
     <table class="table">
         <thead>
             <tr>
-                <th>Customer #</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Created At</th>
+                <th>Date</th>
+                <th>Job Reference ID</th>
+                <th>Customer</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Source Origin</th>
+                <th>Location</th>
+                <th>Currency</th>
+                <th>Amount</th>
+                <th>Created By</th>
             </tr>
         </thead>
         <tbody>
-        @foreach($data as $customer)
+        @foreach($data as $row)
             <tr>
-                <td>{{ $customer['customer_id'] ?? '' }}</td>
-                <td>{{ $customer['customer_name'] ?? '' }}</td>
-                <td>{{ $customer['email'] ?? '' }}</td>
-                <td>{{ $customer['phone'] ?? '' }}</td>
-                <td>{{ isset($customer['created_at']) && $customer['created_at'] ? (is_string($customer['created_at']) ? \Carbon\Carbon::parse($customer['created_at'])->format('d M Y') : optional($customer['created_at'])->format('d M Y')) : '' }}</td>
+                <td>
+                    @if(!empty($row['created_at']))
+                        {{ is_string($row['created_at']) ? \Carbon\Carbon::parse($row['created_at'])->format('d M Y') : optional($row['created_at'])->format('d M Y') }}
+                    @else
+                        -
+                    @endif
+                </td>
+                <td>{{ $row['job_reference_id'] ?? '-' }}</td>
+                <td>{{ $row['customer_name'] ?? '-' }}</td>
+                <td>{{ $row['title'] ?? '-' }}</td>
+                <td>{{ $row['project_category'] ?? '-' }}</td>
+                <td>{{ $row['project_source_origin'] ?? '-' }}</td>
+                <td>{{ $row['project_location'] ?? '-' }}</td>
+                <td>{{ $row['currency'] ?? '-' }}</td>
+                <td>
+                    @if(isset($row['amount']))
+                        {{ number_format((float) $row['amount'], 2) }}
+                    @else
+                        -
+                    @endif
+                </td>
+                <td>{{ $row['created_by_name'] ?? '-' }}</td>
             </tr>
         @endforeach
         </tbody>

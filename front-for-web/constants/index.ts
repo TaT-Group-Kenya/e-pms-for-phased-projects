@@ -1,2 +1,2 @@
-/* 7 days in milliseconds */
-export const TOKEN_EXPIRY_BUFFER = 7 * 24 * 60 * 60 * 1000 
+/* 1 hour in milliseconds */
+export const TOKEN_EXPIRY_BUFFER = 1 * 60 * 60 * 1000 

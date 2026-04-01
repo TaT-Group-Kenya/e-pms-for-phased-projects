@@ -35,6 +35,7 @@ class CustCreditNoteService
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
+        $query->orderByDesc('id');
         
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
@@ -91,7 +92,7 @@ class CustCreditNoteService
                 ]);
             }
 
-            $hasLedgerEntries = CustomerTransactionsLedger::where('source_type', 'customer credit note')
+            $hasLedgerEntries = CustomerTransactionsLedger::where('source_type', 'customer_credit_note')
                 ->where('source_id', $model->id)
                 ->where('is_deleted', false)
                 ->exists();

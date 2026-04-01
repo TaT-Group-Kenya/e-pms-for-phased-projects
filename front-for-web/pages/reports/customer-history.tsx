@@ -6,6 +6,7 @@ import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../../components/common/Toast';
 import Can from '../../components/auth/Can';
 import AuthenticatedLayout from '../../components/authenticated/AuthenticatedLayout';
+import { formatCurrency } from '../../utils/format';
 
 function formatDateTime(dateString: string): string {
   const date = new Date(dateString);
@@ -115,26 +116,28 @@ export default function CustomerHistoryReportPage() {
 
   function exportCsv() {
     const columns = [
-      'Customer Name',
-      'Email',
-      'Phone',
-      'Address',
-      'City',
-      'State',
-      'Country',
-      'KRA PIN',
-      'Created At',
+      'Date',
+      'Job Reference ID',
+      'Customer',
+      'Title',
+      'Category',
+      'Source Origin',
+      'Location',
+      'Currency',
+      'Amount',
+      'Created By',
     ];
     const rows = data.map(row => [
-      row.customer_name,
-      row.email,
-      row.phone,
-      row.address,
-      row.city,
-      row.state,
-      row.country,
-      row.kra_pin,
       row.created_at ? formatDateTime(row.created_at) : '',
+      row.job_reference_id ?? '',
+      row.customer_name ?? '',
+      row.title ?? '',
+      row.project_category ?? '',
+      row.project_source_origin ?? '',
+      row.project_location ?? '',
+      row.currency ?? '',
+      formatCurrency(row.amount, row.currency) ?? '',
+      row.created_by_name ?? '',
     ]);
     const csv = [columns.join(','), ...rows.map(r => r.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -230,34 +233,36 @@ export default function CustomerHistoryReportPage() {
                 <table className="table table-bordered table-sm min-w-max w-full">
                   <thead>
                     <tr>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Customer Name</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Email</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Phone</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Address</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">City</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">State</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Country</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">KRA PIN</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Created At</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Date</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Reference ID</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Customer</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Title</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Category</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Source Origin</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Location</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Currency</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Amount</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Created By</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={9} className="whitespace-nowrap px-4 py-2">Loading...</td></tr>
+                      <tr><td colSpan={10} className="whitespace-nowrap px-4 py-2">Loading...</td></tr>
                     ) : data.length === 0 ? (
-                      <tr><td colSpan={9} className="whitespace-nowrap px-4 py-2">No data found</td></tr>
+                      <tr><td colSpan={10} className="whitespace-nowrap px-4 py-2">No data found</td></tr>
                     ) : (
                       data.map((row, idx) => (
                         <tr key={idx} className={idx % 2 === 0 ? "bg-gray-50 border-b border-gray-200" : "bg-white border-b border-gray-200"}>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.customer_name}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.email}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.phone}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.address}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.city}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.state}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.country}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.kra_pin}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.created_at ? formatDateTime(row.created_at) : ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.job_reference_id ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.customer_name ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.title ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_category ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_source_origin ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_location ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.currency ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{formatCurrency(row.amount, row.currency) ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.created_by_name ?? ''}</td>
                         </tr>
                       ))
                     )}

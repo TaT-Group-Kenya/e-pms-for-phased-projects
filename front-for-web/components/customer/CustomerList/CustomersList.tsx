@@ -47,6 +47,7 @@ const CustomersList: React.FC = () => {
   const [deleteCustomerName, setDeleteCustomerName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   
   const perPage = 15;
 
@@ -224,180 +225,169 @@ const CustomersList: React.FC = () => {
         onConfirm={handleConfirmDelete}
         onCancel={closeDeleteModal}
       />
-      <div className="trezo-card-header bg-white mb-[20px] md:mb-[25px] flex items-center justify-between p-5 rounded-md">
+      <div className="trezo-card-header bg-white dark:bg-[#0c1427] mb-[20px] md:mb-[25px] flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-md gap-[15px]">
         <div className="trezo-card-title">
           <h5 className="!mb-0">All Customers</h5>
         </div>
-
-        <div className="trezo-card-subtitle mt-[15px] sm:mt-0">
+        <div className="flex items-center gap-[15px] w-full md:w-auto">
+          {/* Search Box */}
+          <div className="relative flex-1 md:flex-none md:w-[265px]">
+            <label className="leading-none absolute ltr:left-[13px] rtl:right-[13px] text-black dark:text-white mt-px top-1/2 -translate-y-1/2">
+              <i className="material-symbols-outlined !text-[20px]">search</i>
+            </label>
+            <input
+              type="text"
+              placeholder="Search customers..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
+            />
+          </div>
           <Can any={["ROLE_ADD_CUSTOMER"]}>
             <Link
               href="/customer/create-customer"
-              className="inline-block transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white"
+              className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
             >
               <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
                 <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
                   add
                 </i>
-                Create New Customer
+                Create Customer
               </span>
             </Link>
           </Can>
         </div>
       </div>
 
-      {/* Loading State */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-[25px] mb-[25px]">
-          {[...Array(12)].map((_, index) => (
-            <div
-              key={index}
-              className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md animate-pulse"
-            >
-              <div className="h-[80px] bg-gray-200 dark:bg-gray-700 rounded-md mb-[20px]"></div>
-              <div className="h-[20px] bg-gray-200 dark:bg-gray-700 rounded-md mb-[10px]"></div>
-              <div className="h-[16px] bg-gray-200 dark:bg-gray-700 rounded-md mb-[15px]"></div>
-              <div className="space-y-[10px]">
-                <div className="h-[16px] bg-gray-200 dark:bg-gray-700 rounded-md"></div>
-                <div className="h-[16px] bg-gray-200 dark:bg-gray-700 rounded-md"></div>
-                <div className="h-[16px] bg-gray-200 dark:bg-gray-700 rounded-md"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-[25px] mb-[25px]">
-          {customers.map((customer) => (
-            <div
-              key={customer.id}
-              className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md"
-            >
-              <div className="trezo-card-content relative -mt-[7px]">
-                {customer.logo && (
-                  <div className="absolute -top-[18px] ltr:-left-[20px] rtl:-right-[20px] ltr:md:-left-[25px] rtl:md:-right-[25px] w-[90px] bg-gray-50 dark:bg-[#0a0e19] border-b-[10px] ltr:border-r-[10px] rtl:border-l-[10px] border-gray-50 dark:border-[#0a0e19] ltr:rounded-br-md rtl:rounded-bl-md">
-                    <img
-                      src={internalImages + customer.logo}
-                      alt={customer.name}
-                      className="rounded-md"
-                      width={80}
-                      height={60}
-                    />
-                  </div>
-                )}
-
-                <div className={`mb-[20px] md:mb-[25px] ${customer.logo ? "ltr:pl-[88px] rtl:pr-[88px]" : ""}`}>
-                  <span className="font-medium text-black dark:text-white block text-md mb-[2px]">
-                    {customer.name}
-                  </span>
-                  <span className="block text-sm text-gray-600 dark:text-gray-400">{customer.email}</span>
-                </div>
-
-                <ul>
-                  <li className="text-black dark:text-white font-medium mb-[5px] last:mb-0">
-                    <span className="ltr:mr-[7px] rtl:ml-[7px] text-gray-500 dark:text-gray-400 font-normal">
-                      Contact:
-                    </span>
-                    {customer.contact_person_name || "N/A"}
-                  </li>
-
-                  <li className="text-black dark:text-white font-medium mb-[5px] last:mb-0">
-                    <span className="ltr:mr-[7px] rtl:ml-[7px] text-gray-500 dark:text-gray-400 font-normal">
-                      Phone:
-                    </span>
-                    {customer.phone}
-                  </li>
-
-                  <li className="text-black dark:text-white font-medium mb-[5px] last:mb-0">
-                    <span className="ltr:mr-[7px] rtl:ml-[7px] text-gray-500 dark:text-gray-400 font-normal">
-                      Projects:
-                    </span>
-                    {customer.projects_count ?? 0}
-                  </li>
-                </ul>
-
-                <div className="mt-[17px]">
-                  <Link
-                    href={`/customer/${customer.id}`}
-                    className="inline-block rounded-md font-medium border border-primary-500 text-white bg-primary-500 py-[4.5px] px-[15.5px] transition-all hover:bg-primary-400 hover:border-primary-400 ltr:mr-[10px] rtl:ml-[10px]"
-                  >
-                    View Customer
-                  </Link>
-                  <Can any={["ROLE_DELETE_CUSTOMER"]}>
-                    <button
-                      onClick={() => openDeleteModal(customer.id, customer.name)}
-                      className="inline-block rounded-md font-medium border border-danger-500 text-white bg-danger-500 py-[4.5px] px-[15.5px] transition-all hover:bg-danger-600 hover:border-danger-600"
-                    >
-                      Delete
-                    </button>
-                  </Can>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* No Results */}
-      {!loading && customers.length === 0 && (
-        <div className="text-center py-[40px]">
-          <p className="text-gray-600 dark:text-gray-400">No customers found</p>
-        </div>
-      )}
-
-      {/* Pagination */}
-      <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
-        <div className="trezo-card-content">
-          <div className="sm:flex sm:items-center justify-between">
-            <p className="!mb-0">
-              Showing {indexOfFirstCustomer} to {indexOfLastCustomer} of{" "}
-              {totalCount} results
-            </p>
-
-            <ol className="mt-[10px] sm:mt-0">
-              <li className="inline-block mx-[2px] ltr:first:ml-0 ltr:last:mr-0 rtl:first:mr-0 rtl:last:ml-0">
-                <button
-                  onClick={() => handlePageClick(currentPage - 1)}
-                  disabled={currentPage === 1 || loading}
-                  className="w-[31px] h-[31px] block leading-[29px] relative text-center rounded-md border border-gray-100 dark:border-[#172036] transition-all hover:bg-primary-500 hover:text-white hover:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="opacity-0">0</span>
-                  <i className="material-symbols-outlined left-0 right-0 absolute top-1/2 -translate-y-1/2">
-                    chevron_left
-                  </i>
-                </button>
-              </li>
-
-              {[...Array(totalPages)].map((_, index) => (
-                <li key={index} className="inline-block mx-[2px]">
-                  <button
-                    onClick={() => handlePageClick(index + 1)}
-                    disabled={loading}
-                    className={`w-[31px] h-[31px] block leading-[29px] text-center rounded-md border transition-all ${
-                      currentPage === index + 1
-                        ? "bg-primary-500 text-white border-primary-500"
-                        : "border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white hover:border-primary-500"
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    {index + 1}
-                  </button>
-                </li>
+      {/* Table Section */}
+      <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md overflow-hidden">
+        {loading ? (
+          <div className="p-[20px] md:p-[25px]">
+            <div className="space-y-[10px]">
+              {[...Array(5)].map((_, index) => (
+                <div
+                  key={index}
+                  className="h-[60px] bg-gray-100 dark:bg-gray-700 rounded-md animate-pulse"
+                ></div>
               ))}
-
-              <li className="inline-block mx-[2px]">
-                <button
-                  onClick={() => handlePageClick(currentPage + 1)}
-                  disabled={currentPage === totalPages || loading}
-                  className="w-[31px] h-[31px] block leading-[29px] relative text-center rounded-md border border-gray-100 dark:border-[#172036] transition-all hover:bg-primary-500 hover:text-white hover:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="opacity-0">0</span>
-                  <i className="material-symbols-outlined left-0 right-0 absolute top-1/2 -translate-y-1/2">
-                    chevron_right
-                  </i>
-                </button>
-              </li>
-            </ol>
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="table-responsive overflow-x-auto">
+              <table className="w-full">
+                <thead className="text-black dark:text-white">
+                  <tr>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Name</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Email</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Contact Person</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Phone</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Projects</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Logo</th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="text-black dark:text-white">
+                  {customers.filter((customer) =>
+                    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (customer.contact_person_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (customer.phone || "").toLowerCase().includes(searchTerm.toLowerCase())
+                  ).length > 0 ? (
+                    customers.filter((customer) =>
+                      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      (customer.contact_person_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      (customer.phone || "").toLowerCase().includes(searchTerm.toLowerCase())
+                    ).map((customer) => (
+                      <tr key={customer.id} className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors">
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          <Link href={`/customer/${customer.id}`} className="text-primary-500 hover:text-primary-600 hover:underline font-medium text-sm">
+                            {customer.name}
+                          </Link>
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">{customer.email}</td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">{customer.contact_person_name || "N/A"}</td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">{customer.phone}</td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">{customer.projects_count ?? 0}</td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          {customer.logo ? (
+                            <img src={internalImages + customer.logo} alt={customer.name} className="rounded-md" width={40} height={30} />
+                          ) : (
+                            <span className="text-sm">-</span>
+                          )}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          <div className="flex items-center gap-[10px]">
+                            <Link href={`/customer/${customer.id}`} className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-primary-500 hover:text-white hover:border-primary-500 transition-all" title="View Details">
+                              <i className="material-symbols-outlined !text-[18px]">visibility</i>
+                            </Link>
+                            <Can any={["ROLE_DELETE_CUSTOMER"]}>
+                              <button
+                                onClick={() => openDeleteModal(customer.id, customer.name)}
+                                className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-danger-500 hover:text-white hover:border-danger-500 transition-all"
+                                title="Delete Customer"
+                              >
+                                <i className="material-symbols-outlined !text-[18px]">delete</i>
+                              </button>
+                            </Can>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400">
+                        {searchTerm ? "No customers match your search" : "No customers found"}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="px-[20px] py-[12px] md:py-[14px] border-t border-gray-100 dark:border-[#172036] flex items-center justify-between flex-wrap gap-[10px]">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Showing {indexOfFirstCustomer} to {indexOfLastCustomer} of {totalCount} results
+                </p>
+                <div className="flex gap-[5px]">
+                  <button
+                    onClick={() => handlePageClick(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="w-[31px] h-[31px] flex items-center justify-center rounded-md border border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    <i className="material-symbols-outlined">chevron_left</i>
+                  </button>
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handlePageClick(i + 1)}
+                      className={`w-[31px] h-[31px] flex items-center justify-center rounded-md border transition-all ${
+                        currentPage === i + 1
+                          ? "bg-primary-500 text-white border-primary-500"
+                          : "border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => handlePageClick(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="w-[31px] h-[31px] flex items-center justify-center rounded-md border border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    <i className="material-symbols-outlined">chevron_right</i>
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </>
   );

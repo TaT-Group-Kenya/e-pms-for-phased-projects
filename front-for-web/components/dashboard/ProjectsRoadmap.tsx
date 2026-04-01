@@ -12,6 +12,7 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 type RoadmapItem = {
   id: number;
+  job_reference_id: string;
   name: string;
   progress: number;
 };
@@ -103,7 +104,7 @@ const ProjectsRoadmap: React.FC = () => {
       enabled: false,
     },
     xaxis: {
-      categories: items.map((item) => item.name ?? ""),
+      categories: items.map((item) => item.job_reference_id ?? ""),
       axisTicks: {
         show: true,
         color: "#ECEEF2",

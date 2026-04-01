@@ -36,6 +36,7 @@ class CustPaymentController extends Controller
         $with = [
             'invoices.customer',
             'invoices.project',
+            'createdByUser'
         ];
 
         $data = $this->service->index($filters, $perPage, $page, 0, $with);
@@ -59,7 +60,7 @@ class CustPaymentController extends Controller
     {
         $this->authorize('view', $custPayment);
 
-        $custPayment->loadMissing(['customerLedgerEntries', 'allocations', 'invoices']);
+        $custPayment->loadMissing(['customerLedgerEntries', 'allocations', 'invoices', 'createdByUser']);
 
         return new CustPaymentResource($custPayment);
     }

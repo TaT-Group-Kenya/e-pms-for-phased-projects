@@ -32,6 +32,7 @@ class CompanyPaymentController extends Controller
         $with = [
             'invoice.company',
             'invoice.project',
+            'createdByUser',
         ];
 
         $data = $this->service->index($filters, $perPage, $page, 0, $with);
@@ -50,6 +51,8 @@ class CompanyPaymentController extends Controller
     public function show(CompanyPayment $companyPayment)
     {
         $this->authorize('view', $companyPayment);
+
+        $companyPayment->load(['invoice.company', 'invoice.project', 'createdByUser']);
 
         return new CompanyPaymentResource($companyPayment);
     }
