@@ -1,14 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { clearAuth } from '../../store/auth/slice'
-import { selectAccessToken, selectExpiry } from '../../store/auth/selectors'
+import { selectAccessToken, selectExpiry, selectSessionMaxLimit } from '../../store/auth/selectors'
 import { useRouter } from 'next/navigation'
+import { useInactivityTimer } from '../../hooks/useInactivityTimer'
 
 const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const accessToken = useAppSelector(selectAccessToken)
   const expiry = useAppSelector(selectExpiry)
+  const sessionMaxLimit = useAppSelector(selectSessionMaxLimit)
   const [ready, setReady] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
@@ -52,6 +54,22 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
     checkAuthState()
   }, [accessToken, expiry, performLogout])
+
+  // Enforce "no sessions allowed" when sessionMaxLimit is explicitly 0
+  useEffect(() => {
+    if (!isAuthenticated) return
+    if (sessionMaxLimit === 0) {
+      setIsAuthenticated(false)
+      performLogout()
+    }
+  }, [isAuthenticated, sessionMaxLimit, performLogout])
+
+  // Inactivity-based auto logout driven by sessionMaxLimit (in minutes)
+  useInactivityTimer({
+    enabled: isAuthenticated,
+    timeoutMinutes: sessionMaxLimit,
+    onTimeout: performLogout,
+  })
 
   useEffect(() => {
     if (typeof window === 'undefined') return

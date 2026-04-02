@@ -9,3 +9,4 @@ export const selectTokenType = createSelector(selectAuth, (auth) => auth.tokenTy
 export const selectUser = createSelector(selectAuth, (auth) => auth.user)
 export const selectUserGroups = createSelector(selectUser, (user) => user?.groups ?? [])
 export const selectUserRoles = createSelector(selectUser, (user) => user?.roles ?? [])
+export const selectSessionMaxLimit = createSelector(selectUser, (user) => user?.session_max_limit ?? 0)

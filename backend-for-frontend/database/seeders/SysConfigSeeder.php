@@ -45,6 +45,7 @@ class SysConfigSeeder extends Seeder
             ['readonly' => true, 'name' => 'COUNTRY', 'value' => 'Kenya'],
             ['readonly' => true, 'name' => 'PHONE', 'value' => '254700000000'],
             ['readonly' => true, 'name' => 'WEBSITE', 'value' => 'www.infosolkenya.com'],
+            ['readonly' => true, 'name' => 'SESSION_MAX_LIMIT_IN_MINUTES', 'value' => '10'],
         ];
 
         foreach ($configs as $config) {

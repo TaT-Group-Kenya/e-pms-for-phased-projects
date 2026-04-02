@@ -35,6 +35,8 @@ class UserResource extends BaseResource
             // Roles derived from the user's groups (unique list)
             'roles' => SysRoleResource::collection($this->whenLoaded('roles')),
 
+            'session_max_limit' => $this->sessionMaxLimit(),
+
         ];
     }
 }
