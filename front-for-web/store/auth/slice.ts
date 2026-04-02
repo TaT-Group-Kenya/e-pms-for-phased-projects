@@ -37,7 +37,7 @@ type UserProfile = {
   is_active: boolean
   company_id: number | string | null
   customer_id: number | string | null
-
+  session_max_limit: number | null
   company?: UserCompany | null
   customer?: UserCustomer | null
   groups?: UserGroup[]

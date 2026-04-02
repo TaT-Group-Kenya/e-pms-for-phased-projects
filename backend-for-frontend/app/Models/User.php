@@ -44,6 +44,12 @@ class User extends Authenticatable
         'is_active' => 'boolean',
     ];
 
+    public function sessionMaxLimit()
+    {
+        $limit = \App\Models\SysConfig::where('name', 'SESSION_MAX_LIMIT_IN_MINUTES')->first();
+        return $limit ? (int) $limit->value : 0;
+    }
+
     public function company()
     {
         return $this->belongsTo(Company::class);

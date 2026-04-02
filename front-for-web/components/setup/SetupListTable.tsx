@@ -406,12 +406,12 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
                     {columns.map((col) => (
                       <th
                         key={String(col.key)}
-                        className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap"
+                        className="font-medium ltr:text-left rtl:text-right px-[8px] py-[2px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap"
                       >
                         {col.label}
                       </th>
                     ))}
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                    <th className="font-medium ltr:text-left rtl:text-right px-[8px] py-[2px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Actions
                     </th>
                   </tr>
@@ -426,18 +426,18 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
                         {columns.map((col) => (
                           <td
                             key={String(col.key)}
-                            className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm"
+                            className="ltr:text-left rtl:text-right px-[8px] py-[2px] whitespace-nowrap text-sm"
                           >
                             {String(item[col.key as keyof T] ?? "")}
                           </td>
                         ))}
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                        <td className="ltr:text-left rtl:text-right px-[8px] py-[2px] whitespace-nowrap">
                           <div className="flex items-center gap-[10px]">
                             <Can any={canEditRoles}>
                               <button
                                 type="button"
                                 onClick={() => openEditModal(item)}
-                                className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-primary-500 hover:text-white hover:border-primary-500 transition-all"
+                                className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-primary-500 hover:text-white hover:border-primary-500 transition-all"
                                 title={`Edit ${entityName}`}
                               >
                                 <i className="material-symbols-outlined !text-[18px]">edit</i>
@@ -447,7 +447,7 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
                               <button
                                 type="button"
                                 onClick={() => openDeleteModal(item)}
-                                className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-danger-500 hover:text-white hover:border-danger-500 transition-all"
+                                className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-danger-500 hover:text-white hover:border-danger-500 transition-all"
                                 title={`Delete ${entityName}`}
                               >
                                 <i className="material-symbols-outlined !text-[18px]">delete</i>
