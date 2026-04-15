@@ -3,19 +3,173 @@ import DocsLayout from '../../components/docs/DocsLayout';
 export default function SettingsDoc() {
   return (
     <DocsLayout>
-      <h1 className="text-2xl font-bold mb-4">Settings</h1>
-      <ol className="list-decimal pl-6 space-y-4">
-        <li>
-          <strong>Access Settings</strong>
-          <div className="mt-2">Go to the Settings page from the sidebar.</div>
-          <img src="https://placehold.co/600x300?text=Settings+Page" alt="Settings Page" className="my-4 rounded shadow" />
-        </li>
-        <li>
-          <strong>Update Account Info</strong>
-          <div className="mt-2">Edit your profile and save changes.</div>
-          <img src="https://placehold.co/600x300?text=Edit+Profile" alt="Edit Profile" className="my-4 rounded shadow" />
-        </li>
-      </ol>
+      <h1 className="text-2xl font-bold mb-4">System Settings</h1>
+      
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold mb-3">1. Access Settings</h2>
+          <p className="mb-3">
+            The Settings page allows you to configure your system preferences, manage your profile, 
+            and customize the application to your needs. You can access it from:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Sidebar navigation menu - Click on "Settings" icon</li>
+            <li>User profile dropdown - Access from top-right corner</li>
+            <li>Quick settings - Keyboard shortcut (Ctrl + ,)</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/settings.png" 
+              alt="Settings Page" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 1: Main settings dashboard with all configuration options
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-3">2. Update Profile Information</h2>
+          <p className="mb-3">
+            Keep your profile information up to date to ensure accurate communication and system access:
+          </p>
+          <ol className="list-decimal pl-6 mb-3 space-y-1">
+            <li><strong>Personal Information:</strong> Update your name, email address, and contact details</li>
+            <li><strong>Profile Picture:</strong> Upload or change your profile photo</li>
+            <li><strong>Password:</strong> Change your password regularly for security</li>
+            <li><strong>Language Preferences:</strong> Select your preferred display language</li>
+            <li><strong>Time Zone:</strong> Set your local time zone for accurate timestamps</li>
+            <li><strong>Notification Settings:</strong> Configure email and in-app notifications</li>
+          </ol>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/editprofile.png" 
+              alt="Edit Profile" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 2: Profile editing interface with personal information fields
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h3 className="font-semibold text-blue-900 mb-2">⚙️ Settings Categories</h3>
+        <div className="grid grid-cols-2 gap-3 text-sm text-blue-800">
+          <div>
+            <strong>General Settings:</strong>
+            <ul className="list-disc pl-4 mt-1 text-xs">
+              <li>Company Information</li>
+              <li>Branding & Appearance</li>
+              <li>Localization (Date, Time, Currency)</li>
+              <li>System Defaults</li>
+            </ul>
+          </div>
+          <div>
+            <strong>User Settings:</strong>
+            <ul className="list-disc pl-4 mt-1 text-xs">
+              <li>Profile Management</li>
+              <li>Security & Privacy</li>
+              <li>Two-Factor Authentication</li>
+              <li>Session Management</li>
+            </ul>
+          </div>
+          <div>
+            <strong>Notification Settings:</strong>
+            <ul className="list-disc pl-4 mt-1 text-xs">
+              <li>Email Notifications</li>
+              <li>In-App Alerts</li>
+              <li>SMS Notifications</li>
+              <li>Push Notifications</li>
+            </ul>
+          </div>
+          <div>
+            <strong>Integration Settings:</strong>
+            <ul className="list-disc pl-4 mt-1 text-xs">
+              <li>API Keys Management</li>
+              <li>Webhook Configuration</li>
+              <li>Third-Party Integrations</li>
+              <li>Payment Gateways</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+        <h3 className="font-semibold text-green-900 mb-2">🔐 Security Best Practices</h3>
+        <ul className="list-disc pl-6 text-sm text-green-800 space-y-1">
+          <li>Use strong passwords with at least 12 characters including numbers and symbols</li>
+          <li>Enable Two-Factor Authentication (2FA) for enhanced account security</li>
+          <li>Regularly review active sessions and log out of unknown devices</li>
+          <li>Update your password every 90 days</li>
+          <li>Never share your login credentials with others</li>
+          <li>Use the "Remember Me" feature only on trusted devices</li>
+        </ul>
+      </div>
+
+      <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+        <h3 className="font-semibold text-purple-900 mb-2">🎨 Customization Options</h3>
+        <div className="grid grid-cols-2 gap-3 text-sm text-purple-800">
+          <div>
+            <strong>Display Preferences:</strong>
+            <ul className="list-disc pl-4 mt-1 text-xs">
+              <li>Dark/Light theme mode</li>
+              <li>Compact or comfortable view</li>
+              <li>Default page size for lists</li>
+              <li>Date and number formats</li>
+            </ul>
+          </div>
+          <div>
+            <strong>Dashboard Widgets:</strong>
+            <ul className="list-disc pl-4 mt-1 text-xs">
+              <li>Arrange widget positions</li>
+              <li>Choose which metrics to display</li>
+              <li>Set refresh intervals</li>
+              <li>Save custom dashboard layouts</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <h3 className="font-semibold text-yellow-900 mb-2">📧 Email Configuration</h3>
+        <p className="text-sm text-yellow-800 mb-2">
+          Configure your email settings to ensure proper system communications:
+        </p>
+        <ul className="list-disc pl-6 text-sm text-yellow-800 space-y-1">
+          <li><strong>SMTP Settings:</strong> Configure outgoing mail server for system emails</li>
+          <li><strong>Email Templates:</strong> Customize email templates for invoices, quotes, and notifications</li>
+          <li><strong>Test Email:</strong> Send a test email to verify configuration</li>
+          <li><strong>BCC Copy:</strong> Set up BCC for all outgoing emails to maintain records</li>
+          <li><strong>Email Signatures:</strong> Create professional signatures for automated emails</li>
+        </ul>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-3">🔄 Data Management</h2>
+        <p className="mb-3">
+          Manage your data through the settings panel:
+        </p>
+        <ul className="list-disc pl-6 space-y-1">
+          <li><strong>Backup & Restore:</strong> Schedule automatic backups or manually export data</li>
+          <li><strong>Data Retention:</strong> Configure how long to keep historical records</li>
+          <li><strong>Import/Export:</strong> Bulk import data from CSV files or export for analysis</li>
+          <li><strong>Audit Logs:</strong> View system activity logs for security and compliance</li>
+          <li><strong>Cleanup Tools:</strong> Remove temporary files and optimize database</li>
+        </ul>
+      </div>
+
+      <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
+        <h3 className="font-semibold text-red-900 mb-2">⚠️ Important Notes</h3>
+        <ul className="list-disc pl-6 text-sm text-red-800 space-y-1">
+          <li>Changes to system settings may affect all users - ensure you have admin permissions</li>
+          <li>Always save your changes before navigating away from the settings page</li>
+          <li>Some settings may require a page refresh or logout/login to take effect</li>
+          <li>Keep your recovery email and phone number updated for password resets</li>
+        </ul>
+      </div>
     </DocsLayout>
   );
 }

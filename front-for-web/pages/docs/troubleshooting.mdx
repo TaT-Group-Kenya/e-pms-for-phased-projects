@@ -3,8 +3,331 @@ import DocsLayout from '../../components/docs/DocsLayout';
 export default function TroubleshootingDoc() {
   return (
     <DocsLayout>
-      <h1 className="text-2xl font-bold mb-4">Troubleshooting</h1>
-      <p className="mb-4">Find solutions to common issues.</p>
+      <h1 className="text-2xl font-bold mb-4">🔧 Troubleshooting Guide</h1>
+      <p className="mb-6 text-gray-600">Find solutions to common issues. If you can't resolve your problem, <a href="#contact-support" className="text-blue-600 hover:underline">contact our support team</a>.</p>
+      
+      <div className="space-y-6">
+        {/* Login Issues */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-red-50 border-b flex items-center">
+            <span className="text-2xl mr-2">🔐</span> Login & Access Issues
+          </h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-red-700 mb-2">❌ Can't log in to my account</h3>
+              <div className="space-y-2 text-gray-700">
+                <p><strong>Possible causes:</strong></p>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Incorrect email or password</li>
+                  <li>Account is locked or inactive</li>
+                  <li>Browser cookies/cache issues</li>
+                  <li>Network connectivity problems</li>
+                </ul>
+                <p><strong>Solutions:</strong></p>
+                <ol className="list-decimal pl-6 space-y-1">
+                  <li>Use the "Forgot Password" feature to reset your password</li>
+                  <li>Clear your browser cache and cookies (Ctrl+Shift+Delete)</li>
+                  <li>Try using incognito/private browsing mode</li>
+                  <li>Contact your administrator to verify account status</li>
+                  <li>Check if Caps Lock is enabled</li>
+                </ol>
+              </div>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-red-700 mb-2">⏰ Session timeout too quickly</h3>
+              <div className="space-y-2 text-gray-700">
+                <p><strong>Solution:</strong> Go to <a href="/docs/settings" className="text-blue-600 hover:underline">Settings</a> → Security → Session Settings → Increase session timeout duration. For security reasons, maximum timeout is 8 hours.</p>
+                <p className="text-sm text-gray-500 mt-2">💡 Tip: Check "Remember Me" when logging in to stay signed in longer.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Page Loading Issues */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-yellow-50 border-b flex items-center">
+            <span className="text-2xl mr-2">🔄</span> Page Loading & Performance Issues
+          </h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-yellow-700 mb-2">🐌 Page loads slowly or not at all</h3>
+              <div className="space-y-2 text-gray-700">
+                <p><strong>Solutions:</strong></p>
+                <ol className="list-decimal pl-6 space-y-1">
+                  <li>Check your internet connection speed</li>
+                  <li>Clear browser cache and refresh the page (F5)</li>
+                  <li>Disable browser extensions temporarily</li>
+                  <li>Try a different browser (Chrome, Firefox, Safari, Edge)</li>
+                  <li>Check if the server is experiencing high traffic</li>
+                  <li>Reduce the number of filters or date range in reports</li>
+                </ol>
+              </div>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-yellow-700 mb-2">📱 Mobile view not displaying correctly</h3>
+              <div className="space-y-2 text-gray-700">
+                <p><strong>Solutions:</strong></p>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Rotate your device to landscape mode for better viewing</li>
+                  <li>Update your mobile browser to the latest version</li>
+                  <li>Clear browser cache on your mobile device</li>
+                  <li>Use the desktop version option if available</li>
+                  <li>Check if your screen zoom level is set to default (100%)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Data & Form Issues */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-blue-50 border-b flex items-center">
+            <span className="text-2xl mr-2">📝</span> Data Entry & Form Issues
+          </h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-700 mb-2">💾 Form data not saving</h3>
+              <div className="space-y-2 text-gray-700">
+                <p><strong>Solutions:</strong></p>
+                <ol className="list-decimal pl-6 space-y-1">
+                  <li>Check all required fields are filled (marked with *)</li>
+                  <li>Verify data formats (dates, emails, phone numbers)</li>
+                  <li>Check file sizes for uploads (max 10MB per file)</li>
+                  <li>Try saving in smaller batches for large data entries</li>
+                  <li>Refresh the page and re-enter the data</li>
+                  <li>Check browser console for error messages (F12 → Console tab)</li>
+                </ol>
+              </div>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-700 mb-2">🔍 Can't find a customer or company</h3>
+              <div className="space-y-2 text-gray-700">
+                <p><strong>Solutions:</strong></p>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Check spelling when searching</li>
+                  <li>Remove filters that might be hiding results</li>
+                  <li>Verify the customer hasn't been archived or deleted</li>
+                  <li>Check if you have permission to view that customer</li>
+                  <li>Use the advanced search feature with different criteria</li>
+                  <li>Contact an administrator to verify record exists</li>
+                </ul>
+              </div>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-700 mb-2">📎 File upload fails</h3>
+              <div className="space-y-2 text-gray-700">
+                <p><strong>Solutions:</strong></p>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Check file size (maximum 10MB per file)</li>
+                  <li>Verify file format is supported (PDF, JPG, PNG, DOC, XLS)</li>
+                  <li>Ensure file name doesn't contain special characters</li>
+                  <li>Try renaming the file with a simpler name</li>
+                  <li>Compress large files before uploading</li>
+                  <li>Check available storage space in your account</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Email & Notification Issues */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-purple-50 border-b flex items-center">
+            <span className="text-2xl mr-2">📧</span> Email & Notification Issues
+          </h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-purple-700 mb-2">📨 Not receiving email notifications</h3>
+              <div className="space-y-2 text-gray-700">
+                <p><strong>Solutions:</strong></p>
+                <ol className="list-decimal pl-6 space-y-1">
+                  <li>Check your spam/junk folder</li>
+                  <li>Add donotreply@example.com to your contacts</li>
+                  <li>Verify email notifications are enabled in <a href="/docs/settings" className="text-blue-600 hover:underline">Settings</a> → Notifications</li>
+                  <li>Check if your email address is correct in your profile</li>
+                  <li>Contact your IT department to whitelist our email domain</li>
+                  <li>Test by sending a test email from Settings → Notifications → Test Email</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Report & Export Issues */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-green-50 border-b flex items-center">
+            <span className="text-2xl mr-2">📊</span> Report & Export Issues
+          </h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-green-700 mb-2">📄 Report generation takes too long</h3>
+              <div className="space-y-2 text-gray-700">
+                <p><strong>Solutions:</strong></p>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Reduce the date range for the report</li>
+                  <li>Apply filters to limit the data</li>
+                  <li>Export in smaller batches</li>
+                  <li>Schedule reports during off-peak hours</li>
+                  <li>Use summary reports instead of detailed ones</li>
+                </ul>
+              </div>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-green-700 mb-2">⬇️ Export file not downloading</h3>
+              <div className="space-y-2 text-gray-700">
+                <p><strong>Solutions:</strong></p>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Check if pop-up blocker is preventing download</li>
+                  <li>Try a different browser</li>
+                  <li>Check your downloads folder for the file</li>
+                  <li>Ensure you have sufficient disk space</li>
+                  <li>Try exporting in a different format (CSV instead of PDF)</li>
+                  <li>Clear browser cache and try again</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Browser & Device Issues */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-orange-50 border-b flex items-center">
+            <span className="text-2xl mr-2">🖥️</span> Browser & Device Issues
+          </h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-orange-700 mb-2">🌐 Website not working in my browser</h3>
+              <div className="space-y-2 text-gray-700">
+                <p><strong>Solutions:</strong></p>
+                <ol className="list-decimal pl-6 space-y-1">
+                  <li>Update your browser to the latest version</li>
+                  <li>Clear browser cache and cookies</li>
+                  <li>Disable browser extensions (ad blockers, privacy tools)</li>
+                  <li>Enable JavaScript and cookies in browser settings</li>
+                  <li>Try a different supported browser (Chrome, Firefox, Safari, Edge)</li>
+                  <li>Check if your browser is supported (not Internet Explorer)</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Common Error Messages */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-gray-50 border-b flex items-center">
+            <span className="text-2xl mr-2">⚠️</span> Common Error Messages
+          </h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-gray-800 mb-2">"403 - Forbidden"</h3>
+              <p className="text-gray-700">You don't have permission to access this resource. Contact your administrator to request access.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-gray-800 mb-2">"404 - Page Not Found"</h3>
+              <p className="text-gray-700">The page you're looking for doesn't exist. Check the URL for typos or use the navigation menu.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-gray-800 mb-2">"500 - Internal Server Error"</h3>
+              <p className="text-gray-700">A server error occurred. Try refreshing the page. If the problem persists, contact support.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-gray-800 mb-2">"Network Error"</h3>
+              <p className="text-gray-700">Check your internet connection. Try reloading the page or contact your network administrator.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Fixes Section */}
+      <div className="mt-8 p-6 bg-gray-50 rounded-lg border">
+        <h2 className="text-xl font-semibold mb-4 flex items-center">
+          <span className="text-2xl mr-2">⚡</span> Quick Fixes to Try First
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-start space-x-3">
+            <span className="text-xl">1️⃣</span>
+            <div>
+              <h3 className="font-semibold">Refresh the page</h3>
+              <p className="text-sm text-gray-600">Press F5 or Ctrl+R</p>
+            </div>
+          </div>
+          <div className="flex items-start space-x-3">
+            <span className="text-xl">2️⃣</span>
+            <div>
+              <h3 className="font-semibold">Clear browser cache</h3>
+              <p className="text-sm text-gray-600">Ctrl+Shift+Delete</p>
+            </div>
+          </div>
+          <div className="flex items-start space-x-3">
+            <span className="text-xl">3️⃣</span>
+            <div>
+              <h3 className="font-semibold">Restart your browser</h3>
+              <p className="text-sm text-gray-600">Close and reopen</p>
+            </div>
+          </div>
+          <div className="flex items-start space-x-3">
+            <span className="text-xl">4️⃣</span>
+            <div>
+              <h3 className="font-semibold">Check internet connection</h3>
+              <p className="text-sm text-gray-600">Test other websites</p>
+            </div>
+          </div>
+          <div className="flex items-start space-x-3">
+            <span className="text-xl">5️⃣</span>
+            <div>
+              <h3 className="font-semibold">Try incognito mode</h3>
+              <p className="text-sm text-gray-600">Bypass extension conflicts</p>
+            </div>
+          </div>
+          <div className="flex items-start space-x-3">
+            <span className="text-xl">6️⃣</span>
+            <div>
+              <h3 className="font-semibold">Update your browser</h3>
+              <p className="text-sm text-gray-600">Get latest version</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Support Section */}
+      <div id="contact-support" className="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+        <h2 className="text-xl font-semibold mb-3 flex items-center">
+          <span className="text-2xl mr-2">💬</span> Still Need Help?
+        </h2>
+        <p className="text-gray-700 mb-4">Our support team is available to assist you with any issues not covered in this guide.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <h3 className="font-semibold mb-2">📧 Email Support</h3>
+            <p className="text-sm">support@example.com</p>
+            <p className="text-xs text-gray-500 mt-1">Response within 24 hours</p>
+          </div>
+          <div>
+            <h3 className="font-semibold mb-2">📞 Phone Support</h3>
+            <p className="text-sm">+1 (555) 123-4567</p>
+            <p className="text-xs text-gray-500 mt-1">Mon-Fri, 9am-5pm EST</p>
+          </div>
+          <div>
+            <h3 className="font-semibold mb-2">💬 Live Chat</h3>
+            <p className="text-sm">Available on the bottom right</p>
+            <p className="text-xs text-gray-500 mt-1">Instant response during business hours</p>
+          </div>
+          <div>
+            <h3 className="font-semibold mb-2">📚 Documentation</h3>
+            <p className="text-sm"><a href="/docs" className="text-blue-600 hover:underline">Browse full documentation</a></p>
+            <p className="text-xs text-gray-500 mt-1">Comprehensive guides and tutorials</p>
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-blue-200">
+          <p className="text-sm text-gray-600"><strong>When contacting support, please provide:</strong></p>
+          <ul className="list-disc pl-6 text-sm text-gray-600 mt-1">
+            <li>Your account email address</li>
+            <li>Description of the issue and steps to reproduce</li>
+            <li>Screenshots or error messages</li>
+            <li>Browser and operating system version</li>
+            <li>Time the issue occurred</li>
+          </ul>
+        </div>
+      </div>
     </DocsLayout>
   );
 }

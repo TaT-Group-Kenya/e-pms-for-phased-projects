@@ -3,19 +3,77 @@ import DocsLayout from '../../components/docs/DocsLayout';
 export default function OrdersDoc() {
   return (
     <DocsLayout>
-      <h1 className="text-2xl font-bold mb-4">Orders</h1>
-      <ol className="list-decimal pl-6 space-y-4">
-        <li>
-          <strong>View Orders</strong>
-          <div className="mt-2">Go to the Orders section.</div>
-          <img src="https://placehold.co/600x300?text=Orders+List" alt="Orders List" className="my-4 rounded shadow" />
-        </li>
-        <li>
-          <strong>Create an Order</strong>
-          <div className="mt-2">Click "Create Order" and fill in the details.</div>
-          <img src="https://placehold.co/600x300?text=Create+Order" alt="Create Order" className="my-4 rounded shadow" />
-        </li>
-      </ol>
+      <h1 className="text-2xl font-bold mb-4">Orders Management</h1>
+      
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold mb-3">1. View All Orders</h2>
+          <p className="mb-3">
+            The Orders section provides a complete overview of all customer orders. You can:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Track order status (Pending, Processing, Shipped, Delivered)</li>
+            <li>Filter orders by date, customer, or status</li>
+            <li>Search for specific orders</li>
+             </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/orderslist.png" 
+              alt="Orders List" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 1: Complete orders list with status and customer information
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-3">2. Create a New Order</h2>
+          <p className="mb-3">
+            To create a new order, click the "Create Order" button and follow these steps:
+          </p>
+          <ol className="list-decimal pl-6 mb-3 space-y-1">
+            <li>Select Quotation</li>
+            <li>Enter Order Title</li>
+            <li>Set Order Creation Date</li>
+            <li>Add payment Terms</li>
+            <li>Add any special notes or instructions for the customer</li>
+            <li>Enter order description</li>
+            <li>Review and confirm the order</li>
+            <li>Click "Create Order" button to generate the order</li>
+          </ol>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/createorder.png" 
+              alt="Create Order Form" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 2: Creating a new order with product selection
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h3 className="font-semibold text-blue-900 mb-2">💡 Pro Tips</h3>
+        <ul className="list-disc pl-6 text-sm text-blue-800 space-y-1">
+          <li>You can convert a quotation directly into an order</li>
+          <li>Orders can be edited or cancelled before they are processed</li>
+          <li>Generate invoices automatically from completed orders</li>
+          <li>Track order history for each customer from their profile</li>
+        </ul>
+      </div>
+
+      <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <h3 className="font-semibold text-yellow-900 mb-2">📌 Related Features</h3>
+        <ul className="list-disc pl-6 text-sm text-yellow-800">
+          <li><a href="/docs/quotations" className="text-yellow-700 underline">Quotations</a> - Create quotes that can be converted to orders</li>
+          <li><a href="/docs/customer-invoices" className="text-yellow-700 underline">Invoices</a> - Generate invoices from orders</li>
+          <li><a href="/docs/reports" className="text-yellow-700 underline">Reports</a> - Run order summary reports</li>
+        </ul>
+      </div>
     </DocsLayout>
   );
 }

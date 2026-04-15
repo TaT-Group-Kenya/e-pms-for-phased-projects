@@ -4,7 +4,184 @@ export default function FAQDoc() {
   return (
     <DocsLayout>
       <h1 className="text-2xl font-bold mb-4">Frequently Asked Questions (FAQ)</h1>
-      <p className="mb-4">_This section answers common questions about using the platform._</p>
+      <p className="mb-6 text-gray-600">This section answers common questions about using the platform. Can't find what you're looking for? <a href="/docs/troubleshooting" className="text-blue-600 hover:underline">Contact support</a></p>
+      
+      <div className="space-y-6">
+        {/* Getting Started */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-gray-50 border-b">🚀 Getting Started</h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">How do I create an account?</h3>
+              <p className="text-gray-700">Contact your system administrator to create an account for you. They will provide you with login credentials and appropriate access permissions based on your role.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">What if I forget my password?</h3>
+              <p className="text-gray-700">Click on the "Forgot Password" link on the <a href="/sign-in" className="text-blue-600 hover:underline">sign-in page</a>. Enter your email address and you'll receive instructions to reset your password. If you don't receive the email, check your spam folder or contact your administrator.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">Can I change my email address?</h3>
+              <p className="text-gray-700">Yes, go to <a href="/docs/settings" className="text-blue-600 hover:underline">Settings</a> → Edit Profile. Update your email address and save changes. You may need to verify the new email address before it becomes active.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Companies & Customers */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-gray-50 border-b">🏢 Companies & Customers</h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">How do I add a new company?</h3>
+              <p className="text-gray-700">Navigate to <a href="/docs/companies" className="text-blue-600 hover:underline">Companies</a> → Click "Create Company" → Fill in the company details (name, email, phone, address) → Save. You can edit company information at any time from the companies list.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">Can I import customers from a CSV file?</h3>
+              <p className="text-gray-700">Yes! Go to <a href="/docs/customers" className="text-blue-600 hover:underline">Customers</a> → Click "Import" → Upload your CSV file with customer data. Make sure your CSV matches the required format. A template is available for download.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">How do I manage customer permissions?</h3>
+              <p className="text-gray-700">Customer permissions can be managed from the customer profile page. Click on a customer → "Permissions" tab → Assign roles and access levels. You can control which modules and data the customer can access.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Quotations & Orders */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-gray-50 border-b">📝 Quotations & Orders</h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">How do I convert a quotation to an order?</h3>
+              <p className="text-gray-700">Open the accepted quotation → Click "Convert to Order" → Review the details → Confirm. The system will automatically create an order with all the quotation information. You can then generate an invoice from the order.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">Can I edit a sent quotation?</h3>
+              <p className="text-gray-700">Once a quotation is sent to a customer, it becomes locked to maintain integrity. However, you can create a revised version: Open the original quote → Click "Create Revision" → Make your changes → Send the updated quote as a new version.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">How do I track order status?</h3>
+              <p className="text-gray-700">Go to <a href="/docs/orders" className="text-blue-600 hover:underline">Orders</a> → Each order shows its current status (Pending, Processing, Shipped, Delivered). Click on an order number to view detailed status history and tracking information.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Invoices & Payments */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-gray-50 border-b">💰 Invoices & Payments</h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">How do I create an invoice?</h3>
+              <p className="text-gray-700">Navigate to <a href="/docs/customer-invoices" className="text-blue-600 hover:underline">Invoices</a> → Click "Create Invoice" → Select customer → Add items → Set due date → Save. You can also generate invoices directly from orders.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">What payment methods are accepted?</h3>
+              <p className="text-gray-700">The system supports multiple payment methods including credit/debit cards, bank transfers, mobile money, and cash. Configure available payment methods in <a href="/docs/settings" className="text-blue-600 hover:underline">Settings</a> → Finance → Payment Methods.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">How do I record a payment?</h3>
+              <p className="text-gray-700">Open the invoice → Click "Record Payment" → Select payment method → Enter amount and reference number → Save. The invoice status will automatically update to "Paid" or "Partially Paid".</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Projects */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-gray-50 border-b">📊 Projects</h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">How do I assign team members to a project?</h3>
+              <p className="text-gray-700">When creating or editing a project, go to the "Team" section → Click "Add Member" → Select team members and assign roles (Project Manager, Developer, Designer, etc.) → Save. Members will receive notifications about their assignments.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">Can I track time spent on projects?</h3>
+              <p className="text-gray-700">Yes! Go to the project → "Time Tracking" tab → Team members can log hours worked → View time reports → Generate timesheets for billing. Time entries can be linked to specific tasks or milestones.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">How do I generate project reports?</h3>
+              <p className="text-gray-700">Navigate to <a href="/docs/reports" className="text-blue-600 hover:underline">Reports</a> → Select "Project Reports" → Choose report type (Progress, Budget, Time, Resources) → Set date range → Generate. Reports can be exported to PDF or Excel.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Reports & Analytics */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-gray-50 border-b">📈 Reports & Analytics</h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">What reports are available?</h3>
+              <p className="text-gray-700">The system offers various reports including: Sales Reports, Customer Reports, Financial Reports (P&L, Balance Sheet), Project Reports, Inventory Reports, and Custom Reports. Access all reports from the <a href="/docs/reports" className="text-blue-600 hover:underline">Reports</a> section.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">Can I schedule automatic reports?</h3>
+              <p className="text-gray-700">Yes, go to Reports → Click "Schedule" → Select report type → Set frequency (Daily, Weekly, Monthly) → Choose recipients → Save. Scheduled reports will be automatically emailed to selected users.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">How do I export data?</h3>
+              <p className="text-gray-700">Most list views have an "Export" button. Click it to download data as CSV, Excel, or PDF. For advanced exports, use the Reports section where you can customize columns and filters before exporting.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Security & Privacy */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-gray-50 border-b">🔒 Security & Privacy</h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">Is my data secure?</h3>
+              <p className="text-gray-700">Yes, we employ industry-standard security measures including data encryption, secure servers, regular backups, and access controls. All sensitive information is encrypted both in transit and at rest.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">How do I enable Two-Factor Authentication (2FA)?</h3>
+              <p className="text-gray-700">Go to <a href="/docs/settings" className="text-blue-600 hover:underline">Settings</a> → Security → Two-Factor Authentication → Click "Enable" → Scan the QR code with your authenticator app (Google Authenticator, Authy) → Enter the verification code → Save.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">Can I see who accessed my data?</h3>
+              <p className="text-gray-700">Yes, audit logs are available in Settings → Security → Audit Logs. You can view login history, data access records, and changes made to critical information. Admins can export logs for compliance purposes.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Technical Support */}
+        <div className="border rounded-lg overflow-hidden">
+          <h2 className="text-lg font-semibold p-4 bg-gray-50 border-b">🛠️ Technical Support</h2>
+          <div className="divide-y">
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">What browsers are supported?</h3>
+              <p className="text-gray-700">The platform supports the latest versions of Chrome, Firefox, Safari, and Edge. For the best experience, keep your browser updated to the latest version. Internet Explorer is not supported.</p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">How do I clear my browser cache?</h3>
+              <p className="text-gray-700">
+                <strong>Chrome/Edge:</strong> Ctrl+Shift+Delete → Select "Cached images and files" → Clear data.<br />
+                <strong>Firefox:</strong> Ctrl+Shift+Delete → Select "Cache" → Clear Now.<br />
+                <strong>Safari:</strong> Cmd+Option+E → Empty Caches.
+              </p>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-blue-800 mb-2">Who do I contact for help?</h3>
+              <p className="text-gray-700">
+                <strong>Technical Issues:</strong> support@example.com<br />
+                <strong>Billing Questions:</strong> billing@example.com<br />
+                <strong>Emergency Support:</strong> +1 (555) 123-4567<br />
+                Response time: Within 24 hours for standard requests, 4 hours for urgent issues.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Still Need Help Section */}
+      <div className="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200 text-center">
+        <h3 className="text-lg font-semibold text-blue-900 mb-2">Still have questions?</h3>
+        <p className="text-blue-800 mb-4">Our support team is here to help you!</p>
+        <div className="flex justify-center gap-4">
+          <a href="/docs/troubleshooting" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+            View Troubleshooting Guide
+          </a>
+          <a href="mailto:support@example.com" className="px-4 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition">
+            Contact Support
+          </a>
+        </div>
+      </div>
     </DocsLayout>
   );
 }

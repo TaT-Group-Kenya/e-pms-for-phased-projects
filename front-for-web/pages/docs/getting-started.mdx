@@ -3,24 +3,86 @@ import DocsLayout from '../../components/docs/DocsLayout';
 export default function GettingStartedDoc() {
   return (
     <DocsLayout>
-      <h1 className="text-2xl font-bold mb-4">Getting Started</h1>
-      <ol className="list-decimal pl-6 space-y-4">
-        <li>
-          <strong>Access the Application</strong>
-          <div className="mt-2">Go to the main URL in your browser.</div>
-          <img src="https://placehold.co/600x300?text=Login+Page" alt="Login Page" className="my-4 rounded shadow" />
-        </li>
-        <li>
-          <strong>Login</strong>
-          <div className="mt-2">Enter your credentials and click 'Sign In'.</div>
-          <img src="https://placehold.co/600x300?text=Sign+In" alt="Sign In" className="my-4 rounded shadow" />
-        </li>
-        <li>
-          <strong>Navigate the Dashboard</strong>
-          <div className="mt-2">After login, you will see the dashboard with quick links and stats.</div>
-          <img src="https://placehold.co/600x300?text=Dashboard" alt="Dashboard" className="my-4 rounded shadow" />
-        </li>
-      </ol>
+      <h1 className="text-2xl font-bold mb-4">Getting Started Guide</h1>
+      
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Step 1: Access the Application</h2>
+          <p className="mb-3">
+            Open your web browser and navigate to your application's URL. You'll be greeted 
+            by the login page where you can access your account.
+          </p>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/login page.png" 
+              alt="Login Page" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Application login page
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Step 2: Sign In to Your Account</h2>
+          <p className="mb-3">
+            Enter your registered email address and password, then click the "Sign In" button. 
+            If you don't have an account, contact your system administrator.
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Use your company email address</li>
+            <li>Password is case-sensitive</li>
+            <li>Click "Forgot Password" if you need to reset it</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/signin.png" 
+              alt="Sign In Form" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Enter your credentials to access the system
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Step 3: Explore the Dashboard</h2>
+          <p className="mb-3">
+            After successful login, you'll be directed to the main dashboard. The dashboard provides:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li><strong>Key Metrics:</strong> View important business statistics at a glance</li>
+            <li><strong>Quick Actions:</strong> Access common tasks like creating invoices or quotes</li>
+            <li><strong>Recent Activity:</strong> Track latest transactions and updates</li>
+            <li><strong>Navigation Menu:</strong> Access all system modules from the sidebar</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/dashboard.png" 
+              alt="Main Dashboard" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Main dashboard with key metrics and navigation
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 p-4 bg-green-50 rounded-lg border border-green-200">
+        <h3 className="font-semibold text-green-900 mb-2">✅ Next Steps</h3>
+        <p className="text-sm text-green-800">
+          After logging in, you can start by:
+        </p>
+        <ul className="list-disc pl-6 mt-2 text-sm text-green-800">
+          <li>Adding your first <a href="/docs/customers" className="text-green-600 underline">customer</a></li>
+          <li>Creating a <a href="/docs/quotations" className="text-green-600 underline">quotation</a></li>
+          <li>Setting up your <a href="/docs/settings" className="text-green-600 underline">company profile</a></li>
+          <li>Exploring the <a href="/docs/reports" className="text-green-600 underline">reports</a> section</li>
+        </ul>
+      </div>
     </DocsLayout>
   );
 }

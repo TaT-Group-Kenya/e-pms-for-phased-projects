@@ -1,0 +1,575 @@
+import DocsLayout from '../../components/docs/DocsLayout';
+
+export default function SystemSetupDoc() {
+  return (
+    <DocsLayout>
+      <h1 className="text-2xl font-bold mb-4">⚙️ System Setup</h1>
+      <p className="mb-6 text-gray-600">Complete system configuration guide including departments, configurations, account types, groups, currencies, countries, taxes, and languages with create, edit, and export to CSV capabilities.</p>
+      
+      <div className="space-y-8">
+        {/* Overview */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">System Setup Overview</h2>
+          <p className="mb-3">
+            The System Setup section allows administrators to configure all global settings for the business management system. Each module supports:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>✅ Create new records</li>
+            <li>✅ Edit existing records</li>
+            <li>✅ Delete/Archive records</li>
+            <li>✅ Export to CSV files</li>
+            <li>✅ Search and filter options</li>
+          </ul>
+          <div className="bg-blue-50 p-3 rounded-lg mb-4">
+            <p className="text-sm text-blue-800">
+              <strong>💡 Tip:</strong> Each module has a consistent interface with Create, Edit, Delete, and Export buttons for easy data management.
+            </p>
+          </div>
+        </div>
+
+        {/* 1. Departments */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">1. Departments</h2>
+          <p className="mb-3">
+            Manage organizational departments to structure your business operations.
+          </p>
+          
+          <h3 className="font-semibold text-lg mt-4 mb-2">Create Department</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click the <strong>"Create Department"</strong> button</li>
+            <li>Enter department name (e.g., Sales, Finance, HR, IT, Operations)</li>
+            <li>Add department description</li>
+            <li>Click <strong>"Create"</strong> to create</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/create-department.png" 
+              alt="Create Department" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 1.1: Creating a new department
+            </p>
+          </div>
+
+          <h3 className="font-semibold text-lg mt-4 mb-2">Export Departments to CSV</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click the <strong>"Export"</strong> button on the Departments page</li>
+            <li>Choose export format: <strong>CSV</strong> or <strong>Excel</strong></li>
+            <li>Select which columns to include</li>
+            <li>Click <strong>"Download"</strong> to save the file</li>
+            <li>Use the CSV for backup, reporting, or external analysis</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/export-departments.png" 
+              alt="Export Departments" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 1.2: Exporting departments to CSV
+            </p>
+          </div>
+
+          <h3 className="font-semibold text-lg mt-4 mb-2">Edit Departments</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click the <strong>"Edit"</strong> button next to a department</li>
+            <li>Update department name or description</li>
+            <li>Click <strong>"Update"</strong> to apply</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/edit-department.png" 
+              alt="Edit Department" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 1.3: Editing an existing department
+            </p>
+          </div>
+        </div>
+
+        {/* 2. Configurations */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">2. Configurations</h2>
+          <p className="mb-3">
+            Global system configuration settings. Configurations are typically set once and rarely changed.
+          </p>
+          
+          <h3 className="font-semibold text-lg mt-4 mb-2">Create/Edit Configuration</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Navigate to <strong>Configurations</strong> from System Setup</li>
+            <li>Click <strong>"Edit Configuration"</strong> to modify existing settings</li>
+            <li>Update company information, system preferences, email settings</li>
+            <li>Click <strong>"Save Changes"</strong> to apply</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/edit-configurations.png" 
+              alt="Edit Configurations" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 2.1: Editing system configurations
+            </p>
+          </div>
+
+          <h3 className="font-semibold text-lg mt-4 mb-2">Export Configurations to CSV</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click the <strong>"Export Settings"</strong> button</li>
+            <li>Export as CSV or JSON for backup</li>
+            <li>Save configuration snapshots before major changes</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/export-configurations.png" 
+              alt="Export Configurations" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 2.2: Exporting system configurations to CSV
+            </p>
+          </div>
+        </div>
+
+        {/* 3. Account Types */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">3. Account Types</h2>
+          <p className="mb-3">
+            Define financial account types for the chart of accounts.
+          </p>
+          
+          <h3 className="font-semibold text-lg mt-4 mb-2">Create Account Type</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click <strong>"Create Account Type"</strong></li>
+            <li>Enter account type name (e.g., Asset, Liability, Equity, Revenue, Expense)</li>
+            <li>Add description</li>
+            <li>Click <strong>"Create"</strong></li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/create-account-type.png" 
+              alt="Create Account Type" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 3.1: Creating a new account type
+            </p>
+          </div>
+          <h3 className="font-semibold text-lg mt-4 mb-2">Edit Account Type</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click the <strong>"Edit"</strong> button next to an account type</li>
+            <li>Update the account type name or description</li>
+            <li>Click <strong>"Update"</strong> to apply</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/edit-account-type.png" 
+              alt="Edit Account Type" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 3.3: Editing an existing account type
+            </p>
+          </div>
+
+          <h3 className="font-semibold text-lg mt-4 mb-2">Export Account Types to CSV</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click <strong>"Export"</strong> button</li>
+            <li>Choose CSV format</li>
+            <li>Download for documentation or backup</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/export-account-types.png" 
+              alt="Export Account Types" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 3.2: Exporting account types to CSV
+            </p>
+          </div>
+        </div>
+
+        {/* 4. Account Groups */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">4. Account Groups</h2>
+          <p className="mb-3">
+            Group related accounts for better financial reporting.
+          </p>
+          
+          <h3 className="font-semibold text-lg mt-4 mb-2">Create Account Group</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click <strong>"Create Account Group"</strong></li>
+            <li>Enter group name </li>
+            <li>Add group description</li>
+           
+        <li>Click <strong>"Create"</strong></li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/create-account-group.png" 
+              alt="Create Account Group" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 4.1: Creating a new account group
+            </p>
+          </div>
+            <h3 className="font-semibold text-lg mt-4 mb-2">Edit Account Group</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click the <strong>"Edit"</strong> button next to an account group</li>
+            <li>Update the group name or description</li>
+            <li>Click <strong>"Update"</strong> to apply</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/edit-account-group.png" 
+              alt="Edit Account Group" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 4.3: Editing an existing account group
+            </p>
+          </div>
+
+
+          <h3 className="font-semibold text-lg mt-4 mb-2">Export Account Groups to CSV</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click <strong>"Export"</strong> button</li>
+            <li>Select CSV format</li>
+            <li>Download group structure for documentation</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/export-account-groups.png" 
+              alt="Export Account Groups" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 4.2: Exporting account groups to CSV
+            </p>
+          </div>
+        </div>
+
+        {/* 5. Currencies */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">5. Currencies</h2>
+          <p className="mb-3">
+            Manage multi-currency support for international transactions.
+          </p>
+          
+          <h3 className="font-semibold text-lg mt-4 mb-2">Create Currency</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click <strong>"Create Currency"</strong></li>
+            <li>Select currency from list or add custom</li>
+            <li>Enter currency code (USD, EUR, GBP, KES, etc.)</li>
+            <li>Set currency name and symbol</li>
+            <li>Configure exchange rate</li>
+            <li>Set decimal places and formatting</li>
+            <li>Click <strong>"Save"</strong></li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/create-currency.png" 
+              alt="Create Currency" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 5.1: Creating a new currency
+            </p>
+          </div>
+          <h3 className="font-semibold text-lg mt-4 mb-2">Edit Currency</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click the <strong>"Edit"</strong> button next to a currency</li>
+            <li>Update the currency code, name, or symbol</li>
+            <li>Modify the exchange rate</li>
+            <li>Click <strong>"Update"</strong> to apply changes</li>
+          </ul>
+            <div className="bg-gray-100 p-4 rounded-lg">
+                <img 
+                src="/screenshots/edit-currency.png" 
+                alt="Edit Currency" 
+                className="w-full rounded shadow border" 
+                />
+                <p className="text-sm text-gray-600 mt-2 text-center">
+                Figure 5.3: Editing an existing currency
+                </p>
+          </div>
+          <h3 className="font-semibold text-lg mt-4 mb-2">Export Currencies to CSV</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click <strong>"Export"</strong> button</li>
+            <li>Export currency list with exchange rates</li>
+            <li>Use for audit or backup purposes</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/export-currencies.png" 
+              alt="Export Currencies" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 5.2: Exporting currencies to CSV
+            </p>
+          </div>
+        </div>
+
+        {/* 6. Countries */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">6. Countries</h2>
+          <p className="mb-3">
+            Manage country-specific settings and tax regulations.
+          </p>
+          
+          <h3 className="font-semibold text-lg mt-4 mb-2">Create Country</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click <strong>"Create Country"</strong></li>
+            <li>Enter country name</li>
+            <li>Add country code (2-letter and 3-letter)</li>
+            <li>Set phone code and currency</li>
+            <li>Configure address format</li>
+            <li>Set as default or active/inactive</li>
+            <li>Click <strong>"Save"</strong></li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/create-country.png" 
+              alt="Create Country" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 6.1: Creating a new country
+            </p>
+          </div>
+              <h3 className="font-semibold text-lg mt-4 mb-2">Edit Country</h3>
+            <ul className="list-disc pl-6 mb-3 space-y-1">
+                <li>Click the <strong>"Edit"</strong> button next to a country</li>
+                <li>Update country name, code, or phone code</li>
+                <li>Modify currency or address format</li>
+                <li>Click <strong>"Update"</strong> to apply changes</li>
+            </ul>
+            <div className="bg-gray-100 p-4 rounded-lg">
+                <img 
+                src="/screenshots/edit-country.png" 
+                alt="Edit Country" 
+                className="w-full rounded shadow border" 
+                />
+                <p className="text-sm text-gray-600 mt-2 text-center">
+                Figure 6.3: Editing an existing country
+                </p>
+            </div>
+
+          <h3 className="font-semibold text-lg mt-4 mb-2">Export Countries to CSV</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click <strong>"Export"</strong> button</li>
+            <li>Export complete country list</li>
+            <li>Use for reference or integration</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/export-countries.png" 
+              alt="Export Countries" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 6.2: Exporting countries to CSV
+            </p>
+          </div>
+        </div>
+
+        {/* 7. Taxes */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">7. Taxes</h2>
+          <p className="mb-3">
+            Configure tax rates and rules for invoices and transactions.
+          </p>
+          
+          <h3 className="font-semibold text-lg mt-4 mb-2">Create Tax</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click <strong>"Create Tax"</strong></li>
+            <li>Enter tax name (VAT, GST, Sales Tax)</li>
+            <li>Set tax rate percentage</li>
+            <li>Select tax type (Inclusive/Exclusive)</li>
+            <li>Set effective date range</li>
+            <li>Apply to specific regions/products</li>
+            <li>Click <strong>"Save"</strong></li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/create-tax.png" 
+              alt="Create Tax" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 7.1: Creating a new tax rate
+            </p>
+          </div>
+            <h3 className="font-semibold text-lg mt-4 mb-2">Edit Tax</h3>
+            <ul className="list-disc pl-6 mb-3 space-y-1">
+                <li>Click the <strong>"Edit"</strong> button next to a tax rate</li>
+                <li>Update tax name, rate, or type</li>
+                <li>Modify effective date range</li>
+                <li>Click <strong>"Update"</strong> to apply changes</li>
+            </ul>
+            <div className="bg-gray-100 p-4 rounded-lg">
+                <img 
+                src="/screenshots/edit-tax.png" 
+                alt="Edit Tax" 
+                className="w-full rounded shadow border" 
+                />
+                <p className="text-sm text-gray-600 mt-2 text-center">
+                Figure 7.3: Editing an existing tax rate
+                </p>
+            </div>  
+
+          <h3 className="font-semibold text-lg mt-4 mb-2">Export Taxes to CSV</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click <strong>"Export"</strong> button</li>
+            <li>Export tax rates and rules</li>
+            <li>Use for tax filing or audit</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/export-taxes.png" 
+              alt="Export Taxes" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 7.2: Exporting taxes to CSV
+            </p>
+          </div>
+        </div>
+
+        {/* 8. Languages */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">8. Languages</h2>
+          <p className="mb-3">
+            Configure multi-language support for the system.
+          </p>
+          
+          <h3 className="font-semibold text-lg mt-4 mb-2">Create/Enable Language</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click <strong>"Add Language"</strong></li>
+            <li>Select language from list</li>
+            <li>Set as default or secondary language</li>
+            <li>Upload language pack/translations</li>
+            <li>Configure RTL if applicable</li>
+            <li>Click <strong>"Save"</strong></li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/add-language.png" 
+              alt="Add Language" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 8.1: Adding a new language
+            </p>
+          </div>
+          <h3 className="font-semibold text-lg mt-4 mb-2">Edit Language</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click the <strong>"Edit"</strong> button next to a language</li>
+            <li>Update language name or code</li>
+            <li>Modify language settings</li>
+            <li>Click <strong>"Update"</strong> to apply changes</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/edit-language.png" 
+              alt="Edit Language" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 8.3: Editing an existing language
+            </p>
+          </div>
+
+          <h3 className="font-semibold text-lg mt-4 mb-2">Export Languages to CSV</h3>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Click <strong>"Export"</strong> button</li>
+            <li>Export language configurations</li>
+            <li>Export translation keys for documentation</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/export-languages.png" 
+              alt="Export Languages" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 8.2: Exporting languages to CSV
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* CSV Export Summary */}
+      <div className="mt-8 p-4 bg-green-50 rounded-lg border border-green-200">
+        <h3 className="font-semibold text-green-900 mb-3">📊 CSV Export Summary</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-collapse">
+            <thead>
+              <tr className="bg-green-100">
+                <th className="p-2 text-left">Module</th>
+                <th className="p-2 text-left">Create</th>
+                <th className="p-2 text-left">Edit</th>
+                <th className="p-2 text-left">Export CSV</th>
+                <th className="p-2 text-left">Delete</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm">
+              <tr className="border-b"><td className="p-2 font-semibold">Departments</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td></tr>
+              <tr className="border-b"><td className="p-2 font-semibold">Configurations</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">❌</td></tr>
+              <tr className="border-b"><td className="p-2 font-semibold">Account Types</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td></tr>
+              <tr className="border-b"><td className="p-2 font-semibold">Account Groups</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td></tr>
+              <tr className="border-b"><td className="p-2 font-semibold">Currencies</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td></tr>
+              <tr className="border-b"><td className="p-2 font-semibold">Countries</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td></tr>
+              <tr className="border-b"><td className="p-2 font-semibold">Taxes</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td></tr>
+              <tr><td className="p-2 font-semibold">Languages</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td><td className="p-2">✅</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Export Best Practices */}
+      <div className="mt-6 p-4 bg-teal-50 rounded-lg border border-teal-200">
+        <h3 className="font-semibold text-teal-900 mb-3">💡 CSV Export Best Practices</h3>
+        <ul className="list-disc pl-6 text-sm text-teal-800 space-y-1">
+          <li>Keep a <strong>backup of your CSV exports</strong> before making bulk changes</li>
+          <li>Use descriptive <strong>file names with dates</strong> (e.g., departments_2024_01_15.csv)</li>
+          <li>Store exports in an <strong>organized folder structure</strong> for easy retrieval</li>
+          <li>Export data <strong>before major system updates</strong> as a safety measure</li>
+          <li>Use CSV exports for <strong>external reporting and data analysis</strong></li>
+        </ul>
+      </div>
+
+      {/* Setup Checklist */}
+      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h3 className="font-semibold text-blue-900 mb-3">✅ System Setup Checklist</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+          <div className="flex items-center space-x-2"><span className="text-blue-600">☐</span><span>Departments configured</span></div>
+          <div className="flex items-center space-x-2"><span className="text-blue-600">☐</span><span>Global configurations set</span></div>
+          <div className="flex items-center space-x-2"><span className="text-blue-600">☐</span><span>Account types defined</span></div>
+          <div className="flex items-center space-x-2"><span className="text-blue-600">☐</span><span>Account groups created</span></div>
+          <div className="flex items-center space-x-2"><span className="text-blue-600">☐</span><span>Currencies configured</span></div>
+          <div className="flex items-center space-x-2"><span className="text-blue-600">☐</span><span>Countries setup complete</span></div>
+          <div className="flex items-center space-x-2"><span className="text-blue-600">☐</span><span>Tax rates configured</span></div>
+          <div className="flex items-center space-x-2"><span className="text-blue-600">☐</span><span>Languages enabled</span></div>
+        </div>
+      </div>
+      {/* Related Links */}
+      <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+        <h3 className="font-semibold text-gray-800 mb-2">🔗 Related Documentation</h3>
+        <div className="flex flex-wrap gap-3">
+          <a href="/docs/finance" className="text-blue-600 hover:underline text-sm">Finance Settings</a>
+          <span className="text-gray-300">|</span>
+          <a href="/docs/users" className="text-blue-600 hover:underline text-sm">User Management</a>
+          <span className="text-gray-300">|</span>
+          <a href="/docs/settings" className="text-blue-600 hover:underline text-sm">General Settings</a>
+          <span className="text-gray-300">|</span>
+          <a href="/docs/companies" className="text-blue-600 hover:underline text-sm">Companies</a>
+        </div>
+      </div>
+    </DocsLayout>
+  );
+}

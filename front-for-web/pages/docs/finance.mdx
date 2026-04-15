@@ -3,19 +3,369 @@ import DocsLayout from '../../components/docs/DocsLayout';
 export default function FinanceDoc() {
   return (
     <DocsLayout>
-      <h1 className="text-2xl font-bold mb-4">Finance</h1>
-      <ol className="list-decimal pl-6 space-y-4">
-        <li>
-          <strong>View Invoices</strong>
-          <div className="mt-2">Go to the Finance section.</div>
-          <img src="https://placehold.co/600x300?text=Invoices" alt="Invoices" className="my-4 rounded shadow" />
-        </li>
-        <li>
-          <strong>Record a Payment</strong>
-          <div className="mt-2">Click "Add Payment" and fill in the details.</div>
-          <img src="https://placehold.co/600x300?text=Add+Payment" alt="Add Payment" className="my-4 rounded shadow" />
-        </li>
-      </ol>
+      <h1 className="text-2xl font-bold mb-4">💰 Finance Management</h1>
+      <p className="mb-6 text-gray-600">Complete financial management system to track accounts, transactions, expenses, and financial ledgers.</p>
+      
+      <div className="space-y-8">
+        {/* 1. Accounts */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">1. Accounts</h2>
+          <p className="mb-3">
+            The Accounts section provides a complete overview of all financial accounts. You can:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>View all bank and financial accounts</li>
+            <li>Track account balances in real-time</li>
+            <li>Monitor account activity and transactions</li>
+            <li>Reconcile accounts with bank statements</li>
+            <li>Set up account alerts for low balances</li>
+            <li>Generate account-specific reports</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/financeaccounts.png" 
+              alt="Finance Accounts" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 1: Complete overview of all financial accounts and current balances
+            </p>
+          </div>
+        </div>
+        <h2 className="text-xl font-semibold mb-3">Add New Account</h2>
+          <p className="mb-3">
+            To add a new financial account:
+          </p>
+          <ol className="list-decimal pl-6 mb-3 space-y-1">
+            <li>Click "Add Account" button</li>
+            <li>Enter account name and type</li>
+            <li>Set initial balance (optional)</li>
+            <li>Add account description and notes</li>
+            <li>Click "Save" to create the account</li>
+          </ol>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/add-finance-account.png" 
+              alt="Add Finance Account" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 2: Form for adding a new financial account with initial balance option
+            </p>
+          </div>
+
+        {/* 2. Receiving Methods */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">2. Receiving Methods</h2>
+          <p className="mb-3">
+            Configure and manage payment receiving methods for customer payments:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Bank transfers and wire transfers</li>
+            <li>Credit/Debit card payments</li>
+            <li>Mobile money (M-Pesa, Airtel Money, etc.)</li>
+            <li>Cash payments</li>
+            <li>Cheque payments</li>
+            <li>Online payment gateways</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/financeaddpaymentmethod.png" 
+              alt="Receiving Methods" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 2: Configure payment receiving methods for customer transactions
+            </p>
+          </div>
+        </div>
+
+        {/* 3. Receivables */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">3. Receivables</h2>
+          <p className="mb-3">
+            Track all money owed to your business by customers:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Outstanding invoices and due dates</li>
+            <li>Customer payment history</li>
+            <li>Aging analysis (30, 60, 90+ days overdue)</li>
+            <li>Collection status and follow-up tracking</li>
+            <li>Expected payment dates</li>
+            <li>Receivables aging report</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/receivables-dashboard.png" 
+              alt="Receivables Dashboard" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 3: Receivables dashboard showing aging buckets and outstanding amounts
+            </p>
+          </div>
+        </div>
+
+        {/* 4. Payables */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">4. Payables</h2>
+          <p className="mb-3">
+            Manage all money your business owes to suppliers and vendors:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Supplier invoices and bills</li>
+            <li>Payment schedules and due dates</li>
+            <li>Vendor payment history</li>
+            <li>Purchase order tracking</li>
+            <li>Early payment discounts</li>
+            <li>Payables aging report</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/payables-list.png" 
+              alt="Payables List" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 4: Payables list showing supplier invoices and due dates
+            </p>
+          </div>
+        </div>
+
+        {/* 5. Office Expenses */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">5. Office Expenses</h2>
+          <p className="mb-3">
+            Track and manage all office-related business expenses:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Rent and utilities</li>
+            <li>Office supplies and equipment</li>
+            <li>Salaries and wages</li>
+            <li>Travel and entertainment</li>
+            <li>Marketing and advertising</li>
+            <li>Maintenance and repairs</li>
+            <li>Software subscriptions</li>
+            <li>Insurance premiums</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/office-expenses-list.png" 
+              alt="Office Expenses" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 5: Expense categories and tracking interface
+            </p>
+          </div>
+        </div>
+        <h2 className="text-xl font-semibold mb-3">Add Office Expenses</h2>
+          <p className="mb-3">
+            To add a new office expense:
+          </p>
+          <ol className="list-decimal pl-6 mb-3 space-y-1">
+            <li>Click "Add Expense" button</li>
+            <li>Select expense category</li>
+            <li>Enter expense amount and date</li>
+            <li>Add description and notes</li>
+            <li>Attach receipt or invoice (optional)</li>
+            <li>Click "Save" to record the expense</li>
+          </ol>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/add-office-expense.png" 
+              alt="Add Office Expense" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 6: Form for adding a new office expense with receipt attachment
+            </p>
+          </div>
+
+        {/* 6. Customer Trxns Ledger */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">6. Customer Transactions Ledger</h2>
+          <p className="mb-3">
+            Complete transaction history for each customer:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>All invoices issued to customer</li>
+            <li>Payments received from customer</li>
+            <li>Credit notes and refunds</li>
+            <li>Outstanding balances</li>
+            <li>Transaction dates and references</li>
+            <li>Payment methods used</li>
+            <li>Customer account statements</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/customer-ledger.png" 
+              alt="Customer Transactions Ledger" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 6: Customer ledger showing transaction history for a specific customer
+            </p>
+          </div>
+        </div>
+
+        {/* 7. Company Trxns Ledger */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">7. Company Transactions Ledger</h2>
+          <p className="mb-3">
+            Complete transaction history at the company level:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>All company financial activities</li>
+            <li>Inter-company transactions</li>
+            <li>Company-wide revenue and expenses</li>
+            <li>Bank reconciliation entries</li>
+            <li>Journal entries and adjustments</li>
+            <li>General ledger view</li>
+            <li>Trial balance reports</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/company-ledger.png" 
+              alt="Company Transactions Ledger" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 7: Company ledger with trial balance and general ledger view
+            </p>
+          </div>
+        </div>
+
+        {/* 8. Internal Transactions */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">8. Internal Transactions</h2>
+          <p className="mb-3">
+            Track financial movements within the organization:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Fund transfers between accounts</li>
+            <li>Departmental budget allocations</li>
+            <li>Petty cash transactions</li>
+            <li>Employee reimbursements</li>
+            <li>Inter-branch transfers</li>
+            <li>Internal loans and advances</li>
+            <li>Cost allocations</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/internal-transactions.png" 
+              alt="Internal Transactions" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 8: Internal transactions form showing fund transfer between accounts
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Finance Modules Summary */}
+      <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h3 className="font-semibold text-blue-900 mb-3">📋 Finance Modules Summary</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="flex items-start space-x-2">
+            <span className="text-blue-600">✓</span>
+            <span className="text-sm">Accounts - Central financial account management</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-blue-600">✓</span>
+            <span className="text-sm">Receiving Methods - Payment collection configuration</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-blue-600">✓</span>
+            <span className="text-sm">Receivables - Money owed to you</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-blue-600">✓</span>
+            <span className="text-sm">Payables - Money you owe to others</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-blue-600">✓</span>
+            <span className="text-sm">Office Expenses - Business operational costs</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-blue-600">✓</span>
+            <span className="text-sm">Customer Trxns Ledger - Per-customer transaction history</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-blue-600">✓</span>
+            <span className="text-sm">Company Trxns Ledger - Company-wide financial records</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-blue-600">✓</span>
+            <span className="text-sm">Internal Transactions - Intra-company fund movements</span>
+          </div>
+        </div>
+      </div>
+
+       {/* Financial Workflow */}
+      <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+        <h3 className="font-semibold text-purple-900 mb-3">🔄 Financial Workflow</h3>
+        <div className="space-y-2 text-sm text-purple-800">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span>💰 Receive Payment</span>
+            <span className="text-gray-400">→</span>
+            <span>📝 Record in Receivables</span>
+            <span className="text-gray-400">→</span>
+            <span>📊 Update Customer Ledger</span>
+            <span className="text-gray-400">→</span>
+            <span>🏦 Deposit to Account</span>
+          </div>
+          <div className="flex items-center justify-between flex-wrap gap-2 mt-2">
+            <span>📄 Receive Bill</span>
+            <span className="text-gray-400">→</span>
+            <span>💰 Record in Payables</span>
+            <span className="text-gray-400">→</span>
+            <span>📊 Update Company Ledger</span>
+            <span className="text-gray-400">→</span>
+            <span>💸 Process Payment</span>
+          </div>
+        </div>
+      </div>
+
+       {/* Best Practices */}
+      <div className="mt-6 p-4 bg-teal-50 rounded-lg border border-teal-200">
+        <h3 className="font-semibold text-teal-900 mb-3">💡 Financial Management Best Practices</h3>
+        <ul className="list-disc pl-6 text-sm text-teal-800 space-y-1">
+          <li><strong>Regular Reconciliation:</strong> Reconcile accounts monthly to ensure accuracy</li>
+          <li><strong>Track Receivables Closely:</strong> Follow up on overdue payments immediately</li>
+          <li><strong>Manage Payables Wisely:</strong> Schedule payments to optimize cash flow</li>
+          <li><strong>Categorize Expenses:</strong> Properly categorize office expenses for tax purposes</li>
+          <li><strong>Maintain Ledgers:</strong> Keep detailed transaction ledgers for audit trails</li>
+          <li><strong>Document Internal Transfers:</strong> Always record internal transactions with references</li>
+          <li><strong>Review Receiving Methods:</strong> Regularly update payment methods based on customer preferences</li>
+        </ul>
+      </div>
+
+      {/* Troubleshooting */}
+      <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
+        <h3 className="font-semibold text-red-900 mb-2">⚠️ Common Finance Issues</h3>
+        <ul className="list-disc pl-6 text-sm text-red-800 space-y-1">
+          <li><strong>Transaction not appearing:</strong> Check if it was recorded in the correct ledger</li>
+          <li><strong>Balance mismatch:</strong> Reconcile accounts and check for unrecorded transactions</li>
+          <li><strong>Payment not reflecting:</strong> Verify payment method and transaction status</li>
+          <li><strong>Expense miscategorized:</strong> Edit transaction and assign correct expense category</li>
+        </ul>
+      </div>
+
+      {/* Related Links */}
+      <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+        <h3 className="font-semibold text-gray-800 mb-2">🔗 Related Documentation</h3>
+        <div className="flex flex-wrap gap-3">
+          <a href="/docs/reports" className="text-blue-600 hover:underline text-sm">Financial Reports</a>
+          <span className="text-gray-300">|</span>
+          <a href="/docs/customer-invoices" className="text-blue-600 hover:underline text-sm">Customer Invoices</a>
+          <span className="text-gray-300">|</span>
+          <a href="/docs/company-invoices" className="text-blue-600 hover:underline text-sm">Company Invoices</a>
+          <span className="text-gray-300">|</span>
+          <a href="/docs/settings" className="text-blue-600 hover:underline text-sm">Finance Settings</a>
+        </div>
+      </div>
     </DocsLayout>
   );
 }
