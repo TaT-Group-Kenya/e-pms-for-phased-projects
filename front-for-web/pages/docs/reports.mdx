@@ -1,0 +1,102 @@
+import DocsLayout from '../../components/docs/DocsLayout';
+
+export default function ReportsDoc() {
+  return (
+    <DocsLayout>
+      <h1 className="text-2xl font-bold mb-4">📈 Reports & Analytics</h1>
+      <p className="mb-6 text-gray-600">Generate comprehensive business reports to analyze performance, track metrics, and make data-driven decisions.</p>
+      
+      <div className="space-y-8">
+        {/* Run Reports */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Run Reports</h2>
+          <p className="mb-3">
+            The Reports section allows you to generate detailed business intelligence reports. You can:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Select from various report types</li>
+            <li>Filter data by date range, customer, company, or project</li>
+            <li>Customize report columns and groupings</li>
+            <li>Schedule automatic report generation</li>
+            <li>Export reports in multiple formats (PDF, Excel, CSV)</li>
+            <li>Save favorite report configurations for quick access</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/runreport.png" 
+              alt="Run Report Interface" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Report generation interface with filtering options
+            </p>
+          </div>
+        </div>
+
+        {/* Available Report Types */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Available Report Types</h2>
+          <p className="mb-3">The system offers the following specialized reports:</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="border rounded-lg p-3 bg-white">
+              <h3 className="font-semibold text-blue-700 mb-1">📦 Orders Summary</h3>
+              <p className="text-sm text-gray-600">Complete overview of all orders including totals, statuses, and trends over time.</p>
+            </div>
+            
+            <div className="border rounded-lg p-3 bg-white">
+              <h3 className="font-semibold text-blue-700 mb-1">📊 Projects Summary</h3>
+              <p className="text-sm text-gray-600">Track project progress, budgets, timelines, and resource allocation.</p>
+            </div>
+            
+            <div className="border rounded-lg p-3 bg-white">
+              <h3 className="font-semibold text-blue-700 mb-1">👥 Customer History</h3>
+              <p className="text-sm text-gray-600">Complete customer interaction history including orders, invoices, and payments.</p>
+            </div>
+            
+            <div className="border rounded-lg p-3 bg-white">
+              <h3 className="font-semibold text-blue-700 mb-1">💰 Invoice Payments - Customer</h3>
+              <p className="text-sm text-gray-600">Track all customer invoice payments, outstanding balances, and payment history.</p>
+            </div>
+            
+            <div className="border rounded-lg p-3 bg-white">
+              <h3 className="font-semibold text-blue-700 mb-1">🏢 Invoice Payments - Company</h3>
+              <p className="text-sm text-gray-600">Company-wise invoice payment tracking and financial reconciliation.</p>
+            </div>
+            
+            <div className="border rounded-lg p-3 bg-white">
+              <h3 className="font-semibold text-blue-700 mb-1">📈 Margin Per Project</h3>
+              <p className="text-sm text-gray-600">Calculate and analyze profit margins for each project individually.</p>
+            </div>
+            
+            <div className="border rounded-lg p-3 bg-white">
+              <h3 className="font-semibold text-blue-700 mb-1">📄 Invoices Report - Customer</h3>
+              <p className="text-sm text-gray-600">Detailed invoice analysis per customer including status and payment tracking.</p>
+            </div>
+            
+            <div className="border rounded-lg p-3 bg-white">
+              <h3 className="font-semibold text-blue-700 mb-1">📄 Invoices Report - Company</h3>
+              <p className="text-sm text-gray-600">Company-level invoice summary and financial performance metrics.</p>
+            </div>
+            
+            <div className="border rounded-lg p-3 bg-white md:col-span-2">
+              <h3 className="font-semibold text-blue-700 mb-1">📊 Revenue Snapshot</h3>
+              <p className="text-sm text-gray-600">Real-time revenue overview across all business units, customers, and projects.</p>
+            </div>
+          </div>
+          
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/reports order summary.png" 
+              alt="Order Summary Report" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Example of Orders Summary Report with key metrics
+            </p>
+          </div>
+        </div>
+      </div>
+    </DocsLayout>
+  );
+}
