@@ -1,0 +1,222 @@
+import DocsLayout from '../../components/docs/DocsLayout';
+
+export default function LogoutDoc() {
+  return (
+    <DocsLayout>
+      <h1 className="text-2xl font-bold mb-4">🚪 Logout & Session Management</h1>
+      <p className="mb-6 text-gray-600">Learn how to properly log out of the system and manage your user session.</p>
+      
+      <div className="space-y-8">
+        {/* Overview */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Overview</h2>
+          <p className="mb-3">
+            Properly logging out of the system ensures your account remains secure, especially when using shared or public computers. The system provides multiple ways to end your session.
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Manual logout from any page</li>
+            <li>Automatic session timeout</li>
+            <li>Remote logout from other devices</li>
+            <li>Session management and monitoring</li>
+          </ul>
+        </div>
+
+        {/* How to Logout */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">How to Logout</h2>
+          <p className="mb-3">
+            To log out of the system, follow these steps:
+          </p>
+          <ol className="list-decimal pl-6 mb-3 space-y-1">
+            <li>Click on your profile icon/avatar in the top-right corner of any page</li>
+            <li>Click the "Logout" or "Sign Out" option from the dropdown menu</li>
+            <li>You will be redirected to the login page</li>
+            <li>Your session will be terminated immediately</li>
+          </ol>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/logout-menu.png" 
+              alt="Logout Menu" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 1: Profile dropdown menu with Logout option
+            </p>
+          </div>
+        </div>
+        {/* Session Timeout */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Automatic Session Timeout</h2>
+          <p className="mb-3">
+            For security reasons, the system automatically logs you out after a period of inactivity:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li><strong>Default timeout:</strong> 60 minutes of inactivity</li>
+            <li><strong>Warning notification:</strong> Appears 5 minutes before timeout</li>
+            <li><strong>Extend session:</strong> Click "Stay Logged In" when prompted</li>
+            <li><strong>Unsaved work:</strong> You will be warned before automatic logout</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/session-timeout.png" 
+              alt="Session Timeout Warning" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 3: Session timeout warning notification
+            </p>
+          </div>
+        </div>
+        {/* Logout from All Devices */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Logout from All Devices</h2>
+          <p className="mb-3">
+            If you suspect unauthorized access or lost a device, you can log out from all active sessions:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Go to Settings → Security → Active Sessions</li>
+            <li>Click "Logout from All Devices" button</li>
+            <li>All sessions except your current one will be terminated</li>
+            <li>You will need to log in again on other devices</li>
+          </ul>
+          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <p className="text-sm text-red-800">
+              <strong>⚠️ Security Note:</strong> Use this feature immediately if you lose your phone or suspect someone else has accessed your account.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Best Practices */}
+      <div className="mt-8 p-4 bg-teal-50 rounded-lg border border-teal-200">
+        <h3 className="font-semibold text-teal-900 mb-3">💡 Logout Best Practices</h3>
+        <ul className="list-disc pl-6 text-sm text-teal-800 space-y-1">
+          <li><strong>Always logout manually</strong> when using shared or public computers</li>
+          <li><strong>Don't just close the browser</strong> - always use the logout button</li>
+          <li><strong>Clear browser cache</strong> after logging out on public computers</li>
+          <li><strong>Review active sessions</strong> regularly to spot unauthorized access</li>
+          <li><strong>Enable 2FA</strong> for an extra layer of security</li>
+          <li><strong>Change password immediately</strong> if you suspect unauthorized access</li>
+        </ul>
+      </div>
+
+      {/* Troubleshooting */}
+      <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <h3 className="font-semibold text-yellow-900 mb-2">⚠️ Troubleshooting</h3>
+        <div className="space-y-2 text-sm text-yellow-800">
+          <div>
+            <strong>Can't find logout button?</strong>
+            <p className="mt-1">Click on your profile avatar in the top-right corner. The logout option is at the bottom of the dropdown menu.</p>
+          </div>
+          <div>
+            <strong>Getting logged out too quickly?</strong>
+            <p className="mt-1">Contact your system administrator to adjust the session timeout duration in system settings.</p>
+          </div>
+          <div>
+            <strong>Still logged in after closing browser?</strong>
+            <p className="mt-1">Clear your browser cookies and cache, or use incognito/private browsing mode for sensitive work.</p>
+          </div>
+          <div>
+            <strong>Can't log back in after logout?</strong>
+            <p className="mt-1">Check your credentials, ensure caps lock is off, or use the "Forgot Password" feature to reset your password.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Session Security Tips */}
+      <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+        <h3 className="font-semibold text-purple-900 mb-3">🔐 Session Security Tips</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <div className="flex items-start space-x-2">
+            <span className="text-purple-600">✓</span>
+            <span>Always check for "https://" before logging in</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-purple-600">✓</span>
+            <span>Don't save passwords on shared computers</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-purple-600">✓</span>
+            <span>Use a password manager for strong unique passwords</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-purple-600">✓</span>
+            <span>Enable login notifications for new device access</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-purple-600">✓</span>
+            <span>Regularly review and terminate old sessions</span>
+          </div>
+          <div className="flex items-start space-x-2">
+            <span className="text-purple-600">✓</span>
+            <span>Use a VPN on public Wi-Fi networks</span>
+          </div>
+        </div>
+      </div>
+
+      {/* After Logout */}
+      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h3 className="font-semibold text-blue-900 mb-3">🔁 After Logout</h3>
+        <p className="text-sm text-blue-800 mb-2">
+          After successfully logging out, you will be redirected to the login page where you can:
+        </p>
+        <ul className="list-disc pl-6 text-sm text-blue-800">
+          <li>Log in again with your credentials</li>
+          <li>Use the "Forgot Password" link if needed</li>
+          <li>Contact support if you cannot access your account</li>
+          <li>Sign in as a different user</li>
+        </ul>
+        <div className="mt-3 bg-gray-100 p-3 rounded">
+          <img 
+            src="/screenshots/signin.png" 
+            alt="Sign In Page After Logout" 
+            className="w-full rounded shadow border" 
+          />
+          <p className="text-sm text-gray-600 mt-2 text-center">
+            Figure 5: Login page after successful logout
+          </p>
+        </div>
+      </div>
+
+      {/* Quick Reference */}
+      <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+        <h3 className="font-semibold text-gray-800 mb-2">📌 Quick Reference</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+          <div>
+            <strong>Logout Steps:</strong>
+            <p className="text-gray-600">Profile Icon → Logout → Confirm</p>
+          </div>
+          <div>
+          </div>
+        </div>
+      </div>
+
+      {/* Related Links */}
+      <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+        <h3 className="font-semibold text-gray-800 mb-2">🔗 Related Documentation</h3>
+        <div className="flex flex-wrap gap-3">
+          <a href="/docs/settings" className="text-blue-600 hover:underline text-sm">Security Settings</a>
+          <span className="text-gray-300">|</span>
+          <a href="/docs/signin" className="text-blue-600 hover:underline text-sm">Sign In Guide</a>
+          <span className="text-gray-300">|</span>
+          <a href="/docs/faq" className="text-blue-600 hover:underline text-sm">FAQ</a>
+          <span className="text-gray-300">|</span>
+          <a href="/docs/troubleshooting" className="text-blue-600 hover:underline text-sm">Troubleshooting</a>
+        </div>
+      </div>
+
+     
+      <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <h3 className="font-semibold text-yellow-900 mb-2">📸 Screenshots to Add</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+          <div className="flex items-center space-x-2">
+            <span className="text-yellow-600">📷</span>
+            <span>logout-menu.png</span>
+          </div>
+          <div className="flex items-center space-x-2">
+        </div>
+        </div>
+      </div>
+    </DocsLayout>
+  );
+}

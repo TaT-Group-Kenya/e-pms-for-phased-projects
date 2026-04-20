@@ -3,19 +3,123 @@ import DocsLayout from '../../components/docs/DocsLayout';
 export default function QuotationsDoc() {
   return (
     <DocsLayout>
-      <h1 className="text-2xl font-bold mb-4">Quotations</h1>
-      <ol className="list-decimal pl-6 space-y-4">
-        <li>
-          <strong>View Quotations</strong>
-          <div className="mt-2">Go to the Quotations section.</div>
-          <img src="https://placehold.co/600x300?text=Quotations+List" alt="Quotations List" className="my-4 rounded shadow" />
-        </li>
-        <li>
-          <strong>Create a Quotation</strong>
-          <div className="mt-2">Click "Create Quotation" and fill in the form.</div>
-          <img src="https://placehold.co/600x300?text=Create+Quotation" alt="Create Quotation" className="my-4 rounded shadow" />
-        </li>
-      </ol>
+      <h1 className="text-2xl font-bold mb-4">Quotations Management</h1>
+      
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold mb-3">1. View All Quotations</h2>
+          <p className="mb-3">
+            The Quotations section provides a complete overview of all customer quotes. You can:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Track quotation status (Draft, Sent, Approved, Rejected, Revised)</li>
+            <li>Filter quotes by customer, date range, or status</li>
+            <li>Search for specific quotations by number or customer name</li>
+            <li>View quotation history and revision tracking</li>
+            <li>Monitor conversion rates from quotes to orders</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/quotationslist.png" 
+              alt="Quotations List" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 1: Complete quotations list showing all quotes with status and customer information
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-3">2. Create a New Quotation</h2>
+          <p className="mb-3">
+            To create a professional quotation for a customer, click the "Create Quotation" button and follow these steps:
+          </p>
+          <ol className="list-decimal pl-6 mb-3 space-y-1">
+            <li><strong>Quotation Title:</strong> create a descriptive title for the quotation</li>
+            <li><strong>Job Reference ID:</strong> enter a unique identifier for the job</li>
+            <li><strong>Select Customer:</strong> Choose an existing customer or add a new one</li>
+            <li><strong>Creation Date:</strong> Set the date when the quotation is created</li>
+            <li><strong>Description:</strong> Enter a brief description of the quotation</li>
+            <li><strong>Currency:</strong> Select the currency for the quotation</li>
+            <li><strong>Configure Taxes:</strong> Apply applicable tax rates to items</li>
+            <li><strong>Validity Period:</strong> Define how long the quote is valid</li>
+            <li><strong>Minimum Approval Count:</strong> Set the minimum number of approvals required</li>
+            <li><strong>Payment Terms:</strong> E.g. 50% deposit required, balance on completion</li>
+            <li><strong>Note To Customer:</strong> Add any special notes or instructions for the customer</li>
+            <li><strong>Create Quotation:</strong> Click "Create Quotation" button to generate the quotation</li>
+          </ol>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/create quotation.png" 
+              alt="Create Quotation Form" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 2: Quotation creation form with item selection and pricing options
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h3 className="font-semibold text-blue-900 mb-2">💡 Pro Tips for Quotations</h3>
+        <ul className="list-disc pl-6 text-sm text-blue-800 space-y-1">
+          <li>Use quotation templates for frequently sold products or services to save time</li>
+          <li>Set automatic expiration dates to encourage timely responses</li>
+          <li>Track which quotes convert to orders to analyze your sales performance</li>
+          <li>Add personalized notes or special instructions for each customer</li>
+          <li>Enable email notifications when customers view or accept quotes</li>
+          <li>Create multiple versions of a quote to provide options to customers</li>
+        </ul>
+      </div>
+
+      <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+        <h3 className="font-semibold text-green-900 mb-2">📊 Quotation Status Flow</h3>
+        <div className="space-y-2 text-sm text-green-800">
+          <div className="flex items-center justify-between">
+            <span className="font-medium">Draft</span>
+            <span className="text-gray-400">→</span>
+            <span className="font-medium">Sent to Customer</span>
+            <span className="text-gray-400">→</span>
+            <span className="font-medium">Customer Reviews</span>
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <div className="flex-1 text-center">
+              <span className="text-green-600">✓ Accepted</span>
+              <span className="text-gray-400 ml-2">→ Convert to Order</span>
+            </div>
+            <div className="flex-1 text-center">
+              <span className="text-red-600">✗ Rejected</span>
+            </div>
+            <div className="flex-1 text-center">
+              <span className="text-yellow-600">⏰ Expired</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <h3 className="font-semibold text-yellow-900 mb-2">🔗 Converting Quotes to Orders</h3>
+        <p className="text-sm text-yellow-800 mb-2">
+          When a customer accepts a quotation, you can easily convert it into an order:
+        </p>
+        <ol className="list-decimal pl-6 text-sm text-yellow-800 space-y-1">
+          <li>Navigate to the accepted quotation</li>
+          <li>Click the "Convert to Order" button</li>
+          <li>Review and adjust any items if needed</li>
+          <li>Confirm the order details</li>
+          <li>The order is automatically created with all quote information</li>
+          <li>Generate an invoice from the order for payment</li>
+        </ol>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-3">📈 Quotation Analytics</h2>
+        <p className="mb-3">
+          Track key metrics to improve your quoting process:
+        </p>
+      </div>
     </DocsLayout>
   );
 }

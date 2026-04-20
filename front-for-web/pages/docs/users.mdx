@@ -1,0 +1,233 @@
+import DocsLayout from '../../components/docs/DocsLayout';
+
+export default function SystemSetupDoc() {
+  return (
+    <DocsLayout>
+      <h1 className="text-2xl font-bold mb-4">⚙️ System Setup</h1>
+      <p className="mb-6 text-gray-600">Initial configuration and setup guide for the system.</p>
+      
+      <div className="space-y-8">
+        {/* Overview */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">System Setup Overview</h2>
+          <p className="mb-3">
+            The System Setup section guides you through the initial configuration of your business management system.
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Company profile configuration</li>
+            <li>User and role setup</li>
+            <li>Financial settings configuration</li>
+            <li>Email and notification setup</li>
+            <li>System preferences and localization</li>
+          </ul>
+        </div>
+
+        {/* Company Setup */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Company Setup</h2>
+          <p className="mb-3">
+            Configure your company information that will appear on invoices, quotes, and communications:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Company name, logo, and branding</li>
+            <li>Business address and contact information</li>
+            <li>Tax ID and registration numbers</li>
+            <li>Default currency and tax rates</li>
+            <li>Invoice and quote numbering prefixes</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/company-setup.png" 
+              alt="Company Setup" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 1: Company profile configuration screen
+            </p>
+          </div>
+        </div>
+
+        {/* Financial Settings */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Financial Settings</h2>
+          <p className="mb-3">
+            Configure financial parameters for your business:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Default payment terms (Net 15, Net 30, etc.)</li>
+            <li>Late payment fees and interest rates</li>
+            <li>Tax configurations (VAT, GST, Sales Tax)</li>
+            <li>Chart of accounts setup</li>
+            <li>Payment gateway integration</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/financial-settings.png" 
+              alt="Financial Settings" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 2: Financial settings and tax configuration
+            </p>
+          </div>
+        </div>
+
+        {/* Email Configuration */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Email & Notification Setup</h2>
+          <p className="mb-3">
+            Configure email settings for system notifications:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>SMTP server settings (outgoing mail)</li>
+            <li>Email templates for invoices and quotes</li>
+            <li>Notification preferences for users</li>
+            <li>Test email configuration</li>
+            <li>Email signature setup</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/email-settings.png" 
+              alt="Email Settings" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 3: Email server and notification configuration
+            </p>
+          </div>
+        </div>
+
+        {/* User & Role Setup */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">User & Role Setup</h2>
+          <p className="mb-3">
+            Configure user roles and permissions:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Create custom user roles</li>
+            <li>Define module-level permissions</li>
+            <li>Set data access restrictions</li>
+            <li>Configure approval workflows</li>
+            <li>Set up multi-factor authentication</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/role-setup.png" 
+              alt="Role Setup" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 4: User role and permission configuration
+            </p>
+          </div>
+        </div>
+
+        {/* System Preferences */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">System Preferences</h2>
+          <p className="mb-3">
+            Configure general system preferences:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Date and time format (MM/DD/YYYY vs DD/MM/YYYY)</li>
+            <li>Default language and timezone</li>
+            <li>Number and currency formatting</li>
+            <li>Dashboard layout preferences</li>
+            <li>System backup schedule</li>
+          </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/system-preferences.png" 
+              alt="System Preferences" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 5: System preferences and localization settings
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Setup Checklist */}
+      <div className="mt-8 p-4 bg-green-50 rounded-lg border border-green-200">
+        <h3 className="font-semibold text-green-900 mb-3">✅ System Setup Checklist</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+          <div className="flex items-center space-x-2">
+            <span className="text-green-600">☐</span>
+            <span>Company profile configured</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-green-600">☐</span>
+            <span>Default tax rates set</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-green-600">☐</span>
+            <span>Payment terms defined</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-green-600">☐</span>
+            <span>Email SMTP configured</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-green-600">☐</span>
+            <span>User roles created</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-green-600">☐</span>
+            <span>Date/time format selected</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-green-600">☐</span>
+            <span>Invoice prefix configured</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-green-600">☐</span>
+            <span>Backup schedule set</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Initial Setup Steps */}
+      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h3 className="font-semibold text-blue-900 mb-3">🚀 Quick Start Setup Steps</h3>
+        <ol className="list-decimal pl-6 text-sm text-blue-800 space-y-1">
+          <li>Complete company profile information</li>
+          <li>Configure tax rates and financial settings</li>
+          <li>Set up email server for sending invoices/quotes</li>
+          <li>Create user roles and add initial users</li>
+          <li>Configure system preferences (date, time, currency)</li>
+          <li>Set up payment methods and receiving options</li>
+          <li>Test email configuration with a test invoice</li>
+          <li>Create your first customer and quotation</li>
+        </ol>
+      </div>
+
+      {/* Screenshots Needed */}
+      <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <h3 className="font-semibold text-yellow-900 mb-2">📸 Screenshots to Add</h3>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-2 text-sm">
+          <div className="flex items-center space-x-2">
+            <span className="text-yellow-600">📷</span>
+            <span>company-setup.png</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-yellow-600">📷</span>
+            <span>financial-settings.png</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-yellow-600">📷</span>
+            <span>email-settings.png</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-yellow-600">📷</span>
+            <span>role-setup.png</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-yellow-600">📷</span>
+            <span>system-preferences.png</span>
+          </div>
+        </div>
+      </div>
+    </DocsLayout>
+  );
+}

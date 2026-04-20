@@ -3,19 +3,220 @@ import DocsLayout from '../../components/docs/DocsLayout';
 export default function ProjectsDoc() {
   return (
     <DocsLayout>
-      <h1 className="text-2xl font-bold mb-4">Projects</h1>
-      <ol className="list-decimal pl-6 space-y-4">
-        <li>
-          <strong>View Projects</strong>
-          <div className="mt-2">Go to the Projects section.</div>
-          <img src="https://placehold.co/600x300?text=Projects+List" alt="Projects List" className="my-4 rounded shadow" />
-        </li>
-        <li>
-          <strong>Create a Project</strong>
-          <div className="mt-2">Click "Create Project" and complete the form.</div>
-          <img src="https://placehold.co/600x300?text=Create+Project" alt="Create Project" className="my-4 rounded shadow" />
-        </li>
-      </ol>
+      <h1 className="text-2xl font-bold mb-4">Projects Management</h1>
+      
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold mb-3">1. View All Projects</h2>
+          <p className="mb-3">
+            The Projects section provides a complete overview of all ongoing and completed projects. You can:
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Track project progress and status</li>
+            <li>Monitor project timelines and deadlines</li>
+            <li>View assigned team members and their tasks</li>
+            <li>Filter projects by status, department, or priority</li>
+            <li>Search for specific projects by name or client</li>
+           </ul>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/projects-list.png" 
+              alt="Projects List" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 1: Complete projects list showing all ongoing and completed projects with status indicators
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-3">2. Create a New Project</h2>
+          <p className="mb-3">
+            To create a new project, click the "Create Project" button and complete the following steps:
+          </p>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/create-project.png" 
+              alt="Create Project Form" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 2: Project creation form with all required fields for setup
+            </p>
+          </div>
+        </div>
+      </div>
+      <h2 className="text-xl font-semibold mt-8 mb-3">Project Categories</h2>
+      <p className="mb-3">
+        Projects can be categorized based on their nature and requirements. Common categories include:
+      </p>
+      <ul className="list-disc pl-6 space-y-1">
+        <li><strong>Internal Projects:</strong> Projects focused on improving internal processes or systems</li>
+        <li><strong>Client Projects:</strong> Projects undertaken for external clients with specific deliverables</li>
+        <li><strong>Research & Development:</strong> Projects aimed at innovation and new product development</li>
+        <li><strong>Marketing Campaigns:</strong> Projects related to promotional activities and advertising</li>
+        <li><strong>Event Planning:</strong> Projects focused on organizing and managing events</li>
+        <li><strong>IT & Software Development:</strong> Projects related to software development, IT infrastructure, and support</li>
+      </ul>
+      <p className="mb-3">
+        Each project category can have specific workflows, templates, and reporting metrics to help you manage them effectively.
+      </p>
+      <div className="bg-gray-100 p-4 rounded-lg">
+        <img 
+          src="/screenshots/project-categories.png" 
+          alt="Project Categories" 
+          className="w-full rounded shadow border" 
+        />
+        <p className="text-sm text-gray-600 mt-2 text-center">
+          Figure 3: Example of project categories with associated workflows and templates
+        </p>
+      </div>
+
+          <h2 className="text-xl font-semibold mt-8 mb-3">Add Project Category</h2>
+          <p className="mb-3">
+            To add a new project category, navigate to the "Project Categories" section and click the "Add Category" button. Fill in the following details:
+          </p>
+          <ol className="list-decimal pl-6 mb-3 space-y-1">
+            <li><strong>Category Name:</strong> Enter a unique name for the category</li>
+            <li><strong>Description:</strong> Provide a brief description of the category's purpose</li>
+          </ol>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/add-category.png" 
+              alt="Add Project Category Form" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 4: Form for adding a new project category with all necessary fields
+            </p>
+          </div>
+          <h2 className="text-xl font-semibold mt-8 mb-3">Project Sources</h2>
+          <p className="mb-3">
+            Projects can be created from various sources, including:
+          </p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li><strong>Manual Entry:</strong> Create projects directly from the Projects dashboard</li>
+            <li><strong>Customer Portal:</strong> Allow clients to submit project requests through the customer portal</li>
+            <li><strong>API Integration:</strong> Automatically create projects from external systems using our API</li>
+            <li><strong>Templates:</strong> Use predefined project templates for common project types to speed up the creation process</li>
+            <li><strong>Recurring Projects:</strong> Set up projects that automatically generate based on a schedule (e.g., monthly maintenance tasks)</li>
+          </ul>
+          <p className="mb-3">
+            Each project source can be configured with specific settings and workflows to ensure consistency and efficiency in project management.
+          </p>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/project-sources.png" 
+              alt="Project Sources" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 5: Overview of different project sources and their configuration options
+            </p>
+          </div>
+
+           <h2 className="text-xl font-semibold mt-8 mb-3">Add Project Source</h2>
+          <p className="mb-3">
+            To add a new project source, go to the "Project Sources" section and click the "Add Source" button. Fill in the following details:
+          </p>
+          <ol className="list-decimal pl-6 mb-3 space-y-1">
+            <li><strong>Source Name:</strong> Enter a unique name for the project source</li>
+            <li><strong>Description:</strong> Provide a brief description of how projects will be created from this source</li>
+            <li><strong>Workflow:</strong> Select a default workflow template for projects created from this source</li>
+            <li><strong>Permissions:</strong> Set specific permissions for who can create projects from this source</li>
+            <li><strong>Integration Settings:</strong> If applicable, configure API keys or other integration settings for automated project creation</li>
+          </ol>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/add-source.png" 
+              alt="Add Project Source Form" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 6: Form for adding a new project source with all necessary fields
+            </p>
+          </div>
+          <h2 className="text-xl font-semibold mt-8 mb-3">Project Locations</h2>
+          <p className="mb-3">
+            If your projects involve physical locations (e.g., construction sites, event venues), you can manage project locations in the "Project Locations" section. This allows you to:
+          </p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li><strong>Track project locations:</strong> Assign specific locations to projects for better organization and reporting</li>
+            <li><strong>Manage resources:</strong> Allocate resources based on project location for more efficient scheduling</li>
+            <li><strong>Generate location-based reports:</strong> Analyze project performance and costs by location</li>
+            <li><strong>Integrate with mapping tools:</strong> Visualize project locations on a map for better planning and coordination</li>
+          </ul>
+          <p className="mb-3">
+            You can add new project locations by clicking the "Add Location" button and filling in the required details such as location name, address, and associated projects.
+          </p>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/project-locations.png" 
+              alt="Project Locations" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 7: Project locations management interface
+            </p>
+          </div>
+          <h2 className="text-xl font-semibold mt-8 mb-3">Add Project Location</h2>
+          <p className="mb-3">
+            To add a new project location, navigate to the "Project Locations" section and click the "Add Location" button. Fill in the following details:
+          </p>  
+          <ol className="list-decimal pl-6 mb-3 space-y-1">
+            <li><strong>Location Name:</strong> Enter a unique name for the location</li>
+            <li><strong>Address:</strong> Provide the full address of the location</li>
+            <li><strong>Associated Projects:</strong> Select which projects are associated with this location</li>
+            <li><strong>Contact Information:</strong> Optionally, add contact details for the location (e.g., site manager)</li>
+            <li><strong>Notes:</strong> Add any additional notes or instructions related to the location</li>
+          </ol>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/add-location.png" 
+              alt="Add Project Location Form" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 8: Form for adding a new project location with all necessary fields
+            </p>
+          </div>
+
+      <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h3 className="font-semibold text-blue-900 mb-2">💡 Pro Tips for Project Management</h3>
+        <ul className="list-disc pl-6 text-sm text-blue-800 space-y-1">
+          <li>Break down large projects into smaller milestones for better tracking</li>
+          <li>Use project templates for recurring project types to save time</li>
+          <li>Regularly update project status to keep stakeholders informed</li>
+          <li>Set up automated notifications for approaching deadlines</li>
+          <li>Link projects to specific customers and invoices for better financial tracking</li>
+        </ul>
+      </div>
+
+      <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <h3 className="font-semibold text-yellow-900 mb-2">🔗 Related Features</h3>
+        <ul className="list-disc pl-6 text-sm text-yellow-800 space-y-1">
+          <li><strong>Tasks:</strong> Break down projects into manageable tasks and assign to team members</li>
+          <li><strong>Time Tracking:</strong> Log hours spent on each project for accurate billing</li>
+          <li><strong>Invoicing:</strong> Generate invoices based on project milestones or time tracked</li>
+          <li><strong>Reports:</strong> Run project performance and profitability reports</li>
+          <li><strong>Team Collaboration:</strong> Use comments and file sharing for team communication</li>
+        </ul>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-3">📈 Project Analytics</h2>
+        <p className="mb-3">
+          Once projects are created, you can track various metrics:
+        </p>
+        <ul className="list-disc pl-6 space-y-1">
+          <li><strong>Budget vs Actual:</strong> Compare planned budget with actual expenses</li>
+          <li><strong>Timeline Progress:</strong> Track completion percentage against schedule</li>
+          <li><strong>Resource Utilization:</strong> Monitor team member workload and efficiency</li>
+          <li><strong>Task Completion Rate:</strong> Measure how quickly tasks are being completed</li>
+          <li><strong>Client Satisfaction:</strong> Track feedback and approval ratings</li>
+        </ul>
+      </div>
     </DocsLayout>
   );
 }

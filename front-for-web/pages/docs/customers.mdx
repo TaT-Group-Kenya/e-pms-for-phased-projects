@@ -4,18 +4,38 @@ export default function CustomersDoc() {
   return (
     <DocsLayout>
       <h1 className="text-2xl font-bold mb-4">Customers</h1>
-      <ol className="list-decimal pl-6 space-y-4">
-        <li>
-          <strong>View Customers List</strong>
-          <div className="mt-2">Go to the Customers page.</div>
-          <img src="https://placehold.co/600x300?text=Customers+List" alt="Customers List" className="my-4 rounded shadow" />
-        </li>
-        <li>
-          <strong>Add a Customer</strong>
-          <div className="mt-2">Click "Add Customer" and fill in the form.</div>
-          <img src="https://placehold.co/600x300?text=Add+Customer" alt="Add Customer" className="my-4 rounded shadow" />
-        </li>
-      </ol>
+      
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold mb-3">1. View Customers List</h2>
+          <p className="mb-3">Go to the Customers page to see all registered customers.</p>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/customerslist.png" 
+              alt="Customers List" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 1: Complete list of all customers in the system
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-3">2. Add a Customer</h2>
+          <p className="mb-3">Click "Add Customer" and fill in the form with customer details.</p>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/add customer.png" 
+              alt="Add Customer Form" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 2: Adding a new customer to the database
+            </p>
+          </div>
+        </div>
+      </div>
     </DocsLayout>
   );
 }

@@ -1,0 +1,172 @@
+import DocsLayout from '../../components/docs/DocsLayout';
+
+export default function CompanyInvoicesDoc() {
+  return (
+    <DocsLayout>
+      <h1 className="text-2xl font-bold mb-4">🏢 Company Invoices</h1>
+      <p className="mb-6 text-gray-600">Manage and track all company-level invoices, credit notes, billing, and payment collections.</p>
+      
+      <div className="space-y-8">
+        {/* Overview */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Overview</h2>
+          <p className="mb-3">
+            The Company Invoices section allows you to manage invoices issued to other companies, track payments, and monitor company-wise financial transactions.
+          </p>
+          <ul className="list-disc pl-6 mb-3 space-y-1">
+            <li>Create and send invoices to other companies</li>
+            <li>Create and manage company credit notes</li>
+            <li>Track payment status for each invoice</li>
+            <li>Monitor company receivables and aging</li>
+          </ul>
+        </div>
+
+        {/* Invoice List */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Company Invoice List</h2>
+          <p className="mb-3">
+            View all company invoices with their current status, amounts, and due dates.
+          </p>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/company-invoices-list.png" 
+              alt="Company Invoices List" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 1: Complete list of company invoices with status tracking
+            </p>
+          </div>
+        </div>
+
+        {/* Create Invoice */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Create Company Invoice</h2>
+          <p className="mb-3">
+            To create a new company invoice:
+          </p>
+          <ol className="list-decimal pl-6 mb-3 space-y-1">
+            <li>Click "Create Invoice" button</li>
+            <li>Select the company from the list</li>
+            <li>Add invoice items (products/services)</li>
+            <li>Set due date and payment terms</li>
+            <li>Add any applicable taxes or discounts</li>
+            <li>Review and send to the company</li>
+          </ol>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/create-company-invoice.png" 
+              alt="Create Company Invoice" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 2: Creating a new invoice for a company
+            </p>
+          </div>
+        </div>
+
+        {/* Credit Notes Section */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Company Credit Notes</h2>
+          <p className="mb-3">
+            Manage credit notes issued to companies for returns, adjustments, or corrections.
+          </p>
+          
+          <h3 className="font-medium mb-2">Credit Note List</h3>
+          <div className="bg-gray-100 p-4 rounded-lg mb-4">
+            <img 
+              src="/screenshots/company-credit-notes-list.png" 
+              alt="Company Credit Notes List" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 3: Complete list of company credit notes
+            </p>
+          </div>
+
+          <h3 className="font-medium mb-2">Create Credit Note</h3>
+          <p className="mb-3">
+            To create a new company credit note:
+          </p>
+          <ol className="list-decimal pl-6 mb-3 space-y-1">
+            <li>Click "Create Credit Note" button</li>
+            <li>Select the company from the list</li>
+            <li>Reference the original invoice (optional)</li>
+            <li>Add credit note items or adjustment reasons</li>
+            <li>Set credit expiry date (if applicable)</li>
+            <li>Review and send to the company</li>
+          </ol>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/create-company-credit-note.png" 
+              alt="Create Company Credit Note" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Figure 4: Creating a new credit note for a company
+            </p>
+          </div>
+
+          
+        </div>
+      </div>
+
+      {/* Invoice Statuses */}
+      <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h3 className="font-semibold text-blue-900 mb-3">📊 Invoice Statuses</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+          <div className="flex items-center space-x-2">
+            <span className="w-3 h-3 bg-gray-400 rounded-full"></span>
+            <span>Draft - Not yet sent</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+            <span>Sent - Delivered to company</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+            <span>Paid - Fully paid</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+            <span>Overdue - Payment past due date</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="w-3 h-3 bg-orange-500 rounded-full"></span>
+            <span>Partially Paid - Some payment received</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Credit Note Statuses */}
+      <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+        <h3 className="font-semibold text-purple-900 mb-3">📝 Credit Note Statuses</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+          <div className="flex items-center space-x-2">
+            <span className="w-3 h-3 bg-gray-400 rounded-full"></span>
+            <span>Draft - Not yet sent</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+            <span>Raised- Sent to company</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+            <span>Refunded- Fully utilized</span>
+          </div>
+          </div>
+      </div>
+
+      {/* Related Reports */}
+      <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+        <h3 className="font-semibold text-green-900 mb-3">📈 Related Reports</h3>
+        <ul className="list-disc pl-6 text-sm text-green-800">
+          <li>Invoice Payments - Company Report</li>
+          <li>Company Credit Note Summary</li>
+          <li>Company Transaction Ledger</li>
+          <li>Revenue Snapshot by Company</li>
+        </ul>
+      </div>
+    </DocsLayout>
+  );
+}

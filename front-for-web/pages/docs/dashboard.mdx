@@ -4,18 +4,39 @@ export default function DashboardDoc() {
   return (
     <DocsLayout>
       <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-      <ol className="list-decimal pl-6 space-y-4">
-        <li>
-          <strong>View Dashboard</strong>
-          <div className="mt-2">The dashboard is the first page after login.</div>
-          <img src="https://placehold.co/600x300?text=Dashboard" alt="Dashboard" className="my-4 rounded shadow" />
-        </li>
-        <li>
-          <strong>Use Filters and Widgets</strong>
-          <div className="mt-2">Interact with filters and widgets for custom views.</div>
-          <img src="https://placehold.co/600x300?text=Dashboard+Filters" alt="Dashboard Filters" className="my-4 rounded shadow" />
-        </li>
-      </ol>
+      
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Dashboard Overview</h2>
+          <p className="mb-3">The dashboard is the first page after login. It provides a comprehensive view of your business metrics.</p>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src="/screenshots/dashboard.png" 
+              alt="Dashboard Overview" 
+              className="w-full rounded shadow border" 
+            />
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Main dashboard showing key performance indicators
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Key Dashboard Features</h2>
+          <ul className="list-disc pl-6 space-y-2 mb-4">
+            <li><strong>Metrics Cards:</strong> View total revenue, active customers, pending orders</li>
+            <li><strong>Charts & Graphs:</strong> Visual representation of sales trends and performance</li>
+            <li><strong>Recent Activity:</strong> Track latest transactions and updates</li>
+            <li><strong>Quick Actions:</strong> Create invoices, quotes, or orders instantly</li>
+            <li><strong>Date Filters:</strong> Customize data range for analysis</li>
+          </ul>
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800">
+              <strong>💡 Tip:</strong> Use the date filter at the top right to view data for specific time periods.
+            </p>
+          </div>
+        </div>
+      </div>
     </DocsLayout>
   );
 }
