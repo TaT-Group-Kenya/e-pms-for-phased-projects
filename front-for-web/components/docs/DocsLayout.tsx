@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React from 'react';
+import AuthProvider from '../authenticated/AuthProvider';
 
 const navItems = [
   { href: '/docs', label: 'Overview' },
@@ -26,6 +27,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   
   return (
+    <AuthProvider>
     <div className="min-h-screen flex bg-gray-50">
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 px-4 py-8 fixed h-full overflow-y-auto">
@@ -87,5 +89,6 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         </div>
       </main>
     </div>
+    </AuthProvider>
   );
 }
