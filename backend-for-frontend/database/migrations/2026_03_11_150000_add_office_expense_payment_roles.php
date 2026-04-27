@@ -10,23 +10,23 @@ return new class extends Migration {
     public function up()
     {
         // Insert new roles
-        $roles = [
-            'ROLE_ADD_OFFICE_EXPENSE_PAYMENT',
-            'ROLE_EDIT_OFFICE_EXPENSE_PAYMENT',
-            'ROLE_DELETE_OFFICE_EXPENSE_PAYMENT',
-            'ROLE_VIEW_OFFICE_EXPENSE_PAYMENT',
-        ];
-        foreach ($roles as $role) {
-            $roleModel = SysRole::firstOrCreate([
-                'name' => $role,
-            ], [
-                'description' => ucwords(strtolower(str_replace('_', ' ', $role))),
-            ]);
-            GroupRole::firstOrCreate([
-                'group_id' => 1,
-                'role_id' => $roleModel->id,
-            ]);
-        }
+        // $roles = [
+        //     'ROLE_ADD_OFFICE_EXPENSE_PAYMENT',
+        //     'ROLE_EDIT_OFFICE_EXPENSE_PAYMENT',
+        //     'ROLE_DELETE_OFFICE_EXPENSE_PAYMENT',
+        //     'ROLE_VIEW_OFFICE_EXPENSE_PAYMENT',
+        // ];
+        // foreach ($roles as $role) {
+        //     $roleModel = SysRole::firstOrCreate([
+        //         'name' => $role,
+        //     ], [
+        //         'description' => ucwords(strtolower(str_replace('_', ' ', $role))),
+        //     ]);
+        //     GroupRole::firstOrCreate([
+        //         'group_id' => 1,
+        //         'role_id' => $roleModel->id,
+        //     ]);
+        // }
     }
 
     public function down()
