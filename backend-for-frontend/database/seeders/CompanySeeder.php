@@ -81,30 +81,33 @@ class CompanySeeder extends Seeder
 
     /**
      * Copy image from public to storage and return the storage path
-     */
+    */
     private function copyImage(string $filename, string $subdirectory = 'logos'): string
     {
         $publicPath = public_path($filename);
-        $storagePath = 'public/' . $subdirectory . '/' . $filename;
+        
+        // Normalize the storage path based on OS
+        $separator = DIRECTORY_SEPARATOR;
+        $storagePath = 'public' . $separator . $subdirectory . $separator . $filename;
         
         // Check if source file exists
         if (!\File::exists($publicPath)) {
             $this->command->error("Source image not found: {$publicPath}");
-            return $subdirectory . '/' . $filename; // Return path even if file doesn't exist
+            return $subdirectory . $separator . $filename; // Return OS-appropriate path
         }
         
         // Copy the file to storage
         try {
             \File::copy(
                 $publicPath, 
-                storage_path('app/' . $storagePath)
+                storage_path('app' . $separator . $storagePath)
             );
             $this->command->info("Copied image: {$filename} to storage");
         } catch (\Exception $e) {
             $this->command->error("Failed to copy image {$filename}: " . $e->getMessage());
         }
         
-        // Return the path that should be stored in database
-        return $subdirectory . '/' . $filename;
+        // Return the path using the OS-appropriate directory separator
+        return $subdirectory . $separator . $filename;
     }
 }
