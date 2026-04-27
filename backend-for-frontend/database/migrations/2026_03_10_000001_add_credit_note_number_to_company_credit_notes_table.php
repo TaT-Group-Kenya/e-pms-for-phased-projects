@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('company_credit_notes', function (Blueprint $table) {
-            $table->unique('credit_note_number');
+            //$table->unique('credit_note_number');
         });
     }
 
