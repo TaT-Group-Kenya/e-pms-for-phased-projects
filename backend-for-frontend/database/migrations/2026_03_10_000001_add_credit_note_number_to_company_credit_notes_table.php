@@ -9,14 +9,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('company_credit_notes', function (Blueprint $table) {
-            $table->string('credit_note_number')->unique()->after('invoice_id');
+            $table->unique('credit_note_number');
         });
     }
 
     public function down(): void
     {
         Schema::table('company_credit_notes', function (Blueprint $table) {
-            $table->dropColumn('credit_note_number');
+            $table->dropUnique(['credit_note_number']);
         });
     }
 };
