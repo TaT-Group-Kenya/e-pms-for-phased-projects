@@ -122,7 +122,9 @@ export default function OrdersSummaryReportPage() {
         try {
             // Send filters and reportType as query parameters
             const params = new URLSearchParams();
-            params.append('filters', JSON.stringify(filters));
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value) params.append(key, value);
+            });
             params.append('reportType', 'ordersSummary');
             const url = `/api/reports/export-pdf?${params.toString()}`;
             const resp = await fetch(url, {

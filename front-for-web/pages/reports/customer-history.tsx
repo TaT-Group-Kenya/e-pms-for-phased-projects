@@ -86,7 +86,9 @@ export default function CustomerHistoryReportPage() {
   async function exportPdf() {
     try {
       const params = new URLSearchParams();
-      params.append('filters', JSON.stringify(filters));
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
       params.append('reportType', 'customerHistory');
       const url = `/api/reports/export-pdf?${params.toString()}`;
       const resp = await fetch(url, {

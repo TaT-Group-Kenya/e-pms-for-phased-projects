@@ -141,7 +141,9 @@ export default function ProjectsSummaryReportPage() {
   async function exportPdf() {
     try {
       const params = new URLSearchParams();
-      params.append('filters', JSON.stringify(filters));
+      Object.entries(filters).forEach(([key, value]) => {
+          if (value) params.append(key, value);
+      });
       params.append('reportType', 'projectsSummary');
       const url = `/api/reports/export-pdf?${params.toString()}`;
       const resp = await fetch(url, {

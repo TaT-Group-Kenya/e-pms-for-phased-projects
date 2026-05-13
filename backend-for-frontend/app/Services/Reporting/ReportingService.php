@@ -46,7 +46,8 @@ class ReportingService
             $query->whereDate('created_at', '<=', $filters['to_date']);
         }
         // Return paginated or full collection
-        return $query->get();
+        $rawData = $query->get();
+        return $rawData;
     }
 
     public function projectsSummary($filters) {
