@@ -12,14 +12,16 @@ class AccountTypeSeeder extends Seeder
         $types = ['CASH' => 'Cash', 'MPESA' => 'Mpesa', 'BANK' => 'Bank'];
 
         foreach ($types as $key => $value) {
-            AccountType::firstOrCreate([
-                'name' => $key, 
-                'description' => $value,
-                'created_at' => now(),
-                'created_by' => 1,
-                'updated_at' => now(),
-                'updated_by' => 1,
-            ]);
+            AccountType::firstOrCreate(
+                ['name' => $key],
+                [
+                    'description' => $value,
+                    'created_at' => now(),
+                    'created_by' => 1,
+                    'updated_at' => now(),
+                    'updated_by' => 1,
+                ]
+            );
         }
     }
 }

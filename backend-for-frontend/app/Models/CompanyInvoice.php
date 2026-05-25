@@ -58,6 +58,11 @@ class CompanyInvoice extends Model
             ->where('transaction_type', 'receipt');
     }
 
+    public function pdcsIssued()
+    {
+        return $this->hasMany(\App\Models\PdcIssuedCompany::class, 'invoice_id');
+    }
+
     /**
      * Get the total amount paid to this invoice so far.
      * @return float

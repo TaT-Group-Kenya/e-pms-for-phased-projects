@@ -165,6 +165,38 @@ class ReportingController extends Controller
         }
     }
 
+    // Customer Statement
+    public function customerStatement(Request $request)
+    {
+        try {
+            $filters = $request->all();
+            $data = $this->reportingService->customerStatement($filters);
+            if (isset($data['error'])) {
+                return response()->json(['error' => $data['error']], 400);
+            }
+            return $data;
+        } catch (\Exception $e) {
+            \Log::error('Customer Statement Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal server error.'], 500);
+        }
+    }
+
+    // Company Statement
+    public function companyStatement(Request $request)
+    {
+        try {
+            $filters = $request->all();
+            $data = $this->reportingService->companyStatement($filters);
+            if (isset($data['error'])) {
+                return response()->json(['error' => $data['error']], 400);
+            }
+            return $data;
+        } catch (\Exception $e) {
+            \Log::error('Company Statement Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal server error.'], 500);
+        }
+    }
+
     // Payments to Companies
     public function paymentsToCompanies(Request $request)
     {

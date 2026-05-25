@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\CompanyInvoice;
 use App\Models\CompanyPayment;
+use App\Models\PdcIssuedCompany;
 use App\Models\CompanyTransactionsLedger;
 use App\Models\CompanyBank;
 use App\Services\CurrencyConversionService;
@@ -193,6 +194,7 @@ class CompanyInvoiceController extends Controller
             'payments',
             'creditnotes',
             'documents',
+            'pdcsIssued',
         ]);
 
         return new CompanyInvoiceResource($companyInvoice);
@@ -222,7 +224,9 @@ class CompanyInvoiceController extends Controller
             'payment_status' => ['required', Rule::in(['pending', 'complete'])],
             'bank_name' => ['nullable', 'string', 'max:255'],
             'check_number' => ['nullable', 'string', 'max:255'],
-            'receipt_number' => ['required', 'string', 'max:255'],
+            'cheque_date' => ['required_if:payment_method,check', 'nullable', 'date', 'after_or_equal:today'],
+            'bank_branch' => ['nullable', 'string', 'max:255'],
+            'receipt_number' => ['required_unless:payment_method,check', 'string', 'max:255'],
             'forex_rate' => ['required', 'numeric', 'min:0'],
             'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
@@ -257,7 +261,11 @@ class CompanyInvoiceController extends Controller
             $existingPaymentsTotal = (float) CompanyPayment::where('invoice_id', $invoice->id)
                 ->where('is_deleted', false)
                 ->sum('amount_paid');
-            $outstandingBalance = max((float) $invoice->total_amount - $existingPaymentsTotal, 0.0);
+            $pdcReserved = (float) \App\Models\PdcIssuedCompany::where('invoice_id', $invoice->id)
+                ->where('is_deleted', false)
+                ->whereIn('status', ['issued', 'pending'])
+                ->sum('amount');
+            $outstandingBalance = max((float) $invoice->total_amount - $existingPaymentsTotal - $pdcReserved, 0.0);
             $tolerance = 0.01; // 1 cent tolerance
 
             if ($amountPaid > $outstandingBalance + $tolerance) {
@@ -333,6 +341,50 @@ class CompanyInvoiceController extends Controller
                 throw ValidationException::withMessages([
                     'account_id' => ['Selected account does not have sufficient balance and overdraft is not allowed.'],
                 ]);
+            }
+
+            // If this is a cheque that matures in the future, persist a PDC
+            if (strtolower($validated['payment_method']) === 'check') {
+                $chequeDate = isset($validated['cheque_date']) && $validated['cheque_date']
+                    ? \Carbon\Carbon::parse($validated['cheque_date'])->toDateString()
+                    : $validated['payment_date'];
+
+                if ($chequeDate > now()->toDateString()) {
+                    // Create a PDC issued to company (post-dated cheque) and skip immediate posting
+                    do {
+                        $pdcTxn = $commonService->generateUniqueCode('PDC-');
+                    } while (PdcIssuedCompany::where('transaction_number', $pdcTxn)->exists());
+
+                    PdcIssuedCompany::create([
+                        'transaction_number' => $pdcTxn,
+                        'company_id' => $invoice->company_id,
+                        'invoice_id' => $invoice->id,
+                        'cheque_number' => $validated['check_number'] ?? null,
+                        'cheque_date' => $chequeDate,
+                        'issued_date' => $validated['payment_date'],
+                        'amount' => (float) $validated['amount_paid'],
+                        'currency' => $invoice->currency,
+                        'bank' => $validated['bank_name'] ?? null,
+                        'bank_branch' => $validated['bank_branch'] ?? null,
+                        // Use the benefiting account as the bank account to post to on clear
+                        'bank_account_id' => $validated['account_id'] ?? null,
+                        'status' => 'issued',
+                        'narration' => 'PDC created from invoice payment (deferred).',
+                        'created_at' => now(),
+                        'created_by' => Auth::id(),
+                    ]);
+
+                    $invoice->refresh();
+                    $invoice->loadMissing([
+                        'project',
+                        'invoiceItems.projectPhase',
+                        'payments',
+                        'creditnotes',
+                        'documents',
+                    ]);
+
+                    return new CompanyInvoiceResource($invoice);
+                }
             }
 
             // Generate a unique transaction number for this company payment
@@ -708,6 +760,10 @@ class CompanyInvoiceController extends Controller
             }
         }
 
+                    // If cheque and receipt not provided, default receipt to chk-{check_number}
+                    if (strtolower($validated['payment_method'] ?? '') === 'check' && empty($validated['receipt_number'])) {
+                        $validated['receipt_number'] = isset($validated['check_number']) ? 'chk-' . $validated['check_number'] : null;
+                    }
         // When marking the invoice as sent, ensure it has line items and
         // create a corresponding company ledger entry if one does not exist yet.
         if ($hasStatusInPayload && $validated['status'] === 'sent') {
@@ -721,7 +777,9 @@ class CompanyInvoiceController extends Controller
                 ], 422);
             }
 
-            $userId = Auth::id();
+                                $previousPaymentsTotal = (float) CompanyPayment::where('invoice_id', $invoice->id)->where('is_deleted', false)->sum('amount_paid');
+                                $pdcReserved = \App\Models\PdcIssuedCompany::where('invoice_id', $invoice->id)->where('is_deleted', false)->whereIn('status', ['issued', 'pending'])->sum('amount');
+                                $amountToAllocate = min($amountToAllocate, max((float)$invoice->total_amount - $previousPaymentsTotal - (float)$pdcReserved, 0.0));
 
             $updated = DB::transaction(function () use ($companyInvoice, $validated, $userId) {
                 // First update the invoice itself

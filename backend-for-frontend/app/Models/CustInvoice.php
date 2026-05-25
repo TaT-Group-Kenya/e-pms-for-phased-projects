@@ -73,6 +73,11 @@ class CustInvoice extends Model
         );
     }
 
+    public function pdcsReceived()
+    {
+        return $this->hasMany(\App\Models\PdcReceivedCustomer::class, 'invoice_id');
+    }
+
     public function creditnotes()
     {
         return $this->hasMany(CustCreditNote::class, 'invoice_id');

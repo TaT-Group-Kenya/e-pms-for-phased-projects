@@ -149,7 +149,9 @@ interface CompanyInvoice {
   payments?: CompanyPaymentSummary[]
   creditnotes?: CompanyCreditNoteSummary[]
   project?: ProjectWithPhasesSummary,
-  created_at?: string | null
+  created_at?: string | null,
+  upcoming_pdc_total?: number | null,
+  pdcs?: any[]
 }
 
 export default function CompanyInvoiceDetailPage() {
@@ -177,6 +179,8 @@ export default function CompanyInvoiceDetailPage() {
   const [paymentForexRate, setPaymentForexRate] = useState('')
   const [bankName, setBankName] = useState('')
   const [checkNumber, setCheckNumber] = useState('')
+  const [chequeDate, setChequeDate] = useState('')
+  const [bankBranch, setBankBranch] = useState('')
   const [receiptNumber, setReceiptNumber] = useState('')
   const [savingPayment, setSavingPayment] = useState(false)
 
@@ -840,9 +844,33 @@ export default function CompanyInvoiceDetailPage() {
       return
     }
 
-    if (!receiptNumber) {
-      addToast('Receipt number is required.', 'error')
-      return
+    let computedReceipt: string | null = receiptNumber || null
+    if (paymentMethod === 'check') {
+      if (!chequeDate) {
+        addToast('Cheque date is required for check payments.', 'error')
+        return
+      }
+      const today = new Date().toISOString().slice(0, 10)
+      if (chequeDate < today) {
+        addToast('Cheque date cannot be in the past.', 'error')
+        return
+      }
+      if (!bankName) {
+        addToast('Bank name is required for check payments.', 'error')
+        return
+      }
+      if (!checkNumber) {
+        addToast('Check number is required for check payments.', 'error')
+        return
+      }
+      if (!computedReceipt) {
+        computedReceipt = `chk-${checkNumber}`
+      }
+    } else {
+      if (!receiptNumber) {
+        addToast('Receipt number is required.', 'error')
+        return
+      }
     }
 
     if (!selectedAccountId) {
@@ -877,7 +905,9 @@ export default function CompanyInvoiceDetailPage() {
           payment_status: paymentStatus,
           bank_name: bankName || null,
           check_number: checkNumber || null,
-          receipt_number: receiptNumber,
+          cheque_date: paymentMethod === 'check' ? (chequeDate || paymentDate) : null,
+          bank_branch: paymentMethod === 'check' ? (bankBranch || null) : null,
+          receipt_number: computedReceipt,
           forex_rate: forexRateToSend,
           account_id: Number(selectedAccountId),
         }),
@@ -1060,6 +1090,7 @@ export default function CompanyInvoiceDetailPage() {
     (sum, pmt) => sum + (pmt?.amount_paid ?? 0),
     0
   )
+  const upcomingPdcTotal = invoice.upcoming_pdc_total ?? (invoice.pdcs ? (invoice.pdcs || []).reduce((s: number, p: any) => s + (p?.amount ?? 0), 0) : 0)
 
   const computedItemsSubtotal = (invoice.invoiceItems || []).reduce((sum, item) => {
     const quantity = item.quantity ?? 1
@@ -1083,7 +1114,7 @@ export default function CompanyInvoiceDetailPage() {
       ? invoice.total_amount
       : effectiveSubtotal + effectiveTax - effectiveDiscount
 
-  const outstandingBalance = Math.max(effectiveTotal - totalPayments, 0)
+  const outstandingBalance = Math.max(effectiveTotal - totalPayments - (upcomingPdcTotal || 0), 0)
   const canAddPayment = invoice.status !== 'paid' && invoice.status !== 'draft'
 
   const primaryPhase: ProjectPhaseSummary | null = (() => {
@@ -1485,6 +1516,14 @@ export default function CompanyInvoiceDetailPage() {
                                 {formatCurrency(totalPayments, invoice.currency)}
                               </span>
                             </div>
+                            {upcomingPdcTotal > 0 && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Upcoming payments</span>
+                                <span className="font-medium">
+                                  {formatCurrency(upcomingPdcTotal, invoice.currency)}
+                                </span>
+                              </div>
+                            )}
                             <div className="flex items-center justify-between">
                               <span className="text-gray-600 dark:text-gray-400">Outstanding balance</span>
                               <span className="font-semibold text-warning-500">
@@ -2394,6 +2433,32 @@ export default function CompanyInvoiceDetailPage() {
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
+
+              {paymentMethod === 'check' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium mb-[5px]">Cheque Date</label>
+                    <input
+                      type="date"
+                      value={chequeDate}
+                      onChange={(e) => setChequeDate(e.target.value)}
+                      className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-[5px]">Bank Branch (optional)</label>
+                    <input
+                      type="text"
+                      value={bankBranch}
+                      onChange={(e) => setBankBranch(e.target.value)}
+                      className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  {/* Bank account to post on clear removed — using funding/benefiting account */}
+                </>
+              )}
 
               <div>
                 <label className="block text-xs font-medium mb-[5px]">Funding Account</label>

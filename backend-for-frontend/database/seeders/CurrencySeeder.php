@@ -53,7 +53,7 @@ class CurrencySeeder extends Seeder
         ];
         
         foreach ($currencies as $currency) {
-            Currency::firstOrCreate($currency);
+            Currency::upsert($currency, ['code'], ['name', 'description', 'current_forex_rate', 'created_at', 'created_by', 'updated_at', 'updated_by']);
         }
     }
 }

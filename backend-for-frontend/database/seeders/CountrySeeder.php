@@ -229,7 +229,7 @@ class CountrySeeder extends Seeder
         ];
         
         foreach ($countries as $country) {
-            Country::firstOrCreate($country);
+            Country::upsert($country, ['code'], ['dial_code', 'name', 'created_at', 'created_by', 'updated_at', 'updated_by']);
         }
     }
 }

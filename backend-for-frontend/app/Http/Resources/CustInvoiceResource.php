@@ -40,6 +40,12 @@ class CustInvoiceResource extends BaseResource
             'payments' => CustPaymentResource::collection($this->whenLoaded('payments')),
             'creditnotes' => CustCreditNoteResource::collection($this->whenLoaded('creditnotes')),
             'documents' => CustInvoiceDocumentResource::collection($this->whenLoaded('documents')),
+            'pdcs' => \App\Http\Resources\PdcReceivedCustomerResource::collection($this->whenLoaded('pdcsReceived')),
+            'upcoming_pdc_total' => (float) (
+                $this->whenLoaded('pdcsReceived')
+                    ? collect($this->pdcsReceived)->where('is_deleted', false)->whereIn('status', ['received', 'pending'])->sum('amount')
+                    : 0.0
+            ),
         ];
     }
 }

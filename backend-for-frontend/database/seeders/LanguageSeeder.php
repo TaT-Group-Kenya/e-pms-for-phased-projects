@@ -12,15 +12,16 @@ class LanguageSeeder extends Seeder
         $languages = ['EN' => 'English'];
         
         foreach ($languages as $key => $value) {
-            Language::firstOrCreate([
-                'code' => $key,
-                'name' => $value, 
-                'description' => $value,
-                'created_at' => now(),
-                'created_by' => 1,
-                'updated_at' => now(),
-                'updated_by' => 1,
-            ]);
+            Language::firstOrCreate(
+                ['name' => $key, 'code' => $value],
+                [
+                    'description' => $value,
+                    'created_at' => now(),
+                    'created_by' => 1,
+                    'updated_at' => now(),
+                    'updated_by' => 1,
+                ]
+            );
         }
     }
 }

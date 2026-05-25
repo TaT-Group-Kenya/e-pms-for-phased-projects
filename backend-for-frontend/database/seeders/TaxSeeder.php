@@ -21,16 +21,17 @@ class TaxSeeder extends Seeder
 
         foreach ($taxes as $tax) {
             $key = array_key_first($tax);
-            Tax::firstOrCreate([
-                'code' => $key,
-                'name' => $tax[$key], 
-                'description' => $tax[$key],
-                'rate' => $tax['rate'],
-                'is_default' => $tax['is_default'],
-                'created_at' => now(),
-                'created_by' => 1,
-                'updated_at' => now(),
-                'updated_by' => 1,
+            Tax::firstOrCreate(
+                ['code' => $key],
+                [
+                    'name' => $tax[$key],
+                    'description' => $tax[$key],
+                    'rate' => $tax['rate'],
+                    'is_default' => $tax['is_default'],
+                    'created_at' => now(),
+                    'created_by' => 1,
+                    'updated_at' => now(),
+                    'updated_by' => 1,
             ]);
         }
     }

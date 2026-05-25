@@ -78,6 +78,11 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('cust-payment-allocations', App\Http\Controllers\Api\CustPaymentAllocationController::class);
 		Route::apiResource('cust-payments', App\Http\Controllers\Api\CustPaymentController::class);
 		Route::apiResource('customers', App\Http\Controllers\Api\CustomerController::class);
+		// Post-dated cheques (PDC) endpoints
+		Route::post('pdc-received-customers/{pdc_received_customer}/post-to-accounts', [App\Http\Controllers\Api\PdcReceivedCustomerController::class, 'postToAccounts']);
+		Route::apiResource('pdc-received-customers', App\Http\Controllers\Api\PdcReceivedCustomerController::class);
+		Route::post('pdc-issued-companies/{pdc_issued_company}/post-to-accounts', [App\Http\Controllers\Api\PdcIssuedCompanyController::class, 'postToAccounts']);
+		Route::apiResource('pdc-issued-companies', App\Http\Controllers\Api\PdcIssuedCompanyController::class);
 		Route::apiResource('departments', App\Http\Controllers\Api\DepartmentController::class);
 		Route::apiResource('downloads', App\Http\Controllers\Api\DownloadController::class);
 		Route::apiResource('group-roles', App\Http\Controllers\Api\GroupRoleController::class);
@@ -146,6 +151,8 @@ Route::prefix('/')->group(function () {
 			Route::get('invoices', [App\Http\Controllers\ReportingController::class, 'invoicesReport']);
 			Route::get('invoices-customer', [App\Http\Controllers\ReportingController::class, 'invoicesReportCustomer']);
 			Route::get('invoices-company', [App\Http\Controllers\ReportingController::class, 'invoicesReportCompany']);
+			Route::get('customer-statement', [App\Http\Controllers\ReportingController::class, 'customerStatement']);
+			Route::get('company-statement', [App\Http\Controllers\ReportingController::class, 'companyStatement']);
 			Route::get('payments-to-companies', [App\Http\Controllers\ReportingController::class, 'paymentsToCompanies']);
 			Route::get('margin-per-project', [App\Http\Controllers\ReportingController::class, 'marginPerProject']);
 			Route::get('general-ledger', [App\Http\Controllers\ReportingController::class, 'generalLedger']);

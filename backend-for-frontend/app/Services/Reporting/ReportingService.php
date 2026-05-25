@@ -963,6 +963,172 @@ class ReportingService
             ],
         ];
     }
+
+    public function customerStatement($filters)
+    {
+        if (empty($filters['customer_id'])) {
+            return ['error' => 'customer_id is required for customer statement.'];
+        }
+        if (empty($filters['currency_code'])) {
+            return ['error' => 'currency_code is required for customer statement.'];
+        }
+        if (empty($filters['from']) || empty($filters['to'])) {
+            return ['error' => 'from and to dates are required for customer statement.'];
+        }
+
+        $currency = $filters['currency_code'];
+        $from = $filters['from'];
+        $to = $filters['to'];
+        $customerId = $filters['customer_id'];
+
+        $query = \App\Models\CustomerTransactionsLedger::with([
+            'customer',
+            'payment',
+            'createdByUser',
+            'updatedByUser',
+            'deletedByUser',
+        ]);
+        $query->where('customer_id', $customerId);
+        $query->where('transaction_currency', $currency);
+        $query->whereDate('created_at', '>=', $from);
+        $query->whereDate('created_at', '<=', $to);
+        $query->orderBy('created_at', 'asc')->orderBy('id', 'asc');
+
+        $transactions = $query->get();
+        $rows = [];
+        $runningBalance = 0;
+        $totalDebit = 0;
+        $totalCredit = 0;
+
+        foreach ($transactions as $txn) {
+            $invoice = $txn->customerInvoice();
+            $documentNumber = null;
+            if ($txn->transaction_type !== 'receipt') {
+                $documentNumber = $invoice?->invoice_number ?? $txn->transaction_number;
+            } else {
+                $documentNumber = $txn->payment?->transaction_number ?? $txn->transaction_number;
+            }
+
+            $jobReference = $invoice?->job_reference_id ?? $invoice?->project?->job_reference_id ?? null;
+            $debit = $txn->transaction_type !== 'receipt' ? (float) $txn->amount : 0.0;
+            $credit = $txn->transaction_type === 'receipt' ? (float) $txn->amount : 0.0;
+            $runningBalance += $debit - $credit;
+            $totalDebit += $debit;
+            $totalCredit += $credit;
+
+            $rows[] = [
+                'date' => $txn->created_at,
+                'transaction_date' => $txn->transaction_date,
+                'posted_date' => $txn->posted_date,
+                'created_at' => $txn->created_at,
+                'job_reference' => $jobReference,
+                'document_number' => $documentNumber,
+                'transaction_number' => $txn->transaction_number,
+                'customer_name' => $txn->customer?->name ?? null,
+                'transaction_currency' => $txn->transaction_currency,
+                'description' => $txn->narration ?? $txn->source_type ?? '',
+                'debit_amount' => $debit,
+                'credit_amount' => $credit,
+                'balance' => $runningBalance,
+                'running_balance_base' => $runningBalance,
+                'debit_base' => $debit,
+                'credit_base' => $credit,
+            ];
+        }
+
+        return [
+            'rows' => $rows,
+            'totals' => [
+                'total_debit' => $totalDebit,
+                'total_credit' => $totalCredit,
+                'balance' => $totalDebit - $totalCredit,
+                'closing_balance_base' => $runningBalance,
+            ],
+        ];
+    }
+
+    public function companyStatement($filters)
+    {
+        if (empty($filters['company_id'])) {
+            return ['error' => 'company_id is required for company statement.'];
+        }
+        if (empty($filters['currency_code'])) {
+            return ['error' => 'currency_code is required for company statement.'];
+        }
+        if (empty($filters['from']) || empty($filters['to'])) {
+            return ['error' => 'from and to dates are required for company statement.'];
+        }
+
+        $currency = $filters['currency_code'];
+        $from = $filters['from'];
+        $to = $filters['to'];
+        $companyId = $filters['company_id'];
+
+        $query = \App\Models\CompanyTransactionsLedger::with([
+            'company',
+            'payment',
+            'createdByUser',
+            'updatedByUser',
+            'deletedByUser',
+        ]);
+        $query->where('company_id', $companyId);
+        $query->where('transaction_currency', $currency);
+        $query->whereDate('created_at', '>=', $from);
+        $query->whereDate('created_at', '<=', $to);
+        $query->orderBy('created_at', 'asc')->orderBy('id', 'asc');
+
+        $transactions = $query->get();
+        $rows = [];
+        $runningBalance = 0;
+        $totalDebit = 0;
+        $totalCredit = 0;
+
+        foreach ($transactions as $txn) {
+            $invoice = $txn->companyInvoice();
+            $documentNumber = null;
+            if ($txn->transaction_type !== 'receipt') {
+                $documentNumber = $invoice?->invoice_number ?? $txn->transaction_number;
+            } else {
+                $documentNumber = $txn->payment?->transaction_number ?? $txn->transaction_number;
+            }
+
+            $jobReference = $invoice?->job_reference_id ?? $invoice?->project?->job_reference_id ?? null;
+            $debit = $txn->transaction_type !== 'receipt' ? (float) $txn->amount : 0.0;
+            $credit = $txn->transaction_type === 'receipt' ? (float) $txn->amount : 0.0;
+            $runningBalance += $debit - $credit;
+            $totalDebit += $debit;
+            $totalCredit += $credit;
+
+            $rows[] = [
+                'date' => $txn->created_at,
+                'transaction_date' => $txn->transaction_date,
+                'posted_date' => $txn->posted_date,
+                'created_at' => $txn->created_at,
+                'job_reference' => $jobReference,
+                'document_number' => $documentNumber,
+                'transaction_number' => $txn->transaction_number,
+                'company_name' => $txn->company?->name ?? null,
+                'transaction_currency' => $txn->transaction_currency,
+                'description' => $txn->narration ?? $txn->source_type ?? '',
+                'debit_amount' => $debit,
+                'credit_amount' => $credit,
+                'balance' => $runningBalance,
+                'running_balance_base' => $runningBalance,
+                'debit_base' => $debit,
+                'credit_base' => $credit,
+            ];
+        }
+
+        return [
+            'rows' => $rows,
+            'totals' => [
+                'total_debit' => $totalDebit,
+                'total_credit' => $totalCredit,
+                'balance' => $totalDebit - $totalCredit,
+                'closing_balance_base' => $runningBalance,
+            ],
+        ];
+    }
     
     public function expenseReport($filters) {
         $currency = $filters['currency_code'] ?? 'KES';
@@ -1054,6 +1220,10 @@ class ReportingService
                 return $this->exportTaxPaymentsCustomerPdf($filters);
             case 'taxPaymentsCompany':
                 return $this->exportTaxPaymentsCompanyPdf($filters);
+            case 'customerStatement':
+                return $this->exportCustomerStatementPdf($filters);
+            case 'companyStatement':
+                return $this->exportCompanyStatementPdf($filters);
             case 'expenseReport':
                 return $this->exportExpenseReportPdf($filters);
             default:
@@ -1268,6 +1438,70 @@ class ReportingService
         return $this->renderPdf('pdf.tax-payments-company', $data, $filters, $userId, 'taxPaymentsCompany');
     }
 
+    private function exportCustomerStatementPdf($filters) {
+        $userId = Auth::id() ?? null;
+        $rawData = $this->customerStatement($filters);
+        $customer = null;
+        if (!empty($filters['customer_id'])) {
+            $customer = \App\Models\Customer::find($filters['customer_id']);
+        }
+        $account = (object) [
+            'name' => $customer?->name ?? 'Customer Statement',
+            'code' => $customer?->code ?? 'CUST',
+            'type' => 'Customer',
+            'group' => 'Statement',
+            'currency' => $filters['currency_code'] ?? 'KES',
+        ];
+        $data = [
+            'rows' => $rawData['rows'] ?? [],
+            'totals' => $rawData['totals'] ?? [],
+            'account' => $account,
+            'meta' => [
+                'from' => $filters['from'] ?? null,
+                'to' => $filters['to'] ?? null,
+                'customer_name' => $customer?->name ?? null,
+                'transaction_currency' => $filters['currency_code'] ?? 'KES',
+                'total_debit_base' => $rawData['totals']['total_debit'] ?? 0,
+                'total_credit_base' => $rawData['totals']['total_credit'] ?? 0,
+                'closing_balance_base' => $rawData['totals']['closing_balance_base'] ?? 0,
+            ],
+            'logoUrl' => config('app.url') . '/logo.png',
+        ];
+        return $this->renderStatementPdf('pdf.customer-statement', $data, $filters, $userId, 'customerStatement');
+    }
+
+    private function exportCompanyStatementPdf($filters) {
+        $userId = Auth::id() ?? null;
+        $rawData = $this->companyStatement($filters);
+        $company = null;
+        if (!empty($filters['company_id'])) {
+            $company = \App\Models\Company::find($filters['company_id']);
+        }
+        $account = (object) [
+            'name' => $company?->name ?? 'Company Statement',
+            'code' => $company?->code ?? 'COMP',
+            'type' => 'Company',
+            'group' => 'Statement',
+            'currency' => $filters['currency_code'] ?? 'KES',
+        ];
+        $data = [
+            'rows' => $rawData['rows'] ?? [],
+            'totals' => $rawData['totals'] ?? [],
+            'account' => $account,
+            'meta' => [
+                'from' => $filters['from'] ?? null,
+                'to' => $filters['to'] ?? null,
+                'company_name' => $company?->name ?? null,
+                'transaction_currency' => $filters['currency_code'] ?? 'KES',
+                'total_debit_base' => $rawData['totals']['total_debit'] ?? 0,
+                'total_credit_base' => $rawData['totals']['total_credit'] ?? 0,
+                'closing_balance_base' => $rawData['totals']['closing_balance_base'] ?? 0,
+            ],
+            'logoUrl' => config('app.url') . '/logo.png',
+        ];
+        return $this->renderStatementPdf('pdf.company-statement', $data, $filters, $userId, 'companyStatement');
+    }
+
     private function exportExpenseReportPdf($filters) {
         $userId = Auth::id() ?? null;
         $rawData = $this->expenseReport($filters);
@@ -1300,6 +1534,78 @@ class ReportingService
             'senderEmail' => $senderEmail,
             'generatedAt' => $generatedAt,
         ])->render();
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+        $output = $dompdf->output();
+        $fileName = $reportType . '-' . now()->format('Y-m-d') . '_report.pdf';
+        $relativePath = 'reports/' . $fileName;
+        Storage::disk('public')->put($relativePath, $output);
+        $download = Download::firstOrNew(['name' => $fileName]);
+        $download->path = $relativePath;
+        $download->updated_at = now();
+        $download->updated_by = $userId;
+        if (!$download->exists) {
+            $download->created_at = now();
+            $download->created_by = $userId;
+        }
+        $download->save();
+        $pdf = [
+            'fileName'     => $fileName,
+            'relativePath' => $relativePath,
+            'output'       => $output,
+        ];
+        return response()->streamDownload(
+            function () use ($pdf) {
+                echo $pdf['output'];
+            },
+            $pdf['fileName'],
+            [
+                'Content-Type' => 'application/pdf',
+            ]
+        );
+    }
+
+    private function renderStatementPdf($view, $data, $filters, $userId, $reportType) {
+        $configValues = \App\Models\SysConfig::whereIn('name', [
+            'NAME',
+            'EMAIL',
+            'ADDRESS_LINE_1',
+            'CITY',
+            'STATE',
+            'COUNTRY',
+            'PHONE',
+            'WEBSITE',
+        ])->pluck('value', 'name');
+
+        $senderName = $configValues['NAME'] ?? config('app.name', 'EPMS');
+        $senderEmail = $configValues['EMAIL'] ?? config('mail.from.address', 'no-reply@example.com');
+        $senderPhone = $configValues['PHONE'] ?? null;
+        $senderWebsite = $configValues['WEBSITE'] ?? config('app.url');
+        $senderAddressLine1 = $configValues['ADDRESS_LINE_1'] ?? null;
+        $senderCity = $configValues['CITY'] ?? null;
+        $senderState = $configValues['STATE'] ?? null;
+        $senderCountry = $configValues['COUNTRY'] ?? null;
+        $generatedAt = now();
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $dompdf = new Dompdf($options);
+        $viewData = array_merge([
+                'data' => $data,
+                'reportType' => $reportType,
+                'filters' => $filters,
+                'senderName' => $senderName,
+                'senderEmail' => $senderEmail,
+                'senderPhone' => $senderPhone,
+                'senderWebsite' => $senderWebsite,
+                'senderAddressLine1' => $senderAddressLine1,
+                'senderCity' => $senderCity,
+                'senderState' => $senderState,
+                'senderCountry' => $senderCountry,
+                'generatedAt' => $generatedAt,
+            ]);
+
+        $html = view($view, $viewData)->render();
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();

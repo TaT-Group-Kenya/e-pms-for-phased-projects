@@ -178,6 +178,12 @@ const SECTIONS: SidebarSection[] = [
         matchStrategy: "entity",
         requiredRoles: ["ROLE_VIEW_CUST_CREDIT_NOTE"],
       },
+          {
+            label: "PDC Received",
+            href: "/cust-invoices/pdc-received",
+            matchStrategy: "startsWith",
+            requiredRoles: ["ROLE_VIEW_PDC_RECEIVED_CUSTOMER"],
+          },
     ],
   },
   {
@@ -198,6 +204,12 @@ const SECTIONS: SidebarSection[] = [
         matchStrategy: "entity",
         requiredRoles: ["ROLE_VIEW_COMPANY_CREDIT_NOTE"],
       },
+          {
+            label: "PDC Issued",
+            href: "/company/pdc-issued",
+            matchStrategy: "startsWith",
+            requiredRoles: ["ROLE_VIEW_PDC_ISSUED_COMPANY"],
+          },
     ],
   },
   {
@@ -279,6 +291,18 @@ const SECTIONS: SidebarSection[] = [
         href: "/reports/customer-history",
         matchStrategy: "exact",
         requiredRoles: ["ROLE_VIEW_CUSTOMER"],
+      },
+      {
+        label: "Customer Statement",
+        href: "/reports/customer-statement",
+        matchStrategy: "exact",
+        requiredRoles: ["ROLE_VIEW_CUSTOMER_TRANSACTIONS_LEDGER"],
+      },
+      {
+        label: "Company Statement",
+        href: "/reports/company-statement",
+        matchStrategy: "exact",
+        requiredRoles: ["ROLE_VIEW_COMPANY_TRANSACTIONS_LEDGER"],
       },
       // {
       //   label: "Expense Report",

@@ -59,7 +59,7 @@ class CompanySeeder extends Seeder
         ];
 
         foreach ($companies as $company) {
-            Company::create($company);
+            Company::upsert($company, ['email']);
         }
 
         $this->copyImage('3310.png', 'logos');

@@ -40,6 +40,12 @@ class CompanyInvoiceResource extends BaseResource
             'creditnotes' => CompanyCreditNoteResource::collection($this->whenLoaded('creditnotes')),
 
             'documents' => CompanyInvoiceDocumentResource::collection($this->whenLoaded('documents')),
+            'pdcs' => \App\Http\Resources\PdcIssuedCompanyResource::collection($this->whenLoaded('pdcsIssued')),
+            'upcoming_pdc_total' => (float) (
+                $this->whenLoaded('pdcsIssued')
+                    ? collect($this->pdcsIssued)->where('is_deleted', false)->whereIn('status', ['issued', 'pending'])->sum('amount')
+                    : 0.0
+            ),
 
         ];
     }

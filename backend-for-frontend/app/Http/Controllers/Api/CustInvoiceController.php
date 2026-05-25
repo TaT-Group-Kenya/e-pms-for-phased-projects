@@ -14,6 +14,7 @@ use App\Models\CustInvoice;
 use App\Models\CustPayment;
 use App\Models\CustPaymentAllocation;
 use App\Models\CustomerTransactionsLedger;
+use App\Models\PdcReceivedCustomer;
 use App\Services\CurrencyConversionService;
 use App\Models\Account;
 use App\Models\Download;
@@ -108,6 +109,7 @@ class CustInvoiceController extends Controller
             'payments',
             'creditnotes',
             'documents',
+            'pdcsReceived',
         ]);
 
         return new CustInvoiceResource($custInvoice);
@@ -237,9 +239,11 @@ class CustInvoiceController extends Controller
             'payment_date' => ['required', 'date'],
             'payment_method' => ['required', Rule::in(['cash', 'mpesa', 'bank_transfer', 'check'])],
             'payment_status' => ['required', Rule::in(['pending', 'complete'])],
-            'bank_name' => ['nullable', 'string', 'max:255'],
-            'check_number' => ['nullable', 'string', 'max:255'],
-            'receipt_number' => ['required', 'string', 'max:255'],
+            'bank_name' => ['required_if:payment_method,check', 'nullable', 'string', 'max:255'],
+            'check_number' => ['required_if:payment_method,check', 'nullable', 'string', 'max:255'],
+            'cheque_date' => ['required_if:payment_method,check', 'nullable', 'date', 'after_or_equal:today'],
+            'bank_branch' => ['nullable', 'string', 'max:255'],
+            'receipt_number' => ['nullable', 'string', 'max:255'],
             'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
 
@@ -275,18 +279,73 @@ class CustInvoiceController extends Controller
         $invoice = DB::transaction(function () use ($invoice, $validated, $account) {
             $commonService = new CommonService();
 
+            // If this is a cheque that matures in the future, persist a PDC and skip immediate posting
+            if (strtolower($validated['payment_method']) === 'check') {
+                $chequeDate = isset($validated['cheque_date']) && $validated['cheque_date']
+                    ? \Carbon\Carbon::parse($validated['cheque_date'])->toDateString()
+                    : $validated['payment_date'];
+
+                // If receipt_number was not provided, default to chk-{check_number}
+                if (empty($validated['receipt_number'])) {
+                    $validated['receipt_number'] = isset($validated['check_number']) ? 'chk-' . $validated['check_number'] : null;
+                }
+
+                if ($chequeDate > now()->toDateString()) {
+                    // Create a PDC received from customer
+                    do {
+                        $pdcTxn = $commonService->generateUniqueCode('PDC-');
+                    } while (PdcReceivedCustomer::where('transaction_number', $pdcTxn)->exists());
+
+                    PdcReceivedCustomer::create([
+                        'transaction_number' => $pdcTxn,
+                        'customer_id' => $invoice->customer_id,
+                        'invoice_id' => $invoice->id,
+                        'cheque_number' => $validated['check_number'] ?? null,
+                        'cheque_date' => $chequeDate,
+                        'received_date' => $validated['payment_date'],
+                        'amount' => (float) $validated['amount_paid'],
+                        'currency' => $invoice->currency,
+                        'bank' => $validated['bank_name'] ?? null,
+                        'bank_branch' => $validated['bank_branch'] ?? null,
+                        // Use the benefiting account as the bank account to post to on clear
+                        'bank_account_id' => $validated['account_id'] ?? null,
+                        'status' => 'received',
+                        'narration' => 'PDC created from invoice receipt (deferred).',
+                        'created_at' => now(),
+                        'created_by' => Auth::id(),
+                    ]);
+
+                    $invoice->refresh();
+                    $invoice->loadMissing([
+                        'order',
+                        'project',
+                        'customer',
+                        'invoiceItems',
+                        'payments',
+                        'creditnotes',
+                        'documents',
+                    ]);
+
+                    return new CustInvoiceResource($invoice);
+                }
+            }
+
             // Generate a unique transaction number for the payment, similar to order numbers
             do {
                 $transactionNumber = $commonService->generateUniqueCode('CUSTPM-');
             } while (CustPayment::where('transaction_number', $transactionNumber)->exists());
-
-            // Only consider active (non-deleted) allocations when computing the
-            // previous balance so that deleted payments do not affect
+            // Only consider active (non-deleted) allocations and reserved PDCs
+            // when computing the previous balance so that deleted payments do not affect
             // outstanding balance or overpayment checks.
             $existingAllocations = CustPaymentAllocation::where('invoice_id', $invoice->id)
                 ->where('is_deleted', false)
                 ->get();
-            $previousBalance = (float) $invoice->total_amount - (float) $existingAllocations->sum('allocated_amount');
+            $pdcReserved = \App\Models\PdcReceivedCustomer::where('invoice_id', $invoice->id)
+                ->where('is_deleted', false)
+                ->whereIn('status', ['received', 'pending'])
+                ->sum('amount');
+
+            $previousBalance = (float) $invoice->total_amount - (float) $existingAllocations->sum('allocated_amount') - (float) $pdcReserved;
 
             // Strictly prevent overpayments beyond the current outstanding balance,
             // allowing a small tolerance for rounding differences.
