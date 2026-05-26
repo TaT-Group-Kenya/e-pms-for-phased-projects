@@ -40,11 +40,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (authorization) {
       headers['Authorization'] = `Bearer ${authorization}`
     }
-
     const resp = await fetch(url.toString(), {
       method: 'POST',
       headers,
-      body: rawBody.length ? rawBody : undefined,
+      body: rawBody as any
     })
 
     const data = await resp.json().catch(() => ({}))
