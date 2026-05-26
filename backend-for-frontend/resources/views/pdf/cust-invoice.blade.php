@@ -39,8 +39,7 @@
 </head>
 <body>
     @php
-        $logoPath = public_path('logo.png');
-        $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+            $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
     @endphp
 
     @if($invoice->status === 'paid')

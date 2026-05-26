@@ -57,9 +57,6 @@
                 }
             }
         }
-
-        $defaultLogoPath = public_path('logo.png');
-
         if ($companyLogoPath && file_exists($companyLogoPath)) {
             $logoPath = $companyLogoPath;
         } else {

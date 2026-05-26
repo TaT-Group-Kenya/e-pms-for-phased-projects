@@ -14,6 +14,7 @@ class SysConfig extends Model
         'readonly',
         'name',
         'value',
+        'is_file',
         'updated_at',
         'updated_by',
         'created_at',
@@ -22,4 +23,16 @@ class SysConfig extends Model
         'deleted_at',
         'deleted_by',
     ];
+
+    protected $casts = [
+        'is_file' => 'boolean',
+    ];
+
+    public function instanceLogo()
+    {
+        $values = $this->whereIn('name', [
+            'INSTANCE_LOGO',
+        ])->pluck('value', 'name');
+        return $values['INSTANCE_LOGO'] ?? null;
+    }
 }

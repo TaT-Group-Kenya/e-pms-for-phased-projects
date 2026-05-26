@@ -20,13 +20,21 @@
     "incremental": true,
     "types": [
       "node"
+    ],
+    "plugins": [
+      {
+        "name": "next"
+      }
     ]
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
-    "**/*.tsx"
-, "pages/docs/screenshots.mdx"  ],
+    "**/*.tsx",
+    "pages/docs/screenshots.mdx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
   "exclude": [
     "node_modules"
   ]

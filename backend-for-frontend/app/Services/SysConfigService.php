@@ -37,12 +37,16 @@ class SysConfigService
 
     public function create(array $data)
     {
+        $data['is_file'] = $data['is_file'] ?? false;
         return SysConfig::create($data);
     }
 
     public function update(int $id, array $data)
     {
         $model = SysConfig::findOrFail($id);
+        if (!array_key_exists('is_file', $data)) {
+            $data['is_file'] = $model->is_file ?? false;
+        }
         $model->update($data);
         return $model;
     }

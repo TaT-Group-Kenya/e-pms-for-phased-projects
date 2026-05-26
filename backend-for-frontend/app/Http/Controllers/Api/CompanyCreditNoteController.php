@@ -405,6 +405,7 @@ class CompanyCreditNoteController extends Controller
         $configValues = \App\Models\SysConfig::whereIn('name', [
             'NAME',
             'EMAIL',
+            'INSTANCE_LOGO',
             'ADDRESS_LINE_1',
             'CITY',
             'STATE',
@@ -421,6 +422,7 @@ class CompanyCreditNoteController extends Controller
             'creditNote'         => $companyCreditNote,
             'senderName'         => $senderName,
             'senderEmail'        => $senderEmail,
+            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
             'senderPhone'        => $configValues['PHONE']   ?? null,
             'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
             'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,

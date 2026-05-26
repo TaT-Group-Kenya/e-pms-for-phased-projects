@@ -12,28 +12,35 @@
         .muted { color: #6b7280; }
         h1 { font-size: 20px; margin: 0 0 4px 0; }
         .section { margin-bottom: 16px; }
+        .magic-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
         .card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
         .footer { position: fixed; bottom: 20px; left: 40px; right: 40px; font-size: 10px; color: #9ca3af; text-align: center; }
     </style>
 </head>
 <body>
 @php
-    $logoPath = public_path('logo.png');
-    $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+        $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
 @endphp
 
 <div class="header">
-    <div class="logo">
-        @if($logoData)
+    <table class="magic-table">
+        <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 8px;">
+                <div class="logo">
+@if($logoData)
             <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
         @else
             <div class="brand-name">{{ $senderName ?? 'Company' }}</div>
         @endif
-    </div>
-    <div style="text-align: right;">
-        <h1>Revenue Snapshot Report</h1>
-        <div class="muted">Generated on {{ $generatedAt->format('d M Y H:i') }}</div>
-    </div>
+                </div>
+            </td>
+            <td style="width: 50%; vertical-align: top; text-align: right;">
+<h1>Revenue Snapshot Report</h1>
+        <div class="muted">Generated on {{ $generatedAt->format('d M Y H:i') }}
+            </td>
+        </tr>
+    </table>
+</div>
 </div>
 
 <div class="section card">

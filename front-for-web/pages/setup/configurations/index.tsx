@@ -38,6 +38,7 @@ const Page = () => {
             { key: "id", label: "ID" },
             { key: "name", label: "Name" },
             { key: "value", label: "Value" },
+            { key: "is_file", label: "Is File" },
             { key: "readonly", label: "Read Only" },
           ]}
           searchableKeys={["name", "value"]}

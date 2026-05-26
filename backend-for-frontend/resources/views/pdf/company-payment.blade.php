@@ -16,6 +16,7 @@
         .table { width: 100%; border-collapse: collapse; margin-top: 16px; }
         .table th, .table td { border: 0px solid #e5e7eb; padding: 8px; text-align: left; }
         .table th { background-color: #f3f4f6; font-weight: 600; }
+        .magic-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
         .two-col { display: flex; justify-content: space-between; gap: 24px; }
         .card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; }
         .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
@@ -29,28 +30,33 @@
 </head>
 <body>
 @php
-    $logoPath = public_path('logo.png');
-    $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+        $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
     $number = $payment->transaction_number ?? ('COMP-PAYMENT-' . $payment->id);
     $currency = $payment->currency ?? '';
 @endphp
 
 <div class="header">
-    <div class="logo">
-        @if($logoData)
+    <table class="magic-table">
+        <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 8px;">
+                <div class="logo">
+@if($logoData)
             <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
         @else
             <div class="brand-name">{{ $senderName }}</div>
         @endif
-    </div>
-    <div style="text-align: right;">
-        <h1>Company Payment</h1>
+                </div>
+            </td>
+            <td style="width: 50%; vertical-align: top; text-align: right;">
+<h1>Company Payment</h1>
         <div class="muted">Payment Ref: {{ $number }}</div>
         <div class="muted">Date: {{ optional($payment->payment_date ?? $payment->created_at)->format('d M Y') }}</div>
         @if($payment->payment_status)
             <div class="text-sm mt-1">Status: <span class="font-semibold">{{ ucfirst($payment->payment_status) }}</span></div>
         @endif
-    </div>
+            </td>
+        </tr>
+    </table>
 </div>
 
 <div class="section two-col">

@@ -85,7 +85,7 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
 
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<T | null>(null);
-  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [formData, setFormData] = useState<Record<string, any>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -219,9 +219,9 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
 
   const openCreateModal = () => {
     setEditingItem(null);
-    const init: Record<string, string> = {};
+    const init: Record<string, any> = {};
     effectiveFormFields.forEach((f) => {
-      init[f] = "";
+      init[f] = f === "is_file" ? "0" : "";
     });
     setFormData(init);
     setFormError(null);
@@ -230,10 +230,14 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
 
   const openEditModal = (item: T) => {
     setEditingItem(item);
-    const init: Record<string, string> = {};
+    const init: Record<string, any> = {};
     effectiveFormFields.forEach((f) => {
       const v = item[f as keyof T];
-      init[f] = v === null || v === undefined ? "" : String(v);
+      if (f === "is_file") {
+        init[f] = v ? "1" : "0";
+      } else {
+        init[f] = v === null || v === undefined ? "" : String(v);
+      }
     });
     setFormData(init);
     setFormError(null);
@@ -246,7 +250,7 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
     setFormError(null);
   };
 
-  const handleFormChange = (field: string, value: string) => {
+  const handleFormChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -258,20 +262,36 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
     try {
       const payload: Record<string, any> = {};
       effectiveFormFields.forEach((f) => {
-        payload[f] = formData[f];
+        if (f === "is_file") {
+          payload[f] = formData[f] === true || formData[f] === "1" || formData[f] === 1 || formData[f] === "true" ? "1" : "0";
+        } else {
+          payload[f] = formData[f];
+        }
       });
 
       const isEdit = !!editingItem;
       const endpoint = isEdit ? `${updateEndpoint}?id=${editingItem?.id}` : createEndpoint;
       const method = isEdit ? "PUT" : "POST";
 
+      const formPayload = new FormData();
+      effectiveFormFields.forEach((f) => {
+        if (f === "value" && payload["is_file"] === "1") {
+          if (payload[f] instanceof File) {
+            formPayload.append(f, payload[f]);
+          } else if (payload[f] !== undefined && payload[f] !== null && payload[f] !== "") {
+            formPayload.append(f, payload[f]);
+          }
+        } else {
+          formPayload.append(f, payload[f] ?? "");
+        }
+      });
+
       const resp = await fetch(endpoint, {
         method,
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(payload),
+        body: formPayload,
       });
 
       const data = await resp.json().catch(() => ({}));
@@ -543,20 +563,81 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
             )}
 
             <form onSubmit={handleSubmitForm} className="space-y-[15px]">
-              {effectiveFormFields.map((field) => field !== "readonly" && (
-                <div key={field}>
-                  <label className="block text-sm font-medium mb-[6px] text-gray-700 dark:text-gray-300 capitalize">
-                    {field.replace(/_/g, " ")}
-                  </label>
-                  <input
-                    type="text"
-                    disabled={Number(formData["readonly"]) === 1 && field === "name"}
-                    value={formData[field] ?? ""}
-                    onChange={(e) => handleFormChange(field, e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-[#15203c] border border-gray-200 dark:border-[#172036] rounded-md px-[13px] py-[9px] text-sm text-black dark:text-white outline-0 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  />
-                </div>
-              ))}
+              {effectiveFormFields.map((field) => {
+                if (field === "readonly") return null;
+
+                const isFileFieldActive =
+                  formData["is_file"] === true ||
+                  formData["is_file"] === "1" ||
+                  formData["is_file"] === 1 ||
+                  formData["is_file"] === "true";
+
+                if (field === "is_file") {
+                  return (
+                    <div key={field} className="flex items-center gap-[12px]">
+                      <label className="flex items-center gap-[10px] text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={isFileFieldActive}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            handleFormChange(field, checked ? "1" : "0");
+                            if (!checked) {
+                              handleFormChange("value", "");
+                            }
+                          }}
+                          className="h-[18px] w-[18px] rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                        />
+                        <span className="capitalize">{field.replace(/_/g, " ")}</span>
+                      </label>
+                    </div>
+                  );
+                }
+
+                if (field === "value" && isFileFieldActive) {
+                  return (
+                    <div key={field}>
+                      <label className="block text-sm font-medium mb-[6px] text-gray-700 dark:text-gray-300 capitalize">
+                        {field.replace(/_/g, " ")}
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] ?? null;
+                          handleFormChange(field, file);
+                        }}
+                        className="w-full bg-gray-50 dark:bg-[#15203c] border border-gray-200 dark:border-[#172036] rounded-md px-[13px] py-[9px] text-sm text-black dark:text-white outline-0 transition-all"
+                      />
+                      {editingItem && typeof formData[field] === "string" && formData[field] && (
+                        <p className="mt-[8px] text-xs text-gray-500 dark:text-gray-400 break-all">
+                          Current file: {formData[field]}
+                        </p>
+                      )}
+                      {formData[field] instanceof File && (
+                        <p className="mt-[8px] text-xs text-gray-500 dark:text-gray-400">
+                          Selected file: {formData[field].name}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={field}>
+                    <label className="block text-sm font-medium mb-[6px] text-gray-700 dark:text-gray-300 capitalize">
+                      {field.replace(/_/g, " ")}
+                    </label>
+                    <input
+                      type="text"
+                      disabled={Number(formData["readonly"]) === 1 && field === "name"}
+                      value={formData[field] ?? ""}
+                      onChange={(e) => handleFormChange(field, e.target.value)}
+                      className="w-full bg-gray-50 dark:bg-[#15203c] border border-gray-200 dark:border-[#172036] rounded-md px-[13px] py-[9px] text-sm text-black dark:text-white outline-0 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    />
+                  </div>
+                );
+              })}
 
               <div className="mt-[10px] flex justify-end gap-[10px]">
                 <button

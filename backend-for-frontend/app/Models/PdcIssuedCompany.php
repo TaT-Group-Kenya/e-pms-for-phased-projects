@@ -17,6 +17,7 @@ class PdcIssuedCompany extends Model
         'transaction_number',
         'company_id',
         'invoice_id',
+        'forex_rate',
         'cheque_number',
         'cheque_date',
         'issued_date',
@@ -50,5 +51,15 @@ class PdcIssuedCompany extends Model
     public function bankAccount()
     {
         return $this->belongsTo(Account::class, 'bank_account_id');
+    }
+
+     public function createdByUser()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedByUser()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use App\Services\PdcIssuedCompanyService;
 use App\Http\Resources\PdcIssuedCompanyResource;
 use App\Http\Requests\PdcIssuedCompanyStoreRequest;
@@ -16,6 +17,7 @@ use App\Models\CompanyTransactionsLedger;
 use App\Models\CompanyInvoice;
 use App\Models\Account;
 use App\Services\CommonService;
+use App\Services\CurrencyConversionService;
 
 class PdcIssuedCompanyController extends Controller
 {
@@ -66,7 +68,7 @@ class PdcIssuedCompanyController extends Controller
             return response()->json(['message' => 'PDC id is required'], 400);
         }
 
-        $model = $this->service->find($id, ['company', 'invoice', 'bankAccount']);
+        $model = $this->service->find($id, ['company', 'invoice', 'bankAccount', 'createdByUser', 'updatedByUser']);
         $this->authorize('view', $model);
         return new PdcIssuedCompanyResource($model);
     }
@@ -78,7 +80,7 @@ class PdcIssuedCompanyController extends Controller
             return response()->json(['message' => 'PDC id is required'], 400);
         }
 
-        $model = $this->service->find($id);
+        $model = $this->service->find($id, ['company', 'invoice', 'bankAccount', 'createdByUser', 'updatedByUser']);
         $this->authorize('update', $model);
 
         // Prevent over-allocation when changing amount on PDC tied to an invoice
@@ -139,7 +141,7 @@ class PdcIssuedCompanyController extends Controller
             return response()->json(['message' => 'PDC not found'], 404);
         }
 
-        if (! in_array($pdcModel->status, ['issued','pending'])) {
+        if (!in_array($pdcModel->status, ['issued','pending'])) {
             return response()->json(['message' => 'PDC is not in an issuable state.'], 422);
         }
 
@@ -148,40 +150,78 @@ class PdcIssuedCompanyController extends Controller
             return response()->json(['message' => 'Cheque has not matured yet.'], 422);
         }
 
-        $invoice = $pdcModel->invoice_id ? CompanyInvoice::find($pdcModel->invoice_id) : null;
+        $invoice = $pdcModel->invoice_id ? CompanyInvoice::with('project')->find($pdcModel->invoice_id) : null;
 
-        DB::transaction(function () use ($pdcModel, $invoice) {
+        DB::transaction(function () use ($pdcModel, $invoice, $clearDate) {
             $commonService = new CommonService();
+            $currencyConversionService = new CurrencyConversionService();
 
             do {
                 $transactionNumber = $commonService->generateUniqueCode('CMPPAY-');
             } while (CompanyPayment::where('transaction_number', $transactionNumber)->exists());
 
+            $account = $pdcModel->bank_account_id ? Account::find($pdcModel->bank_account_id) : null;
+            $accountCurrencyCode = $account ? $account->currency : $pdcModel->currency;
+            $invoiceCurrencyCode = $pdcModel->currency;
+
+            $conversion = $currencyConversionService->convertToBaseFromInvoice((float) $pdcModel->amount, $invoiceCurrencyCode, $accountCurrencyCode);
+            $exchangeRate = $conversion['exchange_rate'];
+            $convertedAmount = $conversion['converted_amount'];
+            $baseCurrencyCode = $conversion['base_currency'];
+
+            if ($account && ! (bool) $account->overdraft_allowed && (float) $account->balance < $convertedAmount) {
+                throw ValidationException::withMessages([
+                    'bank_account_id' => ['Selected bank account does not have sufficient balance and overdraft is not allowed.'],
+                ]);
+            }
+
             $amountToAllocate = (float) $pdcModel->amount;
             $previousPaymentsTotal = 0;
             if ($invoice) {
                 $previousPaymentsTotal = (float) CompanyPayment::where('invoice_id', $invoice->id)->where('is_deleted', false)->sum('amount_paid');
-                $amountToAllocate = min($amountToAllocate, max((float)$invoice->total_amount - $previousPaymentsTotal, 0.0));
+                $amountToAllocate = min($amountToAllocate, max((float) $invoice->total_amount - $previousPaymentsTotal, 0.0));
             }
 
-            // default transaction reference/receipt for cheque-based payments
             $transactionRef = $pdcModel->cheque_number ? ('chk-' . $pdcModel->cheque_number) : ($pdcModel->transaction_number ?? null);
             $receiptRef = $transactionNumber ?: ($transactionRef ?? $pdcModel->transaction_number ?? $transactionNumber);
+
+            $taxPortion = 0.0;
+            $netPortion = (float) $pdcModel->amount;
+            if ($invoice && (float) $invoice->total_amount > 0 && (float) $invoice->tax_amount > 0) {
+                $taxPortion = min(
+                    round(((float) $invoice->tax_amount / (float) $invoice->total_amount) * (float) $pdcModel->amount, 2),
+                    (float) $pdcModel->amount
+                );
+                $netPortion = (float) $pdcModel->amount - $taxPortion;
+            }
+
+            $projectCurrencyCode = $invoice && $invoice->project ? $invoice->project->currency : null;
+            $forexRate = null;
+            $projectCurrencyValue = null;
+            if ($projectCurrencyCode) {
+                if ($projectCurrencyCode === 'KES') {
+                    $forexRate = 1.0;
+                    $projectCurrencyValue = round((float) $pdcModel->amount / $forexRate, 2);
+                } elseif ($pdcModel->forex_rate && (float) $pdcModel->forex_rate > 0) {
+                    $forexRate = (float) $pdcModel->forex_rate;
+                    $projectCurrencyValue = round((float) $pdcModel->amount / $forexRate, 2);
+                }
+            }
 
             $payment = CompanyPayment::create([
                 'transaction_number' => $transactionNumber,
                 'invoice_id' => $invoice ? $invoice->id : null,
-                'amount_paid' => $pdcModel->amount,
-                'tax_amount' => 0,
-                'net_amount' => $pdcModel->amount,
+                'amount_paid' => (float) $pdcModel->amount,
+                'tax_amount' => $taxPortion,
+                'net_amount' => $netPortion,
                 'payment_date' => $clearDate,
                 'payment_method' => 'CHEQUE',
                 'payment_status' => 'complete',
-                'currency' => $pdcModel->currency,
-                'exchange_rate' => 1,
-                'forex_rate' => null,
-                'project_currency_value' => null,
-                'project_currency' => null,
+                'currency' => $invoiceCurrencyCode,
+                'exchange_rate' => $exchangeRate,
+                'forex_rate' => $forexRate,
+                'project_currency_value' => $projectCurrencyValue,
+                'project_currency' => $projectCurrencyCode,
                 'bank_name' => $pdcModel->bank,
                 'check_number' => $pdcModel->cheque_number,
                 'transaction_reference' => $transactionRef,
@@ -200,19 +240,19 @@ class PdcIssuedCompanyController extends Controller
                 'transaction_type' => 'payment',
                 'transaction_date' => $clearDate,
                 'posted_date' => now(),
-                'amount' => $pdcModel->amount,
-                'transaction_currency' => $pdcModel->currency,
-                'base_currency' => $pdcModel->currency,
-                'exchange_rate' => 1,
-                'converted_amount' => $pdcModel->amount,
-                'converted_tax_amount' => 0,
-                'converted_net_amount' => $pdcModel->amount,
-                'tax_amount' => 0,
-                'net_amount' => $pdcModel->amount,
+                'amount' => (float) $pdcModel->amount,
+                'transaction_currency' => $invoiceCurrencyCode,
+                'base_currency' => $baseCurrencyCode,
+                'exchange_rate' => $exchangeRate,
+                'converted_amount' => $convertedAmount,
+                'converted_tax_amount' => $taxPortion * $exchangeRate,
+                'converted_net_amount' => $netPortion * $exchangeRate,
+                'tax_amount' => $taxPortion,
+                'net_amount' => $netPortion,
                 'company_id' => $pdcModel->company_id,
                 'customer_id' => null,
-                'source_type' => 'pdc_issued_company',
-                'source_id' => $pdcModel->id,
+                'source_type' => 'company_invoice',
+                'source_id' => $invoice->id,
                 'account_debit' => $pdcModel->bank_account_id,
                 'account_credit' => null,
                 'category' => 'expense',
@@ -234,34 +274,37 @@ class PdcIssuedCompanyController extends Controller
             $payment->transaction_id = $trxn->id;
             $payment->save();
 
-            // Debit the bank account (reduces balance)
-            if ($pdcModel->bank_account_id) {
-                $account = Account::find($pdcModel->bank_account_id);
-                if ($account) {
-                    $account->balance = (string) number_format((float) $account->balance - $pdcModel->amount, 2, '.', '');
-                    $account->updated_at = now();
-                    $account->updated_by = Auth::id();
-                    $account->save();
-                }
+            if ($account) {
+                $account->balance = (string) number_format((float) $account->balance - $pdcModel->amount, 2, '.', '');
+                $account->updated_at = now();
+                $account->updated_by = Auth::id();
+                $account->save();
             }
 
-            // Link and mark PDC as cleared
             $pdcModel->status = 'cleared';
             $pdcModel->related_transaction_id = $trxn->id;
             $pdcModel->updated_at = now();
             $pdcModel->updated_by = Auth::id();
             $pdcModel->save();
 
-            // If invoice exists, update its paid status (reuse logic from CompanyInvoiceController)
-            if ($invoice && $amountToAllocate > 0) {
-                $paidTotal = (float) CompanyPayment::where('invoice_id', $invoice->id)->where('is_deleted', false)->sum('amount_paid');
+            if ($invoice) {
+                $paidTotal = $previousPaymentsTotal + (float) $pdcModel->amount;
                 $remaining = max((float) $invoice->total_amount - $paidTotal, 0.0);
-                if ($remaining <= 0) {
+                if ($remaining <= 0.0) {
                     $invoice->status = 'paid';
+                    $phaseIds = $invoice->invoiceItems()
+                        ->whereNotNull('project_phase_id')
+                        ->pluck('project_phase_id')
+                        ->unique()
+                        ->toArray();
+                    if (!empty($phaseIds)) {
+                        \App\Models\ProjectPhase::whereIn('id', $phaseIds)->update(['is_billed' => true]);
+                    }
                 } else {
-                    $invoice->status = 'partial-paid';
+                    $invoice->status = 'partially-paid';
                 }
                 $invoice->updated_by = Auth::id();
+                $invoice->updated_at = now();
                 $invoice->save();
             }
         });

@@ -17,6 +17,7 @@ class PdcReceivedCustomer extends Model
         'transaction_number',
         'customer_id',
         'invoice_id',
+        'forex_rate',
         'cheque_number',
         'cheque_date',
         'received_date',
@@ -50,5 +51,15 @@ class PdcReceivedCustomer extends Model
     public function invoice()
     {
         return $this->belongsTo(CustInvoice::class, 'invoice_id');
+    }
+
+     public function createdByUser()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedByUser()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

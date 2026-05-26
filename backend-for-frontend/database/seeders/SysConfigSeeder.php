@@ -46,6 +46,7 @@ class SysConfigSeeder extends Seeder
             ['readonly' => true, 'name' => 'PHONE', 'value' => '254700000000'],
             ['readonly' => true, 'name' => 'WEBSITE', 'value' => 'www.infosolkenya.com'],
             ['readonly' => true, 'name' => 'SESSION_MAX_LIMIT_IN_MINUTES', 'value' => '10'],
+            ['readonly' => true, 'name' => 'INSTANCE_LOGO', 'value' => public_path('logo.png'), 'is_file' => true],
         ];
 
         foreach ($configs as $config) {
@@ -53,6 +54,7 @@ class SysConfigSeeder extends Seeder
                 ['name' => $config['name']],
                 [
                     'value' => $config['value'],
+                    'is_file' => $config['is_file'] ?? false,
                     'created_at' => $now,
                     'created_by' => $userId,
                     'is_deleted' => false,

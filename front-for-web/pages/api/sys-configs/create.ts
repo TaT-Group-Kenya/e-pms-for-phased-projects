@@ -1,5 +1,19 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { JSON_HEADERS } from '../../../constants/headers'
+import type { IncomingMessage } from 'http'
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+}
+
+const getRawBody = async (req: IncomingMessage): Promise<Buffer> => {
+  const chunks: Uint8Array[] = []
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
+  }
+  return Buffer.concat(chunks)
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' })
@@ -9,17 +23,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const url = new URL(`${base}/sys-configs`)
+    const rawBody = await getRawBody(req)
+    const headers: Record<string, string> = {}
+
+    const contentType = req.headers['content-type'] ?? req.headers['Content-Type']
+    if (contentType) {
+      headers['Content-Type'] = Array.isArray(contentType) ? contentType[0] : contentType
+    }
+
+    const acceptHeader = req.headers.accept
+    if (acceptHeader) {
+      headers['Accept'] = Array.isArray(acceptHeader) ? acceptHeader[0] : acceptHeader
+    }
+
+    const authorization = req.headers.authorization?.replace('Bearer ', '')
+    if (authorization) {
+      headers['Authorization'] = `Bearer ${authorization}`
+    }
 
     const resp = await fetch(url.toString(), {
       method: 'POST',
-      headers: {
-        ...JSON_HEADERS,
-        Authorization: `Bearer ${req.headers.authorization?.replace('Bearer ', '')}`,
-      },
-      body: JSON.stringify(req.body),
+      headers,
+      body: rawBody.length ? rawBody : undefined,
     })
 
-    const data = await resp.json()
+    const data = await resp.json().catch(() => ({}))
     return res.status(resp.status).json(data)
   } catch (err) {
     console.error('create sys-config error', err)

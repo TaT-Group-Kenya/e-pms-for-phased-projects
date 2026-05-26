@@ -7,12 +7,13 @@
         @page { margin: 40px 40px 60px 40px; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111827; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .logo img { height: 40px; width: auto; }
+        .logo img { height: 40px; width: auto;}
         .brand-name { font-size: 18px; font-weight: 700; color: #111827; }
         .muted { color: #6b7280; }
         h1 { font-size: 20px; margin: 0 0 4px 0; }
         .section { margin-bottom: 16px; }
         .table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        .magic-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
         .table th, .table td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
         .table th { background-color: #f3f4f6; font-weight: 600; }
         .footer { position: fixed; bottom: 20px; left: 40px; right: 40px; font-size: 10px; color: #9ca3af; text-align: center; }
@@ -20,22 +21,27 @@
 </head>
 <body>
 @php
-    $logoPath = public_path('logo.png');
-    $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+    $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
 @endphp
 
 <div class="header">
-    <div class="logo">
-        @if($logoData)
-            <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
-        @else
-            <div class="brand-name">{{ $senderName ?? 'Company' }}</div>
-        @endif
-    </div>
-    <div style="text-align: right;">
-        <h1>Orders Summary Report</h1>
-        <div class="muted">Generated on {{ $generatedAt->format('d M Y H:i') }}</div>
-    </div>
+    <table class="magic-table">
+        <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 8px;">
+                <div class="logo">
+                    @if($logoData)
+                        <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
+                    @else
+                        <div class="brand-name">{{ $senderName ?? 'Company' }}</div>
+                    @endif
+                </div>
+            </td>
+            <td style="width: 50%; vertical-align: top; text-align: right;">
+                <h1>Orders Summary Report</h1>
+                <div class="muted">Generated on {{ $generatedAt->format('d M Y H:i') }}</div>
+            </td>
+        </tr>
+    </table>
 </div>
 
 <div class="section">

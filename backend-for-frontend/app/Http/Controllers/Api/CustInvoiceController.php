@@ -300,6 +300,7 @@ class CustInvoiceController extends Controller
                         'transaction_number' => $pdcTxn,
                         'customer_id' => $invoice->customer_id,
                         'invoice_id' => $invoice->id,
+                        'forex_rate' => $forexRate,
                         'cheque_number' => $validated['check_number'] ?? null,
                         'cheque_date' => $chequeDate,
                         'received_date' => $validated['payment_date'],
@@ -960,6 +961,7 @@ class CustInvoiceController extends Controller
         $configValues = SysConfig::whereIn('name', [
             'NAME',
             'EMAIL',
+            'INSTANCE_LOGO',
             'ADDRESS_LINE_1',
             'CITY',
             'STATE',
@@ -987,6 +989,7 @@ class CustInvoiceController extends Controller
             'outstandingBalance' => $outstandingBalance,
             'senderName'         => $senderName,
             'senderEmail'        => $senderEmail,
+            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
             'senderPhone'        => $configValues['PHONE']   ?? null,
             'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
             'receivingPaymentMethod' => $receivingPaymentMethod,

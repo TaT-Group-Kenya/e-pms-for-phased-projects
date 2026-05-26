@@ -36,27 +36,32 @@
 </head>
 <body>
 @php
-    $logoPath = public_path('logo.png');
-    $logoData = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+        $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
     $number = $entry->transaction_number ?? ('CUST-LEDGER-' . $entry->id);
 @endphp
 
 <div class="header">
-    <div class="logo">
-        @if($logoData)
+    <table class="magic-table">
+        <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 8px;">
+                <div class="logo">
+@if($logoData)
             <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
         @else
             <div class="brand-name">{{ $senderName }}</div>
         @endif
-    </div>
-    <div style="text-align: right;">
-        <h1>Customer Ledger Entry</h1>
+                </div>
+            </td>
+            <td style="width: 50%; vertical-align: top; text-align: right;">
+<h1>Customer Ledger Entry</h1>
         <div class="muted">Entry #: {{ $number }}</div>
         <div class="muted">Date: {{ optional($entry->transaction_date ?? $entry->created_at)->format('d M Y') }}</div>
         @if($entry->transaction_status)
             <div class="badge badge-status mt-2">{{ ucfirst($entry->transaction_status) }}</div>
         @endif
-    </div>
+            </td>
+        </tr>
+    </table>
 </div>
 
 <div class="section two-col">

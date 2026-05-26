@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use App\Services\PdcReceivedCustomerService;
 use App\Http\Resources\PdcReceivedCustomerResource;
 use App\Http\Requests\PdcReceivedCustomerStoreRequest;
@@ -17,6 +18,7 @@ use App\Models\CustomerTransactionsLedger;
 use App\Models\CustInvoice;
 use App\Models\Account;
 use App\Services\CommonService;
+use App\Services\CurrencyConversionService;
 
 class PdcReceivedCustomerController extends Controller
 {
@@ -68,7 +70,7 @@ class PdcReceivedCustomerController extends Controller
             return response()->json(['message' => 'PDC id is required'], 400);
         }
 
-        $model = $this->service->find($id, ['customer', 'invoice', 'bankAccount']);
+        $model = $this->service->find($id, ['customer', 'invoice', 'bankAccount', 'createdByUser', 'updatedByUser']);
         $this->authorize('view', $model);
         return new PdcReceivedCustomerResource($model);
     }
@@ -80,7 +82,7 @@ class PdcReceivedCustomerController extends Controller
             return response()->json(['message' => 'PDC id is required'], 400);
         }
 
-        $model = $this->service->find($id);
+        $model = $this->service->find($id, ['customer', 'invoice', 'bankAccount', 'createdByUser', 'updatedByUser']);
         $this->authorize('update', $model);
 
         // Validate overpayment risk when changing amount and invoice is attached
@@ -155,46 +157,87 @@ class PdcReceivedCustomerController extends Controller
             return response()->json(['message' => 'Cheque has not matured yet.'], 422);
         }
 
-        $invoice = $pdcModel->invoice_id ? CustInvoice::find($pdcModel->invoice_id) : null;
+        $invoice = $pdcModel->invoice_id ? CustInvoice::with('order', 'project')->find($pdcModel->invoice_id) : null;
 
-        DB::transaction(function () use ($pdcModel, $invoice) {
+        DB::transaction(function () use ($pdcModel, $invoice, $clearDate) {
             $commonService = new CommonService();
+            $conversionService = new CurrencyConversionService();
 
             do {
                 $transactionNumber = $commonService->generateUniqueCode('CUSTPM-');
             } while (CustPayment::where('transaction_number', $transactionNumber)->exists());
 
+            $account = $pdcModel->bank_account_id ? Account::find($pdcModel->bank_account_id) : null;
+            $invoiceCurrencyCode = $pdcModel->currency;
+            $baseCurrencyForLocalTaxationCode = 'KES';
+
+            if ($account && $account->currency !== $invoiceCurrencyCode) {
+                throw ValidationException::withMessages([
+                    'bank_account_id' => [
+                        'Benefiting bank account currency (' . $account->currency . ') must match the invoice currency (' . $invoiceCurrencyCode . ').',
+                    ],
+                ]);
+            }
+
+            $conversion = $conversionService->convertToBaseFromInvoice(
+                (float) $pdcModel->amount,
+                $invoiceCurrencyCode,
+                $baseCurrencyForLocalTaxationCode
+            );
+
+            $exchangeRate = $conversion['exchange_rate'];
+            $convertedAmount = $conversion['converted_amount'];
+
             $previousBalance = null;
             if ($invoice) {
-                $existingAllocations = CustPaymentAllocation::where('invoice_id', $invoice->id)->where('is_deleted', false)->get();
-                $previousBalance = (float) $invoice->total_amount - (float) $existingAllocations->sum('allocated_amount');
+                $existingAllocations = CustPaymentAllocation::where('invoice_id', $invoice->id)
+                    ->where('is_deleted', false)
+                    ->get();
+                $pdcReserved = PdcReceivedCustomer::where('invoice_id', $invoice->id)
+                    ->where('is_deleted', false)
+                    ->whereIn('status', ['received', 'pending'])
+                    ->where('id', '<>', $pdcModel->id)
+                    ->sum('amount');
+
+                $previousBalance = (float) $invoice->total_amount
+                    - (float) $existingAllocations->sum('allocated_amount')
+                    - (float) $pdcReserved;
                 $outstanding = max($previousBalance, 0.0);
                 $amountToAllocate = min((float) $pdcModel->amount, $outstanding);
             } else {
                 $amountToAllocate = (float) $pdcModel->amount;
             }
 
-            // default transaction reference/receipt for cheque-based payments
             $transactionRef = $pdcModel->cheque_number ? ('chk-' . $pdcModel->cheque_number) : ($pdcModel->transaction_number ?? null);
             $receiptRef = $transactionNumber ?: ($transactionRef ?? $pdcModel->transaction_number ?? $transactionNumber);
 
+            $taxPortion = 0.0;
+            $netPortion = (float) $pdcModel->amount;
+            if ($invoice && (float) $invoice->total_amount > 0 && (float) $invoice->tax_amount > 0) {
+                $taxPortion = min(
+                    round(((float) $invoice->tax_amount / (float) $invoice->total_amount) * (float) $pdcModel->amount, 2),
+                    (float) $pdcModel->amount
+                );
+                $netPortion = (float) $pdcModel->amount - $taxPortion;
+            }
+
             $payment = CustPayment::create([
                 'transaction_number' => $transactionNumber,
-                'amount_paid' => $pdcModel->amount,
+                'amount_paid' => (float) $pdcModel->amount,
                 'direction' => 'incoming',
                 'transaction_type' => 'receipt',
-                'tax_amount' => 0,
-                'net_amount' => $pdcModel->amount,
+                'tax_amount' => $taxPortion,
+                'net_amount' => $netPortion,
                 'payment_date' => $clearDate,
-                'payment_method' => 'CHEQUE',
+                'payment_method' => 'check',
                 'payment_status' => 'complete',
-                'currency' => $pdcModel->currency,
+                'currency' => $invoiceCurrencyCode,
                 'bank_name' => $pdcModel->bank,
                 'check_number' => $pdcModel->cheque_number,
                 'transaction_reference' => $transactionRef,
                 'receipt_number' => $receiptRef,
                 'invoice_total_amount' => $invoice ? $invoice->total_amount : null,
-                'exchange_rate' => 1,
+                'exchange_rate' => $exchangeRate,
                 'fee_or_charge' => 0,
                 'reconciled' => false,
                 'reconciliation_date' => null,
@@ -203,7 +246,9 @@ class PdcReceivedCustomerController extends Controller
             ]);
 
             if ($invoice && $amountToAllocate > 0) {
-                $installmentNumber = CustPaymentAllocation::where('invoice_id', $invoice->id)->where('is_deleted', false)->count() + 1;
+                $installmentNumber = CustPaymentAllocation::where('invoice_id', $invoice->id)
+                    ->where('is_deleted', false)
+                    ->count() + 1;
                 $afterBalance = max($previousBalance - $amountToAllocate, 0);
 
                 CustPaymentAllocation::create([
@@ -227,29 +272,28 @@ class PdcReceivedCustomerController extends Controller
                 $invoice->save();
             }
 
-            $convertedAmount = $pdcModel->amount;
             $trxn = CustomerTransactionsLedger::create([
                 'cust_payment_id' => $payment->id,
                 'transaction_number' => $payment->transaction_number,
                 'transaction_type' => 'receipt',
                 'transaction_date' => $clearDate,
                 'posted_date' => now(),
-                'amount' => $pdcModel->amount,
-                'transaction_currency' => $pdcModel->currency,
-                'base_currency' => $pdcModel->currency,
-                'exchange_rate' => 1,
+                'amount' => (float) $pdcModel->amount,
+                'transaction_currency' => $invoiceCurrencyCode,
+                'base_currency' => $baseCurrencyForLocalTaxationCode,
+                'exchange_rate' => $exchangeRate,
                 'converted_amount' => $convertedAmount,
-                'converted_tax_amount' => 0,
-                'converted_net_amount' => $convertedAmount,
-                'tax_amount' => 0,
-                'net_amount' => $pdcModel->amount,
+                'converted_tax_amount' => $taxPortion * $exchangeRate,
+                'converted_net_amount' => $netPortion * $exchangeRate,
+                'tax_amount' => $taxPortion,
+                'net_amount' => $netPortion,
                 'customer_id' => $pdcModel->customer_id,
-                'source_type' => 'pdc_received_customer',
-                'source_id' => $pdcModel->id,
+                'source_type' => 'cust_invoice',
+                'source_id' => $invoice->id,
                 'account_debit' => null,
-                'account_credit' => $pdcModel->bank_account_id,
+                'account_credit' => $account ? $account->id : null,
                 'category' => 'revenue',
-                'payment_method' => 'CHEQUE',
+                'payment_method' => 'check',
                 'bank_account' => $pdcModel->bank,
                 'check_number' => $pdcModel->cheque_number,
                 'transaction_status' => 'cleared',
@@ -267,14 +311,12 @@ class PdcReceivedCustomerController extends Controller
             $payment->transaction_id = $trxn->id;
             $payment->save();
 
-            if ($pdcModel->bank_account_id) {
-                $account = Account::find($pdcModel->bank_account_id);
-                if ($account) {
-                    $account->balance = (string) number_format((float) $account->balance + $pdcModel->amount, 2, '.', '');
-                    $account->updated_at = now();
-                    $account->updated_by = Auth::id();
-                    $account->save();
-                }
+            if ($account) {
+                $currentBalance = (float) $account->balance;
+                $account->balance = (string) number_format($currentBalance + (float) $pdcModel->amount, 2, '.', '');
+                $account->updated_at = now();
+                $account->updated_by = Auth::id();
+                $account->save();
             }
 
             $pdcModel->status = 'cleared';

@@ -11,6 +11,7 @@ class SysConfigResource extends BaseResource
             'readonly' => $this->readonly,
             'name' => $this->name,
             'value' => $this->value,
+            'is_file' => (bool) $this->is_file,
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
             'created_at' => $this->formatTimestamp($this->created_at),

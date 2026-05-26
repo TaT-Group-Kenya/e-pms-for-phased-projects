@@ -31,6 +31,8 @@ class PdcReceivedCustomerResource extends BaseResource
             'created_by' => $this->created_by,
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
+            'created_by_user' => new UserResource($this->whenLoaded('createdByUser')),
+            'updated_by_user' => new UserResource($this->whenLoaded('updatedByUser')),
         ];
     }
 }

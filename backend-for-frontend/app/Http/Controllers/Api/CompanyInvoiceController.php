@@ -311,12 +311,12 @@ class CompanyInvoiceController extends Controller
             // Use shared conversion helper: 1 invoice currency unit = exchange_rate * base currency units
             $conversionService = new CurrencyConversionService();
             $conversion = $conversionService->convertToBaseFromInvoice($amountPaid, $invoiceCurrencyCode, $accountCurrencyCode);
-            $exchangeRate = $conversion['exchange_rate'];
+            $exchangeRate = $conversion['exchange_rate']; // always 1
             $convertedAmount = $conversion['converted_amount'];
 
             // Compute forex_rate and project currency value for margin-per-project reporting
             // forex_rate represents KES to project currency when project currency is not KES.
-            $forexRate = null;
+            $forexRate = null; //the rate of changing KES to invoice currency
             $projectCurrencyValue = null;
 
             if ($projectCurrencyCode) {
@@ -359,6 +359,7 @@ class CompanyInvoiceController extends Controller
                         'transaction_number' => $pdcTxn,
                         'company_id' => $invoice->company_id,
                         'invoice_id' => $invoice->id,
+                        'forex_rate' => $forexRate,
                         'cheque_number' => $validated['check_number'] ?? null,
                         'cheque_date' => $chequeDate,
                         'issued_date' => $validated['payment_date'],
@@ -981,6 +982,7 @@ class CompanyInvoiceController extends Controller
         $configValues = SysConfig::whereIn('name', [
             'NAME',
             'EMAIL',
+            'INSTANCE_LOGO',
             'ADDRESS_LINE_1',
             'CITY',
             'STATE',
@@ -1006,6 +1008,7 @@ class CompanyInvoiceController extends Controller
             'outstandingBalance' => $outstandingBalance,
             'senderName'         => $senderName,
             'senderEmail'        => $senderEmail,
+            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
             'senderPhone'        => $configValues['PHONE']   ?? null,
             'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
             'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,

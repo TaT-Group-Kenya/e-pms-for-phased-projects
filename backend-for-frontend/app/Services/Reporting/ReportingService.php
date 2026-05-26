@@ -1086,15 +1086,15 @@ class ReportingService
         foreach ($transactions as $txn) {
             $invoice = $txn->companyInvoice();
             $documentNumber = null;
-            if ($txn->transaction_type !== 'receipt') {
-                $documentNumber = $invoice?->invoice_number ?? $txn->transaction_number;
+            if ($txn->transaction_type === 'invoice') {
+                $documentNumber = $invoice?->invoice_number;
             } else {
-                $documentNumber = $txn->payment?->transaction_number ?? $txn->transaction_number;
+                $documentNumber = $txn->payment?->transaction_number;
             }
 
-            $jobReference = $invoice?->job_reference_id ?? $invoice?->project?->job_reference_id ?? null;
-            $debit = $txn->transaction_type !== 'receipt' ? (float) $txn->amount : 0.0;
-            $credit = $txn->transaction_type === 'receipt' ? (float) $txn->amount : 0.0;
+            $jobReference = $invoice?->job_reference_id ?? null;
+            $debit = $txn->transaction_type === 'invoice' ? (float) $txn->amount : 0.0;
+            $credit = $txn->transaction_type === 'payment' ? (float) $txn->amount : 0.0;
             $runningBalance += $debit - $credit;
             $totalDebit += $debit;
             $totalCredit += $credit;
@@ -1460,12 +1460,12 @@ class ReportingService
                 'from' => $filters['from'] ?? null,
                 'to' => $filters['to'] ?? null,
                 'customer_name' => $customer?->name ?? null,
+                'customer' => $customer,
                 'transaction_currency' => $filters['currency_code'] ?? 'KES',
                 'total_debit_base' => $rawData['totals']['total_debit'] ?? 0,
                 'total_credit_base' => $rawData['totals']['total_credit'] ?? 0,
                 'closing_balance_base' => $rawData['totals']['closing_balance_base'] ?? 0,
             ],
-            'logoUrl' => config('app.url') . '/logo.png',
         ];
         return $this->renderStatementPdf('pdf.customer-statement', $data, $filters, $userId, 'customerStatement');
     }
@@ -1492,12 +1492,12 @@ class ReportingService
                 'from' => $filters['from'] ?? null,
                 'to' => $filters['to'] ?? null,
                 'company_name' => $company?->name ?? null,
+                'company' => $company,
                 'transaction_currency' => $filters['currency_code'] ?? 'KES',
                 'total_debit_base' => $rawData['totals']['total_debit'] ?? 0,
                 'total_credit_base' => $rawData['totals']['total_credit'] ?? 0,
                 'closing_balance_base' => $rawData['totals']['closing_balance_base'] ?? 0,
             ],
-            'logoUrl' => config('app.url') . '/logo.png',
         ];
         return $this->renderStatementPdf('pdf.company-statement', $data, $filters, $userId, 'companyStatement');
     }
@@ -1520,8 +1520,20 @@ class ReportingService
 
     // Helper method to render and store PDF
     private function renderPdf($view, $data, $filters, $userId, $reportType) {
-        $senderName = config('app.name');
-        $senderEmail = config('mail.from.address');
+        $configValues = \App\Models\SysConfig::whereIn('name', [
+            'NAME',
+            'EMAIL',
+            'ADDRESS_LINE_1',
+            'INSTANCE_LOGO',
+            'CITY',
+            'STATE',
+            'COUNTRY',
+            'PHONE',
+            'WEBSITE',
+        ])->pluck('value', 'name');
+        $senderName = $configValues['NAME'] ?? config('app.name');
+        $senderEmail = $configValues['EMAIL'] ?? config('mail.from.address');
+        $instanceLogo = $configValues['INSTANCE_LOGO'] ?? null;
         $generatedAt = now();
         $options = new Options();
         $options->set('isRemoteEnabled', true);
@@ -1532,6 +1544,7 @@ class ReportingService
             'filters' => $filters,
             'senderName' => $senderName,
             'senderEmail' => $senderEmail,
+            'instanceLogo' => $instanceLogo,
             'generatedAt' => $generatedAt,
         ])->render();
         $dompdf->loadHtml($html);
@@ -1571,6 +1584,7 @@ class ReportingService
             'NAME',
             'EMAIL',
             'ADDRESS_LINE_1',
+            'INSTANCE_LOGO',
             'CITY',
             'STATE',
             'COUNTRY',
@@ -1586,16 +1600,17 @@ class ReportingService
         $senderCity = $configValues['CITY'] ?? null;
         $senderState = $configValues['STATE'] ?? null;
         $senderCountry = $configValues['COUNTRY'] ?? null;
+        $instanceLogo = $configValues['INSTANCE_LOGO'] ?? null;
         $generatedAt = now();
         $options = new Options();
         $options->set('isRemoteEnabled', true);
         $dompdf = new Dompdf($options);
-        $viewData = array_merge([
-                'data' => $data,
+        $viewData = array_merge($data, [
                 'reportType' => $reportType,
                 'filters' => $filters,
                 'senderName' => $senderName,
                 'senderEmail' => $senderEmail,
+                'instanceLogo' => $instanceLogo,
                 'senderPhone' => $senderPhone,
                 'senderWebsite' => $senderWebsite,
                 'senderAddressLine1' => $senderAddressLine1,

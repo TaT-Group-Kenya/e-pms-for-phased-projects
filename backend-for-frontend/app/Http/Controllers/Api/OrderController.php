@@ -537,6 +537,7 @@ class OrderController extends Controller
         $configValues = SysConfig::whereIn('name', [
             'NAME',
             'EMAIL',
+            'INSTANCE_LOGO',
             'ADDRESS_LINE_1',
             'CITY',
             'STATE',
@@ -553,6 +554,7 @@ class OrderController extends Controller
             'order'             => $order,
             'senderName'        => $senderName,
             'senderEmail'       => $senderEmail,
+            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
             'senderPhone'       => $configValues['PHONE']   ?? null,
             'senderWebsite'     => $configValues['WEBSITE'] ?? config('app.url'),
             'senderAddressLine1'=> $configValues['ADDRESS_LINE_1'] ?? null,

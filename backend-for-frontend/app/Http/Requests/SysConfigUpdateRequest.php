@@ -14,9 +14,19 @@ class SysConfigUpdateRequest extends FormRequest
 
     public function rules(): array
     {
+        $hasFile = $this->hasFile('value');
+        $isFile = $this->boolean('is_file') || $hasFile;
+
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'value' => ['sometimes', 'required', 'string', 'max:255'],
+            'is_file' => ['sometimes', 'boolean'],
+            'value' => array_filter([
+                'sometimes',
+                'required',
+                $isFile ? ($hasFile ? 'file' : 'string') : 'string',
+                $isFile ? ($hasFile ? 'image' : 'max:65535') : 'max:65535',
+                $isFile && $hasFile ? 'max:8192' : null,
+            ]),
         ];
     }
 
