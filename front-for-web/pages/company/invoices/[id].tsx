@@ -1506,105 +1506,102 @@ export default function CompanyInvoiceDetailPage() {
                           {formatCurrency(effectiveTotal, invoice.currency)}
                         </span>
                       </div>
-
-                      {invoice.payments && invoice.payments.length > 0 && (
-                        <>
-                          <div className="mt-[10px] pt-[10px] border-t border-dashed border-gray-200 dark:border-[#172036] space-y-[8px] text-xs">
+                      <>
+                        <div className="mt-[10px] pt-[10px] border-t border-dashed border-gray-200 dark:border-[#172036] space-y-[8px] text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Payments so far</span>
+                            <span className="font-medium">
+                              {formatCurrency(totalPayments, invoice.currency)}
+                            </span>
+                          </div>
+                          {upcomingPdcTotal > 0 && (
                             <div className="flex items-center justify-between">
-                              <span className="text-gray-600 dark:text-gray-400">Payments so far</span>
+                              <span className="text-gray-600 dark:text-gray-400">Upcoming payments</span>
                               <span className="font-medium">
-                                {formatCurrency(totalPayments, invoice.currency)}
+                                {formatCurrency(upcomingPdcTotal, invoice.currency)}
                               </span>
                             </div>
-                            {upcomingPdcTotal > 0 && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Upcoming payments</span>
-                                <span className="font-medium">
-                                  {formatCurrency(upcomingPdcTotal, invoice.currency)}
-                                </span>
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-600 dark:text-gray-400">Outstanding balance</span>
-                              <span className="font-semibold text-warning-500">
-                                {formatCurrency(outstandingBalance, invoice.currency)}
-                              </span>
-                            </div>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Outstanding balance</span>
+                            <span className="font-semibold text-warning-500">
+                              {formatCurrency(outstandingBalance, invoice.currency)}
+                            </span>
                           </div>
+                        </div>
 
-                          {/* Payments / Installments with running balance */}
-                          <div className="mt-[12px] pt-[12px] border-t border-gray-100 dark:border-[#172036] text-xs">
-                            <h6 className="text-black dark:text-white font-semibold mb-[10px] text-xs uppercase tracking-wide">
-                              Payments / Installments
-                            </h6>
+                        {/* Payments / Installments with running balance */}
+                        <div className="mt-[12px] pt-[12px] border-t border-gray-100 dark:border-[#172036] text-xs">
+                          <h6 className="text-black dark:text-white font-semibold mb-[10px] text-xs uppercase tracking-wide">
+                            Payments / Installments
+                          </h6>
 
-                            <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md">
-                              <table className="w-full">
-                                <thead className="bg-gray-50 dark:bg-[#15203c]">
-                                  <tr>
-                                    <th className="text-[11px] font-semibold ltr:text-left rtl:text-right px-[10px] py-[8px]">
-                                      Date
-                                    </th>
-                                    <th className="text-[11px] font-semibold ltr:text-left rtl:text-right px-[10px] py-[8px]">
-                                      Method
-                                    </th>
-                                    <th className="text-[11px] font-semibold ltr:text-left rtl:text-right px-[10px] py-[8px]">
-                                      Reference
-                                    </th>
-                                    <th className="text-[11px] font-semibold text-right px-[10px] py-[8px]">
-                                      Amount
-                                    </th>
-                                    <th className="text-[11px] font-semibold text-right px-[10px] py-[8px]">
-                                      Running Balance
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {(() => {
-                                    let runningBalance = effectiveTotal
-                                    const sorted = [...(invoice.payments || [])].sort((a, b) => {
-                                      const aDate = a.payment_date || ''
-                                      const bDate = b.payment_date || ''
-                                      if (aDate === bDate) {
-                                        return (a.id || 0) - (b.id || 0)
-                                      }
-                                      return aDate < bDate ? -1 : 1
-                                    })
+                          <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md">
+                            <table className="w-full">
+                              <thead className="bg-gray-50 dark:bg-[#15203c]">
+                                <tr>
+                                  <th className="text-[11px] font-semibold ltr:text-left rtl:text-right px-[10px] py-[8px]">
+                                    Date
+                                  </th>
+                                  <th className="text-[11px] font-semibold ltr:text-left rtl:text-right px-[10px] py-[8px]">
+                                    Method
+                                  </th>
+                                  <th className="text-[11px] font-semibold ltr:text-left rtl:text-right px-[10px] py-[8px]">
+                                    Reference
+                                  </th>
+                                  <th className="text-[11px] font-semibold text-right px-[10px] py-[8px]">
+                                    Amount
+                                  </th>
+                                  <th className="text-[11px] font-semibold text-right px-[10px] py-[8px]">
+                                    Running Balance
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(() => {
+                                  let runningBalance = effectiveTotal
+                                  const sorted = [...(invoice.payments || [])].sort((a, b) => {
+                                    const aDate = a.payment_date || ''
+                                    const bDate = b.payment_date || ''
+                                    if (aDate === bDate) {
+                                      return (a.id || 0) - (b.id || 0)
+                                    }
+                                    return aDate < bDate ? -1 : 1
+                                  })
 
-                                    return sorted.map((payment) => {
-                                      const amount = payment.amount_paid || 0
-                                      runningBalance = Math.max(runningBalance - amount, 0)
+                                  return sorted.map((payment) => {
+                                    const amount = payment.amount_paid || 0
+                                    runningBalance = Math.max(runningBalance - amount, 0)
 
-                                      return (
-                                        <tr
-                                          key={payment.id}
-                                          className="border-t border-gray-100 dark:border-[#172036] align-middle"
-                                        >
-                                          <td className="px-[10px] py-[8px] text-[11px] text-gray-700 dark:text-gray-300">
-                                            {payment.payment_date || '-'}
-                                          </td>
-                                          <td className="px-[10px] py-[8px] text-[11px] text-gray-700 dark:text-gray-300">
-                                            {payment.payment_method || '-'}
-                                          </td>
-                                          <td className="px-[10px] py-[8px] text-[11px] text-gray-700 dark:text-gray-300">
-                                            {payment.receipt_number || payment.transaction_reference || '-'}
-                                          </td>
-                                          <td className="px-[10px] py-[8px] text-[11px] text-right text-gray-900 dark:text-gray-100">
-                                            {formatCurrency(amount, invoice.currency)}
-                                          </td>
-                                          <td className="px-[10px] py-[8px] text-[11px] text-right font-medium text-gray-900 dark:text-gray-100">
-                                            {formatCurrency(runningBalance, invoice.currency)}
-                                          </td>
-                                        </tr>
-                                      )
-                                    })
-                                  })()}
-                                </tbody>
-                              </table>
-                            </div>
+                                    return (
+                                      <tr
+                                        key={payment.id}
+                                        className="border-t border-gray-100 dark:border-[#172036] align-middle"
+                                      >
+                                        <td className="px-[10px] py-[8px] text-[11px] text-gray-700 dark:text-gray-300">
+                                          {payment.payment_date || '-'}
+                                        </td>
+                                        <td className="px-[10px] py-[8px] text-[11px] text-gray-700 dark:text-gray-300">
+                                          {payment.payment_method || '-'}
+                                        </td>
+                                        <td className="px-[10px] py-[8px] text-[11px] text-gray-700 dark:text-gray-300">
+                                          {payment.receipt_number || payment.transaction_reference || '-'}
+                                        </td>
+                                        <td className="px-[10px] py-[8px] text-[11px] text-right text-gray-900 dark:text-gray-100">
+                                          {formatCurrency(amount, invoice.currency)}
+                                        </td>
+                                        <td className="px-[10px] py-[8px] text-[11px] text-right font-medium text-gray-900 dark:text-gray-100">
+                                          {formatCurrency(runningBalance, invoice.currency)}
+                                        </td>
+                                      </tr>
+                                    )
+                                  })
+                                })()}
+                              </tbody>
+                            </table>
                           </div>
-                        </>
-                      )}
+                        </div>
+                      </>
                     </div>
                   </div>
 
