@@ -83,6 +83,10 @@ class PdcIssuedCompanyController extends Controller
         $model = $this->service->find($id, ['company', 'invoice', 'bankAccount', 'createdByUser', 'updatedByUser']);
         $this->authorize('update', $model);
 
+        if ($model->status === 'cleared') {
+            return response()->json(['message' => 'PDC cannot be updated as it is already cleared.'], 400);
+        }
+
         // Prevent over-allocation when changing amount on PDC tied to an invoice
         $validated = $request->validated();
         if (isset($validated['amount']) && $model->invoice_id) {
@@ -120,8 +124,36 @@ class PdcIssuedCompanyController extends Controller
         $model = $this->service->find($id);
         $this->authorize('delete', $model);
 
+        if ($model->status === 'cleared') {
+            return response()->json(['message' => 'PDC cannot be deleted as it is already cleared.'], 400);
+        }
+
         $this->service->delete($id);
         return response()->noContent();
+    }
+
+    public function updatePdcStatus(Request $request, $pdc)
+    {
+        $status = $request->input('status');
+        $id = $pdc instanceof PdcIssuedCompany ? $pdc->id : (is_numeric($pdc) ? (int) $pdc : (int) (request()->route('pdc_issued_company') ?? request()->route('pdc')));
+        if (empty($id)) {
+            return response()->json(['message' => 'PDC id is required'], 400);
+        }
+
+        $model = $this->service->find($id);
+        $this->authorize('update', $model);
+
+        if ($model->status === 'cleared') {
+            return response()->json(['message' => 'PDC cannot be updated as it is already cleared.'], 422);
+        }
+
+        $validatedStatus = $status === 'cancelled' || $status === 'bounced' || $status === 'issued' ? $status : 'cancelled';
+        $model->status = $validatedStatus;
+        $model->updated_at = now();
+        $model->updated_by = Auth::id();
+        $model->save();
+
+        return new PdcIssuedCompanyResource($model);
     }
 
     /**

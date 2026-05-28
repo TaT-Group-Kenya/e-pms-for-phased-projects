@@ -300,7 +300,7 @@ class CustInvoiceController extends Controller
                         'transaction_number' => $pdcTxn,
                         'customer_id' => $invoice->customer_id,
                         'invoice_id' => $invoice->id,
-                        'forex_rate' => $forexRate,
+                        'forex_rate' => 1,
                         'cheque_number' => $validated['check_number'] ?? null,
                         'cheque_date' => $chequeDate,
                         'received_date' => $validated['payment_date'],

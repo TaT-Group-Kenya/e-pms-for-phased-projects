@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { JSON_HEADERS } from '../../../../constants/headers'
+import { JSON_HEADERS } from '../../../constants/headers'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' })
@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { id } = req.body as { id?: number | string }
     if (!id) return res.status(400).json({ message: 'ID required' })
 
-    const url = `${base}/pdc-issued-companies/${id}/post-to-accounts`
+    const url = `${base}/pdc-received-customers/${id}/update-status`
     const token = req.headers.authorization?.replace('Bearer ', '')
 
     const resp = await fetch(url, {
@@ -24,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(resp.status).json(data)
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('company pdc-issued post-to-accounts proxy error', err)
+    console.error('company pdc-received update-status proxy error', err)
     return res.status(500).json({ message: 'Proxy error' })
   }
 }

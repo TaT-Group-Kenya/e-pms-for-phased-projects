@@ -85,6 +85,10 @@ class PdcReceivedCustomerController extends Controller
         $model = $this->service->find($id, ['customer', 'invoice', 'bankAccount', 'createdByUser', 'updatedByUser']);
         $this->authorize('update', $model);
 
+        if ($model->status === 'cleared') {
+            return response()->json(['message' => 'PDC cannot be updated as it is already cleared.'], 400);
+        }
+
         // Validate overpayment risk when changing amount and invoice is attached
         $validated = $request->validated();
         if (isset($validated['amount']) && $model->invoice_id) {
@@ -96,7 +100,7 @@ class PdcReceivedCustomerController extends Controller
                 // Sum of other PDCs (excluding this one) that are reserved against the invoice
                 $otherPdcReserved = (float) PdcReceivedCustomer::where('invoice_id', $invoice->id)
                     ->where('is_deleted', false)
-                    ->whereIn('status', ['received','pending','issued'])
+                    ->whereIn('status', ['received','pending'])
                     ->where('id', '<>', $model->id)
                     ->sum('amount');
 
@@ -126,8 +130,36 @@ class PdcReceivedCustomerController extends Controller
         $model = $this->service->find($id);
         $this->authorize('delete', $model);
 
+        if ($model->status === 'cleared') {
+            return response()->json(['message' => 'PDC cannot be deleted as it is already cleared.'], 400);
+        }
+
         $this->service->delete($id);
         return response()->noContent();
+    }
+
+    public function updatePdcStatus(Request $request, $pdc)
+    {
+        $status = $request->input('status');
+        $id = $pdc instanceof PdcReceivedCustomer ? $pdc->id : (is_numeric($pdc) ? (int) $pdc : (int) (request()->route('pdc_received_customer') ?? request()->route('pdc')));
+        if (empty($id)) {
+            return response()->json(['message' => 'PDC id is required'], 400);
+        }
+
+        $model = $this->service->find($id);
+        $this->authorize('update', $model);
+
+        if ($model->status === 'cleared') {
+            return response()->json(['message' => 'PDC cannot be updated as it is already cleared.'], 422);
+        }
+
+        $validatedStatus = $status === 'cancelled' || $status === 'bounced' || $status === 'received' ? $status : 'cancelled';
+        $model->status = $validatedStatus;
+        $model->updated_at = now();
+        $model->updated_by = Auth::id();
+        $model->save();
+
+        return new PdcReceivedCustomerResource($model);
     }
 
     /**

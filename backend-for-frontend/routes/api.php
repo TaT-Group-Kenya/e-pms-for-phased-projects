@@ -81,8 +81,12 @@ Route::prefix('/')->group(function () {
 		// Post-dated cheques (PDC) endpoints
 		Route::post('pdc-received-customers/{pdc_received_customer}/post-to-accounts', [App\Http\Controllers\Api\PdcReceivedCustomerController::class, 'postToAccounts']);
 		Route::apiResource('pdc-received-customers', App\Http\Controllers\Api\PdcReceivedCustomerController::class);
+		Route::post('pdc-received-customers/{pdc_received_customer}/update-status', [App\Http\Controllers\Api\PdcReceivedCustomerController::class, 'updatePdcStatus']);
+
 		Route::post('pdc-issued-companies/{pdc_issued_company}/post-to-accounts', [App\Http\Controllers\Api\PdcIssuedCompanyController::class, 'postToAccounts']);
 		Route::apiResource('pdc-issued-companies', App\Http\Controllers\Api\PdcIssuedCompanyController::class);
+		Route::post('pdc-issued-companies/{pdc_issued_company}/update-status', [App\Http\Controllers\Api\PdcIssuedCompanyController::class, 'updatePdcStatus']);
+
 		Route::apiResource('departments', App\Http\Controllers\Api\DepartmentController::class);
 		Route::apiResource('downloads', App\Http\Controllers\Api\DownloadController::class);
 		Route::apiResource('group-roles', App\Http\Controllers\Api\GroupRoleController::class);
