@@ -297,7 +297,7 @@ export default function PdcIssuedDetailPage() {
                   <div className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
                     {item.invoice ? (
                       <a
-                        href={`/cust-invoices/${item.invoice.id}`}
+                        href={`/company/invoices/${item.invoice.id}`}
                         className="text-primary-500 hover:text-primary-600"
                       >
                         {item.invoice.invoice_number}
