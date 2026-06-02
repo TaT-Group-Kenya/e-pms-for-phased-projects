@@ -14,8 +14,17 @@ class UserUpdateRequest extends FormRequest
 
     public function rules(): array
     {
+        $routeUser = $this->route('user');
+        $exceptId = null;
+        if (is_object($routeUser) && property_exists($routeUser, 'id')) {
+            $exceptId = $routeUser->id;
+        } else {
+            $exceptId = $routeUser;
+        }
+        \Log::debug('UserUpdateRequest rules', ['route_user' => $routeUser, 'except_id' => $exceptId]);
+
         return [
-            'email' => ['sometimes', 'email', 'max:255', 'unique:users,email,' . $this->route('user')],
+            'email' => ['sometimes', 'email', 'max:255', Rule::unique('users','email')->ignore($exceptId)],
             'first_name' => ['sometimes', 'string', 'max:255'],
             'middle_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'last_name' => ['sometimes', 'string', 'max:255'],

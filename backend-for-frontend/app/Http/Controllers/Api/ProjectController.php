@@ -100,7 +100,7 @@ class ProjectController extends Controller
         $outgoingPayments = [];
         if ($project->company_invoices && count($project->company_invoices) > 0) {
             $invoiceIds = $project->company_invoices->pluck('id')->toArray();
-            $outgoingPayments = \App\Models\CompanyPayment::whereIn('invoice_id', $invoiceIds)->get();
+            $outgoingPayments = \App\Models\CompanyPayment::with(['invoice.company'])->whereIn('invoice_id', $invoiceIds)->get();
         }
 
         // Attach payments to project

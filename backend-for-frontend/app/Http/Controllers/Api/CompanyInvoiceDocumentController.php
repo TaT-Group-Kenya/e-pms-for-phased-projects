@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\CompanyInvoiceDucoment;
-use App\Services\CompanyInvoiceDucomentService;
-use App\Http\Resources\CompanyInvoiceDucomentResource;
-use App\Http\Requests\CompanyInvoiceDucomentStoreRequest;
-use App\Http\Requests\CompanyInvoiceDucomentUpdateRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use App\Models\CompanyInvoiceDocument;
+use App\Models\CompanyInvoice;
+use App\Services\CompanyInvoiceDocumentService;
+use App\Http\Resources\CompanyInvoiceDocumentResource;
+use App\Http\Requests\CompanyInvoiceDocumentStoreRequest;
+use App\Http\Requests\CompanyInvoiceDocumentUpdateRequest;
 
 class CompanyInvoiceDocumentController extends Controller
 {
@@ -30,7 +33,29 @@ class CompanyInvoiceDocumentController extends Controller
     public function store(CompanyInvoiceDocumentStoreRequest $request)
     {
         $this->authorize('create', \App\Models\CompanyInvoiceDocument::class);
-        $model = $this->service->create($request->validated());
+
+        $validated = $request->validated();
+
+        if (!empty($validated['invoice_id'])) {
+            $invoice = CompanyInvoice::findOrFail($validated['invoice_id']);
+            // No special lock behavior here; adjust if needed
+        } else {
+            $invoice = null;
+        }
+
+        if ($request->hasFile('document_file')) {
+            $file = $request->file('document_file');
+
+            $originalName = $file->getClientOriginalName();
+            $prefix = $invoice ? $invoice->invoice_number : 'invoice';
+            $fileName = $prefix . '-' . $originalName;
+
+            $path = $file->storeAs('company-invoice-documents', $fileName, 'public');
+            $validated['document_path'] = $path;
+        }
+
+        $validated['created_by'] = Auth::id();
+        $model = $this->service->create($validated);
         return new CompanyInvoiceDocumentResource($model);
     }
 
@@ -45,13 +70,37 @@ class CompanyInvoiceDocumentController extends Controller
     {
         $this->authorize('update', $companyInvoiceDocument);
 
-        $updated = $this->service->update($companyInvoiceDocument->id, $request->validated());
+        $validated = $request->validated();
+
+        if ($request->hasFile('document_file')) {
+            // Remove previous file if exists
+            if ($companyInvoiceDocument->document_path && Storage::disk('public')->exists($companyInvoiceDocument->document_path)) {
+                Storage::disk('public')->delete($companyInvoiceDocument->document_path);
+            }
+
+            $file = $request->file('document_file');
+            $invoice = $companyInvoiceDocument->invoice ?? CompanyInvoice::find($companyInvoiceDocument->invoice_id);
+            $originalName = $file->getClientOriginalName();
+            $prefix = $invoice ? ($invoice->invoice_number ?? 'invoice') : 'invoice';
+            $fileName = $prefix . '-' . $originalName;
+
+            $path = $file->storeAs('company-invoice-documents', $fileName, 'public');
+            $validated['document_path'] = $path;
+        }
+
+        $validated['updated_by'] = Auth::id();
+        $updated = $this->service->update($companyInvoiceDocument->id, $validated);
         return new CompanyInvoiceDocumentResource($updated);
     }
 
     public function destroy(CompanyInvoiceDocument $companyInvoiceDocument)
     {
         $this->authorize('delete', $companyInvoiceDocument);
+
+        // Optionally delete file from storage
+        if ($companyInvoiceDocument->document_path && Storage::disk('public')->exists($companyInvoiceDocument->document_path)) {
+            Storage::disk('public')->delete($companyInvoiceDocument->document_path);
+        }
 
         $this->service->delete($companyInvoiceDocument->id);
         return response()->noContent();

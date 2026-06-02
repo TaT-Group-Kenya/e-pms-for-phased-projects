@@ -54,7 +54,7 @@ Route::prefix('/')->group(function () {
 		Route::delete('company-invoices/{companyInvoice}/payments/{companyPayment}', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'deletePayment']);
 		Route::post('company-invoices/create-from-phase', [App\Http\Controllers\Api\CompanyInvoiceController::class, 'createFromPhase']);
 		Route::apiResource('company-invoices', App\Http\Controllers\Api\CompanyInvoiceController::class);
-		Route::apiResource('company-invoice-documents', App\Http\Controllers\Api\CompanyInvoiceDucomentController::class);
+		Route::apiResource('company-invoice-documents', App\Http\Controllers\Api\CompanyInvoiceDocumentController::class);
 		Route::apiResource('company-invoice-items', App\Http\Controllers\Api\CompanyInvoiceItemController::class);
 		Route::apiResource('company-payments', App\Http\Controllers\Api\CompanyPaymentController::class);
 		Route::apiResource('company-projects', App\Http\Controllers\Api\CompanyProjectController::class);

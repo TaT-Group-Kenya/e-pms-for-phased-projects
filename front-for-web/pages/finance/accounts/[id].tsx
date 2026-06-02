@@ -7,7 +7,7 @@ import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../../components/common/Toast";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
-import { currencyStrength } from "../../../utils/format";
+import { currencyStrength, formatCurrency } from "../../../utils/format";
 
 interface AccountMeta {
   id: number;
@@ -49,6 +49,8 @@ interface AccountStatementResponse {
     total_debit_base: number;
     total_credit_base: number;
     closing_balance_base: number;
+    pdc_issued_total?: number;
+    pdc_received_total?: number;
     from?: string | null;
     to?: string | null;
   };
@@ -476,6 +478,24 @@ const AccountStatementPage: React.FC = () => {
                   Currency: {account.currency}
                 </span>
               )}
+            </div>
+            <div className="mt-3 flex items-center gap-3">
+              <div className="inline-flex flex-col px-3 py-2 rounded-md bg-gray-50 dark:bg-[#081328]">
+                <div className="text-xs text-gray-500">PDC Issued</div>
+                <div className="text-sm font-semibold text-black dark:text-white">
+                  {statement
+                    ? formatCurrency(Number(statement.meta.pdc_issued_total ?? 0), account?.currency || "")
+                    : "-"}
+                </div>
+              </div>
+              <div className="inline-flex flex-col px-3 py-2 rounded-md bg-gray-50 dark:bg-[#081328]">
+                <div className="text-xs text-gray-500">PDC Received</div>
+                <div className="text-sm font-semibold text-black dark:text-white">
+                  {statement
+                    ? formatCurrency(Number(statement.meta.pdc_received_total ?? 0), account?.currency || "")
+                    : "-"}
+                </div>
+              </div>
             </div>
           </div>
 

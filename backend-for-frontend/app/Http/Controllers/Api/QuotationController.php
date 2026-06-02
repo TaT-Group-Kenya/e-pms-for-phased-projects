@@ -100,7 +100,8 @@ class QuotationController extends Controller
         // If quotation is currently sent, only allow status to be changed back to draft
         if ($originalStatus === 'sent') {
             $updatableKeys = array_keys($validated);
-            $allowedKeys = ['status', 'updated_by'];
+            \Log::debug('Updatable keys for sent quotation', ['updatableKeys' => $updatableKeys]);
+            $allowedKeys = ['status', 'updated_by', 'created_at'];
             $extraKeys = array_diff($updatableKeys, $allowedKeys);
 
             if (!empty($extraKeys)) {
@@ -143,6 +144,20 @@ class QuotationController extends Controller
             ]));
         }
 
+        if ($originalStatus === 'draft' && $validated['status'] === 'sent') {
+            // When moving from draft to sent, ensure we have at least one line item
+            $lineItemCount = QuoteLineItem::where('quotation_id', $quotation->id)->count();
+            if ($lineItemCount === 0) {
+                return response()->json([
+                    'message' => 'A quotation must have at least one line item before it can be sent.',
+                    'errors' => [
+                        'quoteItems' => ['Add at least one line item before changing status to sent.'],
+                    ],
+                ], 422);
+            }
+        }
+
+        $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($quotation->id, $validated);
 
         // If customer changed while in draft, clear quote items and reset amounts

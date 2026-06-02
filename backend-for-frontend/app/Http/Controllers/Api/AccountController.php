@@ -10,6 +10,8 @@ use App\Models\Account;
 use App\Models\CustomerTransactionsLedger;
 use App\Models\CompanyTransactionsLedger;
 use App\Models\Transaction;
+use App\Models\PdcIssuedCompany;
+use App\Models\PdcReceivedCustomer;
 use App\Services\AccountService;
 use App\Services\CommonService;
 use App\Services\TransactionService;
@@ -350,6 +352,24 @@ class AccountController extends Controller
             });
         $applyDateFilters($transactionsQuery);
 
+        // Prepare PDC totals queries (filtered by bank_account_id and cheque_date)
+        $applyChequeDateFilters = function ($query) use ($from, $to) {
+            if ($from) {
+                $query->whereDate('cheque_date', '>=', $from);
+            }
+            if ($to) {
+                $query->whereDate('cheque_date', '<=', $to);
+            }
+        };
+
+        $pdcIssuedQuery = PdcIssuedCompany::whereIn('status', ['pending', 'issued'])
+            ->where('bank_account_id', $accountId);
+        $applyChequeDateFilters($pdcIssuedQuery);
+
+        $pdcReceivedQuery = PdcReceivedCustomer::whereIn('status', ['pending', 'received'])
+            ->where('bank_account_id', $accountId);
+        $applyChequeDateFilters($pdcReceivedQuery);
+
         $rows = collect();
 
         $customerLedgerQuery->get()->each(function ($row) use (&$rows, $accountId) {
@@ -476,6 +496,22 @@ class AccountController extends Controller
             'from' => $from,
             'to' => $to,
         ];
+
+        // Compute PDC totals (amounts) based on bank account and date range
+        try {
+            $pdcIssuedTotal = (float) $pdcIssuedQuery->sum('amount');
+        } catch (\Throwable $e) {
+            $pdcIssuedTotal = 0.0;
+        }
+
+        try {
+            $pdcReceivedTotal = (float) $pdcReceivedQuery->sum('amount');
+        } catch (\Throwable $e) {
+            $pdcReceivedTotal = 0.0;
+        }
+
+        $meta['pdc_issued_total'] = $pdcIssuedTotal;
+        $meta['pdc_received_total'] = $pdcReceivedTotal;
 
         return [$rows, $meta];
     }

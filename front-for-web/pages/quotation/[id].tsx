@@ -7,8 +7,7 @@ import { useToast } from "../../hooks/useToast";
 import AuthenticatedLayout from "../../components/authenticated/AuthenticatedLayout";
 import { ToastContainer } from "../../components/common/Toast";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
-import { formatApiError } from "../../utils/errorHandler";
-import { set } from "zod";
+import { fetchWithErrorHandlingSafe, formatApiError } from "../../utils/errorHandler";
 import Can from "../../components/auth/Can";
 import { currencySymbols, formatCurrency } from "../../utils/format";
 
@@ -400,7 +399,7 @@ const QuotationDetail: React.FC = () => {
 
   const handleStatusChange = async (newStatus: string) => {
     try {
-      const response = await fetch(`/api/quotations/update?id=${quotationId}`, {
+      const { data, error, details } = await fetchWithErrorHandlingSafe(`/api/quotations/update?id=${quotationId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -408,18 +407,17 @@ const QuotationDetail: React.FC = () => {
         },
         body: JSON.stringify({ status: newStatus }),
       });
-
-      if (!response.ok) {
-        addToast("Failed to update quotation status", "error");
+      if (error) {
+        console.error("Failed to update quotation status:", error, details);
+        addToast(error, "error");
         return;
       }
 
-      const data = await response.json();
-      setQuotation(data.data || data);
+      setQuotation(data);
       addToast("Quotation status updated successfully", "success");
     } catch (err) {
       console.error("Error updating quotation:", err);
-      addToast("Error updating quotation status", "error");
+      addToast("An error occurred while updating the quotation.", "error");
     }
   };
 

@@ -8,7 +8,6 @@ export const config = {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' })
-
   const base = process.env.EPMS_API_BASE
   if (!base) return res.status(500).json({ message: 'EPMS_API_BASE not configured' })
 

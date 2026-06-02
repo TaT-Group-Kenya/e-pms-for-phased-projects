@@ -8,7 +8,7 @@ import { useToast } from '../../../hooks/useToast'
 
 export default function PdcIssuedListPage() {
   const accessToken = useSelector(selectAccessToken)
-  const { toasts, addToast, removeToast } = useToast()
+  const { addToast, removeToast } = useToast()
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -101,6 +101,7 @@ export default function PdcIssuedListPage() {
                       <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Cheque No</th>
                       <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Cheque Date</th>
                       <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Amount</th>
+                      <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Due in days</th>
                       <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Status</th>
                       <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Actions</th>
                     </tr>
@@ -119,7 +120,27 @@ export default function PdcIssuedListPage() {
                       const matchesCompany = !lowerCompany || companyName.includes(lowerCompany)
                       const matchesStatus = statusFilter === 'all' || status === statusFilter
                       return matchesSearch && matchesCompany && matchesStatus
-                    }).map((it: any) => (
+                    }).map((it: any) => {
+                      const parseDate = (d: any) => {
+                        try {
+                          const dt = new Date(d)
+                          if (isNaN(dt.getTime())) return null
+                          return dt
+                        } catch {
+                          return null
+                        }
+                      }
+
+                      const chequeDate = parseDate(it.cheque_date)
+                      let dueInDays: number | string = '-'
+                      if (chequeDate) {
+                        const today = new Date()
+                        today.setHours(0, 0, 0, 0)
+                        chequeDate.setHours(0, 0, 0, 0)
+                        dueInDays = Math.round((chequeDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                      }
+
+                      return (
                       <tr key={it.id} className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors">
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <Link href={`/company/pdc-issued/${it.id}`} className="text-primary-500 hover:text-primary-600 hover:underline font-medium text-sm">PDC for invoice {it.invoice_number}</Link>
@@ -128,6 +149,13 @@ export default function PdcIssuedListPage() {
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{it.cheque_number || '-'}</td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{it.cheque_date || '-'}</td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{it.amount || '-'}</td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          {Number(dueInDays) > 0 ? (
+                            <span className="inline-block px-[10px] py-[5px] rounded-full text-xs font-medium bg-info-50 text-info-500">{dueInDays} days</span>
+                          ) : (
+                            <span className="inline-block px-[10px] py-[5px] rounded-full text-xs font-medium bg-danger-50 text-danger-500">past</span>
+                          )}
+                        </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{it.status || '-'}</td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <div className="flex items-center gap-[10px]">
@@ -137,7 +165,7 @@ export default function PdcIssuedListPage() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    )})}
                   </tbody>
                 </table>
               </div>

@@ -131,6 +131,9 @@ const ProjectTransactionsComponent: React.FC<ProjectTransactionsComponentProps> 
                       Receipt #
                     </th>
                     <th className="text-left py-[12px] px-[16px] text-black dark:text-white font-semibold text-sm">
+                      Company
+                    </th>
+                    <th className="text-left py-[12px] px-[16px] text-black dark:text-white font-semibold text-sm">
                       Amount
                     </th>
                     <th className="text-left py-[12px] px-[16px] text-black dark:text-white font-semibold text-sm">
@@ -152,6 +155,9 @@ const ProjectTransactionsComponent: React.FC<ProjectTransactionsComponentProps> 
                     >
                       <td className="py-[12px] px-[16px] text-gray-700 dark:text-gray-300 font-medium">
                         #{payment.receipt_number || payment.id}
+                      </td>
+                      <td className="py-[12px] px-[16px] text-gray-700 dark:text-gray-300 font-medium">
+                        {payment.invoice.company.name || '-'}
                       </td>
                       <td className="py-[12px] px-[16px] text-red-700 dark:text-red-400 font-bold">
                         -{payment.currency || 'KES'} {typeof payment.amount_paid === 'number' ? payment.amount_paid.toFixed(2) : payment.amount_paid}

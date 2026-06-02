@@ -15,9 +15,14 @@ class CompanyInvoiceDocumentUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'invoice_id' => ['nullable', 'exists:invoices,id'],
-            'document_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'document_path' => ['sometimes', 'required', 'string', 'max:255'],
+            'invoice_id' => ['nullable', 'exists:company_invoices,id'],
+            // On update, a new file is optional; when provided it will overwrite the stored path
+            'document_file' => [
+                'sometimes',
+                'file',
+                'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif',
+                'max:5120',
+            ],
         ];
     }
 

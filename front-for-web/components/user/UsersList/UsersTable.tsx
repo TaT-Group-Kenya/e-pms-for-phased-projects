@@ -292,7 +292,7 @@ const UsersTable: React.FC = () => {
 
     setSavingUser(true);
     try {
-      const url = editingUser ? `/api/users/${editingUser.id}` : `/api/users/create`;
+      const url = editingUser ? `/api/users/update?id=${editingUser.id}` : `/api/users/create`;
       const method = editingUser ? "PUT" : "POST";
 
       const resp = await fetch(url, {

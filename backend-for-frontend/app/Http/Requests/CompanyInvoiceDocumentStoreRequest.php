@@ -15,9 +15,14 @@ class CompanyInvoiceDocumentStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'invoice_id' => ['nullable', 'exists:invoices,id'],
-            'document_name' => ['required', 'string', 'max:255'],
-            'document_path' => ['required', 'string', 'max:255'],
+            'invoice_id' => ['nullable', 'exists:company_invoices,id'],
+            // require an uploaded file; its stored path will be saved into document_path
+            'document_file' => [
+                'required',
+                'file',
+                'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif',
+                'max:5120', // max size in KB (5MB)
+            ],
         ];
     }
 

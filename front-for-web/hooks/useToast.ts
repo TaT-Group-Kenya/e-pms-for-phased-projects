@@ -19,7 +19,7 @@ export interface UseToastReturn {
 export const useToast = (): UseToastReturn => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const addToast = useCallback((message: string, type: Toast["type"], duration = 5000) => {
+  const addToast = useCallback((message: string, type: Toast["type"], duration = 7000) => {
     const id = `${Date.now()}-${Math.random()}`;
     const newToast: Toast = { id, message, type, duration };
 

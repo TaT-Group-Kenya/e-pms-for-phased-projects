@@ -152,6 +152,7 @@ interface CompanyInvoice {
   created_at?: string | null,
   upcoming_pdc_total?: number | null,
   pdcs?: any[]
+  documents?: any[]
 }
 
 export default function CompanyInvoiceDetailPage() {
@@ -243,6 +244,18 @@ export default function CompanyInvoiceDetailPage() {
 
   const [itemToDelete, setItemToDelete] = useState<CompanyInvoiceItem | null>(null)
   const [deletingItem, setDeletingItem] = useState(false)
+
+  // Documents state
+  const [isAddingDocument, setIsAddingDocument] = useState(false)
+  const [documentName, setDocumentName] = useState('')
+  const [documentPath, setDocumentPath] = useState('')
+  const [documentFile, setDocumentFile] = useState<File | null>(null)
+  const [editingDocumentId, setEditingDocumentId] = useState<number | null>(null)
+  const [editDocumentName, setEditDocumentName] = useState('')
+  const [editDocumentPath, setEditDocumentPath] = useState('')
+  const [savingDocument, setSavingDocument] = useState(false)
+  const [deletingDocumentId, setDeletingDocumentId] = useState<number | null>(null)
+  const [deletingDocument, setDeletingDocument] = useState(false)
 
   const { toasts, addToast, removeToast } = useToast()
   const accessToken = useSelector(selectAccessToken)
@@ -800,6 +813,171 @@ export default function CompanyInvoiceDetailPage() {
     }
   }
 
+  // Documents handlers
+  const handleStartAddDocument = () => {
+    setDocumentName('')
+    setDocumentPath('')
+    setDocumentFile(null)
+    setIsAddingDocument(true)
+  }
+
+  const handleCreateDocument = async () => {
+    if (!invoice) return
+    if (!accessToken) {
+      addToast('You are not authenticated.', 'error')
+      return
+    }
+
+    setSavingDocument(true)
+    try {
+      if (!documentFile) {
+        addToast('Please choose a file to upload.', 'error')
+        setSavingDocument(false)
+        return
+      }
+
+      // validate file type
+      const allowed = ['pdf','doc','docx','xls','xlsx','png','jpg','jpeg','gif']
+      const name = documentFile.name || ''
+      const ext = name.split('.').pop()?.toLowerCase() || ''
+      if (!allowed.includes(ext)) {
+        addToast('Invalid file type. Allowed: images, pdf, doc, docx, xls, xlsx', 'error')
+        setSavingDocument(false)
+        return
+      }
+
+      const formData = new FormData()
+      formData.append('invoice_id', String(invoice.id))
+      formData.append('document_name', documentName || documentFile.name)
+      formData.append('document_file', documentFile)
+
+      const resp = await fetch('/api/company-invoice-documents', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      })
+
+      const data = await resp.json().catch(() => null)
+      if (!resp.ok) throw new Error(data?.message || 'Failed to create document')
+
+      await fetchInvoice()
+      setIsAddingDocument(false)
+      setDocumentName('')
+      setDocumentPath('')
+      setDocumentFile(null)
+      addToast('Document added.', 'success')
+    } catch (e: any) {
+      addToast(e.message || 'Failed to create document', 'error')
+    } finally {
+      setSavingDocument(false)
+    }
+  }
+
+  const handleStartEditDocument = (doc: any) => {
+    setEditingDocumentId(doc.id)
+    setDocumentFile(null)
+  }
+
+  const handleSaveEditDocument = async () => {
+    if (!editingDocumentId) return
+    if (!accessToken) {
+      addToast('You are not authenticated.', 'error')
+      return
+    }
+
+    setSavingDocument(true)
+    try {
+      let resp: Response
+
+      if (documentFile) {
+        // validate file type
+        const allowed = ['pdf','doc','docx','xls','xlsx','png','jpg','jpeg','gif']
+        const name = documentFile.name || ''
+        const ext = name.split('.').pop()?.toLowerCase() || ''
+        if (!allowed.includes(ext)) {
+          addToast('Invalid file type. Allowed: images, pdf, doc, docx, xls, xlsx', 'error')
+          setSavingDocument(false)
+          return
+        }
+
+        const formData = new FormData()
+        formData.append('document_name', editDocumentName)
+        formData.append('document_file', documentFile)
+
+        resp = await fetch(`/api/company-invoice-documents/${editingDocumentId}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: formData,
+        })
+      } else {
+        resp = await fetch(`/api/company-invoice-documents/${editingDocumentId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ document_name: editDocumentName, document_path: editDocumentPath }),
+        })
+      }
+
+      const data = await resp.json().catch(() => null)
+      if (!resp.ok) throw new Error(data?.message || 'Failed to update document')
+
+      await fetchInvoice()
+      setEditingDocumentId(null)
+      setEditDocumentName('')
+      setEditDocumentPath('')
+      setDocumentFile(null)
+      addToast('Document updated.', 'success')
+    } catch (e: any) {
+      addToast(e.message || 'Failed to update document', 'error')
+    } finally {
+      setSavingDocument(false)
+    }
+  }
+
+  const handleDeleteDocument = (doc: any) => {
+    if (!doc || !doc.id) return
+    setDeletingDocumentId(doc.id)
+  }
+
+  const handleConfirmDeleteDocument = async (id?: number | null) => {
+    const docId = id ?? deletingDocumentId
+    if (!docId) return
+    if (!accessToken) {
+      addToast('You are not authenticated.', 'error')
+      return
+    }
+
+    setDeletingDocument(true)
+    try {
+      const resp = await fetch(`/api/company-invoice-documents/${docId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => null)
+        throw new Error(data?.message || 'Failed to delete document')
+      }
+
+      await fetchInvoice()
+      setDeletingDocumentId(null)
+      addToast('Document deleted.', 'success')
+    } catch (e: any) {
+      addToast(e.message || 'Failed to delete document', 'error')
+    } finally {
+      setDeletingDocument(false)
+    }
+  }
+
   
 
   const handleOpenAddPayment = () => {
@@ -1281,6 +1459,20 @@ export default function CompanyInvoiceDetailPage() {
                 >
                   <i className="material-symbols-outlined !text-[20px]">payments</i>
                   Payments
+                </button>
+              </li>
+              <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(4)}
+                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
+                    activeTab === 4
+                      ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  <i className="material-symbols-outlined !text-[20px]">insert_drive_file</i>
+                  Documents
                 </button>
               </li>
             </ul>
@@ -2233,6 +2425,72 @@ export default function CompanyInvoiceDetailPage() {
               </div>
             </div>
           )}
+
+          {/* Documents Tab */}
+          {activeTab === 4 && (
+            <div className="pt-[20px]">
+              <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+                <div className="flex items-center justify-between mb-[15px]">
+                  <h6 className="text-black dark:text-white font-semibold">Documents</h6>
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={handleStartAddDocument}
+                      className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900"
+                    >
+                      <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
+                      Add Document
+                    </button>
+                  </div>
+                </div>
+
+                {(!invoice?.documents || invoice.documents.length === 0) && (
+                  <p className="text-xs text-gray-500">No documents for this invoice.</p>
+                )}
+
+                {invoice?.documents && invoice.documents.length > 0 && (
+                  <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 dark:bg-[#15203c]">
+                        <tr>
+                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">Path</th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invoice.documents.map((doc: any) => (
+                          <tr key={doc.id} className="border-b border-gray-100 dark:border-[#172036] align-middle">
+                            <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]"><a href={doc.document_path} target="_blank" rel="noreferrer" className="text-primary-500 hover:underline">{doc.document_path}</a></td>
+                            <td className="text-sm text-right px-[15px] py-[12px] space-x-2">
+                              <button type="button" onClick={() => handleStartEditDocument(doc)} className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c]">Edit</button>
+                              <button type="button" onClick={() => handleDeleteDocument(doc)} className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-danger-200 text-danger-600 hover:bg-danger-50">Delete</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Add / Edit form */}
+                {(isAddingDocument || editingDocumentId) && (
+                  <div className="mt-[15px]">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-[12px] mb-[10px]">
+                      
+                      <div>
+                        <input type="file" onChange={(e) => setDocumentFile(e.target.files ? e.target.files[0] : null)} className="w-full" accept=".pdf,.doc,.docx,.xls,.xlsx,image/*" />
+                        <div className="text-xs text-gray-500 mt-1">Allowed: images, pdf, doc, docx, xls, xlsx</div>
+                      </div>
+                      <div className="flex items-center gap-[8px]">
+                        <button type="button" onClick={editingDocumentId ? handleSaveEditDocument : handleCreateDocument} disabled={savingDocument} className="inline-flex items-center justify-center px-[12px] py-[8px] bg-primary-50 dark:bg-primary-950 text-primary-500 rounded-md">{savingDocument ? 'Saving…' : (editingDocumentId ? 'Save' : 'Create')}</button>
+                        <button type="button" onClick={() => { setIsAddingDocument(false); setEditingDocumentId(null); setDocumentFile(null) }} className="inline-flex items-center justify-center px-[12px] py-[8px] border rounded-md">Cancel</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -3011,6 +3269,47 @@ export default function CompanyInvoiceDetailPage() {
                   className="px-[13px] py-[8px] rounded-md bg-danger-500 text-white text-xs font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {deletingItem ? 'Deleting…' : 'Delete Item'}
+                </button>
+              </Can>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deletingDocumentId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-[10px]">Confirm Delete Document</h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-[12px]">This will permanently delete the document file and its record.</p>
+
+            <div className="border border-gray-200 dark:border-[#172036] rounded-md p-[12px] mb-[16px] text-xs space-y-[4px]">
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400 mr-[8px]">Document</span>
+                <span className="text-gray-900 dark:text-gray-100 font-medium">
+                  {invoice?.documents?.find((d: any) => d.id === deletingDocumentId)?.document_name || invoice?.documents?.find((d: any) => d.id === deletingDocumentId)?.document_path || String(deletingDocumentId)}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-danger-600 dark:text-danger-400 mb-[16px]">This action cannot be undone from the UI. You may need to recreate the document if this was done in error.</p>
+
+            <div className="flex justify-end space-x-[8px]">
+              <button
+                type="button"
+                disabled={deletingDocument}
+                onClick={() => setDeletingDocumentId(null)}
+                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <Can any={["ROLE_DELETE_COMPANY_INVOICE_DOCUMENT"]}>
+                <button
+                  type="button"
+                  disabled={deletingDocument}
+                  onClick={() => handleConfirmDeleteDocument()}
+                  className="px-[13px] py-[8px] rounded-md bg-danger-500 text-white text-xs font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deletingDocument ? 'Deleting…' : 'Delete Document'}
                 </button>
               </Can>
             </div>
