@@ -256,6 +256,7 @@ export default function CompanyInvoiceDetailPage() {
   const [savingDocument, setSavingDocument] = useState(false)
   const [deletingDocumentId, setDeletingDocumentId] = useState<number | null>(null)
   const [deletingDocument, setDeletingDocument] = useState(false)
+  const [downloadingDocumentId, setDownloadingDocumentId] = useState<number | null>(null)
 
   const { toasts, addToast, removeToast } = useToast()
   const accessToken = useSelector(selectAccessToken)
@@ -975,6 +976,49 @@ export default function CompanyInvoiceDetailPage() {
       addToast(e.message || 'Failed to delete document', 'error')
     } finally {
       setDeletingDocument(false)
+    }
+  }
+
+  const handleDownloadDocument = async (doc: any) => {
+    if (!invoice || downloadingDocumentId === doc.id) return
+
+    try {
+      setDownloadingDocumentId(doc.id)
+
+      const response = await fetch(`/api/company-invoice-documents/${doc.id}/download`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        const message = data?.message || 'Failed to download document'
+        addToast(message, 'error')
+        return
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+
+      const path = doc.document_path || ''
+      const inferredName = path.split('/').pop()
+      const fallbackName = `${doc.document_name || 'document'}-${invoice.invoice_number}`
+
+      link.href = url
+      link.download = inferredName || fallbackName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Error downloading document:', err)
+      addToast('Error downloading document', 'error')
+    } finally {
+      setDownloadingDocumentId(null)
     }
   }
 
@@ -2463,6 +2507,9 @@ export default function CompanyInvoiceDetailPage() {
                             <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]"><a href={doc.document_path} target="_blank" rel="noreferrer" className="text-primary-500 hover:underline">{doc.document_path}</a></td>
                             <td className="text-sm text-right px-[15px] py-[12px] space-x-2">
                               <button type="button" onClick={() => handleStartEditDocument(doc)} className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c]">Edit</button>
+                              <button type="button" onClick={() => handleDownloadDocument(doc)} disabled={downloadingDocumentId === doc.id} className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                                {downloadingDocumentId === doc.id ? 'Downloading…' : 'Download'}
+                              </button>
                               <button type="button" onClick={() => handleDeleteDocument(doc)} className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-danger-200 text-danger-600 hover:bg-danger-50">Delete</button>
                             </td>
                           </tr>

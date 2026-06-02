@@ -105,4 +105,23 @@ class CompanyInvoiceDocumentController extends Controller
         $this->service->delete($companyInvoiceDocument->id);
         return response()->noContent();
     }
+
+    public function download(CompanyInvoiceDocument $companyInvoiceDocument)
+    {
+        $this->authorize('view', $companyInvoiceDocument);
+
+        if (!$companyInvoiceDocument->document_path) {
+            return response()->json(['message' => 'Document file not found'], 404);
+        }
+
+        $disk = Storage::disk('public');
+
+        if (!$disk->exists($companyInvoiceDocument->document_path)) {
+            return response()->json(['message' => 'Document file missing on server'], 404);
+        }
+
+        $filename = basename($companyInvoiceDocument->document_path);
+
+        return $disk->download($companyInvoiceDocument->document_path, $filename);
+    }
 }
