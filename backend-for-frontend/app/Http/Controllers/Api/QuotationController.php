@@ -144,7 +144,7 @@ class QuotationController extends Controller
             ]));
         }
 
-        if ($originalStatus === 'draft' && $validated['status'] === 'sent') {
+        if ($originalStatus === 'draft' && array_key_exists('status', $validated) && $validated['status'] === 'sent') {
             // When moving from draft to sent, ensure we have at least one line item
             $lineItemCount = QuoteLineItem::where('quotation_id', $quotation->id)->count();
             if ($lineItemCount === 0) {
