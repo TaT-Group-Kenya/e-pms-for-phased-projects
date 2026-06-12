@@ -151,7 +151,7 @@ class ProjectController extends Controller
     {
         $this->authorize('delete', $project);
 
-        $this->service->delete($project->id, Auth::id());
+        //$this->service->delete($project->id, Auth::id());
         return response()->noContent();
     }
 }

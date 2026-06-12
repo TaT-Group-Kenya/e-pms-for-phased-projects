@@ -14,10 +14,6 @@ class SysRoleResource extends BaseResource
             'updated_by' => $this->updated_by,
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
-
-            // Groups that have this role
-            'groups' => SysGroupResource::collection($this->whenLoaded('groups')),
-
         ];
     }
 }

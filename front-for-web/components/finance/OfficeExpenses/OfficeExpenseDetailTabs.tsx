@@ -217,21 +217,23 @@ const OfficeExpenseDetailTabs = ({ expenseId }: OfficeExpenseDetailTabsProps) =>
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-[#15203c]">
                   <tr>
-                    <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">Date</th>
-                    <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Amount</th>
-                    <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Currency</th>
-                    <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Method</th>
-                    <th className="text-xs font-semibold text-right px-[15px] py-[12px]">Reference</th>
+                    <th className="text-xs font-semibold ltr:text-left rtl:text-left px-[15px] py-[12px]">Date</th>
+                    <th className="text-xs font-semibold text-left px-[15px] py-[12px]">Amount</th>
+                    <th className="text-xs font-semibold text-left px-[15px] py-[12px]">Currency</th>
+                    <th className="text-xs font-semibold text-left px-[15px] py-[12px]">Method</th>
+                    <th className="text-xs font-semibold text-left px-[15px] py-[12px]">Narration</th>
+                    <th className="text-xs font-semibold text-left px-[15px] py-[12px]">Reference</th>
                   </tr>
                 </thead>
                 <tbody>
                   {expense.payments.map((p: any) => (
                     <tr key={p.id} className="border-b border-gray-100 dark:border-[#172036] align-middle">
-                      <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">{p.payment_date || p.paid_at}</td>
-                      <td className="text-sm text-right px-[15px] py-[12px]">{p.amount_paid || p.amount}</td>
-                      <td className="text-sm text-right px-[15px] py-[12px]">{p.currency}</td>
-                      <td className="text-sm text-right px-[15px] py-[12px]">{p.payment_method || p.method}</td>
-                      <td className="text-sm text-right px-[15px] py-[12px]">{p.transaction_number || p.reference || '-'}</td>
+                      <td className="text-sm ltr:text-left rtl:text-left px-[15px] py-[12px]">{p.payment_date || p.paid_at}</td>
+                      <td className="text-sm text-left px-[15px] py-[12px]">{p.amount_paid || p.amount}</td>
+                      <td className="text-sm text-left px-[15px] py-[12px]">{p.currency}</td>
+                      <td className="text-sm text-left px-[15px] py-[12px]">{p.payment_method || p.method}</td>
+                      <td className="text-sm text-left px-[15px] py-[12px]">{p.transaction ? p.transaction.narration : '-'}</td>
+                      <td className="text-sm text-left px-[15px] py-[12px]">{p.transaction_number || p.reference || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

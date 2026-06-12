@@ -31,7 +31,7 @@ class SysGroup extends Model
             'group_roles',
             'group_id',
             'role_id'
-        );
+        )->where('sys_roles.is_deleted', false);
     }
 
     public function users()

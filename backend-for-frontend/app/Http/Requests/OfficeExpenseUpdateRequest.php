@@ -15,7 +15,7 @@ class OfficeExpenseUpdateRequest extends FormRequest
     {
         return [
             'category_id' => ['sometimes', 'numeric', 'exists:office_expense_categories,id'],
-            'cost_center' => ['sometimes', 'string', 'max:255'],
+            'cost_center_id' => ['sometimes', 'numeric', 'exists:departments,id'],
             'description' => ['sometimes', 'string', 'max:1000'],
             'amount' => ['sometimes', 'numeric', 'min:0'],
             'currency' => ['sometimes', 'string', 'max:10'],

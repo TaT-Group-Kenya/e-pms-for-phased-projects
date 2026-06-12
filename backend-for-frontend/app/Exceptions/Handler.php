@@ -8,6 +8,8 @@ use Illuminate\Database\QueryException;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Throwable;
 use PDOException;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Str;
 
 class Handler extends ExceptionHandler
 {
@@ -106,7 +108,56 @@ class Handler extends ExceptionHandler
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
+        // Handle 403 AuthorizationException from policy violations
+        \Log::info('Checking for AuthorizationException:: ' . get_class($e));
+        if ($e instanceof AuthorizationException) {
+            return $this->handleAuthorizationException($request, $e);
+        }
+
         return parent::render($request, $e);
+    }
+
+    /**
+     * Handle 403 AuthorizationException from policy violations.
+     * Extracts the model and builds a descriptive error message.
+     */
+    private function handleAuthorizationException($request, AuthorizationException $e)
+    {
+        $message = $e->getMessage();
+        
+        // Try to extract model information from the exception message
+        // Laravel's AuthorizationException message format: "This action is unauthorized."
+        // Or it may include model information in the message
+        
+        $model = null;
+        
+        // Check if the message contains model information
+        if (preg_match('/\[(\w+)\]/', $message, $matches)) {
+            $model = $matches[1];
+        } elseif (preg_match('/(\w+) model/', $message, $matches)) {
+            $model = $matches[1];
+        } else {
+            // Try to get model from previous exception or context
+            $previous = $e->getPrevious();
+            if ($previous && $previous->getMessage()) {
+                if (preg_match('/(\w+)\s+(view|edit|delete|create)/i', $previous->getMessage(), $matches)) {
+                    $model = $matches[1];
+                }
+            }
+        }
+        
+        // If we have a model, build a more descriptive message
+        if ($model) {
+            $modelName = Str::title(str_replace('_', ' ', $model));
+            return response()->json([
+                'message' => "Access denied. You cannot view/edit/delete {$modelName}."
+            ], 403);
+        }
+        
+        // Fallback to generic message
+        return response()->json([
+            'message' => 'Access denied. You do not have permission to perform this action.'
+        ], 403);
     }
 
     /**

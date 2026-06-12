@@ -8,6 +8,10 @@ interface Payment {
   expense_id: number;
   transaction_id: number;
   transaction_number: string;
+  transaction: {
+    id: number;
+    narration: string;
+  } | null;
   direction: string;
   transaction_type: string;
   amount_paid: number;
@@ -73,6 +77,7 @@ const OfficeExpensePaymentsTab: React.FC = () => {
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">ID</th>
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Expense ID</th>
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Transaction #</th>
+              <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Narration</th>
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Type</th>
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Direction</th>
               <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Amount Paid</th>
@@ -111,6 +116,7 @@ const OfficeExpensePaymentsTab: React.FC = () => {
                   <td className="px-[20px] py-[15px] whitespace-nowrap">{payment.id}</td>
                   <td className="px-[20px] py-[15px] whitespace-nowrap">{payment.expense_id}</td>
                   <td className="px-[20px] py-[15px] whitespace-nowrap">{payment.transaction_number}</td>
+                  <td className="px-[20px] py-[15px] whitespace-nowrap">{payment.transaction ? payment.transaction.narration : '-' }</td>
                   <td className="px-[20px] py-[15px] whitespace-nowrap">{payment.transaction_type}</td>
                   <td className="px-[20px] py-[15px] whitespace-nowrap">{payment.direction}</td>
                   <td className="px-[20px] py-[15px] whitespace-nowrap">{payment.amount_paid}</td>

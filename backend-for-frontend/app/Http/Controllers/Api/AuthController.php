@@ -40,17 +40,28 @@ class AuthController extends Controller
             $device = $data['device_name'] ?? 'api-client';
             $token = $user->createToken($device)->plainTextToken;
 
-            // Attach a synthetic "roles" relation based on the user's groups,
-            // mirroring the logic in UserController so UserResource can expose roles.
-            $roles = $user->groups
-                ? $user->groups
-                    ->flatMap(function ($group) {
-                        return $group->roles;
-                    })
-                    ->unique('id')
-                    ->values()
-                : collect();
-
+            // Get user roles using direct database queries (same logic as BaseModelPolicy)
+            // Step 1: Get user group IDs
+            $userGroups = DB::table('user_groups')
+                ->where('user_id', $user->id)
+                ->where('is_deleted', false)
+                ->pluck('id')
+                ->toArray();
+            
+            // Step 2: Fetch group_roles where group_id IN list and is_deleted=false
+            $groupRoles = DB::table('group_roles')
+                ->whereIn('group_id', $userGroups)
+                ->where('is_deleted', false)
+                ->get();
+            
+            // Step 3: Collect role_ids and fetch role names from sys_roles
+            $roleIds = $groupRoles->pluck('role_id')->toArray();
+            $roles = DB::table('sys_roles')
+                ->whereIn('id', $roleIds)
+                ->where('is_deleted', false)
+                ->get();
+            
+            // Attach a synthetic "roles" relation based on the user's groups
             $user->setRelation('roles', $roles);
 
             return response()->json([
@@ -124,6 +135,7 @@ class AuthController extends Controller
      */
     public function forgot(Request $request): JsonResponse
     {
+        \Log::info('Password reset requested for email: ' . $request->input('email'));
         $request->validate([
             'email' => ['required', 'email'],
         ]);
@@ -143,6 +155,8 @@ class AuthController extends Controller
         $broker = config('auth.defaults.passwords');
         $table = config("auth.passwords.{$broker}.table") ?? 'password_reset_tokens';
 
+        \Log::info("Storing password reset token for email: {$email} in table: {$table}");
+
         DB::table($table)->updateOrInsert([
             'email' => $email,
         ], [
@@ -152,6 +166,7 @@ class AuthController extends Controller
 
         try {
             $from = config('mail.from.address') ?? null;
+            \Log::info("Sending password reset email to: {$email}");
             Mail::raw("Your password reset code is: {$code}", function ($message) use ($email, $from) {
                 $message->to($email)->subject('Password reset code');
                 if ($from) $message->from($from);
@@ -212,17 +227,27 @@ class AuthController extends Controller
 
         $token = $user->createToken('api-client')->plainTextToken;
 
-        // Ensure related data and synthetic roles are available for the resource.
-        $user->loadMissing(['company', 'customer', 'groups.roles']);
-        $roles = $user->groups
-            ? $user->groups
-                ->flatMap(function ($group) {
-                    return $group->roles;
-                })
-                ->unique('id')
-                ->values()
-            : collect();
-
+        // Get user roles using direct database queries (same logic as BaseModelPolicy)
+        // Step 1: Get user group IDs
+        $userGroups = DB::table('user_groups')
+            ->where('user_id', $user->id)
+            ->where('is_deleted', false)
+            ->pluck('id')
+            ->toArray();
+        
+        // Step 2: Fetch group_roles where group_id IN list and is_deleted=false
+        $groupRoles = DB::table('group_roles')
+            ->whereIn('group_id', $userGroups)
+            ->where('is_deleted', false)
+            ->get();
+        
+        // Step 3: Collect role_ids and fetch role names from sys_roles
+        $roleIds = $groupRoles->pluck('role_id')->toArray();
+        $roles = DB::table('sys_roles')
+            ->whereIn('id', $roleIds)
+            ->where('is_deleted', false)
+            ->get();
+        
         $user->setRelation('roles', $roles);
 
         return response()->json([
@@ -252,16 +277,27 @@ class AuthController extends Controller
         $user->fill($data);
         $user->save();
 
-        $user->loadMissing(['company', 'customer', 'groups.roles']);
-        $roles = $user->groups
-            ? $user->groups
-                ->flatMap(function ($group) {
-                    return $group->roles;
-                })
-                ->unique('id')
-                ->values()
-            : collect();
-
+        // Get user roles using direct database queries (same logic as BaseModelPolicy)
+        // Step 1: Get user group IDs
+        $userGroups = DB::table('user_groups')
+            ->where('user_id', $user->id)
+            ->where('is_deleted', false)
+            ->pluck('id')
+            ->toArray();
+        
+        // Step 2: Fetch group_roles where group_id IN list and is_deleted=false
+        $groupRoles = DB::table('group_roles')
+            ->whereIn('group_id', $userGroups)
+            ->where('is_deleted', false)
+            ->get();
+        
+        // Step 3: Collect role_ids and fetch role names from sys_roles
+        $roleIds = $groupRoles->pluck('role_id')->toArray();
+        $roles = DB::table('sys_roles')
+            ->whereIn('id', $roleIds)
+            ->where('is_deleted', false)
+            ->get();
+        
         $user->setRelation('roles', $roles);
 
         return response()->json([

@@ -13,12 +13,13 @@ class OfficeExpensePaymentService
             $query->where($key, $value);
         }
         $query->orderByDesc('id');
+        $query->with(['transaction']);
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id)
     {
-        return OfficeExpensePayment::findOrFail($id);
+        return OfficeExpensePayment::with(['transaction'])->findOrFail($id);
     }
 
     public function create(array $data)
@@ -28,14 +29,14 @@ class OfficeExpensePaymentService
 
     public function update(int $id, array $data)
     {
-        $model = OfficeExpensePayment::findOrFail($id);
+        $model = OfficeExpensePayment::with(['transaction'])->findOrFail($id);
         $model->update($data);
         return $model;
     }
 
     public function delete(int $id)
     {
-        $model = OfficeExpensePayment::findOrFail($id);
+        $model = OfficeExpensePayment::with(['transaction'])->findOrFail($id);
         return $model->delete();
     }
 }

@@ -43,6 +43,7 @@ const Page = () => {
           canCreateRoles={["ROLE_ADD_DEPARTMENT"]}
           canEditRoles={["ROLE_EDIT_DEPARTMENT"]}
           canDeleteRoles={["ROLE_DELETE_DEPARTMENT"]}
+          isJsonFormContent={true}
         />
       </Can>
     </AuthenticatedLayout>

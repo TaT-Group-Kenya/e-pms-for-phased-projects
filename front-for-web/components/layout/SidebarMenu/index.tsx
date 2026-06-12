@@ -341,6 +341,12 @@ const SECTIONS: SidebarSection[] = [
       //   requiredRoles: ["ROLE_VIEW_COMPANY_TRANSACTIONS_LEDGER", "ROLE_VIEW_CUSTOMER_TRANSACTIONS_LEDGER"],
       // },
       {
+        label: "Office Expense Payments",
+        href: "/reports/office-expense-payments",
+        matchStrategy: "exact",
+        requiredRoles: ["ROLE_VIEW_OFFICE_EXPENSE"],
+      },
+      {
         label: "Margin Per Project",
         href: "/reports/margin-per-project",
         matchStrategy: "exact",

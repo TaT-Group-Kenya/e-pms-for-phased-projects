@@ -744,6 +744,8 @@ class CompanyInvoiceController extends Controller
         $validated['updated_by'] = Auth::id();
         $hasStatusInPayload = array_key_exists('status', $validated);
 
+        $userId = Auth::id();
+
         // Prevent marking an invoice as draft if it already has any ledger entries
         if ($hasStatusInPayload && $validated['status'] === 'draft') {
             $hasLedgerEntries = CompanyTransactionsLedger::where('source_type', 'company_invoice')
@@ -777,10 +779,6 @@ class CompanyInvoiceController extends Controller
                     ],
                 ], 422);
             }
-
-                                $previousPaymentsTotal = (float) CompanyPayment::where('invoice_id', $invoice->id)->where('is_deleted', false)->sum('amount_paid');
-                                $pdcReserved = \App\Models\PdcIssuedCompany::where('invoice_id', $invoice->id)->where('is_deleted', false)->whereIn('status', ['issued', 'pending'])->sum('amount');
-                                $amountToAllocate = min($amountToAllocate, max((float)$invoice->total_amount - $previousPaymentsTotal - (float)$pdcReserved, 0.0));
 
             $updated = DB::transaction(function () use ($companyInvoice, $validated, $userId) {
                 // First update the invoice itself

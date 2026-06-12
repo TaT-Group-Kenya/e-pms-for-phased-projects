@@ -31,6 +31,6 @@ class SysRole extends Model
             'group_roles',
             'role_id',
             'group_id'
-        );
+        )->where('sys_groups.is_deleted', false);
     }
 }

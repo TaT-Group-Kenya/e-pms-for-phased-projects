@@ -67,7 +67,7 @@ class User extends Authenticatable
             'user_groups',
             'user_id',
             'sys_group_id'
-        );
+        )->where('sys_groups.is_deleted', false);
     }
 
     public function hasPermission($permissionName)

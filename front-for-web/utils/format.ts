@@ -37,3 +37,12 @@ export const currencyStrength: Record<string, number> = {
   EUR: 3, 
   GBP: 4 
 };
+
+export const  formDataToJSON = (formData: FormData): Record<string, unknown> => {
+  const obj: Record<string, unknown> = {};
+  formData.forEach((value, key) => {
+    obj[key] = value;
+  });
+  
+  return obj;
+}

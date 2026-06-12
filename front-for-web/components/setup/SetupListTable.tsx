@@ -8,6 +8,7 @@ import { ToastContainer } from "../common/Toast";
 import DeleteConfirmationModal from "../common/DeleteConfirmationModal";
 import Can from "../auth/Can";
 import type { RoleName } from "../../store/auth/roles";
+import { formDataToJSON } from "../../utils/format";
 
 export interface SetupItemBase {
   id: number;
@@ -35,6 +36,7 @@ export interface SetupListTableProps<T extends SetupItemBase> {
   canCreateRoles?: RoleName[];
   canEditRoles?: RoleName[];
   canDeleteRoles?: RoleName[];
+  isJsonFormContent?: boolean;
 }
 
 function toCsv<T extends SetupItemBase>(columns: SetupColumn<T>[], rows: T[]): string {
@@ -65,6 +67,7 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
     canCreateRoles,
     canEditRoles,
     canDeleteRoles,
+    isJsonFormContent = false,
   } = props;
 
   const accessToken = useSelector(selectAccessToken);
@@ -286,12 +289,15 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
         }
       });
 
+      const finalPayload = isJsonFormContent ? JSON.stringify(Object.fromEntries(formPayload.entries())) : formPayload;
+
       const resp = await fetch(endpoint, {
         method,
         headers: {
           Authorization: `Bearer ${accessToken}`,
+          ...(isJsonFormContent ? { "Content-Type": "application/json" } : {}),
         },
-        body: formPayload,
+        body: finalPayload
       });
 
       const data = await resp.json().catch(() => ({}));

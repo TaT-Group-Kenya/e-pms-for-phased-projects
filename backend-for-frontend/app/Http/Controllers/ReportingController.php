@@ -373,6 +373,25 @@ class ReportingController extends Controller
         }
     }
 
+    // Expenses Payment Report
+    public function expensePaymentsReport(Request $request)
+    {
+        try {
+            $filters = $request->all();
+            $data = $this->reportingService->expensePayments($filters);
+            if (isset($data['error'])) {
+                return response()->json(['error' => $data['error']], 400);
+            }
+            return [
+                'payments' => \App\Http\Resources\Reporting\ExpensePaymentsResource::collection($data['payments']),
+                'totals' => $data['totals'],
+            ];
+        } catch (\Exception $e) {
+            \Log::error('Expenses Payment Report Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal server error.'], 500);
+        }
+    }
+
     // PDF Export
     public function exportPdf(Request $request)
     {

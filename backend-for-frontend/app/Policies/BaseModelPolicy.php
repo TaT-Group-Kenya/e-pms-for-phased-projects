@@ -83,50 +83,62 @@ class BaseModelPolicy
 
     protected function userHasRole(User $user, string $roleName): bool
     {
-        \Log::info("Policy: Checking role {$roleName} for user {$user->id}");
+        \Log::info("=== Step 1: Getting user group IDs for user {$user->id} ===");
         
-        // First, try to load groups with roles if not already loaded
-        if (!$user->relationLoaded('groups')) {
-            \Log::info("Policy: Groups not loaded, loading...");
-            try {
-                $user->load('groups.roles');
-            } catch (\Throwable $e) {
-                \Log::error("Policy: Error loading groups: " . $e->getMessage());
-                return false;
-            }
-        }
+        // Step 1: Get the user group IDs from the user_groups table
+        $userGroups = \DB::table('user_groups')
+            ->where('user_id', $user->id)
+            ->where('is_deleted', false)
+            ->pluck('id')
+            ->toArray();
         
-        $groups = $user->groups;
-        \Log::info("Policy: User has " . count($groups) . " groups");
+        \Log::info("Step 1 Result: User has " . count($userGroups) . " groups with IDs: " . json_encode($userGroups));
         
-        if (count($groups) === 0) {
-            \Log::warning("Policy: User {$user->id} has no groups assigned");
+        if (count($userGroups) === 0) {
+            \Log::warning("Step 1 Warning: User {$user->id} has no groups assigned");
             return false;
         }
         
-        // Check each group for the required role
-        foreach ($groups as $group) {
-            // Ensure roles are loaded
-            if (!$group->relationLoaded('roles')) {
-                try {
-                    $group->load('roles');
-                } catch (\Throwable $e) {
-                    \Log::warning("Policy: Error loading roles for group {$group->id}: " . $e->getMessage());
-                    continue;
-                }
-            }
-            
-            $roles = $group->roles;
-            $roleNames = $roles->pluck('name')->toArray();
-            \Log::info("Policy: Group {$group->id} has roles: " . json_encode($roleNames));
-            
-            if (in_array($roleName, $roleNames)) {
-                \Log::info("Policy: [ROLE_FOUND] {$roleName}");
-                return true;
-            }
+        \Log::info("=== Step 2: Fetching group_roles where group_id IN (" . implode(',', $userGroups) . ") and is_deleted=false ===");
+        
+        // Step 2: Fetch from group_roles table where group_id matches and is_deleted=false
+        $groupRoles = \DB::table('group_roles')
+            ->whereIn('group_id', $userGroups)
+            ->where('is_deleted', false)
+            ->get();
+        
+        \Log::info("Step 2 Result: Found " . count($groupRoles) . " group_roles records");
+        
+        if (count($groupRoles) === 0) {
+            \Log::warning("Step 2 Warning: No group_roles found for user's groups");
+            return false;
         }
         
-        \Log::warning("Policy: [ROLE_NOT_FOUND] {$roleName} not in user's groups");
+        // Collect role_ids from group_roles results
+        $roleIds = $groupRoles->pluck('role_id')->toArray();
+        \Log::info("Step 2 Result: Collected role_ids: " . json_encode($roleIds));
+        
+        \Log::info("=== Step 3: Fetching Role names from sys_roles table where id IN (" . implode(',', $roleIds) . ") ===");
+        
+        // Step 3: Fetch Role names from sys_roles table using the role_ids
+        $roles = \DB::table('sys_roles')
+            ->whereIn('id', $roleIds)
+            ->where('is_deleted', false)
+            ->get();
+        
+        \Log::info("Step 3 Result: Found " . count($roles) . " roles from sys_roles");
+        
+        // Get the role names as an array
+        $roleNames = $roles->pluck('name')->toArray();
+        \Log::info("Step 3 Result: Role names: " . json_encode($roleNames));
+        
+        // Check if the required role name exists
+        if (in_array($roleName, $roleNames)) {
+            \Log::info("Step 3 Result: [ROLE_FOUND] {$roleName}");
+            return true;
+        }
+        
+        \Log::warning("Step 3 Result: [ROLE_NOT_FOUND] {$roleName} not in user's roles");
         return false;
     }
 }

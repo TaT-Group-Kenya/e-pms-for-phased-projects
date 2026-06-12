@@ -48,7 +48,10 @@ class UserController extends Controller
         $collection->each(function (User $user) {
             $roles = $user->groups
                 ->flatMap(function ($group) {
-                    return $group->roles;
+                    // Filter out soft-deleted roles
+                    return $group->roles->filter(function ($role) {
+                        return !$role->is_deleted;
+                    });
                 })
                 ->unique('id')
                 ->values();

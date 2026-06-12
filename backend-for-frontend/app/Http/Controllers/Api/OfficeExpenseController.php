@@ -78,6 +78,7 @@
         $this->authorize('update', $expense);
         $data = $request->validated();
         $data['updated_by'] = auth()->id();
+        \Log::info('Updating office expense', ['id' => $id, 'data' => $data]);
         $expense = $this->service->update($id, $data);
         return new OfficeExpenseResource($expense);
     }

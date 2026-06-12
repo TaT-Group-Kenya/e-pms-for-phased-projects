@@ -1187,6 +1187,118 @@ class ReportingService
         ];
     }
     
+    public function expensePayments($filters) {
+        \Log::info('Generating Expenses Payment Report', ['filters' => $filters]);
+
+        $currency = $filters['currency_code'] ?? null;
+        $categoryId = $filters['category'] ?? null;
+        $sourceAccount = $filters['source_account'] ?? null;
+        $status = $filters['status'] ?? null;
+        $from = $filters['from'] ?? null;
+        $to = $filters['to'] ?? null;
+
+        // Mandatory filter
+        if (!$currency) {
+            return [
+                'error' => 'currency_code is required for expenses payment report.'
+            ];
+        }
+
+        // Start from OfficeExpense to include all expenses (with or without payments)
+        $query = \App\Models\OfficeExpense::with(['category', 'costCenter', 'payments.transaction.debitAccount']);
+
+        // Filter by currency from office_expenses table
+        $query->where('currency', $currency);
+
+        // Date range filter on office_expenses.created_at
+        if ($from) {
+            $query->whereDate('office_expenses.created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('office_expenses.created_at', '<=', $to);
+        }
+        // Filter by category_id in office_expenses table
+        if ($categoryId) {
+            $query->where('category_id', $categoryId);
+        }
+        // Filter by status in office_expenses table
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $expenses = $query->get();
+
+        // Build payments collection from expenses (including those with no payments)
+        $payments = collect();
+        foreach ($expenses as $expense) {
+            // Add the expense itself as a "payment" record for display purposes
+            // This represents the expense even if no payment has been made
+            $payment = (object) [
+                'id' => $expense->id,
+                'expense_id' => $expense->id,
+                'transaction_id' => null,
+                'transaction_number' => null,
+                'direction' => null,
+                'transaction_type' => null,
+                'amount_paid' => $expense->amount,
+                'tax_amount' => 0,
+                'net_amount' => $expense->amount,
+                'payment_date' => $expense->date,
+                'payment_method' => null,
+                'payment_status' => null,
+                'currency' => $expense->currency,
+                'exchange_rate' => null,
+                'bank_name' => null,
+                'check_number' => null,
+                'transaction_reference' => null,
+                'receipt_number' => null,
+                'reconciled' => null,
+                'reconciliation_date' => null,
+                'created_at' => $expense->created_at,
+                'updated_at' => $expense->updated_at,
+                'expense_description' => $expense->description,
+                'category_name' => $expense->category ? $expense->category->name : null,
+                'cost_center_name' => $expense->costCenter ? $expense->costCenter->name : null,
+                'expense_status' => $expense->status,
+                'source_account_name' => '-',
+                'narration' => $expense->status === 'pending' ? '-' : $expense->description,
+                'amount' => $expense->amount,
+            ];
+
+            // If there are actual payments, add them too
+            if ($expense->payments && $expense->payments->count() > 0) {
+                foreach ($expense->payments as $actualPayment) {
+                    $transaction = $actualPayment->transaction;
+                    $actualPayment->expense_description = $expense->description;
+                    $actualPayment->category_name = $expense->category ? $expense->category->name : null;
+                    $actualPayment->cost_center_name = $expense->costCenter ? $expense->costCenter->name : null;
+                    $actualPayment->expense_status = $expense->status;
+                    $actualPayment->source_account_name = $transaction && $transaction->debitAccount ? $transaction->debitAccount->name : '-';
+                    // Get narration from Transaction where source_type=office_expense and source_id=expense.id
+                    $actualPayment->narration = $transaction ? $transaction->narration : '-';
+                    $actualPayment->amount = $actualPayment->amount_paid;
+                    $payments->push($actualPayment);
+                }
+            } else {
+                // Add the expense itself if no payments exist
+                $payments->push($payment);
+            }
+        }
+
+        $totalAmount = $payments->sum('amount_paid');
+        $totalTax = $payments->sum('tax_amount');
+        $totalNet = $payments->sum('net_amount');
+
+        return [
+            'payments' => $payments,
+            'totals' => [
+                'total' => $totalAmount,
+                'taxes' => $totalTax,
+                'net' => $totalNet,
+            ],
+        ];
+    }
+    
     public function exportPdf($reportType, $filters)
     {
         switch ($reportType) {
@@ -1226,6 +1338,8 @@ class ReportingService
                 return $this->exportCompanyStatementPdf($filters);
             case 'expenseReport':
                 return $this->exportExpenseReportPdf($filters);
+            case 'expensePayments':
+                return $this->exportExpensePaymentsPdf($filters);
             default:
                 return [
                     'error' => 'Invalid report type.'
@@ -1651,5 +1765,21 @@ class ReportingService
                 'Content-Type' => 'application/pdf',
             ]
         );
+    }
+
+    private function exportExpensePaymentsPdf($filters) {
+        $userId = Auth::id() ?? null;
+        $rawData = $this->expensePayments($filters);
+        $resourceCollection = \App\Http\Resources\Reporting\ExpensePaymentsResource::collection($rawData['payments'] ?? []);
+        $paymentsArray = $resourceCollection->resolve();
+        $data = [
+            'payments' => $paymentsArray,
+            'totals' => isset($rawData['totals']) ? $rawData['totals'] : [
+                'total' => 0,
+                'taxes' => 0,
+                'net' => 0,
+            ],
+        ];
+        return $this->renderPdf('pdf.expense-payments', $data, $filters, $userId, 'expensePayments');
     }
 }

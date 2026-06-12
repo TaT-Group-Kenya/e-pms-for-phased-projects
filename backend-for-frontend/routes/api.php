@@ -167,6 +167,8 @@ Route::prefix('/')->group(function () {
 			Route::get('tax-payments-customer', [App\Http\Controllers\ReportingController::class, 'taxPaymentsCustomer']);
 			Route::get('tax-payments-company', [App\Http\Controllers\ReportingController::class, 'taxPaymentsCompany']);
 			Route::get('expense', [App\Http\Controllers\ReportingController::class, 'expenseReport']);
+			Route::get('office-expense-payments', [App\Http\Controllers\ReportingController::class, 'expensePaymentsReport']);
+
 			Route::get('export-pdf', [App\Http\Controllers\ReportingController::class, 'exportPdf']);
 		});
 	});
