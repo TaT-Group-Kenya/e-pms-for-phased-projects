@@ -10,6 +10,7 @@ use Throwable;
 use PDOException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class Handler extends ExceptionHandler
 {
@@ -32,6 +33,16 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+        
+        // Register a custom renderable callback for AuthorizationException
+        $this->renderable(function (AuthorizationException $e, $request) {
+            return $this->handleAuthorizationException($request, $e);
+        });
+        
+        // Also handle AccessDeniedHttpException which is what Laravel actually throws for policies
+        $this->renderable(function (AccessDeniedHttpException $e, $request) {
+            return $this->handleAuthorizationException($request, $e);
+        });
     }
 
     /**
@@ -49,7 +60,7 @@ class Handler extends ExceptionHandler
             // Return a generic database error message for any database-related issue
             return response()->json([
                 'message' => 'Database server is down or database error occurred',
-                'error' => 'Database Unavailable' // You can remove this if you want to hide error type
+                'error' => 'Database Unavailable'
             ], 500);
         }
 
@@ -108,12 +119,8 @@ class Handler extends ExceptionHandler
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        // Handle 403 AuthorizationException from policy violations
-        \Log::info('Checking for AuthorizationException:: ' . get_class($e));
-        if ($e instanceof AuthorizationException) {
-            return $this->handleAuthorizationException($request, $e);
-        }
-
+        // Let parent handle all other exceptions (including AuthorizationException)
+        // The renderable callbacks will intercept AuthorizationException before parent handles it
         return parent::render($request, $e);
     }
 
@@ -121,43 +128,88 @@ class Handler extends ExceptionHandler
      * Handle 403 AuthorizationException from policy violations.
      * Extracts the model and builds a descriptive error message.
      */
-    private function handleAuthorizationException($request, AuthorizationException $e)
+    private function handleAuthorizationException($request, Throwable $e)
     {
+        // Only return JSON for API requests
+        if (!$request->expectsJson()) {
+            // For web requests, redirect back with error message
+            return redirect()->back()->with('error', 'You do not have permission to perform this action.');
+        }
+        
         $message = $e->getMessage();
+        \Log::info('Handling AuthorizationException: ' . $message);
         
-        // Try to extract model information from the exception message
-        // Laravel's AuthorizationException message format: "This action is unauthorized."
-        // Or it may include model information in the message
-        
+        // Try to extract model and action from the exception
         $model = null;
+        $action = null;
         
-        // Check if the message contains model information
-        if (preg_match('/\[(\w+)\]/', $message, $matches)) {
-            $model = $matches[1];
-        } elseif (preg_match('/(\w+) model/', $message, $matches)) {
-            $model = $matches[1];
-        } else {
-            // Try to get model from previous exception or context
-            $previous = $e->getPrevious();
-            if ($previous && $previous->getMessage()) {
-                if (preg_match('/(\w+)\s+(view|edit|delete|create)/i', $previous->getMessage(), $matches)) {
-                    $model = $matches[1];
+        // Check if this is from a policy - look for specific patterns
+        if (strpos($message, 'This action is unauthorized') !== false) {
+            // Try to get more context from the request
+            $route = $request->route();
+            if ($route) {
+                $controllerAction = $route->getActionName();
+                $routeName = $route->getName();
+                
+                // Try to extract model from route parameters
+                $routeParameters = $route->parameters();
+                foreach ($routeParameters as $key => $value) {
+                    if (is_object($value)) {
+                        $modelClass = class_basename($value);
+                        $model = $modelClass;
+                        break;
+                    }
+                }
+                
+                // Try to extract action from route name or controller
+                if ($routeName) {
+                    $action = Str::afterLast($routeName, '.');
+                } elseif ($controllerAction) {
+                    $action = Str::afterLast($controllerAction, '@');
                 }
             }
         }
         
-        // If we have a model, build a more descriptive message
-        if ($model) {
-            $modelName = Str::title(str_replace('_', ' ', $model));
+        // Build a user-friendly message
+        if ($model && $action) {
+            $modelName = Str::title(str_replace(['_', '-'], ' ', $model));
+            $actionName = $this->getActionName($action);
+            
             return response()->json([
-                'message' => "Access denied. You cannot view/edit/delete {$modelName}."
+                'message' => "Access denied. You are not authorized to {$actionName} {$modelName}.",
+                'error_type' => 'authorization'
+            ], 403);
+        } elseif ($model) {
+            $modelName = Str::title(str_replace(['_', '-'], ' ', $model));
+            return response()->json([
+                'message' => "Access denied. You cannot perform this action on {$modelName}.",
+                'error_type' => 'authorization'
             ], 403);
         }
         
         // Fallback to generic message
         return response()->json([
-            'message' => 'Access denied. You do not have permission to perform this action.'
+            'message' => 'Access denied. You do not have permission to perform this action.',
+            'error_type' => 'authorization'
         ], 403);
+    }
+    
+    /**
+     * Convert action method name to readable text
+     */
+    private function getActionName($action)
+    {
+        $actions = [
+            'view' => 'view',
+            'edit' => 'edit',
+            'update' => 'update',
+            'create' => 'create',
+            'store' => 'create',
+            'destroy' => 'delete',
+            'delete' => 'delete',
+        ];
+        
+        return $actions[$action] ?? $action;
     }
 
     /**

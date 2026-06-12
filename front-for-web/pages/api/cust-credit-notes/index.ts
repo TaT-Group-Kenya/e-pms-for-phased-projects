@@ -36,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!resp.ok) {
         return res
           .status(resp.status)
-          .json(data?.errors || data || { message: 'Failed to load customer credit notes' })
+          .json({ message: data?.message || 'Failed to load customer credit notes' })
       }
 
       return res.status(resp.status).json(data)

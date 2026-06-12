@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const data = await resp.json().catch(() => null)
 
     if (!resp.ok) {
-      return res.status(resp.status).json(data || { message: 'Failed to record refund' })
+      return res.status(resp.status).json({ message: data?.message || 'Failed to record refund' })
     }
 
     return res.status(resp.status).json(data)

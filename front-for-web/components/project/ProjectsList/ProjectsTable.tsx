@@ -163,8 +163,9 @@ const ProjectsList: React.FC = () => {
           Authorization: `Bearer ${accessToken}`,
         },
       });
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error("Failed to delete project");
+        throw new Error(data.message || "Failed to delete project");
       }
 
       return { message: "Project deleted successfully" };

@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const data = await resp.json().catch(() => null)
       if (!resp.ok) {
-        return res.status(resp.status).json(data?.errors || data || { message: 'Failed to load company invoice item' })
+        return res.status(resp.status).json({ message: data?.message || 'Failed to load company invoice item' })
       }
 
       return res.status(resp.status).json(data)

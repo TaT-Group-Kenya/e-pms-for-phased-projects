@@ -20,6 +20,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     const data = await resp.json()
+    if (!resp.ok) {
+      return res.status(resp.status).json({ message: data.message })
+    }
     return res.status(resp.status).json(data)
   } catch (err) {
     console.error('create country error', err)
