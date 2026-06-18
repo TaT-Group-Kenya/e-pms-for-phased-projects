@@ -82,8 +82,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         headers,
         body,
       })
+      
+      console.log("resp: ", await resp.text());
 
-      const data = await resp.json()
+      const data = { errors: ""} //await resp.json()
 
       if (!resp.ok) {
         return res.status(resp.status).json(data.errors || data)

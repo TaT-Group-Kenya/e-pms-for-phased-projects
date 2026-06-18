@@ -119,7 +119,17 @@ php artisan serve
 php artisan storage:link
 
 # run tests
+```bash
 Troubleshooting:
 - If migrations fail, check your database credentials in `.env` and ensure the DB exists.
 - If you run into permission errors, ensure `storage/` and `bootstrap/cache` are writable by your web user.
 - If Composer runs out of memory on macOS, try: `php -d memory_limit=-1 $(which composer) install`.
+```
+
+8. Docker
+- Run the command below to start docker services
+
+```bash
+docker-compose -f docker-compose.backend.yml down && docker-compose -f docker-compose.backend.yml build backend && docker-compose -f docker-compose.backend.yml up -d backend
+```
+

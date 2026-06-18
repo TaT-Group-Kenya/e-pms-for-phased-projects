@@ -1,4 +1,9 @@
-*
+**/*.pdf
+**/*.jpg
+**/*.csv
+**/*.xls
+**/*.xlsx
+**/*.doc
+**/*.docx
 !private/
-!public/
 !.gitignore
