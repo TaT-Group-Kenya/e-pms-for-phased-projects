@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+
+# Vendor directories
+vendor/
+node_modules/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test files
+tests/
+phpunit.xml
+.phpunit.result.cache
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Docker files (we don't need these in the container)
+# .docker/ directory excluded to avoid copying .docker/ contents to container
+# nginx.conf is copied separately to avoid this issue
+Dockerfile*
+docker-compose*.yml
+
+# Cache and logs
+storage/logs/
+bootstrap/cache/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Laravel specific
+webpack.mix.js
+tailwind.config.js
+vite.config.js
+postcss.config.js
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Configuration files
+*.yml
+*.yaml

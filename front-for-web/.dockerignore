@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Cache directories
+.next/
+out/
+dist/
+.cache/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Docker files
+docker-compose*.yml
+.docker/
+Dockerfile*
+
+# Git
+.git
+.gitignore
+
+# Logs
+logs/
+*.log
+
+# Testing
+coverage/
+.nyc_output/
+
+# Configuration
+jest.config.js
+.eslintignore
+.stylelintignore
+
+# Public assets we want to include (so don't ignore public/)
+# public/
+
+# Build artifacts
+*.tsbuildinfo

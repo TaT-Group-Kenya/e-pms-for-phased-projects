@@ -1,0 +1,65 @@
+# Use pre-built PHP image with extensions already installed
+FROM php:8.4-fpm-alpine3.21
+
+WORKDIR /var/www/html
+
+# Install dependencies and PHP extensions quickly using community repository
+RUN apk add --no-cache \
+    mysql-client \
+    php84-pdo_mysql \
+    php84-mysqli \
+    php84-gd \
+    php84-zip \
+    php84-mbstring \
+    php84-xml \
+    libzip \
+    libjpeg-turbo \
+    libpng \
+    libwebp \
+    libxml2 \
+    zlib \
+    && rm -rf /tmp/* /var/cache/apk/*
+
+# Create necessary directories and set world-writable permissions
+RUN mkdir -p /var/www/html/bootstrap/cache \
+    && mkdir -p /var/www/html/storage/app/public \
+    && mkdir -p /var/www/html/storage/framework/cache \
+    && mkdir -p /var/www/html/storage/framework/sessions \
+    && mkdir -p /var/www/html/storage/framework/views \
+    && mkdir -p /var/www/html/storage/logs \
+    && chown -R www-data:www-data /var/www/html/storage \
+    && chown -R www-data:www-data /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage \
+    && chmod -R 775 /var/www/html/bootstrap/cache
+
+# Update www-data to use GID 20 (staff group GID on macOS) to match host permissions
+RUN groupmod -g 20 www-data || true \
+    && usermod -g 20 www-data || true
+
+# Copy application files from the mounted volume
+COPY ./backend-for-frontend /var/www/html
+
+# Clear configuration cache to ensure environment variables are used
+RUN php artisan config:clear || true
+
+# Copy nginx configuration
+COPY docker/backend/nginx.conf /etc/nginx/http.d/default.conf
+
+# Install nginx (use Alpine package manager)
+RUN apk add --no-cache nginx
+
+# Copy custom PHP configuration
+COPY docker/backend/php.ini /etc/php84/php.ini
+COPY docker/backend/*.ini /usr/local/etc/php/conf.d/
+
+# Copy entrypoint script
+COPY docker/backend/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Expose nginx port (8000) and PHP-FPM port (9000)
+# Only port 8000 is exposed internally (not mapped to host)
+EXPOSE 8000 9000
+
+# Set entrypoint and start nginx and PHP-FPM
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["sh", "-c", "service nginx start && php-fpm"]

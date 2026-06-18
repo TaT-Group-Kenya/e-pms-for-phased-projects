@@ -1,0 +1,26 @@
+services:
+  # Next.js Frontend - With reverse proxy on port 443
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    container_name: epms-frontend
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/frontend/ssl:/etc/nginx/ssl:ro
+      - ./front-for-web/.env.local:/app/.env.local:ro
+      - ./front-for-web/.env.production:/app/.env.production:ro
+      - frontend_cache:/app/.next/cache
+    networks:
+      - epms-frontend-network
+
+networks:
+  epms-frontend-network:
+    driver: bridge
+
+volumes:
+  frontend_cache:
+    driver: local

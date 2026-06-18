@@ -1,0 +1,68 @@
+# Git
+.git
+.gitignore
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Docker
+docker-compose*.yml
+.docker/
+
+# Documentation
+README*.md
+*.md
+docs/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Test files
+tests/
+*.test.js
+*.spec.js
+coverage/
+
+# Build outputs
+.next/
+out/
+dist/
+.cache/
+
+# Environment files
+.env
+.env.local
+.env.production
+!.env.example
+
+# Vendor directories
+vendor/
+node_modules/
+
+# Laravel specific
+webpack.mix.js
+tailwind.config.js
+vite.config.js
+postcss.config.js
+storage/logs/
+bootstrap/cache/
+
+# Cache
+.cache/
+temp/
+tmp/
