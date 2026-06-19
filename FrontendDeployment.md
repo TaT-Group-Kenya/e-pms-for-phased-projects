@@ -141,8 +141,6 @@ server {
     # SSL Certificate Files (managed by Certbot)
     ssl_certificate /etc/letsencrypt/live/project.sanctionscreening.africa/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/project.sanctionscreening.africa/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     # Your application proxy configuration
     location / {
