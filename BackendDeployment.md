@@ -273,5 +273,37 @@ sudo certbot certonly --standalone --preferred-challenges http \
 sudo nano /etc/nginx/sites-available/laravel-api
 ```
 
+## Troubleshooting
+
+1. Permissions
+- Ensure the following permissions are set
+
+```bash
+# Navigate to your project root
+cd /var/www/backend-for-frontend
+
+# Set the correct ownership (www-data is the web server user)
+sudo chown -R www-data:www-data storage
+sudo chown -R www-data:www-data bootstrap/cache
+
+# Set directory permissions (755 for directories, 644 for files)
+sudo find storage -type d -exec chmod 755 {} \;
+sudo find storage -type f -exec chmod 644 {} \;
+sudo find bootstrap/cache -type d -exec chmod 755 {} \;
+sudo find bootstrap/cache -type f -exec chmod 644 {} \;
+
+# Give write permissions to storage/logs, storage/framework, and bootstrap/cache
+sudo chmod -R 775 storage/logs
+sudo chmod -R 775 storage/framework
+sudo chmod -R 775 bootstrap/cache
+```
+
+- Since uploads are symlinked to public folder, add permissions too.
+
+```bash
+sudo chown -R www-data:www-data public
+```
+
+
 
 

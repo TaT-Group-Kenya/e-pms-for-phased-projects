@@ -22,12 +22,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     })
 
-    if (resp.status === 204) {
-      return res.status(204).end()
+    if (!resp.ok) {
+      return res.status(resp.status).json({message: await resp.text()})
     }
 
-    const data = await resp.json()
-    return res.status(resp.status).json(data)
+    return res.status(resp.status).json({ message: "Deleted!" })
   } catch (err) {
     console.error('delete account-group error', err)
     return res.status(500).json({ message: 'Proxy error' })

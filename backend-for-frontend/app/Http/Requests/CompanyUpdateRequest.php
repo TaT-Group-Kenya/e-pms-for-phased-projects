@@ -20,7 +20,7 @@ class CompanyUpdateRequest extends FormRequest
             'email' => ['sometimes', 'required', 'email', 'max:255'],
             'phone' => ['sometimes', 'required', 'string', 'max:255'],
             'contact_person_name' => ['sometimes', 'required', 'string', 'max:255'],
-            'logo' => ['sometimes', 'required', 'string', 'max:255'],
+            'logo' => ['sometimes', 'required', 'image', 'mimes:jpeg,jpg,png', 'max:3072'],
             'address' => ['sometimes', 'required', 'string', 'max:255'],
             'city' => ['sometimes', 'required', 'string', 'max:255'],
             'state' => ['sometimes', 'required', 'string', 'max:255'],

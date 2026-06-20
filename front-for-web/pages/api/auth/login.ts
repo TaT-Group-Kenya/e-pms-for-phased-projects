@@ -8,8 +8,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const base = process.env.EPMS_API_BASE
   if (!base) return res.status(500).json({ message: 'EPMS_API_BASE not configured' })
 
-    console.log("base url ", base);
-
   try {
     const resp = await fetch(`${base}/login`, {
       method: 'POST',
