@@ -58,23 +58,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method === 'PUT') {
       const contentType = req.headers['content-type']
       const isFormData = contentType?.includes('multipart/form-data')
-      
+
       const headers: HeadersInit = {
         Authorization: `Bearer ${token}`,
       }
 
       let body: any
 
+      // Read raw body for ALL requests since bodyParser is disabled
+      const rawBody = await getRawBody(req)
+
       if (isFormData) {
-        // Read raw body for FormData
-        const rawBody = await getRawBody(req)
         body = rawBody
-        // Keep the content-type header so backend knows it's multipart
         headers['content-type'] = contentType as string
       } else {
-        // For JSON requests, parse the body
+        // For JSON requests, parse the raw body
         Object.assign(headers, JSON_HEADERS)
-        body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body)
+        const bodyString = rawBody.toString('utf-8')
+        body = bodyString
       }
 
       const resp = await fetch(url, {
