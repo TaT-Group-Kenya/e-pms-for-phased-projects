@@ -45,7 +45,7 @@ class AuthController extends Controller
             $userGroups = DB::table('user_groups')
                 ->where('user_id', $user->id)
                 ->where('is_deleted', false)
-                ->pluck('id')
+                ->pluck('sys_group_id')
                 ->toArray();
             
             // Step 2: Fetch group_roles where group_id IN list and is_deleted=false
@@ -53,6 +53,8 @@ class AuthController extends Controller
                 ->whereIn('group_id', $userGroups)
                 ->where('is_deleted', false)
                 ->get();
+
+            \Log::debug("group roles: ", ['ids' => $groupRoles]);
             
             // Step 3: Collect role_ids and fetch role names from sys_roles
             $roleIds = $groupRoles->pluck('role_id')->toArray();
