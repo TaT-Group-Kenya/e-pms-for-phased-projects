@@ -89,7 +89,7 @@ class BaseModelPolicy
         $userGroups = \DB::table('user_groups')
             ->where('user_id', $user->id)
             ->where('is_deleted', false)
-            ->pluck('id')
+            ->pluck('sys_group_id')
             ->toArray();
         
         \Log::info("Step 1 Result: User has " . count($userGroups) . " groups with IDs: " . json_encode($userGroups));
