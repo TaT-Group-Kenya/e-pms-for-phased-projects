@@ -23,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     if (resp.status === 204) {
-      return res.status(204).end()
+      return res.status(200).json({ message: 'Deleted successfully' });
     }
 
     const data = await resp.json()

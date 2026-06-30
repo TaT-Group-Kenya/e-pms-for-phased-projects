@@ -24,8 +24,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     })
 
+    if (resp.status === 204) {
+      return res.status(200).json({ message: 'Customer deleted successfully' });
+    }
+
+    const data = await resp.json().catch(() => null)
+    
     if (!resp.ok) {
-      return res.status(resp.status).json({ message: 'Failed to delete customer' })
+      return res.status(resp.status).json({message: data ? data.message: 'Failed to delete. Error: ' + resp.status})
     }
 
     return res.status(resp.status).json({ message: 'Customer deleted successfully' })

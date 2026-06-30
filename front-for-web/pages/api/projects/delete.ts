@@ -24,9 +24,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     })
 
-    const data = await resp.json();
+    if (resp.status === 204) {
+      return res.status(200).json({ message: 'Deleted successfully' });
+    }
+
+    const data = await resp.json().catch(() => null)
+    
     if (!resp.ok) {
-      return res.status(resp.status).json({ message: data.message })
+      return res.status(resp.status).json({message: data ? data.message: 'Failed to delete. Error: ' + resp.status})
     }
 
     return res.status(resp.status).json({ message: 'Project deleted successfully' })

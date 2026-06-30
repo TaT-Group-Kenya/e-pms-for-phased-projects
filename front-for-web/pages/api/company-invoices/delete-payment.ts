@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const url = `${baseUrl}/company-invoices/${id}/payments/${paymentId}`;
 
-    const backendResponse = await fetch(url, {
+    const resp = await fetch(url, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -24,9 +24,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    const data = await backendResponse.json().catch(() => null);
+    if (resp.status === 204) {
+      return res.status(200).json({ message: 'Deleted successfully' });
+    }
 
-    return res.status(backendResponse.status).json(data ?? {});
+    const data = await resp.json().catch(() => null)
+    
+    if (!resp.ok) {
+      return res.status(resp.status).json({message: data ? data.message: 'Failed to delete. Error: ' + resp.status})
+    }
+
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Error proxying company invoice delete-payment:', error);

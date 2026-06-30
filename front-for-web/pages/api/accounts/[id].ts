@@ -60,9 +60,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     })
 
+     if (resp.status === 204) {
+      return res.status(200).json({ message: 'Account deleted successfully' });
+    }
+
+    const data = await resp.json().catch(() => null)
+    
     if (!resp.ok) {
-      const data = await resp.json().catch(() => null)
-      return res.status(resp.status).json(data?.errors || data || { message: 'Failed to delete account' })
+      return res.status(resp.status).json({message: data ? data.message: 'Failed to delete. Error: ' + resp.status})
     }
 
     return res.status(resp.status).json({ message: 'Account deleted successfully' })
