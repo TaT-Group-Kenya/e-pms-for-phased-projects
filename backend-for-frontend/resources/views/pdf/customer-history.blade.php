@@ -66,7 +66,7 @@
             <tr>
                 <td>
                     @if(!empty($row['created_at']))
-                        {{ is_string($row['created_at']) ? \Carbon\Carbon::parse($row['created_at'])->format('d M Y') : optional($row['created_at'])->format('d M Y') }}
+                        {{ is_string($row['created_at']) ? \Carbon\Carbon::parse($row['created_at'])->format('d/m/Y') : optional($row['created_at'])->format('d/m/Y') }}
                     @else
                         -
                     @endif

@@ -67,7 +67,7 @@
                 <td>{{ number_format((float) $payment->tax_amount, 2) }}</td>
                 <td><strong>{{ number_format((float) $payment->net_amount, 2) }}</strong></td>
                 <td>{{ $payment->currency }}</td>
-                <td>{{ optional($payment->created_at)->format('d M Y') }}</td>
+                <td>{{ optional($payment->created_at)->format('d/m/Y') }}</td>
             </tr>
         @endforeach
         </tbody>

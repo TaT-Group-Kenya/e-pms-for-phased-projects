@@ -67,4 +67,9 @@ class OfficeExpense extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
+
+    public function documents()
+    {
+        return $this->hasMany(OfficeExpenseDocument::class, 'expense_id');
+    }
 }

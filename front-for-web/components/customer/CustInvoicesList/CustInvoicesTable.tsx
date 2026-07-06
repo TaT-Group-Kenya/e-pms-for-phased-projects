@@ -20,8 +20,13 @@ interface CustInvoiceSummary {
   tax_amount: number;
   discount_amount: number;
   total_amount: number;
+  total_paid: number;
+  total_balance: number;
   currency: string;
   created_at?: string | null;
+  customer: {
+    name: string;
+  }
 }
 
 interface ApprovedOrderSummary {
@@ -106,8 +111,11 @@ const CustInvoicesTable: React.FC = () => {
           tax_amount: Number(inv.tax_amount ?? 0),
           discount_amount: Number(inv.discount_amount ?? 0),
           total_amount: Number(inv.total_amount ?? 0),
+          total_paid: Number(inv.total_paid ?? 0),
+          total_balance: Number(inv.total_balance ?? 0),
           currency: inv.currency || "USD",
           created_at: inv.created_at ?? null,
+          ...inv
         }));
 
         setInvoices(mapped);
@@ -427,6 +435,9 @@ const CustInvoicesTable: React.FC = () => {
                       <span style={{ minWidth: 200, display: 'inline-block' }}>Title</span>
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Customer
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Subtotal
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -439,7 +450,13 @@ const CustInvoicesTable: React.FC = () => {
                       Total
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Created
+                      Paid
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Balance
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Invoice Date
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Status
@@ -493,6 +510,9 @@ const CustInvoicesTable: React.FC = () => {
                           )}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          {inv.customer?.name || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <span className="font-semibold">
                             {formatCurrency(inv.subtotal_amount, inv.currency)}
                           </span>
@@ -510,6 +530,16 @@ const CustInvoicesTable: React.FC = () => {
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <span className="font-semibold text-primary-500">
                             {formatCurrency(inv.total_amount, inv.currency)}
+                          </span>
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          <span className="font-semibold text-primary-500">
+                            {formatCurrency(inv.total_paid, inv.currency)}
+                          </span>
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          <span className="font-semibold text-primary-500">
+                            {formatCurrency(inv.total_balance, inv.currency)}
                           </span>
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">

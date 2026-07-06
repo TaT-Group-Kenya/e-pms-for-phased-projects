@@ -9,7 +9,7 @@
 @if($creditNote)
     <ul>
         <li><strong>Credit Note Number:</strong> {{ $creditNote->credit_note_number }}</li>
-        <li><strong>Date:</strong> {{ optional($creditNote->created_at)->format('d M Y') }}</li>
+        <li><strong>Date:</strong> {{ optional($creditNote->created_at)->format('d/m/Y') }}</li>
         <li><strong>Status:</strong> {{ $creditNote->status_label ?? ucfirst($creditNote->status) }}</li>
         @if($creditNote->invoice && $creditNote->invoice->customer)
             <li><strong>Customer:</strong> {{ $creditNote->invoice->customer->name }}</li>

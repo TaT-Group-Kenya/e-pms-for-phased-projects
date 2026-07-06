@@ -61,7 +61,7 @@
                 <td style="text-align: right;">
                     <h1>Order</h1>
                     <div class="muted">Order #: {{ $order->order_number }}</div>
-                    <div class="muted">Date: {{ optional($order->created_at)->format('d M Y') }}</div>
+                    <div class="muted">Date: {{ optional($order->created_at)->format('d/m/Y') }}</div>
                     <div class="badge badge-status mt-2">{{ ucfirst($order->status) }}</div>
                 </td>
             </tr>

@@ -55,7 +55,7 @@
             <td style="width: 50%; vertical-align: top; text-align: right;">
 <h1>Customer Ledger Entry</h1>
         <div class="muted">Entry #: {{ $number }}</div>
-        <div class="muted">Date: {{ optional($entry->transaction_date ?? $entry->created_at)->format('d M Y') }}</div>
+        <div class="muted">Date: {{ optional($entry->transaction_date ?? $entry->created_at)->format('d/m/Y') }}</div>
         @if($entry->transaction_status)
             <div class="badge badge-status mt-2">{{ ucfirst($entry->transaction_status) }}</div>
         @endif

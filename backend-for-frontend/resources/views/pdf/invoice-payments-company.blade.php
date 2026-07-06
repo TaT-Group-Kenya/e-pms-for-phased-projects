@@ -63,7 +63,7 @@
         @foreach($data['payments'] as $payment)
             <tr>
                 <td><strong>{{ $payment->id }}</strong></td>
-                <td>{{ optional($payment->created_at)->format('d M Y') }}</td>
+                <td>{{ optional($payment->created_at)->format('d/m/Y') }}</td>
                 <td>{{ $payment->company_name ?? '-' }}</td>
                 <td>{{ $payment->job_reference_id ?? '-' }}</td>
                 <td>{{ $payment->invoice_number ?? '-' }}</td>

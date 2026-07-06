@@ -65,7 +65,7 @@
                     <td><strong>{{ $txn['invoice_number'] }}</strong></td>
                     <td>{{ number_format((float) $txn['tax_amount'], 2) }}</td>
                     <td>{{ $txn['currency'] }}</td>
-                    <td>{{ isset($txn['created_at']) ? \Carbon\Carbon::parse($txn['created_at'])->format('d M Y') : '' }}</td>
+                    <td>{{ isset($txn['created_at']) ? \Carbon\Carbon::parse($txn['created_at'])->format('d/m/Y') : '' }}</td>
             </tr>
         @endforeach
         </tbody>

@@ -73,9 +73,9 @@
                     @php
                         $date = $payment['created_at'] ?? null;
                         if ($date instanceof \Carbon\Carbon) {
-                            echo $date->format('d M Y');
+                            echo $date->format('d/m/Y');
                         } elseif (is_string($date) && !empty($date)) {
-                            echo \Carbon\Carbon::parse($date)->format('d M Y');
+                            echo \Carbon\Carbon::parse($date)->format('d/m/Y');
                         } else {
                             echo '';
                         }

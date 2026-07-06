@@ -66,7 +66,7 @@
             <tr>
                 <td>
                     @if(!empty($project['start_date']))
-                        {{ \Carbon\Carbon::parse($project['start_date'])->format('d M Y') }}
+                        {{ \Carbon\Carbon::parse($project['start_date'])->format('d/m/Y') }}
                     @else
                         -
                     @endif

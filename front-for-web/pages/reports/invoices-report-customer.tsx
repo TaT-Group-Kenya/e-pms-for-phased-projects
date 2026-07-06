@@ -5,7 +5,7 @@ import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../../components/common/Toast';
 import Can from '../../components/auth/Can';
 import AuthenticatedLayout from '../../components/authenticated/AuthenticatedLayout';
-import { formatCurrency, formatDateTime } from '../../utils/format';
+import { formatCurrency, formatDate } from '../../utils/format';
 
 export default function InvoicesReportCustomerPage() {
   const [filters, setFilters] = useState({
@@ -148,17 +148,21 @@ export default function InvoicesReportCustomerPage() {
       'Project Name',
       'Currency',
       'Amount',
+      'Paid',
+      'Balance',
       'Status',
       'Created By',
     ];
     const rows = data.map((row: any) => [
-      formatDateTime(row.date || row.created_at || ''),
+      formatDate(row.date || row.created_at || ''),
       row.job_reference_id || '',
       row.customer || row.customer_name || '',
       row.invoice_number || row.id || '',
       row.project_name || row.project || '',
       row.currency || '',
       formatCurrency(Number(row.amount ?? row.total_amount ?? 0), filters.currency_code || 'KES'),
+      formatCurrency(row.paid ?? 0, filters.currency_code || 'KES'),
+      formatCurrency(row.balance ?? 0, filters.currency_code || 'KES'),
       row.status || '',
       row.created_by_name || '',
     ]);
@@ -166,15 +170,15 @@ export default function InvoicesReportCustomerPage() {
     const totalsRows: string[][] = [];
     if (totals && typeof totals.amount !== 'undefined') {
       totalsRows.push([
-        'TOTAL',
+        'TOTALS',
         '',
         '',
         '',
         '',
         '',
         formatCurrency(Number(totals.amount || 0), filters.currency_code || 'KES'),
-        '',
-        '',
+        formatCurrency(Number(totals.total_paid || 0), filters.currency_code || 'KES'),
+        formatCurrency(Number(totals.total_balance || 0), filters.currency_code || 'KES'),
       ]);
     }
 
@@ -320,25 +324,29 @@ export default function InvoicesReportCustomerPage() {
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Project Name</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Currency</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Amount</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Paid</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Balance</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Status</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Created By</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={9} className="whitespace-nowrap px-4 py-2">Loading...</td></tr>
+                      <tr><td colSpan={11} className="whitespace-nowrap px-4 py-2">Loading...</td></tr>
                     ) : data.length === 0 ? (
-                      <tr><td colSpan={9} className="whitespace-nowrap px-4 py-2">No data found</td></tr>
+                      <tr><td colSpan={11} className="whitespace-nowrap px-4 py-2">No data found</td></tr>
                     ) : (
                       data.map((row: any, idx: number) => (
                         <tr key={row.id || row.invoice_number || idx} className={idx % 2 === 0 ? 'bg-gray-50 border-b border-gray-200' : 'bg-white border-b border-gray-200'}>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{formatDateTime(row.date || row.created_at || '')}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{formatDate(row.date || row.created_at || '')}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.job_reference_id || ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.customer || row.customer_name || ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.invoice_number || row.id || ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_name || row.project || ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.currency || ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{formatCurrency(Number(row.amount ?? row.total_amount ?? 0), filters.currency_code || 'KES')}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{formatCurrency(row.paid ?? 0, filters.currency_code || 'KES')}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{formatCurrency(row.balance ?? 0, filters.currency_code || 'KES')}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.status || ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.created_by_name || ''}</td>
                         </tr>
@@ -356,6 +364,12 @@ export default function InvoicesReportCustomerPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Total Amount:</span>
                   <span className="font-bold">{formatCurrency(Number(totals.amount || 0), filters.currency_code || 'KES')}</span>
+
+                  <span className="text-gray-600">Total Paid:</span>
+                  <span className="font-bold">{formatCurrency(Number(totals.total_paid || 0), filters.currency_code || 'KES')}</span>
+
+                  <span className="text-gray-600">Total Balance:</span>
+                  <span className="font-bold">{formatCurrency(Number(totals.total_balance || 0), filters.currency_code || 'KES')}</span>
                 </div>
               </div>
             </div>

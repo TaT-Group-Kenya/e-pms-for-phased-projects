@@ -65,7 +65,7 @@
         @endphp
         @foreach($rows as $row)
             <tr>
-                <td>{{ \Carbon\Carbon::parse($row['date'] ?? '')->format('d M Y') }}</td>
+                <td>{{ \Carbon\Carbon::parse($row['date'] ?? '')->format('d/m/Y') }}</td>
                 <td>{{ $row['job_reference_id'] ?? '' }}</td>
                 <td>{{ $row['customer'] ?? '' }}</td>
                 <td>{{ $row['project_name'] ?? '' }}</td>

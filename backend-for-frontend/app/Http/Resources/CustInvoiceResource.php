@@ -46,6 +46,18 @@ class CustInvoiceResource extends BaseResource
                     ? collect($this->pdcsReceived)->where('is_deleted', false)->whereIn('status', ['received', 'pending'])->sum('amount')
                     : 0.0
             ),
+            'total_paid' => (float) (
+                $this->whenLoaded('payments')
+                    ? $this->payments->sum('amount_paid')
+                    : 0.0
+            ),
+            'total_balance' => (float) max(
+                (float) $this->total_amount - (
+                    $this->whenLoaded('payments')
+                        ? $this->payments->sum('amount_paid')
+                        : 0.0
+                ), 0.0
+            ),
         ];
     }
 }

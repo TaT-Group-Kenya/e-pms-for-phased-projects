@@ -41,8 +41,8 @@ class ProjectsSummaryResource extends JsonResource
             'currency' => $this->currency,
             'assigned_companies' => $this->assigned_companies ? $this->assigned_companies->map(function($company) {
                 return [
-                    'id' => $company->id,
-                    'name' => $company->name,
+                    'id' => $company ? $company->id : null,
+                    'name' => $company ? $company->name : null,
                 ];
             }) : [],
             'created_at' => $this->created_at,

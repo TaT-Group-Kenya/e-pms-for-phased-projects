@@ -67,7 +67,7 @@
                 <td><strong>{{ number_format((float) $txn->amount, 2) }}</strong></td>
                 <td>{{ number_format((float) $txn->tax_amount, 2) }}</td>
                 <td><strong>{{ number_format((float) $txn->net_amount, 2) }}</strong></td>
-                <td>{{ optional($txn->created_at)->format('d M Y') }}</td>
+                <td>{{ optional($txn->created_at)->format('d/m/Y') }}</td>
             </tr>
         @endforeach
         </tbody>

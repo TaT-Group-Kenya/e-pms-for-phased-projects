@@ -152,7 +152,7 @@
                                     @php
                                         $date = is_array($row) ? ($row['transaction_date'] ?? null) : ($row->transaction_date ?? null);
                                     @endphp
-                                    {{ $date ? \Carbon\Carbon::parse($date)->format('d M Y') : '-' }}
+                                    {{ $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '-' }}
                                 </td>
                                 <td>
                                     @php

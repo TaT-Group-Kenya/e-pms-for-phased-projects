@@ -122,12 +122,18 @@ class ReportingController extends Controller
                 return \Gate::allows('view', $invoice);
             });
 
-            $totalAmount = $authorized->sum('total_amount');
+            // Use totals from service calculation
+            $totals = $data['totals'];
+            $totalAmount = $totals['amount'];
+            $totalPaid = $totals['total_paid'];
+            $totalBalance = $totals['total_balance'];
 
             return [
                 'invoices' => \App\Http\Resources\Reporting\InvoicesReportCustomerResource::collection($authorized),
                 'totals' => [
                     'amount' => $totalAmount,
+                    'total_paid' => $totalPaid,
+                    'total_balance' => $totalBalance,
                 ],
             ];
         } catch (\Exception $e) {
@@ -151,12 +157,18 @@ class ReportingController extends Controller
                 return \Gate::allows('view', $invoice);
             });
 
-            $totalAmount = $authorized->sum('total_amount');
+            // Use totals from service calculation
+            $totals = $data['totals'];
+            $totalAmount = $totals['amount'];
+            $totalPaid = $totals['total_paid'];
+            $totalBalance = $totals['total_balance'];
 
             return [
                 'invoices' => \App\Http\Resources\Reporting\InvoicesReportCompanyResource::collection($authorized),
                 'totals' => [
                     'amount' => $totalAmount,
+                    'total_paid' => $totalPaid,
+                    'total_balance' => $totalBalance,
                 ],
             ];
         } catch (\Exception $e) {

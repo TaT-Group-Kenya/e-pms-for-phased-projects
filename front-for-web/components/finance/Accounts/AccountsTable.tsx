@@ -248,6 +248,7 @@ const AccountsTable: React.FC = () => {
         group: formGroup,
         currency: formCurrency,
         overdraft_allowed: Number(formOverdraft),
+        balance: Number(formBalance) || 0,
       };
 
       const isEdit = !!editingAccount;
@@ -597,8 +598,7 @@ const AccountsTable: React.FC = () => {
                     step="0.01"
                     value={formBalance}
                     onChange={(e) => setFormBalance(e.target.value)}
-                    disabled
-                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-gray-50 dark:bg-[#111827] text-sm text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                   />
                 </div>
 

@@ -49,8 +49,7 @@ class AccountController extends Controller
         // Generate account code in backend using CommonService
         $commonService = new CommonService();
         $validated['code'] = $commonService->generateUniqueCode('INT-ACC-');
-        // Opening balance is always zero on creation
-        $validated['balance'] = 0;
+        // $validated['balance'] = 0; allow initial balance to be set on creation
         $validated['created_by'] = Auth::id();
         $validated['created_at'] = now();
         $model = $this->service->create($validated);
@@ -467,8 +466,9 @@ class AccountController extends Controller
             ['created_at', 'asc'],
             ['transaction_number', 'asc'],
         ])->values();
+        // start with the account's current balance as the initial running balance
+        $runningBalance = $account->balance ?? 0;
 
-        $runningBalance = 0;
         $totalDebit = 0;
         $totalCredit = 0;
 

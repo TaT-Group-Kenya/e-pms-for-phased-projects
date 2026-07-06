@@ -54,7 +54,7 @@
                 <td style="text-align: right;">
                     <h1>Quotation</h1>
                     <div class="muted">Quote #: {{ $quotation->quotation_number }}</div>
-                    <div class="muted">Date: {{ $quotation->created_at->format('d M Y') }}</div>
+                    <div class="muted">Date: {{ $quotation->created_at->format('d/m/Y') }}</div>
                     <div class="badge badge-status mt-2">{{ ucfirst($quotation->status) }}</div>
                 </td>
             </tr>

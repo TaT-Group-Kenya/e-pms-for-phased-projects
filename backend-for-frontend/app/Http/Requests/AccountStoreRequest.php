@@ -21,8 +21,8 @@ class AccountStoreRequest extends FormRequest
             'group' => ['required', Rule::in(['Petty','Checking','Savings'])],
             // currency and balance are set in the backend; do not require them from the client
             'currency' => ['sometimes', 'string', 'max:10', 'exists:currencies,code'],
-            'balance' => ['sometimes', 'string', 'max:255'],
-            'overdraft_allowed' => ['required', 'numeric', 'max:255'],
+            'balance' => ['sometimes', 'numeric', 'max:100000000000000'],
+            'overdraft_allowed' => ['required', 'numeric', 'max:1'],
         ];
     }
 

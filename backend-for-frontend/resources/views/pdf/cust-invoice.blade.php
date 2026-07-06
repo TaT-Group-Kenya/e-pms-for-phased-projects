@@ -61,7 +61,7 @@
                 <td style="text-align: right;">
                     <h1>Invoice</h1>
                     <div class="muted">Invoice #: {{ $invoice->invoice_number }}</div>
-                    <div class="muted">Date: {{ optional($invoice->created_at)->format('d M Y') }}</div>
+                    <div class="muted">Date: {{ optional($invoice->created_at)->format('d/m/Y') }}</div>
                     <div class="badge badge-status mt-2">{{ $invoice->status_label ?? ucfirst($invoice->status) }}</div>
                 </td>
             </tr>
@@ -344,7 +344,7 @@
                             $runningTotal = max($runningTotal - $amount, 0);
                         @endphp
                         <tr>
-                            <td class="text-sm">{{ optional($payment->payment_date)->format('d M Y') }}</td>
+                            <td class="text-sm">{{ optional($payment->payment_date)->format('d/m/Y') }}</td>
                             <td class="text-sm">{{ ucfirst($payment->payment_method ?? '-') }}</td>
                             <td class="text-sm">
                                 @if(!empty($payment->receipt_number))

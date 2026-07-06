@@ -83,10 +83,12 @@ class ReportingService
             $projectQuery->where('job_reference_id', $filters['job_reference_id']);
         }
         if (isset($filters['from_date'])) {
-            $projectQuery->whereDate('start_date', '>=', $filters['from_date']);
+            $projectQuery->whereDate('created_at', '>=', $filters['from_date']);
+            \Log::info("Filtering projects from date: " . $filters['from_date'], ['data' => $projectQuery->toSql()]);
         }
         if (isset($filters['to_date'])) {
-            $projectQuery->whereDate('end_date', '<=', $filters['to_date']);
+            $projectQuery->whereDate('created_at', '<=', $filters['to_date']);
+            \Log::info("Filtering projects to date: " . $filters['to_date'], ['data' => $projectQuery->toSql()]);
         }
         $projects = $projectQuery->get();
 
@@ -194,7 +196,7 @@ class ReportingService
             ];
         }
 
-        $query = \App\Models\CustInvoice::with(['customer', 'project']);
+        $query = \App\Models\CustInvoice::with(['customer', 'project', 'payments']);
 
         $query->where('currency', $currency);
 
@@ -231,6 +233,14 @@ class ReportingService
             $invoice->customer_name = $customer ? $customer->name : null;
             $invoice->project_name = $project ? $project->name : null;
 
+            // Calculate paid and balance directly
+            $paid = 0.0;
+            if ($invoice->payments) {
+                $paid = $invoice->payments->sum('amount_paid');
+            }
+            $invoice->paid = $paid;
+            $invoice->balance = max((float) $invoice->total_amount - $paid, 0.0);
+
             $createdByName = null;
             if ($invoice->created_by && $usersById->has($invoice->created_by)) {
                 $user = $usersById->get($invoice->created_by);
@@ -245,11 +255,15 @@ class ReportingService
         }
 
         $totalAmount = $invoices->sum('total_amount');
+        $totalPaid = $invoices->sum('paid');
+        $totalBalance = $totalAmount - $totalPaid;
 
         return [
             'invoices' => $invoices,
             'totals' => [
                 'amount' => $totalAmount,
+                'total_paid' => $totalPaid,
+                'total_balance' => $totalBalance,
             ],
         ];
     }
@@ -269,7 +283,7 @@ class ReportingService
             ];
         }
 
-        $query = \App\Models\CompanyInvoice::with(['company', 'project']);
+        $query = \App\Models\CompanyInvoice::with(['company', 'project', 'payments']);
 
         $query->where('currency', $currency);
 
@@ -307,6 +321,16 @@ class ReportingService
             $invoice->company_name = $company ? $company->name : null;
             $invoice->project_name = $project ? $project->name : null;
 
+            // Calculate paid and balance directly (filter out deleted payments)
+            $paid = 0.0;
+            if ($invoice->payments) {
+                $paid = $invoice->payments->filter(function($payment) {
+                    return !$payment->is_deleted;
+                })->sum('amount_paid');
+            }
+            $invoice->paid = $paid;
+            $invoice->balance = max((float) $invoice->total_amount - $paid, 0.0);
+
             $createdByName = null;
             if ($invoice->created_by && $usersById->has($invoice->created_by)) {
                 $user = $usersById->get($invoice->created_by);
@@ -321,11 +345,15 @@ class ReportingService
         }
 
         $totalAmount = $invoices->sum('total_amount');
+        $totalPaid = $invoices->sum('paid');
+        $totalBalance = $totalAmount - $totalPaid;
 
         return [
             'invoices' => $invoices,
             'totals' => [
                 'amount' => $totalAmount,
+                'total_paid' => $totalPaid,
+                'total_balance' => $totalBalance,
             ],
         ];
     }

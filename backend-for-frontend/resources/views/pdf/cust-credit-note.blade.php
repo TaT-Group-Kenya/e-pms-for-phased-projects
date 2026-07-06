@@ -61,7 +61,7 @@
                 <td style="text-align:right;">
                     <h1>Customer Credit Note</h1>
                     <div class="muted">Credit Note #: {{ $creditNote->credit_note_number }}</div>
-                    <div class="muted">Date: {{ optional($creditNote->created_at)->format('d M Y') }}</div>
+                    <div class="muted">Date: {{ optional($creditNote->created_at)->format('d/m/Y') }}</div>
                     <div class="badge badge-status mt-2">{{ $creditNote->status_label ?? ucfirst($creditNote->status) }}</div>
                 </td>
             </tr>
@@ -72,7 +72,7 @@
         <div class="card" style="min-width: 260px;">
             <h2>Credit Note Details</h2>
             <div class="summary-row"><span class="summary-label">Credit Note #:</span> {{ $creditNote->credit_note_number }}</div>
-            <div class="summary-row"><span class="summary-label">Date:</span> {{ optional($creditNote->created_at)->format('d M Y') }}</div>
+            <div class="summary-row"><span class="summary-label">Date:</span> {{ optional($creditNote->created_at)->format('d/m/Y') }}</div>
             <div class="summary-row"><span class="summary-label">Status:</span> {{ $creditNote->status_label ?? ucfirst($creditNote->status) }}</div>
             <div class="summary-row"><span class="summary-label">Currency:</span> {{ $creditNote->currency }}</div>
             @if($creditNote->invoice && $creditNote->invoice->customer)
@@ -156,7 +156,7 @@
                                     @php
                                         $date = is_array($row) ? ($row['transaction_date'] ?? null) : ($row->transaction_date ?? null);
                                     @endphp
-                                    {{ $date ? \Carbon\Carbon::parse($date)->format('d M Y') : '-' }}
+                                    {{ $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '-' }}
                                 </td>
                                 <td>
                                     @php

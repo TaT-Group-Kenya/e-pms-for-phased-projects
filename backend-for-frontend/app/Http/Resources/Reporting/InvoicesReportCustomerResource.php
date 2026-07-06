@@ -8,6 +8,10 @@ class InvoicesReportCustomerResource extends JsonResource
 {
     public function toArray($request)
     {
+        // Use values calculated in the service
+        $paid = $this->paid ?? 0.0;
+        $balance = $this->balance ?? max((float) $this->total_amount - $paid, 0.0);
+
         return [
             'id' => $this->id,
             'date' => $this->created_at,
@@ -17,6 +21,8 @@ class InvoicesReportCustomerResource extends JsonResource
             'project_name' => $this->project_name ?? ($this->project ? $this->project->name : null),
             'currency' => $this->currency,
             'amount' => $this->total_amount,
+            'paid' => $paid,
+            'balance' => $balance,
             'status' => $this->status,
             'created_by_name' => $this->created_by_name ?? null,
         ];

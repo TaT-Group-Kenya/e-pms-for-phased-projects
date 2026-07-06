@@ -50,7 +50,7 @@
             <td style="width: 50%; vertical-align: top; text-align: right;">
 <h1>Customer Payment Receipt</h1>
         <div class="muted">Payment Ref: {{ $number }}</div>
-        <div class="muted">Date: {{ optional($payment->payment_date ?? $payment->created_at)->format('d M Y') }}</div>
+        <div class="muted">Date: {{ optional($payment->payment_date ?? $payment->created_at)->format('d/m/Y') }}</div>
         @if($payment->payment_status)
             <div class="text-sm mt-1">Status: <span class="font-semibold">{{ ucfirst($payment->payment_status) }}</span></div>
         @endif
@@ -155,7 +155,7 @@
         </div>
         <div class="row">
             <div class="label">Reconciliation Date</div>
-            <div class="value">{{ optional($payment->reconciliation_date)->format('d M Y') ?? '-' }}</div>
+            <div class="value">{{ optional($payment->reconciliation_date)->format('d/m/Y') ?? '-' }}</div>
         </div>
     </div>
 @endif

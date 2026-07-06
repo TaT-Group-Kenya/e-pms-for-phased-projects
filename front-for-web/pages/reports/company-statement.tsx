@@ -5,13 +5,7 @@ import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../../components/common/Toast';
 import Can from '../../components/auth/Can';
 import AuthenticatedLayout from '../../components/authenticated/AuthenticatedLayout';
-import { formatCurrency } from '../../utils/format';
-
-function formatDateTime(dateString: string): string {
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('en-US');
-}
+import { formatCurrency, formatDateTime } from '../../utils/format';
 
 export default function CompanyStatementReportPage() {
   const [filters, setFilters] = useState({

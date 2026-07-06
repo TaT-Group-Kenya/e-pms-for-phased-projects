@@ -46,7 +46,18 @@ class CompanyInvoiceResource extends BaseResource
                     ? collect($this->pdcsIssued)->where('is_deleted', false)->whereIn('status', ['issued', 'pending'])->sum('amount')
                     : 0.0
             ),
-
+            'total_paid' => (float) (
+                $this->whenLoaded('payments')
+                    ? $this->payments->sum('amount_paid')
+                    : 0.0
+            ),
+            'total_balance' => (float) max(
+                (float) $this->total_amount - (
+                    $this->whenLoaded('payments')
+                        ? $this->payments->sum('amount_paid')
+                        : 0.0
+                ), 0.0
+            ),
         ];
     }
 }

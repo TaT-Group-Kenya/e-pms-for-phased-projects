@@ -6,6 +6,7 @@ import { selectAccessToken } from "../../../store/auth/selectors";
 import { useRouter } from "next/router";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../../components/common/Toast";
+import { formatDate } from "../../../utils/format";
 
 export default function PdcReceivedDetailPage() {
   const router = useRouter();
@@ -36,17 +37,6 @@ export default function PdcReceivedDetailPage() {
       currency: currency || item?.currency || "USD",
       minimumFractionDigits: 2,
     }).format(amount);
-  };
-
-  const formatDate = (value: string | null | undefined) => {
-    if (!value) return "-";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString("en-GB", {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-    });
   };
 
   const getUserName = (user: any) => {

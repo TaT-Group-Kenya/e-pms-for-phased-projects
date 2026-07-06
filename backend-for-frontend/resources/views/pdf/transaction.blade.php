@@ -49,7 +49,7 @@
             <td style="width: 50%; vertical-align: top; text-align: right;">
     <h1>Transaction Summary</h1>
         <div class="muted">Transaction #: {{ $number }}</div>
-        <div class="muted">Date: {{ optional($transaction->transaction_date ?? $transaction->created_at)->format('d M Y') }}</div>
+        <div class="muted">Date: {{ optional($transaction->transaction_date ?? $transaction->created_at)->format('d/m/Y') }}</div>
         @if($transaction->transaction_status)
             <div class="badge badge-status mt-2">{{ ucfirst($transaction->transaction_status) }}</div>
         @endif

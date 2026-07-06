@@ -147,6 +147,8 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('office-expenses', App\Http\Controllers\Api\OfficeExpenseController::class);
 		Route::apiResource('office-expense-categories', App\Http\Controllers\Api\OfficeExpenseCategoryController::class);
 		Route::apiResource('office-expense-payments', App\Http\Controllers\Api\OfficeExpensePaymentController::class);
+		Route::get('office-expense-documents/{officeExpenseDocument}/download', [App\Http\Controllers\Api\OfficeExpenseDocumentController::class, 'download']);
+		Route::apiResource('office-expense-documents', App\Http\Controllers\Api\OfficeExpenseDocumentController::class);
 		// Reporting Endpoints
 		Route::prefix('reports')->group(function () {
 			Route::get('orders-summary', [App\Http\Controllers\ReportingController::class, 'ordersSummary']);

@@ -70,7 +70,7 @@
                     <td><strong>{{ number_format((float) ($txn['amount'] ?? 0), 2) }}</strong></td>
                     <td>{{ number_format((float) ($txn['tax_amount'] ?? 0), 2) }}</td>
                     <td><strong>{{ number_format((float) ($txn['net_amount'] ?? 0), 2) }}</strong></td>
-                    <td>{{ !empty($txn['created_at']) ? (is_string($txn['created_at']) ? date('d M Y', strtotime($txn['created_at'])) : (\Illuminate\Support\Carbon::parse($txn['created_at'])->format('d M Y'))) : '' }}</td>
+                    <td>{{ !empty($txn['created_at']) ? (is_string($txn['created_at']) ? date('d M Y', strtotime($txn['created_at'])) : (\Illuminate\Support\Carbon::parse($txn['created_at'])->format('d/m/Y'))) : '' }}</td>
                 </tr>
             @empty
                 <tr>

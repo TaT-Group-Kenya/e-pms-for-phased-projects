@@ -65,7 +65,7 @@
                 <td>{{ $invoice->status }}</td>
                 <td>{{ number_format((float) $invoice->total_amount, 2) }}</td>
                 <td>{{ $invoice->currency }}</td>
-                <td>{{ optional($invoice->created_at)->format('d M Y') }}</td>
+                <td>{{ optional($invoice->created_at)->format('d/m/Y') }}</td>
             </tr>
         @endforeach
         </tbody>

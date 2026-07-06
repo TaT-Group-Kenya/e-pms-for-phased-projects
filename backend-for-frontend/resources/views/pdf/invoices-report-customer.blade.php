@@ -56,6 +56,8 @@
                 <th>Project Name</th>
                 <th>Currency</th>
                 <th>Amount</th>
+                <th>Paid</th>
+                <th>Balance</th>
                 <th>Status</th>
                 <th>Created By</th>
             </tr>
@@ -68,7 +70,7 @@
                         $dateValue = $invoice['date'] ?? $invoice['created_at'] ?? null;
                     @endphp
                     @if($dateValue)
-                        {{ \Carbon\Carbon::parse($dateValue)->format('d M Y') }}
+                        {{ \Carbon\Carbon::parse($dateValue)->format('d/m/Y') }}
                     @else
                         -
                     @endif
@@ -78,16 +80,22 @@
                 <td>{{ $invoice['invoice_number'] ?? '-' }}</td>
                 <td>{{ $invoice['project_name'] ?? '-' }}</td>
                 <td>{{ $invoice['currency'] ?? '-' }}</td>
-                <td><strong>{{ number_format((float) ($invoice['amount'] ?? 0), 2) }}</strong></td>
+                <td>{{ number_format((float) ($invoice['amount'] ?? 0), 2) }}</td>
+                <td>{{ number_format((float) ($invoice['paid'] ?? 0), 2) }}</td>
+                <td>{{ number_format((float) ($invoice['balance'] ?? 0), 2) }}</td>
                 <td>{{ $invoice['status'] ?? '-' }}</td>
                 <td>{{ $invoice['created_by_name'] ?? '-' }}</td>
             </tr>
         @endforeach
         @if(isset($data['totals']))
             <tr>
-                <td colspan="6" style="text-align: right; font-weight: bold;">Total Amount:</td>
+                <td><strong>Totals:</strong></td>
+                <td colspan="5"></td>
                 <td><strong>{{ number_format((float) ($data['totals']['amount'] ?? 0), 2) }}</strong></td>
-                <td colspan="2"></td>
+                <td><strong>{{ number_format((float) ($data['totals']['total_paid'] ?? 0), 2) }}</strong></td>
+                <td><strong>{{ number_format((float) ($data['totals']['total_balance'] ?? 0), 2) }}</strong></td>
+                <td></td>
+                <td></td>
             </tr>
         @endif
         </tbody>

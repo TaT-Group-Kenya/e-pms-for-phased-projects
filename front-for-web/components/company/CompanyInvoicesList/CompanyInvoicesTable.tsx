@@ -11,12 +11,20 @@ import Can from "../../auth/Can";
 interface CompanyInvoiceSummary {
   id: number;
   invoice_number: string;
+  project: {
+    job_reference_id?: string | null;
+  };
   title?: string | null;
+  company?: {
+    name?: string | null;
+  };
   status: string;
   subtotal_amount: number;
   tax_amount: number;
   discount_amount: number;
   total_amount: number;
+  total_paid: number;
+  total_balance: number;
   currency: string;
   created_at?: string | null;
 }
@@ -119,6 +127,9 @@ const CompanyInvoicesTable: React.FC = () => {
           total_amount: Number(inv.total_amount ?? 0),
           currency: inv.currency || "USD",
           created_at: inv.created_at ?? null,
+          total_paid: Number(inv.total_paid ?? 0),
+          total_balance: Number(inv.total_balance ?? 0),
+          ...inv
         }));
 
         setInvoices(mapped);
@@ -503,7 +514,13 @@ const CompanyInvoicesTable: React.FC = () => {
                       Invoice #
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Job Ref ID
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       <span style={{ minWidth: 200, display: 'inline-block' }}>Title</span>
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Company
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Subtotal
@@ -517,8 +534,14 @@ const CompanyInvoicesTable: React.FC = () => {
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Total
                     </th>
+                      <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Paid
+                    </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Created
+                      Balance
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Invoice Date
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Status
@@ -543,6 +566,9 @@ const CompanyInvoicesTable: React.FC = () => {
                             {inv.invoice_number}
                           </Link>
                         </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          {inv.project.job_reference_id || ""}
+                        </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px]">
                           {inv.title ? (
                             <Link
@@ -565,6 +591,9 @@ const CompanyInvoicesTable: React.FC = () => {
                           )}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          {inv.company?.name || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <span className="font-semibold">
                             {formatCurrency(inv.subtotal_amount, inv.currency)}
                           </span>
@@ -582,6 +611,16 @@ const CompanyInvoicesTable: React.FC = () => {
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <span className="font-semibold text-primary-500">
                             {formatCurrency(inv.total_amount, inv.currency)}
+                          </span>
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          <span className="font-semibold text-primary-500">
+                            {formatCurrency(inv.total_paid, inv.currency)}
+                          </span>
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
+                          <span className="font-semibold text-primary-500">
+                            {formatCurrency(inv.total_balance, inv.currency)}
                           </span>
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">

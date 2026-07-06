@@ -54,8 +54,7 @@ class CompanyInvoice extends Model
     public function payments()
     {
         // Payments are stored in company_payments with an invoice_id foreign key
-        return $this->hasMany(CompanyPayment::class, 'invoice_id')
-            ->where('transaction_type', 'receipt');
+        return $this->hasMany(CompanyPayment::class, 'invoice_id');
     }
 
     public function pdcsIssued()

@@ -5,6 +5,7 @@ import Can from '../../../components/auth/Can'
 import { useSelector } from 'react-redux'
 import { selectAccessToken } from '../../../store/auth/selectors'
 import { useToast } from '../../../hooks/useToast'
+import { formatDate } from '../../../utils/format'
 
 export default function PdcReceivedListPage() {
   const accessToken = useSelector(selectAccessToken)
@@ -139,7 +140,7 @@ export default function PdcReceivedListPage() {
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{it.customer_name || it.customer?.name || '-'}</td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{it.cheque_number || '-'}</td>
-                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{it.cheque_date || '-'}</td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{formatDate(it.cheque_date) || '-'}</td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">{it.amount || '-'}</td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           {Number(dueInDays) > 0 ? (

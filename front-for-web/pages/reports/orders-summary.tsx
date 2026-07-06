@@ -1,19 +1,3 @@
-// Format date as 'MMM D, YYYY h:mm AM/PM' using native JS
-function formatDateTime(dateString: string): string {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '';
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = months[date.getMonth()];
-    const day = date.getDate();
-    const year = date.getFullYear();
-    let hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // 0 should be 12
-    const paddedMinutes = minutes < 10 ? '0' + minutes : minutes;
-    return `${month} ${day}, ${year} ${hours}:${paddedMinutes} ${ampm}`;
-}
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { selectAccessToken } from '../../store/auth/selectors';
@@ -21,7 +5,7 @@ import { useToast } from '../../hooks/useToast';
 import { ToastContainer } from '../../components/common/Toast';
 import Can from '../../components/auth/Can';
 import AuthenticatedLayout from '../../components/authenticated/AuthenticatedLayout';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, formatDateTime } from '../../utils/format';
 
 const statusOptions = [
     { value: '', label: 'All Statuses' },
