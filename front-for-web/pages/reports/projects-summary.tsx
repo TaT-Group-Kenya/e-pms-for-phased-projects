@@ -10,7 +10,7 @@ import { formatCurrency, formatDateTime } from '../../utils/format';
 const statusOptions = [
   { value: '', label: 'All Statuses' },
   { value: 'draft', label: 'Draft' },
-  { value: 'active', label: 'Active' },
+  { value: 'progress', label: 'In Progress' },
   { value: 'complete', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
