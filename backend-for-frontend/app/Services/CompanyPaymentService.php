@@ -35,6 +35,7 @@ class CompanyPaymentService
         }
 
         $query->where('transaction_type', 'receipt');
+        $query->where('payment_type', 'normal');
         $query->orderByDesc('id');
         
         // Calculate offset if page is provided, otherwise use explicit offset

@@ -434,8 +434,9 @@ class AccountController extends Controller
         });
 
         $transactionsQuery->get()->each(function ($row) use (&$rows, $accountId) {
-            $debitBase = $row->account_debit == $accountId ? $row->amount : 0;
-            $creditBase = $row->account_credit == $accountId ? $row->amount : 0;
+            $settlementForexRate = $row->exchange_rate ?? 1;
+            $debitBase = $row->account_debit == $accountId ? $row->amount/$settlementForexRate : 0;
+            $creditBase = $row->account_credit == $accountId ? $row->amount/$settlementForexRate : 0;
 
             $rows->push([
                 'source' => 'transaction',

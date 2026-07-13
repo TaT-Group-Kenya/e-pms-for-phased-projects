@@ -94,14 +94,14 @@ class ProjectController extends Controller
 
             $incomingPayments = \App\Models\CustPayment::whereHas('allocations', function ($query) use ($invoice) {
                 $query->where('invoice_id', $invoice->id);
-            })->with('allocations')->get();
+            })->where('payment_type', 'normal')->with('allocations')->get();
         }
 
         // Fetch outgoing payments from company invoices
         $outgoingPayments = [];
         if ($project->company_invoices && count($project->company_invoices) > 0) {
             $invoiceIds = $project->company_invoices->pluck('id')->toArray();
-            $outgoingPayments = \App\Models\CompanyPayment::with(['invoice.company'])->whereIn('invoice_id', $invoiceIds)->get();
+            $outgoingPayments = \App\Models\CompanyPayment::with(['invoice.company'])->where('payment_type', 'normal')->whereIn('invoice_id', $invoiceIds)->get();
         }
 
         // Attach payments to project

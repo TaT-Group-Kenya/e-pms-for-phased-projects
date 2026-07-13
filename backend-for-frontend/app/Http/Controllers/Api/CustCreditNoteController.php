@@ -236,6 +236,7 @@ class CustCreditNoteController extends Controller
                 'exchange_rate' => $exchangeRate,
                 'fee_or_charge' => 0.00,
                 'invoice_total_amount' => $custCreditNote->total_amount,
+                'payment_type' => 'normal',
                 'reconciled' => false,
                 'reconciliation_date' => null,
                 'created_at' => now(),

@@ -23,6 +23,7 @@ class CustPaymentResource extends BaseResource
             'invoice_total_amount' => (float) $this->invoice_total_amount,
             'exchange_rate' => (float) $this->exchange_rate,
             'fee_or_charge' => (float) $this->fee_or_charge,
+            'transaction_cost' => $this->transaction_cost !== null ? (float) $this->transaction_cost : null,
             'reconciled' => $this->reconciled,
             'reconciliation_date' => $this->formatTimestamp($this->reconciliation_date),
             'updated_at' => $this->formatTimestamp($this->updated_at),

@@ -23,6 +23,7 @@ class OfficeExpensePaymentResource extends JsonResource
             'payment_status' => $this->payment_status,
             'currency' => $this->currency,
             'exchange_rate' => $this->exchange_rate,
+            'transaction_cost' => $this->transaction_cost !== null ? (float) $this->transaction_cost : null,
             'bank_name' => $this->bank_name,
             'check_number' => $this->check_number,
             'transaction_reference' => $this->transaction_reference,

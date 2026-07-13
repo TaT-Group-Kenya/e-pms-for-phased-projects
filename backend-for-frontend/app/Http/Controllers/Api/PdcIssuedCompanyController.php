@@ -258,6 +258,7 @@ class PdcIssuedCompanyController extends Controller
                 'check_number' => $pdcModel->cheque_number,
                 'transaction_reference' => $transactionRef,
                 'receipt_number' => $receiptRef,
+                'payment_type' => 'normal',
                 'reconciled' => false,
                 'reconciliation_date' => null,
                 'created_at' => now(),

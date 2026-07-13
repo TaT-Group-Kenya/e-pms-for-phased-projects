@@ -63,7 +63,7 @@ class CompanyPaymentController extends Controller
 
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
-        //$updated = $this->service->update($companyPayment->id, $validated);
+        $updated = $this->service->update($companyPayment->id, $validated);
         return new CompanyPaymentResource($updated);
     }
 

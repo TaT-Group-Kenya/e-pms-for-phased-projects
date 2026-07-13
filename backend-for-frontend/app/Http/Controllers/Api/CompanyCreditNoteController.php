@@ -220,6 +220,7 @@ class CompanyCreditNoteController extends Controller
                 'transaction_reference' => $validated['receipt_number'],
                 'receipt_number' => $validated['receipt_number'],
                 'exchange_rate' => $exchangeRate,
+                'payment_type' => 'normal',
                 'reconciled' => false,
                 'reconciliation_date' => null,
                 'created_at' => now(),

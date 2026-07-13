@@ -24,6 +24,7 @@ class OfficeExpensePayment extends Model
         'payment_status',
         'currency',
         'exchange_rate',
+        'transaction_cost',
         'bank_name',
         'check_number',
         'transaction_reference',

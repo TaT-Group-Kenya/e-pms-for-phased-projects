@@ -519,7 +519,7 @@ class ReportingService
         }
 
         // Receivables (CustPayment)
-        $receivablesQuery = \App\Models\CustPayment::with(['allocations.invoice.project', 'allocations.invoice.customer'])->where('transaction_type', 'receipt');
+        $receivablesQuery = \App\Models\CustPayment::with(['allocations.invoice.project', 'allocations.invoice.customer'])->where('transaction_type', 'receipt')->where('payment_type', 'normal');
         if ($currency) {
             $receivablesQuery->where('currency', $currency);
         }
@@ -561,7 +561,7 @@ class ReportingService
         }
 
         // Payables (CompanyPayment)
-        $payablesQuery = \App\Models\CompanyPayment::with(['invoice', 'invoice.company', 'invoice.project'])->where('direction', 'outgoing');
+        $payablesQuery = \App\Models\CompanyPayment::with(['invoice', 'invoice.company', 'invoice.project'])->where('direction', 'outgoing')->where('payment_type', 'normal');
         if ($projectId) {
             $payablesQuery->whereHas('invoice', function ($q) use ($projectId) {
                 $q->where('project_id', $projectId);
@@ -658,7 +658,8 @@ class ReportingService
         }
 
         $query = \App\Models\CustPayment::with(['invoices.customer', 'createdByUser'])
-            ->where('transaction_type', 'receipt');
+            ->where('transaction_type', 'receipt')
+            ->where('payment_type', 'normal');
 
         if ($currency) {
             $query->where('currency', $currency);
@@ -742,7 +743,8 @@ class ReportingService
         }
 
         $query = \App\Models\CompanyPayment::with(['invoice.company', 'invoice.project', 'createdByUser'])
-            ->where('transaction_type', 'receipt');
+            ->where('transaction_type', 'receipt')
+            ->where('payment_type', 'normal');
 
         if ($currency) {
             $query->where('currency', $currency);
@@ -834,9 +836,9 @@ class ReportingService
 
         // Select model and eager load relations
         if ($type === 'company') {
-            $query = \App\Models\CompanyPayment::with('invoice.company')->where('transaction_type', 'receipt');
+            $query = \App\Models\CompanyPayment::with('invoice.company')->where('transaction_type', 'receipt')->where('payment_type', 'normal');
         } else {
-            $query = \App\Models\CustPayment::with('allocations.invoice.customer')->where('transaction_type', 'receipt');
+            $query = \App\Models\CustPayment::with('allocations.invoice.customer')->where('transaction_type', 'receipt')->where('payment_type', 'normal');
         }
         if ($currency) {
             $query->where('currency', $currency);

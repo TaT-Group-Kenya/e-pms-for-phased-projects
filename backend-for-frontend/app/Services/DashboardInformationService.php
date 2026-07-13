@@ -236,6 +236,7 @@ class DashboardInformationService
             ->get(['budget_estimate', 'currency', 'created_at']);
 
         $companyPayments = CompanyPayment::where('is_deleted', 0)
+            ->where('payment_type', 'normal')
             ->whereBetween('payment_date', [$start, $end])
             ->get(['net_amount', 'currency', 'payment_date']);
 

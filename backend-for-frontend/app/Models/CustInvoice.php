@@ -76,7 +76,7 @@ class CustInvoice extends Model
             'cust_payment_allocations',
             'invoice_id',
             'payment_id'
-        );
+        )->where('payment_type', 'normal');
     }
 
     public function pdcsReceived()

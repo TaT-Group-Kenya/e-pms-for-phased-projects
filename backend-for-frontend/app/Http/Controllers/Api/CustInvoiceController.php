@@ -419,6 +419,7 @@ class CustInvoiceController extends Controller
                 'invoice_total_amount' => $invoice->total_amount,
                 'exchange_rate' => $exchangeRate,
                 'fee_or_charge' => $feeOrCharge,
+                'payment_type' => 'normal',
                 'reconciled' => false,
                 'reconciliation_date' => null,
                 'created_by' => Auth::id(),

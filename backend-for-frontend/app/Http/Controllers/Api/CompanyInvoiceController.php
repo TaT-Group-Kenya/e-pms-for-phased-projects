@@ -19,6 +19,7 @@ use App\Models\Download;
 use App\Models\SysConfig;
 use App\Services\CommonService;
 use App\Services\CompanyInvoiceService;
+use App\Services\TransactionCostManagerService;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use App\Http\Resources\CompanyInvoiceResource;
@@ -28,9 +29,14 @@ use App\Http\Requests\CompanyInvoiceUpdateRequest;
 class CompanyInvoiceController extends Controller
 {
     protected $service;
+    protected $transactionCostManager;
 
-    public function __construct(CompanyInvoiceService $service) {
+    public function __construct(
+        CompanyInvoiceService $service, 
+        TransactionCostManagerService $transactionCostManager
+    ) {
         $this->service = $service;
+        $this->transactionCostManager = $transactionCostManager;
     }
 
     public function index(Request $request)
@@ -229,6 +235,7 @@ class CompanyInvoiceController extends Controller
             'receipt_number' => ['required_unless:payment_method,check', 'string', 'max:255'],
             'forex_rate' => ['required', 'numeric', 'min:0'],
             'settlement_account_forex_rate' => ['nullable', 'numeric', 'min:0'],
+            'transaction_cost' => ['nullable', 'numeric', 'min:0'],
             'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
 
@@ -260,10 +267,12 @@ class CompanyInvoiceController extends Controller
 
             // Strictly prevent overpayments beyond the current outstanding balance,
             // allowing a small tolerance for rounding differences. Only consider
-            // non-deleted payments so that deleted ones do not affect the
+            // non-deleted payments with payment_type=normal so that deleted ones do not affect the
             // outstanding balance.
             $existingPaymentsTotal = (float) CompanyPayment::where('invoice_id', $invoice->id)
                 ->where('is_deleted', false)
+                ->where('direction', 'outgoing')
+                ->where('payment_type', 'normal')
                 ->sum('amount_paid');
             $pdcReserved = (float) \App\Models\PdcIssuedCompany::where('invoice_id', $invoice->id)
                 ->where('is_deleted', false)
@@ -411,12 +420,13 @@ class CompanyInvoiceController extends Controller
                 'currency' => $invoiceCurrencyCode,
                 'exchange_rate' => $exchangeRate,
                 'forex_rate' => $forexRate,
+                'settlement_account_forex_rate' => $settlementAccRate,
+                'transaction_cost' => $validated['transaction_cost'] ?? 0,
                 'project_currency_value' => $projectCurrencyValue,
                 'project_currency' => $projectCurrencyCode,
                 'bank_name' => $validated['bank_name'] ?? null,
                 'check_number' => $validated['check_number'] ?? null,
                 'transaction_reference' => $validated['receipt_number'],
-                'settlement_account_forex_rate' => $settlementAccRate,
                 'receipt_number' => $validated['receipt_number'],
                 'reconciled' => false,
                 'reconciliation_date' => null,
@@ -472,6 +482,28 @@ class CompanyInvoiceController extends Controller
             $account->updated_at = now();
             $account->updated_by = Auth::id();
             $account->save();
+
+            // Process transaction cost if provided
+            $transactionCost = $validated['transaction_cost'] ?? 0;
+            if ($transactionCost > 0) {
+                //1. Scafold expense & record the ledger entry for the transaction cost
+                $this->transactionCostManager->processTransactionCost([
+                    'transaction_cost' => $transactionCost,
+                    'currency' => $invoiceCurrencyCode,
+                    'funding_account_id' => $account->id,
+                    'invoice_number' => $invoice->invoice_number,
+                    'exchangeRate' => $settlementAccRate,
+                    'user_id' => Auth::id(),
+                ]);
+                //2. Create update account balances
+                $trxnCostToDebitAccount = round($transactionCost/$settlementAccRate, 2);
+                $currentBalance = (float) $account->balance;
+                $balanceAfterThis = $currentBalance - $trxnCostToDebitAccount;
+                $account->balance = round($balanceAfterThis, 4);
+                $account->updated_at = now();
+                $account->updated_by = Auth::id();
+                $account->save();
+            }
 
             // Update invoice status based on remaining balance after this payment.
             // Reuse the existing non-deleted payments total and include this payment.
@@ -587,9 +619,10 @@ class CompanyInvoiceController extends Controller
                 $ledger->softDelete($userId);
             }
 
-            // Recalculate invoice status based on remaining (non-deleted) payments
+            // Recalculate invoice status based on remaining (non-deleted) payments with payment_type=normal
             $activePayments = CompanyPayment::where('invoice_id', $invoice->id)
                 ->where('is_deleted', false)
+                ->where('payment_type', 'normal')
                 ->get();
 
             $paidTotal = (float) $activePayments->sum('amount_paid');

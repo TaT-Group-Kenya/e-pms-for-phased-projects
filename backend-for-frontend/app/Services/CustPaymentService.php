@@ -36,6 +36,7 @@ class CustPaymentService
         }
 
         $query->where('transaction_type', 'receipt');
+        $query->where('payment_type', 'normal');
         $query->orderByDesc('id');
 
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;

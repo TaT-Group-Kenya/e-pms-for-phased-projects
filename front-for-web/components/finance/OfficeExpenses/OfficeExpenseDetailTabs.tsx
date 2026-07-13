@@ -130,11 +130,11 @@ const OfficeExpenseDetailTabs = ({ expenseId }: OfficeExpenseDetailTabsProps) =>
     if (!selectedFile || !expenseId) return;
     setUploading(true);
     setUploadError(null);
-    
+
     const formData = new FormData();
     formData.append("expense_id", expenseId.toString());
     formData.append("document_file", selectedFile);
-    
+
     try {
       const resp = await fetch("/api/finance/office-expense-documents", {
         method: "POST",
@@ -152,7 +152,7 @@ const OfficeExpenseDetailTabs = ({ expenseId }: OfficeExpenseDetailTabsProps) =>
         }
         throw new Error(data.message || "Failed to upload document");
       }
-      
+
       // Refresh documents list
       setDocuments((prev) => [data.data, ...prev]);
       setShowUploadModal(false);
@@ -280,11 +280,10 @@ const OfficeExpenseDetailTabs = ({ expenseId }: OfficeExpenseDetailTabsProps) =>
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-                  activeTab === tab.key
+                className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${activeTab === tab.key
                     ? "border-primary-500 text-primary-600 dark:text-primary-500"
                     : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -295,81 +294,116 @@ const OfficeExpenseDetailTabs = ({ expenseId }: OfficeExpenseDetailTabsProps) =>
         {/* Tab Content */}
         <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
           {activeTab === "overview" && (
-            <div>
-              {expense && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Source Account</span>
-                <span className="text-black dark:text-white font-semibold">{expense.payments?.[0]?.transaction?.debitAccount?.name || '-'}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Status</span>
-                <span
-                  className={`inline-block px-3 py-1 rounded-full text-xs font-semibold text-white ${expense.status === 'paid'
-                    ? 'bg-green-600'
-                    : expense.status === 'pending'
-                      ? 'bg-red-600'
-                      : 'bg-gray-700'
-                    }`}
-                >
-                  {expense.status}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Category</span>
-                {expense.category?.name || expense.category ? (
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary-600 text-white">
-                    {expense.category?.name || '-'}
-                  </span>
-                ) : (
-                  <span className="text-gray-400">-</span>
+            <>
+              <div>
+                {expense && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Source Account</span>
+                      <span className="text-black dark:text-white font-semibold">{expense.payments?.[0]?.transaction?.debitAccount?.name || '-'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Status</span>
+                      <span
+                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold text-white ${expense.status === 'paid'
+                          ? 'bg-green-600'
+                          : expense.status === 'pending'
+                            ? 'bg-red-600'
+                            : 'bg-gray-700'
+                          }`}
+                      >
+                        {expense.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Category</span>
+                      {expense.category?.name || expense.category ? (
+                        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary-600 text-white">
+                          {expense.category?.name || '-'}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Cost Center</span>
+                      {expense.costCenter?.name || expense.costCenter ? (
+                        <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-gray-700 text-white">
+                          {expense.costCenter?.name || '-'}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Currency</span>
+                      <span className="text-black dark:text-white font-semibold">{expense.currency}</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Amount</span>
+                      <span className="text-black dark:text-white font-semibold">{expense.amount}</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Date</span>
+                      <span className="text-black dark:text-white font-semibold">{expense.date ? new Date(expense.date).toLocaleDateString() : '-'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Description</span>
+                      <span className="text-black dark:text-white text-sm truncate max-w-[220px] md:max-w-[260px]">{expense.description || 'No description provided.'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Created By</span>
+                      <span className="text-black dark:text-white font-semibold">{expense.created_by_user?.first_name || '-'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Updated By</span>
+                      <span className="text-black dark:text-white font-semibold">{expense.updated_by_user?.first_name || '-'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Created At</span>
+                      <span className="text-black dark:text-white font-semibold">{expense.created_at ? new Date(expense.created_at).toLocaleString() : '-'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">Updated At</span>
+                      <span className="text-black dark:text-white font-semibold">{expense.updated_at ? new Date(expense.updated_at).toLocaleString() : '-'}</span>
+                    </div>
+                  </div>
                 )}
               </div>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Cost Center</span>
-                {expense.costCenter?.name || expense.costCenter ? (
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-gray-700 text-white">
-                    {expense.costCenter?.name || '-'}
-                  </span>
+              <div className="mt-10">
+                {expense && Array.isArray(expense.payments) && expense.payments.length > 0 ? (
+                  <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md mb-[10px]">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 dark:bg-[#15203c]">
+                        <tr>
+                          <th className="text-xs font-semibold ltr:text-left rtl:text-left px-[15px] py-[12px]">Date</th>
+                          <th className="text-xs font-semibold text-left px-[15px] py-[12px]">Amount</th>
+                          <th className="text-xs font-semibold text-left px-[15px] py-[12px]">Currency</th>
+                          <th className="text-xs font-semibold text-left px-[15px] py-[12px]">Method</th>
+                          <th className="text-xs font-semibold text-left px-[15px] py-[12px]">Narration</th>
+                          <th className="text-xs font-semibold text-left px-[15px] py-[12px]">Reference</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {expense.payments.map((p: any) => (
+                          <tr key={p.id} className="border-b border-gray-100 dark:border-[#172036] align-middle">
+                            <td className="text-sm ltr:text-left rtl:text-left px-[15px] py-[12px]">{p.payment_date || p.paid_at}</td>
+                            <td className="text-sm text-left px-[15px] py-[12px]">{p.amount_paid || p.amount}</td>
+                            <td className="text-sm text-left px-[15px] py-[12px]">{p.currency}</td>
+                            <td className="text-sm text-left px-[15px] py-[12px]">{p.payment_method || p.method}</td>
+                            <td className="text-sm text-left px-[15px] py-[12px]">{p.transaction ? p.transaction.narration : '-'}</td>
+                            <td className="text-sm text-left px-[15px] py-[12px]">{p.transaction_number || p.reference || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
-                  <span className="text-gray-400">-</span>
+                  <p className="text-xs text-gray-500">No payment found for this expense.</p>
                 )}
               </div>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Currency</span>
-                <span className="text-black dark:text-white font-semibold">{expense.currency}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Amount</span>
-                <span className="text-black dark:text-white font-semibold">{expense.amount}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Date</span>
-                <span className="text-black dark:text-white font-semibold">{expense.date ? new Date(expense.date).toLocaleDateString() : '-'}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Description</span>
-                <span className="text-black dark:text-white text-sm truncate max-w-[220px] md:max-w-[260px]">{expense.description || 'No description provided.'}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Created By</span>
-                <span className="text-black dark:text-white font-semibold">{expense.created_by_user?.first_name || '-'}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Updated By</span>
-                <span className="text-black dark:text-white font-semibold">{expense.updated_by_user?.first_name || '-'}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Created At</span>
-                <span className="text-black dark:text-white font-semibold">{expense.created_at ? new Date(expense.created_at).toLocaleString() : '-'}</span>
-              </div>
-              <div className="flex items-center gap-2 bg-gray-50 dark:bg-[#101a33] rounded px-3 py-2">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">Updated At</span>
-                <span className="text-black dark:text-white font-semibold">{expense.updated_at ? new Date(expense.updated_at).toLocaleString() : '-'}</span>
-              </div>
-                </div>
-              )}
-            </div>
+            </>
+
           )}
 
           {activeTab === "documents" && (
@@ -403,8 +437,8 @@ const OfficeExpenseDetailTabs = ({ expenseId }: OfficeExpenseDetailTabsProps) =>
                                 {doc.document_path.includes("pdf")
                                   ? "description"
                                   : doc.document_path.includes("doc") || doc.document_path.includes("docx")
-                                  ? "description"
-                                  : "image"}
+                                    ? "description"
+                                    : "image"}
                               </i>
                               <span className="text-black dark:text-white">{doc.file_name}</span>
                             </div>

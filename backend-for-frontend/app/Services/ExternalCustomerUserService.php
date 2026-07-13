@@ -90,6 +90,7 @@ class ExternalCustomerUserService
                 $q->where('customer_id', $customerId)->where('is_deleted', false);
             })
             ->where('is_deleted', false)
+            ->where('payment_type', 'normal')
             ->count();
 
         $totalInvoiced = CustInvoice::where('customer_id', $customerId)
@@ -128,6 +129,7 @@ class ExternalCustomerUserService
                 $q->where('customer_id', $customerId)->where('is_deleted', false);
             })
             ->where('is_deleted', false)
+            ->where('payment_type', 'normal')
             ->orderByDesc('created_at')
             ->get();
     }

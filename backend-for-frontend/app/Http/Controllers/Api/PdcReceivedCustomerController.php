@@ -271,6 +271,7 @@ class PdcReceivedCustomerController extends Controller
                 'invoice_total_amount' => $invoice ? $invoice->total_amount : null,
                 'exchange_rate' => $exchangeRate,
                 'fee_or_charge' => 0,
+                'payment_type' => 'normal',
                 'reconciled' => false,
                 'reconciliation_date' => null,
                 'created_by' => Auth::id(),

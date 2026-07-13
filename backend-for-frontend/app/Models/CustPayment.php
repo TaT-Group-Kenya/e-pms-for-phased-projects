@@ -31,6 +31,8 @@ class CustPayment extends Model
         'invoice_total_amount',
         'exchange_rate',
         'fee_or_charge',
+        'transaction_cost',
+        'payment_type',
         'reconciled',
         'reconciliation_date',
         'updated_at',

@@ -179,6 +179,7 @@ export default function CompanyInvoiceDetailPage() {
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'complete'>('complete')
   const [paymentForexRate, setPaymentForexRate] = useState('')
   const [settlementAccountForexRate, setSettlementAccountForexRate] = useState('')
+  const [transactionCost, setTransactionCost] = useState('')
   const [bankName, setBankName] = useState('')
   const [checkNumber, setCheckNumber] = useState('')
   const [chequeDate, setChequeDate] = useState('')
@@ -662,10 +663,10 @@ export default function CompanyInvoiceDetailPage() {
 
       await fetchInvoice()
       setIsAddingItem(false)
-  setItemTaxId('')
-  setItemTaxItemName('')
-  setItemTaxType('percent')
-  setItemTaxValue('')
+      setItemTaxId('')
+      setItemTaxItemName('')
+      setItemTaxType('percent')
+      setItemTaxValue('')
       setItemProjectPhaseId(null)
       addToast('Invoice item added successfully.', 'success')
     } catch (e: any) {
@@ -682,10 +683,10 @@ export default function CompanyInvoiceDetailPage() {
     setEditItemAmount(String(item.item_amount))
     setEditItemQuantity(item.quantity != null ? String(item.quantity) : '1')
     setEditItemTaxable(item.is_taxable ?? true)
-     setEditItemTaxId(item.tax_id != null ? String(item.tax_id) : '')
-     setEditItemTaxItemName(item.tax_item_name || '')
-     setEditItemTaxType((item.item_type as 'fixed' | 'percent' | undefined) ?? 'percent')
-     setEditItemTaxValue(item.item_value != null ? String(item.item_value) : '')
+    setEditItemTaxId(item.tax_id != null ? String(item.tax_id) : '')
+    setEditItemTaxItemName(item.tax_item_name || '')
+    setEditItemTaxType((item.item_type as 'fixed' | 'percent' | undefined) ?? 'percent')
+    setEditItemTaxValue(item.item_value != null ? String(item.item_value) : '')
     setEditItemProjectPhaseId(item.project_phase_id ?? item.projectPhase?.id ?? null)
     setIsEditingItem(true)
   }
@@ -761,10 +762,10 @@ export default function CompanyInvoiceDetailPage() {
       await fetchInvoice()
       setIsEditingItem(false)
       setEditingItemId(null)
-  setEditItemTaxId('')
-  setEditItemTaxItemName('')
-  setEditItemTaxType('percent')
-  setEditItemTaxValue('')
+      setEditItemTaxId('')
+      setEditItemTaxItemName('')
+      setEditItemTaxType('percent')
+      setEditItemTaxValue('')
       setEditItemProjectPhaseId(null)
       addToast('Invoice item updated successfully.', 'success')
     } catch (e: any) {
@@ -839,7 +840,7 @@ export default function CompanyInvoiceDetailPage() {
       }
 
       // validate file type
-      const allowed = ['pdf','doc','docx','xls','xlsx','png','jpg','jpeg','gif']
+      const allowed = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'gif']
       const name = documentFile.name || ''
       const ext = name.split('.').pop()?.toLowerCase() || ''
       if (!allowed.includes(ext)) {
@@ -895,7 +896,7 @@ export default function CompanyInvoiceDetailPage() {
 
       if (documentFile) {
         // validate file type
-        const allowed = ['pdf','doc','docx','xls','xlsx','png','jpg','jpeg','gif']
+        const allowed = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'gif']
         const name = documentFile.name || ''
         const ext = name.split('.').pop()?.toLowerCase() || ''
         if (!allowed.includes(ext)) {
@@ -1023,7 +1024,7 @@ export default function CompanyInvoiceDetailPage() {
     }
   }
 
-  
+
 
   const handleOpenAddPayment = () => {
     if (!invoice) return
@@ -1037,6 +1038,7 @@ export default function CompanyInvoiceDetailPage() {
     setPaymentStatus('complete')
     setPaymentForexRate('')
     setSettlementAccountForexRate('')
+    setTransactionCost('')
     setBankName('')
     setCheckNumber('')
     setReceiptNumber('')
@@ -1104,7 +1106,7 @@ export default function CompanyInvoiceDetailPage() {
     const selectedAccount = accounts.find(acc => acc.id === Number(selectedAccountId))
     const selectedAccountCurrency = selectedAccount?.currency
     const invoiceCurrency = invoice?.currency
-    
+
     // Check if settlement account forex rate is required (when account currency differs from invoice currency)
     let settlementAccountForexRateToSend = 1
     if (selectedAccountCurrency && invoiceCurrency && selectedAccountCurrency !== invoiceCurrency) {
@@ -1137,6 +1139,7 @@ export default function CompanyInvoiceDetailPage() {
           receipt_number: computedReceipt,
           forex_rate: paymentForexRate ? Number(paymentForexRate) : 1,
           settlement_account_forex_rate: settlementAccountForexRateToSend,
+          transaction_cost: transactionCost ? Number(transactionCost) : 0,
           account_id: Number(selectedAccountId),
         }),
       })
@@ -1457,11 +1460,10 @@ export default function CompanyInvoiceDetailPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab(0)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 0
-                      ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                  }`}
+                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 0
+                    ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                    }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">dashboard</i>
                   Overview
@@ -1472,11 +1474,10 @@ export default function CompanyInvoiceDetailPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab(1)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 1
-                      ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                  }`}
+                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 1
+                    ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                    }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">list_alt</i>
                   Invoice Items
@@ -1486,11 +1487,10 @@ export default function CompanyInvoiceDetailPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab(2)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 2
-                      ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                  }`}
+                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 2
+                    ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                    }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">receipt_long</i>
                   Credit Notes
@@ -1501,11 +1501,10 @@ export default function CompanyInvoiceDetailPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab(3)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 3
-                      ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                  }`}
+                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 3
+                    ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                    }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">payments</i>
                   Payments
@@ -1515,11 +1514,10 @@ export default function CompanyInvoiceDetailPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab(4)}
-                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
-                    activeTab === 4
-                      ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                  }`}
+                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${activeTab === 4
+                    ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                    }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">insert_drive_file</i>
                   Documents
@@ -2100,14 +2098,14 @@ export default function CompanyInvoiceDetailPage() {
                           <button
                             type="button"
                             onClick={handleOpenAddPayment}
-                            disabled={['draft','paid'].includes(invoice.status)}
+                            disabled={['draft', 'paid'].includes(invoice.status)}
                             className="w-full inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[8px] bg-warning-50 dark:bg-warning-950 text-warning-500 hover:bg-warning-100 dark:hover:bg-warning-900 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <i className="material-symbols-outlined mr-[8px] !text-[20px]">payments</i>
-                            Make payment 
+                            Make payment
                           </button>
                         </Can>
-                        {['draft','paid'].includes(invoice.status) && (
+                        {['draft', 'paid'].includes(invoice.status) && (
                           <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
                             Payments can only be added when the invoice status is <span className="font-medium">sent</span> or <span className="font-medium">partially-paid</span>.
                           </p>
@@ -2144,8 +2142,8 @@ export default function CompanyInvoiceDetailPage() {
                           setItemTaxable(false)
                           setItemProjectPhaseId(
                             invoice.project_phase_id ??
-                              primaryPhase?.id ??
-                              (companyPhases.length === 1 ? companyPhases[0].id : null)
+                            primaryPhase?.id ??
+                            (companyPhases.length === 1 ? companyPhases[0].id : null)
                           )
                           setIsAddingItem(true)
                         }}
@@ -2248,29 +2246,29 @@ export default function CompanyInvoiceDetailPage() {
                               <td className="text-sm text-right px-[15px] py-[12px]">
                                 {formatCurrency(lineTotal, '')}
                               </td>
-                            <td className="text-sm text-right px-[15px] py-[12px] space-x-2">
-                              <Can any={["ROLE_EDIT_COMPANY_INVOICE_ITEM"]}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleStartEditItem(item)}
-                                  disabled={invoice.status !== 'draft'}
-                                  className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  Edit
-                                </button>
-                              </Can>
-                              <Can any={["ROLE_DELETE_COMPANY_INVOICE_ITEM"]}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteItem(item)}
-                                  disabled={invoice.status !== 'draft'}
-                                  className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-danger-200 text-danger-600 hover:bg-danger-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  Delete
-                                </button>
-                              </Can>
-                            </td>
-                          </tr>
+                              <td className="text-sm text-right px-[15px] py-[12px] space-x-2">
+                                <Can any={["ROLE_EDIT_COMPANY_INVOICE_ITEM"]}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStartEditItem(item)}
+                                    disabled={invoice.status !== 'draft'}
+                                    className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    Edit
+                                  </button>
+                                </Can>
+                                <Can any={["ROLE_DELETE_COMPANY_INVOICE_ITEM"]}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteItem(item)}
+                                    disabled={invoice.status !== 'draft'}
+                                    className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-danger-200 text-danger-600 hover:bg-danger-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    Delete
+                                  </button>
+                                </Can>
+                              </td>
+                            </tr>
                           )
                         })}
                       </tbody>
@@ -2390,7 +2388,7 @@ export default function CompanyInvoiceDetailPage() {
                         className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
-                        Make payment 
+                        Make payment
                       </button>
                     </Can>
                     {!canAddPayment && (
@@ -2439,7 +2437,7 @@ export default function CompanyInvoiceDetailPage() {
                             </td>
                             <td className="text-sm capitalize ltr:text-left rtl:text-right px-[15px] py-[12px]">
                               <span>{formatPaymentStatus(pmt.payment_status)}</span>
-                              ( { pmt.transaction_type })
+                              ( {pmt.transaction_type})
                             </td>
                             <td className="text-sm text-right px-[15px] py-[12px]">
                               {formatCurrency(pmt.amount_paid, pmt.currency)}
@@ -2529,7 +2527,7 @@ export default function CompanyInvoiceDetailPage() {
                 {(isAddingDocument || editingDocumentId) && (
                   <div className="mt-[15px]">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-[12px] mb-[10px]">
-                      
+
                       <div>
                         <input type="file" onChange={(e) => setDocumentFile(e.target.files ? e.target.files[0] : null)} className="w-full" accept=".pdf,.doc,.docx,.xls,.xlsx,image/*" />
                         <div className="text-xs text-gray-500 mt-1">Allowed: images, pdf, doc, docx, xls, xlsx</div>
@@ -2627,12 +2625,12 @@ export default function CompanyInvoiceDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
             <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
-              Make payment 
+              Make payment
             </h3>
 
             <p className="mt-[2px] text-[11px] text-gray-500 dark:text-gray-400">
               <i>Outstanding balance on this invoice:{' '}
-              <strong>{formatCurrency(outstandingBalance, invoice?.currency || 'USD')}</strong>.</i>
+                <strong>{formatCurrency(outstandingBalance, invoice?.currency || 'USD')}</strong>.</i>
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-[15px] mb-[10px]">
@@ -2680,7 +2678,24 @@ export default function CompanyInvoiceDetailPage() {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-[15px] mb-[20px]">
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">
+                  Transaction Cost <span className="text-danger-500 dark:text-gray-400">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={transactionCost}
+                  onChange={(e) => setTransactionCost(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
+                  <i>Transaction cost in ({invoice.currency})</i>
+                </p>
+              </div>
 
               <div>
                 <label className="block text-xs font-medium mb-[5px]">Method</label>
@@ -2709,7 +2724,6 @@ export default function CompanyInvoiceDetailPage() {
                   <option value="complete">Complete</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-xs font-medium mb-[5px]">Receipt / Transaction Reference</label>
                 <input
@@ -2719,6 +2733,10 @@ export default function CompanyInvoiceDetailPage() {
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
+
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
+
 
               <div>
                 <label className="block text-xs font-medium mb-[5px]">Bank Name (optional)</label>
@@ -2787,31 +2805,31 @@ export default function CompanyInvoiceDetailPage() {
               </div>
               <div>
                 {selectedAccountId && (() => {
-              const selectedAccount = accounts.find(acc => acc.id === Number(selectedAccountId))
-              const selectedAccountCurrency = selectedAccount?.currency
-              const invoiceCurrency = invoice?.currency
-              if (selectedAccountCurrency && invoiceCurrency && selectedAccountCurrency !== invoiceCurrency) {
-                return (
-                    <>
-                      <label className="block text-xs font-medium mb-[5px]">
-                        Settlement Account Forex Rate <span className="text-danger-500 dark:text-gray-400">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.000001"
-                        value={settlementAccountForexRate}
-                        onChange={(e) => setSettlementAccountForexRate(e.target.value)}
-                        className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                      />
-                      <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
-                        <i>1 <strong>{selectedAccountCurrency}</strong> (Account currency) = __({invoiceCurrency})</i>
-                      </p>
-                    </>
-                )
-              }
-              return null
-            })()}
+                  const selectedAccount = accounts.find(acc => acc.id === Number(selectedAccountId))
+                  const selectedAccountCurrency = selectedAccount?.currency
+                  const invoiceCurrency = invoice?.currency
+                  if (selectedAccountCurrency && invoiceCurrency && selectedAccountCurrency !== invoiceCurrency) {
+                    return (
+                      <>
+                        <label className="block text-xs font-medium mb-[5px]">
+                          Settlement Account Forex Rate <span className="text-danger-500 dark:text-gray-400">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.000001"
+                          value={settlementAccountForexRate}
+                          onChange={(e) => setSettlementAccountForexRate(e.target.value)}
+                          className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        />
+                        <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
+                          <i>1 <strong>{selectedAccountCurrency}</strong> (Account currency) = __({invoiceCurrency})</i>
+                        </p>
+                      </>
+                    )
+                  }
+                  return null
+                })()}
               </div>
 
             </div>
@@ -2883,11 +2901,11 @@ export default function CompanyInvoiceDetailPage() {
                   {companyPhases
                     .filter((phase) => Number(phase.progress_percentage ?? 0) >= 100)
                     .map((phase) => (
-                    <option key={phase.id} value={phase.id}>
-                      {phase.name}
-                      {phase.code ? ` (${phase.code})` : ''}
-                    </option>
-                  ))}
+                      <option key={phase.id} value={phase.id}>
+                        {phase.name}
+                        {phase.code ? ` (${phase.code})` : ''}
+                      </option>
+                    ))}
                 </select>
                 {!companyPhases.length && company && (
                   <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
@@ -2991,8 +3009,8 @@ export default function CompanyInvoiceDetailPage() {
                         {loadingTaxes
                           ? 'Loading taxes...'
                           : taxes.length === 0
-                          ? 'No taxes configured'
-                          : 'Select tax'}
+                            ? 'No taxes configured'
+                            : 'Select tax'}
                       </option>
                       {taxes.map((tax) => (
                         <option key={tax.id} value={tax.id}>
@@ -3118,11 +3136,11 @@ export default function CompanyInvoiceDetailPage() {
                   {companyPhases
                     .filter((phase) => Number(phase.progress_percentage ?? 0) >= 100)
                     .map((phase) => (
-                    <option key={phase.id} value={phase.id}>
-                      {phase.name}
-                      {phase.code ? ` (${phase.code})` : ''}
-                    </option>
-                  ))}
+                      <option key={phase.id} value={phase.id}>
+                        {phase.name}
+                        {phase.code ? ` (${phase.code})` : ''}
+                      </option>
+                    ))}
                 </select>
               </div>
 
@@ -3221,8 +3239,8 @@ export default function CompanyInvoiceDetailPage() {
                         {loadingTaxes
                           ? 'Loading taxes...'
                           : taxes.length === 0
-                          ? 'No taxes configured'
-                          : 'Select tax'}
+                            ? 'No taxes configured'
+                            : 'Select tax'}
                       </option>
                       {taxes.map((tax) => (
                         <option key={tax.id} value={tax.id}>
