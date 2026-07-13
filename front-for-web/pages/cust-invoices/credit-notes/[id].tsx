@@ -164,6 +164,8 @@ const CustCreditNoteDetailPage: React.FC = () => {
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false)
   const [refundAmount, setRefundAmount] = useState('')
   const [refundDate, setRefundDate] = useState('')
+  const [transactionCost, setTransactionCost] = useState('')
+  const [forexRate, setForexRate] = useState('')
   const [savingRefund, setSavingRefund] = useState(false)
 
   const fetchCreditNote = async () => {
@@ -347,7 +349,7 @@ const CustCreditNoteDetailPage: React.FC = () => {
       const params = new URLSearchParams()
       params.append('page', '1')
       params.append('per_page', '50')
-      params.append('source_type', 'customer credit note')
+      params.append('source_type', 'customer_credit_note')
       params.append('source_id', String(note.id))
 
       const resp = await fetch(`/api/finance/customer-ledger/list?${params.toString()}`, {
@@ -510,6 +512,8 @@ const CustCreditNoteDetailPage: React.FC = () => {
 
     setRefundAmount(String(creditNote.total_amount || 0))
     setRefundDate(new Date().toISOString().slice(0, 10))
+    setTransactionCost('')
+    setForexRate('')
     setIsRefundModalOpen(true)
   }
 
@@ -531,6 +535,21 @@ const CustCreditNoteDetailPage: React.FC = () => {
       return
     }
 
+    const transactionCostNum = transactionCost ? Number(transactionCost) : 0
+    const forexRateNum = forexRate ? Number(forexRate) : 1
+
+    // Validate forex_rate: must be 0 or greater than 100
+    if (forexRateNum !== 0 && forexRateNum <= 100) {
+      addToast('Forex rate must be either 0 or greater than 100.', 'error')
+      return
+    }
+
+    // If transaction_cost is greater than 1, forex_rate cannot be 0
+    if (transactionCostNum > 1 && forexRateNum === 0) {
+      addToast('Forex rate cannot be zero when transaction cost is greater than 1.', 'error')
+      return
+    }
+
     setSavingRefund(true)
     try {
       const resp = await fetch(`/api/cust-credit-notes/${creditNote.id}/refund`, {
@@ -543,6 +562,8 @@ const CustCreditNoteDetailPage: React.FC = () => {
           amount: Number(refundAmount),
           date: refundDate,
           financing_account: refundAccount,
+          transaction_cost: transactionCost ? Number(transactionCost) : 0,
+          forex_rate: forexRate ? Number(forexRate) : 1,
         }),
       })
 
@@ -2106,6 +2127,40 @@ const CustCreditNoteDetailPage: React.FC = () => {
                 <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
                   Choose the bank or cash account (same currency as this credit note) that is
                   funding this refund.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">
+                  Transaction Cost ({creditNote?.currency })
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={transactionCost}
+                  onChange={(e) => setTransactionCost(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  placeholder="0.00"
+                />
+                <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                  Any transaction fees associated with this refund.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">Forex Rate ({creditNote?.currency } to KES)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  value={forexRate}
+                  onChange={(e) => setForexRate(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  placeholder="1.0000"
+                />
+                <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                  Exchange rate to convert {creditNote?.currency } to KES.
                 </p>
               </div>
             </div>

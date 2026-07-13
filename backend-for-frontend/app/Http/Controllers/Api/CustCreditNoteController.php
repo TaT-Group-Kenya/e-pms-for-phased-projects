@@ -13,6 +13,7 @@ use App\Models\CustomerTransactionsLedger;
 use App\Models\Account;
 use App\Services\CommonService;
 use App\Services\CurrencyConversionService;
+use App\Services\TransactionCostManagerService;
 use App\Http\Resources\CustCreditNoteResource;
 use App\Http\Requests\CustCreditNoteStoreRequest;
 use App\Http\Requests\CustCreditNoteUpdateRequest;
@@ -107,7 +108,11 @@ class CustCreditNoteController extends Controller
             'date' => ['required', 'date'],
             'financing_account' => ['required', 'integer', 'exists:accounts,id'],
             'narration' => ['nullable', 'string'],
+            'transaction_cost' => ['nullable', 'numeric', 'min:0'],
+            'forex_rate' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        $settlementAccRate = $validated['forex_rate'] ?? 1.0;
 
         // Ensure refund date is not older than credit note creation date
         $refundDate = \Carbon\Carbon::parse($validated['date'])->toDateString();
@@ -162,9 +167,11 @@ class CustCreditNoteController extends Controller
             ], 422);
         }
 
-        // Check if the account has enough balance to fund the refund
+        // Check if the account has enough balance to fund the refund (amount + transaction cost)
+        $transactionCost = $validated['transaction_cost'] ?? 0;
         $currentBalance = (float) $account->balance;
-        if ($currentBalance < $amount) {
+        $totalRequired = $amount + $transactionCost;
+        if ($currentBalance < $totalRequired) {
             return response()->json([
                 'message' => 'The selected financing account does not have enough balance to fund this refund transaction.',
             ], 422);
@@ -193,7 +200,9 @@ class CustCreditNoteController extends Controller
             $exchangeRate,
             $convertedAmount,
             $account,
-            $userId
+            $userId,
+            $transactionCost,
+            $settlementAccRate
         ) {
             $commonService = new CommonService();
 
@@ -223,6 +232,7 @@ class CustCreditNoteController extends Controller
                 'direction' => 'outgoing',
                 'transaction_type' => 'refund',
                 'amount_paid' => $amount,
+                'transaction_cost' => $transactionCost,
                 'tax_amount' => $taxPortion,
                 'net_amount' => $netPortion,
                 'payment_date' => $validated['date'],
@@ -287,9 +297,23 @@ class CustCreditNoteController extends Controller
             $payment->transaction_id = $ledger->id;
             $payment->save();
 
+            //If transaction cost is provided, scafold expense entries.
+            if($transactionCost > 0 ){
+                $transactionCostManager = new TransactionCostManagerService();
+                $transactionCostManager->processTransactionCost([
+                    'transaction_cost' => $transactionCost * $settlementAccRate, // Convert to KES
+                    'currency' => 'KES',
+                    'funding_account_id' => $account->id,
+                    'narration' => 'Transaction cost for a refund on credit note ' . $custCreditNote->credit_note_number,
+                    'exchangeRate' => $settlementAccRate,
+                    'user_id' => $userId,
+                ]);
+            }
+
             // Update financing account balance: debit decreases balance.
             $currentBalance = (float) $account->balance;
-            $account->balance = (string) number_format($currentBalance - $amount, 2, '.', '');
+            $totalDebit = $transactionCost + $amount;
+            $account->balance = (string) number_format($currentBalance - $totalDebit, 2, '.', '');
             $account->updated_at = now();
             $account->updated_by = $userId;
             $account->save();

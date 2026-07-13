@@ -347,7 +347,7 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
       const params = new URLSearchParams()
       params.append('page', '1')
       params.append('per_page', '50')
-      params.append('source_type', 'company credit note')
+      params.append('source_type', 'company_credit_note')
       params.append('source_id', String(note.id))
 
       const resp = await fetch(`/api/finance/company-ledger/list?${params.toString()}`, {
@@ -1556,7 +1556,7 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
                     Related Transactions
                   </h6>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Customer ledger entries linked to this credit note.
+                    Company ledger entries linked to this credit note.
                   </p>
                 </div>
                 <div className="text-right">
