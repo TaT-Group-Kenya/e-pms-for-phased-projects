@@ -637,6 +637,7 @@ function SettleExpenseModal({ expense, accounts, loading, error, onClose, refetc
   const [fundingAccount, setFundingAccount] = useState("");
   const [narration, setNarration] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [transactionCost, setTransactionCost] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const accessToken = useSelector(selectAccessToken);
@@ -663,7 +664,8 @@ function SettleExpenseModal({ expense, accounts, loading, error, onClose, refetc
           date,
           funding_account: fundingAccount,
           narration,
-        }),
+          transaction_cost: transactionCost || 0,
+        })
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.message || "Failed to settle expense");
@@ -745,6 +747,17 @@ function SettleExpenseModal({ expense, accounts, loading, error, onClose, refetc
               value={date}
               onChange={e => setDate(e.target.value)}
               required
+            />
+          </div>
+          <div>
+            <label className="mb-[8px] text-black dark:text-white font-medium block">Transaction Cost</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[8px] block w-full outline-0 focus:border-primary-500"
+              value={transactionCost}
+              onChange={e => setTransactionCost(e.target.value)}
             />
           </div>
           <div>

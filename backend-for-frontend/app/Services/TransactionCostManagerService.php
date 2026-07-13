@@ -19,7 +19,7 @@ class TransactionCostManagerService
      *     @var float $transactionCost The transaction cost amount
      *     @var string $currency The invoice/currency code
      *     @var int $fundingAccountId The account ID to fund the expense
-     *     @var string $invoiceNumber The invoice number for narration
+     *     @var string $narration The narration for the transaction
      *     @var float $exchangeRate The exchange rate for currency conversion
      *     @var int $userId The user ID creating the entries
      * }
@@ -55,7 +55,7 @@ class TransactionCostManagerService
                 $expense->id,
                 $transactionCost,
                 $data['funding_account_id'],
-                $data['invoice_number'] ?? '',
+                $data['narration'] ?? '',
                 $data['exchangeRate'] ??  1,
                 $data['user_id'] ?? null
             );
@@ -118,7 +118,7 @@ class TransactionCostManagerService
     /**
      * Settle an office expense (create payment and transaction).
      */
-    protected function settleOfficeExpense(int $expenseId, float $amount, int $fundingAccountId, string $invoiceNumber, float $exchangeRate, ?int $userId): void
+    protected function settleOfficeExpense(int $expenseId, float $amount, int $fundingAccountId, string $narration, float $exchangeRate, ?int $userId): void
     {
         $expense = OfficeExpense::findOrFail($expenseId);
         
@@ -168,7 +168,7 @@ class TransactionCostManagerService
             'category' => 'expense',
             'payment_method' => 'internal_transfer',
             'transaction_status' => 'cleared',
-            'narration' => "transaction charges for {$invoiceNumber}",
+            'narration' => $narration,
             'is_recurring' => false,
             'fiscal_year' => now()->year,
             'accounting_period' => now()->format('Y-m'),

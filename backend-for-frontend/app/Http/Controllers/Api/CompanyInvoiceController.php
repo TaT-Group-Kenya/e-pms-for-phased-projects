@@ -491,7 +491,7 @@ class CompanyInvoiceController extends Controller
                     'transaction_cost' => $transactionCost,
                     'currency' => $invoiceCurrencyCode,
                     'funding_account_id' => $account->id,
-                    'invoice_number' => $invoice->invoice_number,
+                    'narration' => 'Transaction cost for company invoice ' . $invoice->invoice_number,
                     'exchangeRate' => $settlementAccRate,
                     'user_id' => Auth::id(),
                 ]);

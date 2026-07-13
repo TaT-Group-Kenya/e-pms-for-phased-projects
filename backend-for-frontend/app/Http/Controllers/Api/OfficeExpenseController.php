@@ -6,6 +6,7 @@
     use App\Services\OfficeExpenseService;
     use App\Services\OfficeExpensePaymentService;
     use App\Services\TransactionService;
+    use App\Services\TransactionCostManagerService;
     use App\Http\Resources\OfficeExpenseResource;
     use App\Http\Requests\OfficeExpenseStoreRequest;
     use App\Http\Requests\OfficeExpenseUpdateRequest;
@@ -96,7 +97,7 @@
 
         /**
      * Settle an office expense (pay it in full, single installment only).
-     * Payload: amount, date, funding_account, narration
+     * Payload: amount, date, funding_account, narration, transaction_cost (optional)
      */
     public function settleExpense(Request $request, $id)
     {
@@ -113,6 +114,7 @@
             'date' => ['required', 'date'],
             'funding_account' => ['required', 'integer', 'exists:accounts,id'],
             'narration' => ['nullable', 'string'],
+            'transaction_cost' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         // Ensure settlement date is not older than expense creation date
@@ -138,14 +140,15 @@
         }
 
         $userId = $request->user()?->id;
+        $transactionCost = $validated['transaction_cost'] ?? 0;
 
-        $result = DB::transaction(function () use ($expense, $validated, $userId) {
+        $result = DB::transaction(function () use ($expense, $validated, $userId, $transactionCost, $request) {
+
             // Generate unique transaction number
             $commonService = new \App\Services\CommonService();
             do {
                 $transactionNumber = $commonService->generateUniqueCode('EXPPAY-');
             } while (\App\Models\OfficeExpensePayment::where('transaction_number', $transactionNumber)->exists());
-
 
              // Create OfficeExpensePayment
             $payment = $this->paymentService->create([
@@ -205,11 +208,25 @@
             $expense->updated_by = $userId;
             $expense->save();
 
-            // Deduct from funding account
+            // Process transaction cost if provided and greater than zero
+            if ($transactionCost > 0) {
+                $transactionCostManager = new TransactionCostManagerService();
+                $transactionCostManager->processTransactionCost([
+                    'transaction_cost' => $transactionCost,
+                    'currency' => $expense->currency,
+                    'funding_account_id' => $validated['funding_account'],
+                    'narration' => 'Transaction cost for office expense ID ' . $expense->id,
+                    'exchangeRate' => 1,
+                    'user_id' => $userId,
+                ]);
+            }
+
+            // Deduct from funding account (amount + transaction cost)
             $account = \App\Models\Account::find($validated['funding_account']);
             if ($account) {
                 $currentBalance = (float) $account->balance;
-                $account->balance = (string) number_format($currentBalance - $validated['amount'], 2, '.', '');
+                $totalDeduction = $validated['amount'] + $transactionCost;
+                $account->balance = (string) number_format($currentBalance - $totalDeduction, 2, '.', '');
                 $account->updated_at = now();
                 $account->updated_by = $userId;
                 $account->save();
