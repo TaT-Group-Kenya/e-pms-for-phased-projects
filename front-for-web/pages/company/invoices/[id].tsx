@@ -178,6 +178,7 @@ export default function CompanyInvoiceDetailPage() {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa' | 'bank_transfer' | 'check'>('cash')
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'complete'>('complete')
   const [paymentForexRate, setPaymentForexRate] = useState('')
+  const [settlementAccountForexRate, setSettlementAccountForexRate] = useState('')
   const [bankName, setBankName] = useState('')
   const [checkNumber, setCheckNumber] = useState('')
   const [chequeDate, setChequeDate] = useState('')
@@ -1034,8 +1035,8 @@ export default function CompanyInvoiceDetailPage() {
     setPaymentDate(new Date().toISOString().slice(0, 10))
     setPaymentMethod('cash')
     setPaymentStatus('complete')
-    const projectCurrency = invoice.project?.currency || 'KES'
-    setPaymentForexRate(projectCurrency === 'KES' ? '1' : '')
+    setPaymentForexRate('')
+    setSettlementAccountForexRate('')
     setBankName('')
     setCheckNumber('')
     setReceiptNumber('')
@@ -1096,19 +1097,23 @@ export default function CompanyInvoiceDetailPage() {
     }
 
     if (!selectedAccountId) {
-      addToast('Please select an funding account.', 'error')
+      addToast('Please select a funding account.', 'error')
       return
     }
 
-    const projectCurrency = invoice.project?.currency || 'KES'
-    let forexRateToSend = 1
-    if (projectCurrency !== 'KES') {
-      const rate = Number(paymentForexRate)
-      if (!paymentForexRate || Number.isNaN(rate) || rate <= 0) {
-        addToast('Enter a valid forex rate for the project currency.', 'error')
+    const selectedAccount = accounts.find(acc => acc.id === Number(selectedAccountId))
+    const selectedAccountCurrency = selectedAccount?.currency
+    const invoiceCurrency = invoice?.currency
+    
+    // Check if settlement account forex rate is required (when account currency differs from invoice currency)
+    let settlementAccountForexRateToSend = 1
+    if (selectedAccountCurrency && invoiceCurrency && selectedAccountCurrency !== invoiceCurrency) {
+      const rate = Number(settlementAccountForexRate)
+      if (!settlementAccountForexRate || Number.isNaN(rate) || rate <= 0) {
+        addToast(`Settlement account forex rate is required when selecting an account with currency ${selectedAccountCurrency} for an invoice in ${invoiceCurrency}.`, 'error')
         return
       }
-      forexRateToSend = rate
+      settlementAccountForexRateToSend = rate
     }
 
     setSavingPayment(true)
@@ -1130,7 +1135,8 @@ export default function CompanyInvoiceDetailPage() {
           cheque_date: paymentMethod === 'check' ? (chequeDate || paymentDate) : null,
           bank_branch: paymentMethod === 'check' ? (bankBranch || null) : null,
           receipt_number: computedReceipt,
-          forex_rate: forexRateToSend,
+          forex_rate: paymentForexRate ? Number(paymentForexRate) : 1,
+          settlement_account_forex_rate: settlementAccountForexRateToSend,
           account_id: Number(selectedAccountId),
         }),
       })
@@ -2619,7 +2625,7 @@ export default function CompanyInvoiceDetailPage() {
 
       {isAddingPayment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
+          <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
             <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
               Make payment 
             </h3>
@@ -2629,7 +2635,7 @@ export default function CompanyInvoiceDetailPage() {
               <strong>{formatCurrency(outstandingBalance, invoice?.currency || 'USD')}</strong>.</i>
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[10px]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-[15px] mb-[10px]">
               <div>
                 <label className="block text-xs font-medium mb-[5px]">
                   Amount Paid <span className="text-danger-500 dark:text-gray-400">*</span>
@@ -2656,27 +2662,25 @@ export default function CompanyInvoiceDetailPage() {
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">
+                  Project Currency Forex Rate <span className="text-danger-500 dark:text-gray-400">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.000001"
+                  value={paymentForexRate}
+                  onChange={(e) => setPaymentForexRate(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
+                  <i>1 <strong>{invoice.project?.currency}</strong> (project currency) = __({invoice.currency})</i>
+                </p>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
-
-              {invoice?.project?.currency && invoice.project.currency !== 'KES' && (
-                <div>
-                  <label className="block text-xs font-medium mb-[5px]">
-                    Forex Rate <span className="text-danger-500 dark:text-gray-400">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.000001"
-                    value={paymentForexRate}
-                    onChange={(e) => setPaymentForexRate(e.target.value)}
-                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  />
-                  <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
-                    <i>Forex rate from KES to <strong>{invoice.project.currency}</strong>.</i>
-                  </p>
-                </div>
-              )}
 
               <div>
                 <label className="block text-xs font-medium mb-[5px]">Method</label>
@@ -2763,7 +2767,7 @@ export default function CompanyInvoiceDetailPage() {
               )}
 
               <div>
-                <label className="block text-xs font-medium mb-[5px]">Funding Account</label>
+                <label className="block text-xs font-medium mb-[5px]">Funding Account <span className="text-danger-500 dark:text-gray-400">*</span></label>
                 <select
                   value={selectedAccountId}
                   onChange={(e) => setSelectedAccountId(e.target.value)}
@@ -2771,14 +2775,47 @@ export default function CompanyInvoiceDetailPage() {
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">{accountsLoading ? 'Loading accounts…' : 'Select account'}</option>
-                  {accounts.filter(acc => acc.currency === invoice.currency).map((account) => (
+                  {accounts.map((account) => (
                     <option key={account.id} value={account.id}>
-                      {account.code} - {account.name}
+                      {account.code} - {account.name} {account.currency !== invoice.currency && `(${account.currency})`}
                     </option>
                   ))}
                 </select>
+                <p className="mt-[5px] text-[11px] text-gray-500 dark:text-gray-400">
+                  Select an account to fund this invoice. If the account currency differs from the invoice currency, settlement account forex rate will be required.
+                </p>
               </div>
+              <div>
+                {selectedAccountId && (() => {
+              const selectedAccount = accounts.find(acc => acc.id === Number(selectedAccountId))
+              const selectedAccountCurrency = selectedAccount?.currency
+              const invoiceCurrency = invoice?.currency
+              if (selectedAccountCurrency && invoiceCurrency && selectedAccountCurrency !== invoiceCurrency) {
+                return (
+                    <>
+                      <label className="block text-xs font-medium mb-[5px]">
+                        Settlement Account Forex Rate <span className="text-danger-500 dark:text-gray-400">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.000001"
+                        value={settlementAccountForexRate}
+                        onChange={(e) => setSettlementAccountForexRate(e.target.value)}
+                        className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      />
+                      <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
+                        <i>1 <strong>{selectedAccountCurrency}</strong> (Account currency) = __({invoiceCurrency})</i>
+                      </p>
+                    </>
+                )
+              }
+              return null
+            })()}
+              </div>
+
             </div>
+
 
             <div className="flex justify-end space-x-[10px]">
               <button

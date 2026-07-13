@@ -21,6 +21,7 @@ class CompanyPaymentResource extends BaseResource
             'currency' => $this->currency,
             'exchange_rate' => (float) $this->exchange_rate,
             'forex_rate' => $this->forex_rate !== null ? (float) $this->forex_rate : null,
+            'settlement_account_forex_rate' => $this->settlement_account_forex_rate !== null ? (float) $this->settlement_account_forex_rate : null,
             'project_currency_value' => $this->project_currency_value !== null ? (float) $this->project_currency_value : null,
             'project_currency' => $this->project_currency,
             'bank_name' => $this->bank_name,

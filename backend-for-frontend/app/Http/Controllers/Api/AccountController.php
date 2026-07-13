@@ -335,7 +335,7 @@ class AccountController extends Controller
             });
         $applyDateFilters($customerLedgerQuery);
 
-        $companyLedgerQuery = CompanyTransactionsLedger::with(['company', 'customer'])
+        $companyLedgerQuery = CompanyTransactionsLedger::with(['company', 'customer', 'payment'])
             ->where(function ($query) use ($accountId) {
                 $query
                     ->where('account_debit', $accountId)
@@ -402,8 +402,12 @@ class AccountController extends Controller
         });
 
         $companyLedgerQuery->get()->each(function ($row) use (&$rows, $accountId) {
-            $debitBase = $row->account_debit == $accountId ? $row->amount : 0;
-            $creditBase = $row->account_credit == $accountId ? $row->amount : 0;
+            /* vendor invoices can be paid from different currencies, so for account statements, the value of amount is always in KES, we therefore need to apply CompanyPayment.settlement_account_forex_rate value.
+            */
+            $companyPayment = $row->payment;
+            $settlementForexRate = $companyPayment?->settlement_account_forex_rate;
+            $debitBase = $row->account_debit == $accountId ? $row->amount/$settlementForexRate : 0;
+            $creditBase = $row->account_credit == $accountId ? $row->amount/$settlementForexRate : 0;
 
             $rows->push([
                 'source' => 'company_ledger',

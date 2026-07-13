@@ -12,7 +12,6 @@ use App\Models\CompanyPayment;
 use App\Models\PdcIssuedCompany;
 use App\Models\CompanyTransactionsLedger;
 use App\Models\CompanyBank;
-use App\Services\CurrencyConversionService;
 use App\Models\Account;
 use App\Models\CompanyProject;
 use App\Models\ProjectPhase;
@@ -229,6 +228,7 @@ class CompanyInvoiceController extends Controller
             'bank_branch' => ['nullable', 'string', 'max:255'],
             'receipt_number' => ['required_unless:payment_method,check', 'string', 'max:255'],
             'forex_rate' => ['required', 'numeric', 'min:0'],
+            'settlement_account_forex_rate' => ['nullable', 'numeric', 'min:0'],
             'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
 
@@ -248,9 +248,12 @@ class CompanyInvoiceController extends Controller
 
         $invoice = $companyInvoice;
 
+        $settlementAccRate = $validated['settlement_account_forex_rate'] ?? 1;
+
+
         $commonService = new CommonService();
 
-        $invoice = DB::transaction(function () use ($invoice, $validated, $commonService) {
+        $invoice = DB::transaction(function () use ($invoice, $validated, $commonService, $settlementAccRate) {
             $amountPaid = (float) $validated['amount_paid'];
 
             $account = Account::findOrFail($validated['account_id']);
@@ -301,7 +304,7 @@ class CompanyInvoiceController extends Controller
             $projectCurrencyCode = $invoice->project ? $invoice->project->currency : null;
 
             // Enforce that the selected account uses the same currency as the invoice
-            if ($accountCurrencyCode !== $invoiceCurrencyCode) {
+            if ($accountCurrencyCode !== $invoiceCurrencyCode && $settlementAccRate === 1) {
                 throw ValidationException::withMessages([
                     'account_id' => [
                         'Selected account currency (' . $accountCurrencyCode . ') must match the invoice currency (' . $invoiceCurrencyCode . ').',
@@ -309,11 +312,11 @@ class CompanyInvoiceController extends Controller
                 ]);
             }
 
-            // Use shared conversion helper: 1 invoice currency unit = exchange_rate * base currency units
-            $conversionService = new CurrencyConversionService();
-            $conversion = $conversionService->convertToBaseFromInvoice($amountPaid, $invoiceCurrencyCode, $accountCurrencyCode);
-            $exchangeRate = $conversion['exchange_rate']; // always 1
-            $convertedAmount = $conversion['converted_amount'];
+            $exchangeRate = 1;
+            $convertedAmount = $amountPaid;
+            
+            // Amount to debit the account is the amount paid divided by the settlement account forex rate
+            $amountToDebitAccount = round($amountPaid/$settlementAccRate, 2);
 
             // Compute forex_rate and project currency value for margin-per-project reporting
             // forex_rate represents KES to project currency when project currency is not KES.
@@ -338,7 +341,7 @@ class CompanyInvoiceController extends Controller
 
             $currentBalance = (float) $account->balance;
 
-            if (! (bool) $account->overdraft_allowed && $currentBalance < $convertedAmount) {
+            if (! (bool) $account->overdraft_allowed && $currentBalance < $amountToDebitAccount) {
                 throw ValidationException::withMessages([
                     'account_id' => ['Selected account does not have sufficient balance and overdraft is not allowed.'],
                 ]);
@@ -413,6 +416,7 @@ class CompanyInvoiceController extends Controller
                 'bank_name' => $validated['bank_name'] ?? null,
                 'check_number' => $validated['check_number'] ?? null,
                 'transaction_reference' => $validated['receipt_number'],
+                'settlement_account_forex_rate' => $settlementAccRate,
                 'receipt_number' => $validated['receipt_number'],
                 'reconciled' => false,
                 'reconciliation_date' => null,
@@ -463,7 +467,8 @@ class CompanyInvoiceController extends Controller
             $payment->save();
 
             // Update accounts account balance: debit decreases balance
-            $account->balance = (string) number_format($currentBalance - $amountPaid, 2, '.', '');
+            $balanceAfterThis = $currentBalance - $amountToDebitAccount;
+            $account->balance = round($balanceAfterThis, 4);
             $account->updated_at = now();
             $account->updated_by = Auth::id();
             $account->save();

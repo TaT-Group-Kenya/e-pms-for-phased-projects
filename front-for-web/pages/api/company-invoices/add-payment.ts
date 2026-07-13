@@ -16,6 +16,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: 'Invoice ID is required' })
     }
 
+    console.log('Adding payment for invoice ID:', id, 'with payload:', payload)
+    
     const url = `${base}/company-invoices/${id}/payments`
     const token = req.headers.authorization?.replace('Bearer ', '')
 

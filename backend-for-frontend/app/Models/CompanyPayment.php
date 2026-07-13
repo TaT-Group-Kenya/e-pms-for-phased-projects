@@ -27,6 +27,7 @@ class CompanyPayment extends Model
         'currency',
         'exchange_rate',
         'forex_rate',
+        'settlement_account_forex_rate',
         'project_currency_value',
         'project_currency',
         'bank_name',
