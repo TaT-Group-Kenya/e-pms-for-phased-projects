@@ -119,9 +119,19 @@
         .text-muted { color: #6B7280; }
         .text-xs { font-size: 8px; }
         .mt-4 { margin-top: 12px; }
+        .header-image { width: 100%; margin-bottom: 20px; }
+        .header-image img { width: 100%; height: auto; display: block; }
     </style>
 </head>
 <body>
+    @php
+        $headerImage = file_exists(public_path('header-01-landscape.jpeg')) ? public_path('header-01-landscape.jpeg') : null;
+    @endphp
+    <div class="header-image">
+        @if($headerImage && file_exists($headerImage))
+            <img src="data:image/jpeg;base64,{{ base64_encode(file_get_contents($headerImage)) }}" alt="Header Image">
+        @endif
+    </div>
     <div class="header">
         <div>
             <div class="brand-name">{{ $senderName }}</div>

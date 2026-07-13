@@ -4,6 +4,7 @@
 
     @php
         $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
+        $headerImage = file_exists(public_path('header-01-landscape.jpeg')) ? public_path('header-01-landscape.jpeg') : null;
     @endphp
 
     <meta charset="UTF-8">
@@ -36,9 +37,17 @@
         .font-semibold { font-weight: 600; }
         .logo { flex: 0 0 auto; }
         .logo img { height: 48px; width: auto; margin-top: 15px; }
+        .header-image { width: 100%; margin-bottom: 20px; }
+        .header-image img { width: 100%; height: auto; display: block; }
     </style>
 </head>
 <body>
+    <div class="header-image">
+        @if($headerImage && file_exists($headerImage))
+            <img src="data:image/jpeg;base64,{{ base64_encode(file_get_contents($headerImage)) }}" alt="Header Image">
+        @endif
+    </div>
+
     <div class="center logo" style="margin-bottom: 12px;">
         @if($logoData)
             <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">

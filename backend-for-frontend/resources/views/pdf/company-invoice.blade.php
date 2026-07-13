@@ -35,6 +35,8 @@
         .summary-total { font-size: 14px; font-weight: 700; color: #111827; }
         .notes { font-size: 11px; color: #4b5563; line-height: 1.5; }
         .footer { position: fixed; bottom: 20px; left: 40px; right: 40px; font-size: 10px; color: #9ca3af; text-align: center; }
+        .header-image { width: 100%; margin-bottom: 20px; }
+        .header-image img { width: 100%; height: auto; display: block; }
     </style>
 </head>
 <body>
@@ -58,6 +60,13 @@
             }
         }
         if ($companyLogoPath && file_exists($companyLogoPath)) {
+        $headerImage = file_exists(public_path('header-01-landscape.jpeg')) ? public_path('header-01-landscape.jpeg') : null;
+    @endphp
+    <div class="header-image">
+        @if($headerImage && file_exists($headerImage))
+            <img src="data:image/jpeg;base64,{{ base64_encode(file_get_contents($headerImage)) }}" alt="Header Image">
+        @endif
+    </div>
             $logoPath = $companyLogoPath;
         } else {
             $logoPath = $defaultLogoPath;
