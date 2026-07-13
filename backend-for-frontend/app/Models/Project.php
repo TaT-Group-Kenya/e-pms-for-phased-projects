@@ -18,6 +18,7 @@ class Project extends Model
         'description',
         'order_id',
         'customer_id',
+        'project_owner_id',
         'project_category_id',
         'project_source_origin_id',
         'project_location_id',
@@ -42,6 +43,11 @@ class Project extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function projectOwner()
+    {
+        return $this->belongsTo(ProjectOwner::class, 'project_owner_id');
     }
 
     public function category()

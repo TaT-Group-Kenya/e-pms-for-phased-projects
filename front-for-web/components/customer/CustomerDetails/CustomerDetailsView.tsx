@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import Can from "../../auth/Can";
+import DeleteConfirmationModal from "../../common/DeleteConfirmationModal/DeleteConfirmationModal";
+import ProjectOwnerForm from "../../project-owner/ProjectOwnerForm";
 
 interface Project {
   id: string;
@@ -42,6 +44,23 @@ interface Invoice {
   dueDate: string;
 }
 
+interface ProjectOwner {
+  id: number;
+  name: string;
+  email?: string;
+  phone?: string;
+  contact_person_name?: string;
+  logo?: string;
+  description?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  kra_pin?: string;
+  customer_id?: number;
+  projects_count?: number;
+}
+
 interface CustomerDetailsData {
   id: number;
   name: string;
@@ -55,14 +74,16 @@ interface CustomerDetailsData {
   description?: string;
   kra_pin?: string;
   logo?: string;
+  projectOwners?: ProjectOwner[];
 }
 
 interface TableSearchableProps {
   data: any[];
   columns: { key: string; label: string }[];
+  additionalActions?: (item: any) => React.ReactNode;
 }
 
-const TableSearchable: React.FC<TableSearchableProps> = ({ data, columns }) => {
+const TableSearchable: React.FC<TableSearchableProps> = ({ data, columns, additionalActions }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -114,6 +135,11 @@ const TableSearchable: React.FC<TableSearchableProps> = ({ data, columns }) => {
                   {col.label}
                 </th>
               ))}
+              {additionalActions && (
+                <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="text-black dark:text-white">
@@ -125,15 +151,20 @@ const TableSearchable: React.FC<TableSearchableProps> = ({ data, columns }) => {
                       key={col.key}
                       className="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]"
                     >
-                      {item[col.key]}
+                      {item[col.key] === undefined || item[col.key] === null ? "-" : item[col.key]}
                     </td>
                   ))}
+                  {additionalActions && (
+                    <td className="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036]">
+                      {additionalActions(item)}
+                    </td>
+                  )}
                 </tr>
               ))
             ) : (
               <tr>
                 <td
-                  colSpan={columns.length}
+                  colSpan={columns.length + (additionalActions ? 1 : 0)}
                   className="text-center px-[20px] py-[30px] text-gray-500 dark:text-gray-400"
                 >
                   No data found
@@ -209,6 +240,11 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
   const [updateMessage, setUpdateMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
+  const [showProjectOwnerModal, setShowProjectOwnerModal] = useState(false);
+  const [editingProjectOwner, setEditingProjectOwner] = useState<ProjectOwner | null>(null);
+  const [isSubmittingProjectOwner, setIsSubmittingProjectOwner] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [projectOwnerToDelete, setProjectOwnerToDelete] = useState<number | null>(null);
 
   // Auto-dismiss update message after 5 seconds
   useEffect(() => {
@@ -232,14 +268,18 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
         });
 
         if (!response.ok) {
-          throw new Error("Failed to load projects");
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.message || `Failed to load projects (Status: ${response.status})`;
+          throw new Error(errorMessage);
         }
 
         const data = await response.json();
         const projectsList = data.data || data;
         setProjects(Array.isArray(projectsList) ? projectsList : []);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error fetching projects:", err);
+        const errorMessage = err.message || "Error loading projects";
+        addToast(errorMessage, "error");
         setProjects([]);
       } finally {
         setLoadingProjects(false);
@@ -266,8 +306,10 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
           const countryList = data.data || data;
           setCountries(Array.isArray(countryList) ? countryList : []);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error fetching countries:", err);
+        const errorMessage = err.message || "Error loading countries";
+        addToast(errorMessage, "error");
       } finally {
         setLoadingCountries(false);
       }
@@ -290,17 +332,24 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
           },
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to load customer");
-        }
-
         const data = await response.json();
-        const customerData = data.data || data;
-        setCustomer(customerData);
-        setEditFormData(customerData);
-      } catch (err) {
+        
+        if (response.ok) {
+          const customerData = data.data || data;
+          setCustomer(customerData);
+          setEditFormData(customerData);
+        } else {
+          const errorMessage = data.message || `Failed to load customer (Status: ${response.status})`;
+          addToast(errorMessage, "error");
+          setCustomer(null);
+          setEditFormData(null);
+        }
+      } catch (err: any) {
         console.error("Error fetching customer:", err);
-        addToast("Error loading customer details", "error");
+        const errorMessage = err.message || "Error loading customer details";
+        addToast(errorMessage, "error");
+        setCustomer(null);
+        setEditFormData(null);
       } finally {
         setLoading(false);
       }
@@ -308,8 +357,104 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
 
     if (accessToken && customerId) {
       fetchCustomer();
+    } else {
+      setLoading(false);
     }
   }, [customerId, accessToken, addToast]);
+
+  // Handle Project Owner submission
+  const handleProjectOwnerSubmit = async (formData: any) => {
+    setIsSubmittingProjectOwner(true);
+    try {
+      const endpoint = editingProjectOwner 
+        ? `/api/project-owners/${editingProjectOwner.id}`
+        : '/api/project-owners/create';
+      
+      const method = editingProjectOwner ? 'PUT' : 'POST';
+      
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        addToast(data.message || "Failed to save project owner", "error");
+        return;
+      }
+
+      // Refresh customer data to get updated project owners
+      const customerResponse = await fetch(`/api/customers/${customerId}?with=projectOwners`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      
+      if (customerResponse.ok) {
+        const customerData = await customerResponse.json();
+        const customerDataResult = customerData.data || customerData;
+        setCustomer(customerDataResult);
+        setEditFormData(customerDataResult);
+      }
+
+      setShowProjectOwnerModal(false);
+      setEditingProjectOwner(null);
+      addToast(editingProjectOwner ? "Project owner updated successfully" : "Project owner added successfully", "success");
+    } catch (err) {
+      console.error("Error saving project owner:", err);
+      addToast("Error saving project owner", "error");
+    } finally {
+      setIsSubmittingProjectOwner(false);
+    }
+  };
+
+  // Handle delete project owner
+  const handleDeleteProjectOwner = async () => {
+    if (!projectOwnerToDelete) return;
+    
+    setIsSubmittingProjectOwner(true);
+    try {
+      const response = await fetch(`/api/project-owners/${projectOwnerToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        addToast(data.message || "Failed to delete project owner", "error");
+        return;
+      }
+
+      // Refresh customer data to get updated project owners
+      const customerResponse = await fetch(`/api/customers/${customerId}?with=projectOwners`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      
+      if (customerResponse.ok) {
+        const customerData = await customerResponse.json();
+        const customerDataResult = customerData.data || customerData;
+        setCustomer(customerDataResult);
+        setEditFormData(customerDataResult);
+      }
+
+      setShowDeleteModal(false);
+      setProjectOwnerToDelete(null);
+      addToast("Project owner deleted successfully", "success");
+    } catch (err) {
+      console.error("Error deleting project owner:", err);
+      addToast("Error deleting project owner", "error");
+    } finally {
+      setIsSubmittingProjectOwner(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -546,6 +691,21 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
               >
                 <i className="material-symbols-outlined !text-[20px]">receipt</i>
                 Invoices
+              </button>
+            </li>
+
+            <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
+              <button
+                type="button"
+                onClick={() => handleTabClick(5)}
+                className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium ${
+                  activeTab === 5
+                    ? "text-primary-500 border-b-[3px] border-primary-500 pb-[9px]"
+                    : "text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+                }`}
+              >
+                <i className="material-symbols-outlined !text-[20px]">person</i>
+                Project Owners
               </button>
             </li>
           </ul>
@@ -973,7 +1133,107 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
             </p>
           </div>
         )}
+
+        {activeTab === 5 && (
+          <div>
+            <div className="flex items-center justify-between mb-[20px]">
+              <h6 className="font-semibold text-black dark:text-white">
+                Project Owners
+              </h6>
+              <Can any={["ROLE_ADD_CUSTOMER", "ROLE_EDIT_CUSTOMER"]}>
+                <button
+                  onClick={() => {
+                    setEditingProjectOwner(null);
+                    setShowProjectOwnerModal(true);
+                  }}
+                  className="inline-flex items-center gap-[8px] px-[20px] py-[10px] rounded-md bg-primary-500 text-white hover:bg-primary-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmittingProjectOwner}
+                >
+                  <i className="material-symbols-outlined !text-[18px]">add</i>
+                  Add Project Owner
+                </button>
+              </Can>
+            </div>
+            
+            {customer.projectOwners && customer.projectOwners.length > 0 ? (
+              <TableSearchable
+                data={customer.projectOwners}
+                columns={[
+                  { key: "name", label: "Name" },
+                  { key: "email", label: "Email" },
+                  { key: "phone", label: "Phone" },
+                  { key: "projects_count", label: "Projects" },
+                ]}
+                additionalActions={(item: ProjectOwner) => (
+                  <div className="flex gap-[8px]">
+                    <Can any={["ROLE_EDIT_CUSTOMER"]}>
+                      <button
+                        onClick={() => {
+                          setEditingProjectOwner(item);
+                          setShowProjectOwnerModal(true);
+                        }}
+                        className="inline-flex items-center justify-center w-[36px] h-[36px] rounded-md border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Edit project owner"
+                        disabled={isSubmittingProjectOwner}
+                      >
+                        <i className="material-symbols-outlined !text-[18px]">edit</i>
+                      </button>
+                    </Can>
+                    <Can any={["ROLE_DELETE_CUSTOMER"]}>
+                      <button
+                        onClick={() => {
+                          setProjectOwnerToDelete(item.id);
+                          setShowDeleteModal(true);
+                        }}
+                        className="inline-flex items-center justify-center w-[36px] h-[36px] rounded-md border border-danger-500 text-danger-500 hover:bg-danger-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Delete project owner"
+                        disabled={isSubmittingProjectOwner}
+                      >
+                        <i className="material-symbols-outlined !text-[18px] text-danger-500">delete</i>
+                      </button>
+                    </Can>
+                  </div>
+                )}
+              />
+            ) : (
+              <div className="text-center py-[40px]">
+                <p className="text-gray-600 dark:text-gray-400">No project owners found for this customer</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Project Owner Modal */}
+      {showProjectOwnerModal && (
+        <ProjectOwnerForm
+          initialData={editingProjectOwner || undefined}
+          customerId={customerId}
+          onSubmit={handleProjectOwnerSubmit}
+          onCancel={() => {
+            setShowProjectOwnerModal(false);
+            setEditingProjectOwner(null);
+          }}
+          isSubmitting={isSubmittingProjectOwner}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <DeleteConfirmationModal
+          isOpen={showDeleteModal}
+          title="Delete Project Owner"
+          message="Are you sure you want to delete this project owner? This action cannot be undone."
+          itemName={editingProjectOwner ? editingProjectOwner.name : undefined}
+          onConfirm={handleDeleteProjectOwner}
+          onCancel={() => {
+            setShowDeleteModal(false);
+            setProjectOwnerToDelete(null);
+            setEditingProjectOwner(null);
+          }}
+          isDeleting={isSubmittingProjectOwner}
+        />
+      )}
     </div>
   );
 };

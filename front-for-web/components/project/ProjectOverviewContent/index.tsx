@@ -19,6 +19,12 @@ interface ProjectDetailsData {
   code: string;
   name: string;
   description?: string;
+  project_owner?: {
+    id: number;
+    name: string;
+    email?: string;
+    phone?: string;
+  };
   customer_id?: number;
   project_category_id?: number;
   no_of_phases?: number;
@@ -327,6 +333,14 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
 
                       <p className="leading-[1.7]">
                         {project?.description || "No description available"}
+                      </p>
+
+                      <span className="block text-black dark:text-white mb-[8px] mt-[20px] font-bold">
+                        Project Owner
+                      </span>
+
+                      <p className="leading-[1.7]">
+                        {project?.project_owner?.name || "No project owner available"}
                       </p>
 
                       {project?.tags && (

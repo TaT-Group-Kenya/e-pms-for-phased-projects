@@ -79,6 +79,7 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('cust-payment-allocations', App\Http\Controllers\Api\CustPaymentAllocationController::class);
 		Route::apiResource('cust-payments', App\Http\Controllers\Api\CustPaymentController::class);
 		Route::apiResource('customers', App\Http\Controllers\Api\CustomerController::class);
+		Route::apiResource('project-owners', App\Http\Controllers\Api\ProjectOwnerController::class);
 		// Post-dated cheques (PDC) endpoints
 		Route::post('pdc-received-customers/{pdc_received_customer}/post-to-accounts', [App\Http\Controllers\Api\PdcReceivedCustomerController::class, 'postToAccounts']);
 		Route::apiResource('pdc-received-customers', App\Http\Controllers\Api\PdcReceivedCustomerController::class);

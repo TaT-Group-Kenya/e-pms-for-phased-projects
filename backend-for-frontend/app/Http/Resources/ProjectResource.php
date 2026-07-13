@@ -60,6 +60,8 @@ class ProjectResource extends BaseResource
 
             'created_by_user' => new UserResource($this->whenLoaded('creator')),
 
+            'project_owner' => new ProjectOwnerResource($this->whenLoaded('projectOwner')),
+
         ];
     }
 }

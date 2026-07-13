@@ -125,6 +125,12 @@ interface CustInvoice {
   creditnotes?: CustCreditNoteSummary[]
   customer?: CustomerSummary
   project?: ProjectSummary
+  project_owner?: {
+    id: number
+    name: string
+    email?: string | null
+    phone?: string | null
+  }
   order?: OrderSummary
   receivingPaymentMethod?: ReceivingPaymentMethod
   created_at?: string | null
@@ -1264,6 +1270,41 @@ export default function CustInvoiceDetailPage() {
                             <span className="text-gray-600 dark:text-gray-400">Status</span>
                             <span className="text-black dark:text-white capitalize">
                               {invoice.project.status}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {invoice.project_owner && (
+                    <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+                      <h6 className="text-black dark:text-white font-semibold mb-[15px]">
+                        Project Owner
+                      </h6>
+
+                      <div className="space-y-[8px] text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Name</span>
+                          <span className="text-black dark:text-white font-medium">
+                            {invoice.project_owner.name}
+                          </span>
+                        </div>
+
+                        {invoice.project_owner.email && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Email</span>
+                            <span className="text-black dark:text-white font-medium">
+                              {invoice.project_owner.email}
+                            </span>
+                          </div>
+                        )}
+
+                        {invoice.project_owner.phone && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Phone</span>
+                            <span className="text-black dark:text-white font-medium">
+                              {invoice.project_owner.phone}
                             </span>
                           </div>
                         )}

@@ -35,6 +35,7 @@ class CustInvoiceResource extends BaseResource
 
             'order' => new OrderResource($this->whenLoaded('order')),
             'project' => new ProjectResource($this->whenLoaded('project')),
+            'project_owner' => new ProjectOwnerResource($this->whenLoaded('projectOwner')),
             'customer' => new CustomerResource($this->whenLoaded('customer')),
             'invoiceItems' => CustInvoiceItemResource::collection($this->whenLoaded('invoiceItems')),
             'payments' => CustPaymentResource::collection($this->whenLoaded('payments')),

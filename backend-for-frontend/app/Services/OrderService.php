@@ -87,6 +87,7 @@ class OrderService
             // Project will be created later when the order is approved
             'project_id'          => null,
             'customer_id'         => $overrides['customer_id'] ?? $quotation->customer_id,
+            'project_owner_id'    => $overrides['project_owner_id'] ?? $quotation->project_owner_id,
             'title'               => $overrides['title'] ?? $quotation->title,
             'description'         => $overrides['description'] ?? $quotation->description,
             'status'              => $overrides['status'] ?? 'sent',

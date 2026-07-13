@@ -1,0 +1,180 @@
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use Google\Client;
+use Google\Service\Drive;
+use Google\Service\Drive\DriveFile;
+
+class BackupToGoogleDrive extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'backup:google-drive
+        {--no-cleanup : Do not delete local backup files after upload}
+        {--log-only : Only log backup info without uploading}';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Create database backup and upload to Google Drive';
+
+    /**
+     * Execute the console command.
+     */
+    public function handle()
+    {
+        $backupName = 'backup_' . date('Y-m-d_H-i-s') . '.sql.gz';
+        $backupPath = storage_path('app/backup-temp/' . $backupName);
+        $localBackupPath = storage_path('app/backup-temp');
+
+        // Create backup directory if it doesn't exist
+        if (!file_exists($localBackupPath)) {
+            mkdir($localBackupPath, 0755, true);
+        }
+
+        // Get database configuration
+        $dbConfig = config('database.connections.mysql');
+        $dbName = $dbConfig['database'];
+        $dbUser = $dbConfig['username'];
+        $dbPassword = $dbConfig['password'];
+        $dbHost = $dbConfig['host'];
+        $dbPort = $dbConfig['port'];
+
+        $this->info("Starting database backup...");
+        $this->info("Database: {$dbName}");
+
+        // Create database backup using mysqldump
+        $dumpCommand = sprintf(
+            'mysqldump --host=%s --port=%s --user=%s --password=%s %s | gzip > %s',
+            escapeshellarg($dbHost),
+            escapeshellarg($dbPort),
+            escapeshellarg($dbUser),
+            escapeshellarg($dbPassword),
+            escapeshellarg($dbName),
+            escapeshellarg($backupPath)
+        );
+
+        $exitCode = 0;
+        exec($dumpCommand, $output, $exitCode);
+
+        if ($exitCode !== 0) {
+            $this->error("Database backup failed!");
+            $this->error("Output: " . implode("\n", $output));
+            return Command::FAILURE;
+        }
+
+        $this->info("Database backup created: {$backupName}");
+
+        // Check if only logging
+        if ($this->option('log-only')) {
+            $this->info("Log-only mode: Backup file created but not uploaded");
+            $this->info("Backup file: {$backupPath}");
+            return Command::SUCCESS;
+        }
+
+        // Upload to Google Drive
+        try {
+            $this->info("Uploading to Google Drive...");
+
+            // Get Google Drive configuration from environment
+            $serviceAccountJson = env('GOOGLE_SERVICE_ACCOUNT_JSON');
+            $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
+
+            if (!$serviceAccountJson) {
+                $this->error("Google Service Account JSON not configured in .env");
+                $this->error("Please set GOOGLE_SERVICE_ACCOUNT_JSON with the path to your service account JSON file");
+                return Command::FAILURE;
+            }
+
+            // Verify service account file exists
+            if (!file_exists($serviceAccountJson)) {
+                $this->error("Service account JSON file not found: {$serviceAccountJson}");
+                return Command::FAILURE;
+            }
+
+            // Create Google Client with Service Account
+            $client = new Client();
+            $client->setAuthConfig($serviceAccountJson);
+            $client->setScopes([Drive::DRIVE]);
+            $client->setAccessType('offline');
+
+            // Create Drive service
+            $driveService = new Drive($client);
+
+            // File metadata
+            $fileMetadata = new DriveFile([
+                'name' => $backupName,
+                'parents' => $folderId ? [$folderId] : null
+            ]);
+
+            // Read the backup file
+            $content = file_get_contents($backupPath);
+
+            // Upload file
+            $file = $driveService->files->create($fileMetadata, [
+                'data' => $content,
+                'mimeType' => 'application/gzip',
+                'uploadType' => 'multipart',
+                'fields' => 'id, name, webViewLink'
+            ]);
+
+            $this->info("File uploaded successfully!");
+            $this->info("File ID: " . $file->getId());
+            $this->info("File Name: " . $file->getName());
+
+            if (isset($file->webViewLink)) {
+                $this->info("View Link: " . $file->webViewLink);
+            }
+
+            // Clean up local backup file if not disabled
+            if (!$this->option('no-cleanup')) {
+                unlink($backupPath);
+                $this->info("Local backup file deleted.");
+            } else {
+                $this->info("Local backup file retained at: {$backupPath}");
+            }
+
+            // Log the backup
+            $this->logBackup($file->getId(), $backupName, $file->getCreatedTime());
+
+            $this->info("\nBackup completed successfully!");
+            return Command::SUCCESS;
+
+        } catch (\Exception $e) {
+            $this->error("Error: " . $e->getMessage());
+            $this->error("Trace: " . $e->getTraceAsString());
+
+            // Clean up on error
+            if (file_exists($backupPath) && !$this->option('no-cleanup')) {
+                unlink($backupPath);
+            }
+
+            return Command::FAILURE;
+        }
+    }
+
+    /**
+     * Log backup information to a file
+     */
+    private function logBackup(string $fileId, string $fileName, string $createdTime): void
+    {
+        $logPath = storage_path('app/backup-temp/backup.log');
+
+        $logEntry = sprintf(
+            "[%s] Backup: %s (ID: %s, Created: %s)\n",
+            date('Y-m-d H:i:s'),
+            $fileName,
+            $fileId,
+            $createdTime
+        );
+
+        file_put_contents($logPath, $logEntry, FILE_APPEND);
+    }
+}

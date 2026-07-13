@@ -1,0 +1,47 @@
+# Laravel Database Backup - Cron Job Examples (Email)
+# 
+# To edit your crontab: crontab -e
+# To list your crontab: crontab -l
+# To remove crontab: crontab -r
+
+# ============================================
+# BACKUP SCHEDULE EXAMPLES
+# ============================================
+
+# Daily backup at 2:00 AM
+0 2 * * * /usr/bin/php /Users/juma/Gigs/e-pms-for-phased-projects/backend-for-frontend/artisan backup:email >> /Users/juma/Gigs/e-pms-for-phased-projects/backend-for-frontend/storage/logs/backup.log 2>&1
+
+# Weekly backup on Sunday at 3:00 AM
+0 3 * * 0 /usr/bin/php /Users/juma/Gigs/e-pms-for-phased-projects/backend-for-frontend/artisan backup:email >> /Users/juma/Gigs/e-pms-for-phased-projects/backend-for-frontend/storage/logs/backup.log 2>&1
+
+# Backup every 6 hours
+0 */6 * * * /usr/bin/php /Users/juma/Gigs/e-pms-for-phased-projects/backend-for-frontend/artisan backup:email >> /Users/juma/Gigs/e-pms-for-phased-projects/backend-for-frontend/storage/logs/backup.log 2>&1
+
+# ============================================
+# ALTERNATIVE: Using the standalone script
+# ============================================
+
+# Daily backup at 2:30 AM using standalone script
+30 2 * * * /usr/bin/php /Users/juma/Gigs/e-pms-for-phased-projects/backend-for-frontend/tools/backup-to-google-drive.php >> /Users/juma/Gigs/e-pms-for-phased-projects/backend-for-frontend/storage/logs/backup.log 2>&1
+
+# ============================================
+# MONITORING
+# ============================================
+
+# To check backup logs:
+# tail -f /Users/juma/Gigs/e-pms-for-phased-projects/backend-for-frontend/storage/logs/backup.log
+
+# To check recent backups:
+# cat /Users/juma/Gigs/e-pms-for-phased-projects/backend-for-frontend/storage/app/backup-temp/backup.log
+
+# ============================================
+# TESTING
+# ============================================
+
+# Test the backup command manually:
+# cd /Users/juma/Gigs/e-pms-for-phased-projects/backend-for-frontend
+# php artisan backup:email
+
+# Test the standalone script:
+# cd /Users/juma/Gigs/e-pms-for-phased-projects/backend-for-frontend
+# php tools/backup-to-google-drive.php

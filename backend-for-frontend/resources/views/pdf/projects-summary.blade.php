@@ -56,6 +56,7 @@
                 <th>Category</th>
                 <th>Source Origin</th>
                 <th>Location</th>
+                <th>Project Owner</th>
                 <th>Currency</th>
                 <th>Amount</th>
                 <th>Created By</th>
@@ -77,6 +78,7 @@
                 <td>{{ $project['project_category'] ?? '-' }}</td>
                 <td>{{ $project['project_source_origin'] ?? '-' }}</td>
                 <td>{{ $project['project_location'] ?? '-' }}</td>
+                <td>{{ $project['project_owner'] ?? '-' }}</td>
                 <td>{{ $project['currency'] ?? '-' }}</td>
                 <td>
                     @if(isset($project['budget_estimate']))

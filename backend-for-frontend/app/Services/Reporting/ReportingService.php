@@ -79,6 +79,9 @@ class ReportingService
         if (isset($filters['project_location_id'])) {
             $projectQuery->where('project_location_id', $filters['project_location_id']);
         }
+        if (isset($filters['project_owner_id'])) {
+            $projectQuery->where('project_owner_id', $filters['project_owner_id']);
+        }
         if (isset($filters['job_reference_id'])) {
             $projectQuery->where('job_reference_id', $filters['job_reference_id']);
         }

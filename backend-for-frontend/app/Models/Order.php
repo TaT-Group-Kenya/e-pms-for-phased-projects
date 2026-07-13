@@ -16,6 +16,7 @@ class Order extends Model
         'quotation_id',
         'project_id',
         'customer_id',
+        'project_owner_id',
         'title',
         'description',
         'status',
@@ -51,6 +52,11 @@ class Order extends Model
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
+    public function projectOwner()
+    {
+        return $this->belongsTo(ProjectOwner::class, 'project_owner_id');
+    }
+
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class, 'order_id');
@@ -76,5 +82,10 @@ class Order extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

@@ -1,0 +1,146 @@
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use Google\Client;
+use Google\Service\Drive;
+
+class CleanupOldBackups extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'backup:cleanup
+        {--days= : Number of days to keep backups (default from config)}
+        {--dry-run : Show what would be deleted without deleting}';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Remove old backups from Google Drive';
+
+    /**
+     * Execute the console command.
+     */
+    public function handle()
+    {
+        $daysToKeep = $this->option('days') ?: config('backup.keep_backups', 10);
+        $dryRun = $this->option('dry-run');
+
+        $this->info("Cleaning up backups older than {$daysToKeep} days...");
+        
+        if ($dryRun) {
+            $this->info("Dry run mode - no files will be deleted");
+        }
+
+        // Get Google Drive configuration
+        $serviceAccountJson = env('GOOGLE_SERVICE_ACCOUNT_JSON');
+
+        if (!$serviceAccountJson) {
+            $this->error("Google Service Account JSON not configured in .env");
+            return Command::FAILURE;
+        }
+
+        // Verify service account file exists
+        if (!file_exists($serviceAccountJson)) {
+            $this->error("Service account JSON file not found: {$serviceAccountJson}");
+            return Command::FAILURE;
+        }
+
+        try {
+            // Create Google Client with Service Account
+            $client = new Client();
+            $client->setAuthConfig($serviceAccountJson);
+            $client->setScopes([Drive::DRIVE]);
+            $client->setAccessType('offline');
+
+            // Create Drive service
+            $driveService = new Drive($client);
+
+            // List backup files in Google Drive
+            $backupFiles = $this->getBackupFiles($driveService);
+
+            if (empty($backupFiles)) {
+                $this->info("No backup files found in Google Drive.");
+                return Command::SUCCESS;
+            }
+
+            $this->info("Found " . count($backupFiles) . " backup files in Google Drive.");
+
+            // Sort by creation date (oldest first)
+            usort($backupFiles, function($a, $b) {
+                return strcmp($a->getCreatedTime(), $b->getCreatedTime());
+            });
+
+            $deletedCount = 0;
+            $totalSize = 0;
+
+            // Keep only the most recent backups
+            $filesToKeep = array_slice($backupFiles, -$daysToKeep);
+            $filesToDelete = array_slice($backupFiles, 0, count($backupFiles) - $daysToKeep);
+
+            foreach ($filesToDelete as $file) {
+                $fileSize = $file->getSize() ?? 0;
+                $totalSize += $fileSize;
+
+                if ($dryRun) {
+                    $this->info("[DRY-RUN] Would delete: {$file->getName()} (ID: {$file->getId()})");
+                } else {
+                    $driveService->files->delete($file->getId());
+                    $this->info("Deleted: {$file->getName()} (ID: {$file->getId()})");
+                }
+                $deletedCount++;
+            }
+
+            if ($deletedCount > 0) {
+                $sizeMB = round($totalSize / (1024 * 1024), 2);
+                $this->info("Successfully cleaned up {$deletedCount} old backup(s).");
+                if (!$dryRun) {
+                    $this->info(" Freed up approximately {$sizeMB} MB");
+                }
+            } else {
+                $this->info("No old backups to delete. Keeping {$daysToKeep} most recent backups.");
+            }
+
+            return Command::SUCCESS;
+
+        } catch (\Exception $e) {
+            $this->error("Error: " . $e->getMessage());
+            return Command::FAILURE;
+        }
+    }
+
+    /**
+     * Get all backup files from Google Drive
+     */
+    private function getBackupFiles(Drive $driveService): array
+    {
+        $query = "mimeType='application/gzip' AND trashed=false";
+        $files = [];
+
+        $pageToken = null;
+        do {
+            $options = [
+                'q' => $query,
+                'pageSize' => 1000,
+                'fields' => 'files(id, name, size, createdTime), nextPageToken',
+            ];
+
+            if ($pageToken) {
+                $options['pageToken'] = $pageToken;
+            }
+
+            $response = $driveService->files->listFiles($options);
+            $files = array_merge($files, $response->getFiles());
+
+            $pageToken = $response->getNextPageToken();
+        } while ($pageToken);
+
+        return $files;
+    }
+}

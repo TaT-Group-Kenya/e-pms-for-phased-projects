@@ -61,4 +61,9 @@ class Customer extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function projectOwners()
+    {
+        return $this->hasMany(ProjectOwner::class, 'customer_id');
+    }
 }

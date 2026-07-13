@@ -15,6 +15,7 @@ class Quotation extends Model
         'quotation_number',
         'job_reference_id',
         'customer_id',
+        'project_owner_id',
         'title',
         'description',
         'status',
@@ -40,6 +41,11 @@ class Quotation extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function projectOwner()
+    {
+        return $this->belongsTo(ProjectOwner::class, 'project_owner_id');
     }
     
     public function quoteItems()

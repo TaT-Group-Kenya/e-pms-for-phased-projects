@@ -42,6 +42,10 @@ class OrderResource extends BaseResource
 
             'created_by_user' => new UserResource($this->whenLoaded('creator')),
 
+            'updated_by_user' => new UserResource($this->whenLoaded('updater')),
+            
+            'project_owner' => new ProjectOwnerResource($this->whenLoaded('projectOwner')),
+
         ];
     }
 }

@@ -74,6 +74,14 @@ interface OrderDocument {
   updated_at: string;
 }
 
+interface ProjectOwnerSummary {
+  id: number;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  contact_person_name?: string | null;
+}
+
 interface OrderDetail {
   id: number;
   order_number: string;
@@ -96,6 +104,7 @@ interface OrderDetail {
   updated_at: string;
   customer?: CustomerSummary;
   project?: ProjectSummary;
+  project_owner?: ProjectOwnerSummary;
   orderItems?: OrderItem[];
   taxitems?: OrderTaxItem[];
   documents?: OrderDocument[];
@@ -1598,6 +1607,42 @@ const OrderDetailPage: React.FC = () => {
                             <span className="text-gray-600 dark:text-gray-400">Phone</span>
                             <span className="text-black dark:text-white">
                               {order.customer.phone}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Project Owner */}
+                  {order.project_owner && (
+                    <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+                      <h6 className="text-black dark:text-white font-semibold mb-[15px]">
+                        Project Owner
+                      </h6>
+
+                      <div className="space-y-[8px] text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Name</span>
+                          <span className="text-black dark:text-white font-medium">
+                            {order.project_owner.name}
+                          </span>
+                        </div>
+
+                        {order.project_owner.email && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Email</span>
+                            <span className="text-black dark:text-white">
+                              {order.project_owner.email}
+                            </span>
+                          </div>
+                        )}
+
+                        {order.project_owner.phone && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Phone</span>
+                            <span className="text-black dark:text-white">
+                              {order.project_owner.phone}
                             </span>
                           </div>
                         )}

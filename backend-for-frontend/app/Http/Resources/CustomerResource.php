@@ -39,6 +39,8 @@ class CustomerResource extends BaseResource
             
             'invoices' => CustInvoiceResource::collection($this->whenLoaded('invoices')),
 
+            'projectOwners' => ProjectOwnerResource::collection($this->whenLoaded('projectOwners')),
+
         ];
     }
 }

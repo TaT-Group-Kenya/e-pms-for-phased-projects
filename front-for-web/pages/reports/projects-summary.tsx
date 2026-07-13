@@ -23,6 +23,7 @@ export default function ProjectsSummaryReportPage() {
     project_category_id: '',
     project_source_origin_id: '',
     project_location_id: '',
+    project_owner_id: '',
     job_reference_id: '',
     from_date: '',
     to_date: '',
@@ -36,6 +37,7 @@ export default function ProjectsSummaryReportPage() {
   const [categoryOptions, setCategoryOptions] = useState<any[]>([]);
   const [originOptions, setOriginOptions] = useState<any[]>([]);
   const [locationOptions, setLocationOptions] = useState<any[]>([]);
+  const [projectOwnerOptions, setProjectOwnerOptions] = useState<any[]>([]);
 
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
@@ -59,7 +61,10 @@ export default function ProjectsSummaryReportPage() {
       fetch('/api/projects/locations/list', { headers: { Authorization: `Bearer ${accessToken}` } })
         .then(res => res.json().then(json => ({ ok: res.ok, data: Array.isArray(json.data) ? json.data : json })))
         .catch(() => ({ ok: false, data: null, error: 'Error loading locations' })),
-    ]).then(([currencies, customers, categories, origins, locations]) => {
+      fetch('/api/project-owners/list', { headers: { Authorization: `Bearer ${accessToken}` } })
+        .then(res => res.json().then(json => ({ ok: res.ok, data: Array.isArray(json.data) ? json.data : json })))
+        .catch(() => ({ ok: false, data: null, error: 'Error loading project owners' })),
+    ]).then(([currencies, customers, categories, origins, locations, projectOwners]) => {
       if (!isMounted) return;
       if (currencies.ok && Array.isArray(currencies.data)) setCurrencyOptions(currencies.data);
       else addToast('Failed to load currencies', 'error');
@@ -71,6 +76,8 @@ export default function ProjectsSummaryReportPage() {
       else addToast('Failed to load origins', 'error');
       if (locations.ok && Array.isArray(locations.data)) setLocationOptions(locations.data);
       else addToast('Failed to load locations', 'error');
+      if (projectOwners.ok && Array.isArray(projectOwners.data)) setProjectOwnerOptions(projectOwners.data);
+      else addToast('Failed to load project owners', 'error');
     });
     return () => { isMounted = false; };
   }, [accessToken, addToast]);
@@ -164,6 +171,7 @@ export default function ProjectsSummaryReportPage() {
       'Category',
       'Source Origin',
       'Location',
+      'Project Owner',
       'Currency',
       'Amount',
       'Created By',
@@ -176,6 +184,7 @@ export default function ProjectsSummaryReportPage() {
       row.project_category ?? '',
       row.project_source_origin ?? '',
       row.project_location ?? '',
+      row.project_owner ?? '',
       row.currency ?? '',
       formatCurrency(row.budget_estimate, row.currency) ?? '',
       row.created_by_name ?? '',
@@ -295,6 +304,19 @@ export default function ProjectsSummaryReportPage() {
                   </option>
                 ))}
               </select>
+              <select
+                name="project_owner_id"
+                value={filters.project_owner_id}
+                onChange={handleFilterChange}
+                className="form-select rounded-lg h-[42px] border border-gray-300 focus:border-primary-500 focus:ring-primary-500 py-3 px-4 mt-6 md:mt-6"
+              >
+                <option value="">All Project Owners</option>
+                {projectOwnerOptions.map((o: any) => (
+                  <option key={o.id || o.value} value={o.id || o.value}>
+                    {o.name || o.label}
+                  </option>
+                ))}
+              </select>
               <input
                 type="text"
                 name="job_reference_id"
@@ -362,6 +384,7 @@ export default function ProjectsSummaryReportPage() {
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Category</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Source Origin</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Location</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Project Owner</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Currency</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Amount</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Created By</th>
@@ -369,9 +392,9 @@ export default function ProjectsSummaryReportPage() {
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={10} className="whitespace-nowrap px-4 py-2">Loading...</td></tr>
+                      <tr><td colSpan={11} className="whitespace-nowrap px-4 py-2">Loading...</td></tr>
                     ) : data.length === 0 ? (
-                      <tr><td colSpan={10} className="whitespace-nowrap px-4 py-2">No data found</td></tr>
+                      <tr><td colSpan={11} className="whitespace-nowrap px-4 py-2">No data found</td></tr>
                     ) : (
                       data.map((row, idx) => (
                         <tr key={idx} className={idx % 2 === 0 ? "bg-gray-50 border-b border-gray-200" : "bg-white border-b border-gray-200"}>
@@ -382,6 +405,7 @@ export default function ProjectsSummaryReportPage() {
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_category ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_source_origin ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_location ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_owner ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.currency ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{formatCurrency(row.budget_estimate, row.currency) ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.created_by_name ?? ''}</td>

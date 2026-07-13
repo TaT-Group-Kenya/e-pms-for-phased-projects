@@ -65,13 +65,7 @@ class QuotationController extends Controller
     {
         $this->authorize('view', $quotation);
 
-        return new QuotationResource($quotation->load([
-            'customer',
-            'quoteItems',
-            'documents',
-            'approvals.user',
-            'order',
-        ]));
+        return new QuotationResource($this->service->find($quotation->id, ['customer', 'quoteItems', 'documents', 'approvals', 'order.orderItems']));
     }
 
     public function update(QuotationUpdateRequest $request, Quotation $quotation)

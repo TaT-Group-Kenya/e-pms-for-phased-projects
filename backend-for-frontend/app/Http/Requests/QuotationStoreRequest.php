@@ -23,6 +23,7 @@ class QuotationStoreRequest extends FormRequest
                 Rule::unique('quotations', 'job_reference_id')->where(fn ($q) => $q->where('is_deleted', false)),
             ],
             'customer_id' => ['nullable', 'exists:customers,id'],
+            'project_owner_id' => ['nullable', 'exists:project_owners,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:255'],
             'status' => ['required', Rule::in(['draft','sent','approved','rejected','revised'])],

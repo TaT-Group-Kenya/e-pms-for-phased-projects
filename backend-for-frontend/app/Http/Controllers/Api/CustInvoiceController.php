@@ -110,6 +110,7 @@ class CustInvoiceController extends Controller
             'creditnotes',
             'documents',
             'pdcsReceived',
+            'projectOwner'
         ]);
 
         return new CustInvoiceResource($custInvoice);

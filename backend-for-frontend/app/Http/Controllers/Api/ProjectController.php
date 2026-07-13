@@ -83,7 +83,8 @@ class ProjectController extends Controller
             'phases.assignment.company',
             'order',
             'customer_invoice',
-            'company_invoices'
+            'company_invoices',
+            'projectOwner'
         ]);
 
         // Fetch incoming payments from customer invoices

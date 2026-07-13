@@ -10,13 +10,8 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 use App\Models\Order;
 use App\Models\Quotation;
-use App\Models\QuoteLineItem;
 use App\Models\OrderItem;
 use App\Models\Project;
-use App\Models\ProjectCategory;
-use App\Models\CustInvoice;
-use App\Models\CustInvoiceItem;
-use App\Models\CustInvoiceTaxItem;
 use App\Models\Download;
 use App\Models\SysConfig;
 use App\Services\CommonService;
@@ -174,7 +169,7 @@ class OrderController extends Controller
         $this->authorize('view', $order);
 
         return DB::transaction(function () use ($order) {
-            $order->loadMissing(['orderItems', 'documents', 'project', 'customer', 'quotation']);
+            $order->loadMissing(['orderItems', 'documents', 'project', 'customer', 'quotation', 'creator', 'updater', 'projectOwner']);
             return new OrderResource($order);
         });
     }
@@ -247,6 +242,7 @@ class OrderController extends Controller
             'code'                  => $code,
             'name'                  => $name,
             'job_reference_id'       => $order->job_reference_id,
+            'project_owner_id'      => $order->project_owner_id,
             'description'           => $order->description,
             'order_id'              => $order->id,
             'customer_id'           => $order->customer_id,

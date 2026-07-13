@@ -25,6 +25,7 @@ class QuotationUpdateRequest extends FormRequest
                     ->ignore($this->route('quotation') ?? $this->route('id'))
                     ->where(fn ($q) => $q->where('is_deleted', false)),
             ],
+            'project_owner_id' => ['sometimes', 'nullable', 'exists:project_owners,id'],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:255'],
             'status' => ['sometimes', 'required', Rule::in(['draft','sent','approved','rejected','revised'])],

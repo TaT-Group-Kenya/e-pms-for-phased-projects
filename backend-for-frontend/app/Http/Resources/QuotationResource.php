@@ -11,6 +11,7 @@ class QuotationResource extends BaseResource
             'quotation_number' => $this->quotation_number,
             'job_reference_id' => $this->job_reference_id,
             'customer_id' => $this->customer_id,
+            'project_owner_id' => $this->project_owner_id,
             'title' => $this->title,
             'description' => $this->description,
             'status' => $this->status,
@@ -41,6 +42,8 @@ class QuotationResource extends BaseResource
 
             'created_by_user' => new UserResource($this->whenLoaded('createdByUser')),
             'updated_by_user' => new UserResource($this->whenLoaded('updatedByUser')),
+
+            'project_owner' => new ProjectOwnerResource($this->whenLoaded('projectOwner')),
 
         ];
     }

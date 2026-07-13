@@ -34,6 +34,8 @@ class ProjectsSummaryResource extends JsonResource
             'project_source_origin' => optional($this->sourceOrigin)->name,
             'project_location_id' => $this->project_location_id,
             'project_location' => optional($this->location)->name,
+            'project_owner_id' => $this->project_owner_id,
+            'project_owner' => optional($this->projectOwner)->name,
             'status' => $this->status,
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,

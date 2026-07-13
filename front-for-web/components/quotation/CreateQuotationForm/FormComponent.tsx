@@ -23,6 +23,7 @@ const quotationSchema = z.object({
   // status is hidden, set in API call
   description: z.string().optional(),
   customer_id: z.string().min(1, "Customer is required"),
+  project_owner_id: z.string().nullable(),
   valid_until_date: z.string().min(1, "Valid until date is required"),
   currency: z.string().min(1, "Currency is required"),
   payment_terms: z.string().optional(),
@@ -55,6 +56,7 @@ const CreateQuotationForm: React.FC = () => {
   const [formError, setFormError] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [projectOwners, setProjectOwners] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
 
@@ -63,6 +65,7 @@ const CreateQuotationForm: React.FC = () => {
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm<QuotationFormData>({
     resolver: zodResolver(quotationSchema),
     mode: "onBlur",
@@ -76,6 +79,46 @@ const CreateQuotationForm: React.FC = () => {
   // Handle customer change and clear project selection
   const handleCustomerChange = (customerId: string) => {
     setSelectedCustomer(customerId);
+    // Reset project owner when customer changes
+    setValue("project_owner_id", null);
+  };
+
+  // Fetch project owners when customer is selected
+  useEffect(() => {
+    if (selectedCustomer) {
+      const controller = new AbortController();
+      fetchProjectOwners(selectedCustomer, controller);
+      return () => controller.abort();
+    } else {
+      setProjectOwners([]);
+    }
+  }, [selectedCustomer]);
+
+  const fetchProjectOwners = async (customerId: string, controller: AbortController) => {
+    try {
+      const response = await fetch(
+        `/api/project-owners/list?customer_id=${customerId}&per_page=1000`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
+        }
+      );
+
+      if (controller.signal.aborted) return;
+
+      const data = await response.json();
+      if (response.ok) {
+        const projectOwnerList = data.data || data;
+        setProjectOwners(Array.isArray(projectOwnerList) ? projectOwnerList : []);
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
+      console.error("Error fetching project owners:", err);
+    }
   };
 
   // Load customers, projects, and currencies
@@ -149,6 +192,7 @@ const CreateQuotationForm: React.FC = () => {
         status: "draft", // always set to draft
         description: data.description || "",
         customer_id: data.customer_id ? parseInt(data.customer_id) : null,
+        project_owner_id: data.project_owner_id ? parseInt(data.project_owner_id) : null,
         valid_until_date: data.valid_until_date,
         currency: data.currency,
         payment_terms: data.payment_terms || "",
@@ -285,6 +329,25 @@ const CreateQuotationForm: React.FC = () => {
                     ))}
                   </select>
                   {renderFieldError("customer_id")}
+                </div>
+
+                {/* Project Owner - Optional */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Project Owner
+                  </label>
+                  <select
+                    {...register("project_owner_id")}
+                    disabled={!selectedCustomer}
+                    className={`h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <option value="">{!selectedCustomer ? "Select a customer first" : "Select Project Owner"}</option>
+                    {projectOwners.map((owner) => (
+                      <option key={owner.id} value={owner.id}>
+                        {owner.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Creation Date - Required */}

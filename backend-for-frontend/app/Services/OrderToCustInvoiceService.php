@@ -40,6 +40,7 @@ class OrderToCustInvoiceService
                 'order_id'            => $order->id,
                 'project_id'          => $order->project_id,
                 'job_reference_id'    => $order->job_reference_id,
+                'project_owner_id'    => $order->project_owner_id,
                 'customer_id'         => $order->customer_id,
                 'title'               => $overrides['title'] ?? $order->title,
                 'description'         => $overrides['description'] ?? $order->description,

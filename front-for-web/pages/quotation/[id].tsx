@@ -129,6 +129,11 @@ interface Quotation {
   customer?: { name: string };
   project_id?: number;
   project?: Project;
+  project_owner_id?: number | null;
+  project_owner?: {
+    id: number;
+    name: string;
+  } | null;
   valid_until_date: string;
   subtotal_amount: number;
   tax_amount: number;
@@ -199,6 +204,8 @@ const QuotationDetail: React.FC = () => {
   const [taxes, setTaxes] = useState<TaxSummary[]>([]);
   const [loadingTaxes, setLoadingTaxes] = useState(false);
   const [taxesError, setTaxesError] = useState<string | null>(null);
+  const [projectOwners, setProjectOwners] = useState<any[]>([]);
+  const [loadingProjectOwners, setLoadingProjectOwners] = useState(false);
 
   const handleSendEmail = async () => {
     if (!quotation) return;
@@ -327,6 +334,53 @@ const QuotationDetail: React.FC = () => {
 
     return () => controller.abort();
   }, [accessToken]);
+
+  // Fetch project owners when editing and customer is selected
+  useEffect(() => {
+    if (!isEditing || !accessToken) return;
+
+    const customerId = editData.customer_id ?? quotation?.customer_id;
+    if (!customerId) {
+      setProjectOwners([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    setLoadingProjectOwners(true);
+
+    const fetchProjectOwners = async () => {
+      try {
+        const response = await fetch(
+          `/api/project-owners/list?customer_id=${customerId}&per_page=1000`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
+          }
+        );
+
+        if (controller.signal.aborted) return;
+
+        const data = await response.json();
+        if (response.ok) {
+          const projectOwnerList = data.data || data;
+          setProjectOwners(Array.isArray(projectOwnerList) ? projectOwnerList : []);
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
+        console.error("Error fetching project owners:", err);
+      } finally {
+        setLoadingProjectOwners(false);
+      }
+    };
+
+    fetchProjectOwners();
+
+    return () => controller.abort();
+  }, [isEditing, editData.customer_id, quotation?.customer_id, accessToken]);
 
   // Load taxes for quotation tax items
   useEffect(() => {
@@ -477,6 +531,10 @@ const QuotationDetail: React.FC = () => {
           typeof editData.created_at === "string" && editData.created_at
             ? editData.created_at
             : quotation.created_at,
+        project_owner_id:
+          (editData as any).project_owner_id != null
+            ? Number((editData as any).project_owner_id)
+            : (quotation as any).project_owner_id ?? null,
       };
 
       const response = await fetch(`/api/quotations/update?id=${quotationId}`, {
@@ -1425,6 +1483,15 @@ const QuotationDetail: React.FC = () => {
                         </span>
                       </div>
 
+                      {quotation.project_owner && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Project Owner</span>
+                          <span className="text-black dark:text-white font-medium">
+                            {quotation.project_owner.name}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">Currency</span>
                         <span className="text-black dark:text-white font-medium">{quotation.currency}</span>
@@ -2252,6 +2319,29 @@ const QuotationDetail: React.FC = () => {
                       {customers.map((customer) => (
                         <option key={customer.id} value={customer.id}>
                           {customer.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Project Owner
+                    </label>
+                    <select
+                      value={(editData as any).project_owner_id != null ? String((editData as any).project_owner_id) : (quotation as any).project_owner_id ? String((quotation as any).project_owner_id) : ""}
+                      onChange={(e) =>
+                        handleEditFieldChange(
+                          "project_owner_id" as any,
+                          e.target.value ? Number(e.target.value) : null
+                        )
+                      }
+                      disabled={isEditSubmitting || loadingProjectOwners}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">{loadingProjectOwners ? "Loading..." : "Select Project Owner"}</option>
+                      {projectOwners.map((owner) => (
+                        <option key={owner.id} value={owner.id}>
+                          {owner.name}
                         </option>
                       ))}
                     </select>

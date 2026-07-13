@@ -55,7 +55,8 @@ class CustomerController extends Controller
             'projects',
             'quotations',
             'orders',
-            'invoices'
+            'invoices',
+            'projectOwners'
         ]);
 
         return new CustomerResource($customer);
