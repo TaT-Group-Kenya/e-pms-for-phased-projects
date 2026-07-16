@@ -202,7 +202,8 @@ class CustCreditNoteController extends Controller
             $account,
             $userId,
             $transactionCost,
-            $settlementAccRate
+            $settlementAccRate,
+            $baseCurrencyForLocalTaxationCode
         ) {
             $commonService = new CommonService();
 
@@ -300,6 +301,7 @@ class CustCreditNoteController extends Controller
             //If transaction cost is provided, scafold expense entries.
             if($transactionCost > 0 ){
                 $transactionCostManager = new TransactionCostManagerService();
+                $shouldApplyForex = $invoiceCurrencyCode !== $baseCurrencyForLocalTaxationCode;
                 $transactionCostManager->processTransactionCost([
                     'transaction_cost' => $transactionCost * $settlementAccRate, // Convert to KES
                     'currency' => 'KES',
@@ -307,7 +309,7 @@ class CustCreditNoteController extends Controller
                     'narration' => 'Transaction cost for a refund on credit note ' . $custCreditNote->credit_note_number,
                     'exchangeRate' => $settlementAccRate,
                     'user_id' => $userId,
-                ]);
+                ], $shouldApplyForex);
             }
 
             // Update financing account balance: debit decreases balance.

@@ -13,6 +13,10 @@ interface CompanyInvoiceSummary {
   invoice_number: string;
   project: {
     job_reference_id?: string | null;
+    project_owner?: {
+      id: number;
+      name: string;
+    };
   };
   title?: string | null;
   company?: {
@@ -182,7 +186,8 @@ const CompanyInvoicesTable: React.FC = () => {
     const matchesSearch =
       inv.invoice_number.toLowerCase().includes(lowerSearch) ||
       (inv.title || "").toLowerCase().includes(lowerSearch) ||
-      inv.status.toLowerCase().includes(lowerSearch);
+      inv.status.toLowerCase().includes(lowerSearch) ||
+      (inv.project.project_owner?.name || "").toLowerCase().includes(lowerSearch);
 
     const matchesStatus =
       statusFilter === "all" ||
@@ -523,6 +528,9 @@ const CompanyInvoicesTable: React.FC = () => {
                       Company
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Project Owner
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Subtotal
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -592,6 +600,9 @@ const CompanyInvoicesTable: React.FC = () => {
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           {inv.company?.name || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
+                          {inv.project.project_owner?.name || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <span className="font-semibold">
@@ -679,7 +690,7 @@ const CompanyInvoicesTable: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={9}
+                        colSpan={14}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm || statusFilter !== "all"

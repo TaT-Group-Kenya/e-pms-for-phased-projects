@@ -23,6 +23,10 @@ interface OrderSummary {
   currency: string;
   created_at: string;
   customer?: { name: string };
+  project_owner?: {
+    id: number;
+    name: string;
+  };
   created_by_user?: {
     first_name?: string;
     middle_name?: string;
@@ -153,6 +157,7 @@ const OrdersTable: React.FC = () => {
       order.order_number.toLowerCase().includes(lowerSearch) ||
       (order.job_reference_id || "").toLowerCase().includes(lowerSearch) ||
       (order.customer?.name || "").toLowerCase().includes(lowerSearch) ||
+      (order.project_owner?.name || "").toLowerCase().includes(lowerSearch) ||
       order.title.toLowerCase().includes(lowerSearch) ||
       order.status.toLowerCase().includes(lowerSearch);
 
@@ -254,6 +259,9 @@ const OrdersTable: React.FC = () => {
                       Customer
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Project Owner
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       <span style={{ minWidth: 200, display: 'inline-block' }}>Title</span>
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -301,6 +309,9 @@ const OrdersTable: React.FC = () => {
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {order.customer?.name || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {order.project_owner?.name || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <Link
@@ -366,7 +377,7 @@ const OrdersTable: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={11}
+                        colSpan={12}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm || statusFilter !== "all"

@@ -864,8 +864,6 @@ class ReportingService
         if ($type === 'company') {
             foreach ($payments as $payment) {
                 $payment->amount = $payment->amount_paid;
-                $payment->tax_amount = $payment->tax_amount;
-                $payment->net_amount = $payment->net_amount;
                 // Load invoice for company payment
                 $invoice = isset($payment->invoice) ? $payment->invoice : null;
                 $payment->invoice_number = $invoice ? $invoice->invoice_number : null;
@@ -875,8 +873,6 @@ class ReportingService
             // For customer payments, apply forex if set, otherwise use original amount
             foreach ($payments as $payment) {
                 $payment->amount = $payment->amount_paid;
-                $payment->tax_amount = $payment->tax_amount;
-                $payment->net_amount = $payment->net_amount;
                 // Load first invoice via allocations
                 $invoice = $payment->invoices()->first();
                 $payment->invoice_number = $invoice ? $invoice->invoice_number : null;
@@ -1259,6 +1255,8 @@ class ReportingService
             $query->where('status', $status);
         }
 
+        $query->orderBy('office_expenses.id', 'desc');
+
         $expenses = $query->get();
 
         // Build payments collection from expenses (including those with no payments)
@@ -1310,7 +1308,14 @@ class ReportingService
                     // Get narration from Transaction where source_type=office_expense and source_id=expense.id
                     $actualPayment->narration = $transaction ? $transaction->narration : '-';
                     $actualPayment->amount = $actualPayment->amount_paid;
-                    $payments->push($actualPayment);
+                    
+                    if(isset($sourceAccount) && $sourceAccount !== null) {
+                        if($transaction->debitAccount->id == $sourceAccount) {
+                            $payments->push($actualPayment);
+                        }
+                    } else {
+                        $payments->push($actualPayment);
+                    }
                 }
             } else {
                 // Add the expense itself if no payments exist

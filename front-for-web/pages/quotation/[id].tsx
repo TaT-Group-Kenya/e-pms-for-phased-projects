@@ -8,6 +8,7 @@ import AuthenticatedLayout from "../../components/authenticated/AuthenticatedLay
 import { ToastContainer } from "../../components/common/Toast";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 import { fetchWithErrorHandlingSafe, formatApiError } from "../../utils/errorHandler";
+import { fetchActivePaymentReceivingMethods } from "../../utils/paymentReceivingMethods";
 import Can from "../../components/auth/Can";
 import { currencySymbols, formatCurrency } from "../../utils/format";
 
@@ -118,6 +119,29 @@ interface TaxSummary {
   is_default?: boolean | number | null;
 }
 
+interface ReceivingPaymentMethod {
+  id: number;
+  type: string;
+  name: string;
+  currency: string;
+  instruction: string;
+  paybill?: string | null;
+  account_holder_name: string;
+  account_number: string;
+  bank: string;
+  branch: string;
+  swift_code: string;
+  iban?: string | null;
+  status: string;
+  is_deleted: boolean;
+  deleted_at?: string | null;
+  deleted_by?: number | null;
+  updated_at: string;
+  updated_by: number;
+  created_at: string;
+  created_by: number;
+}
+
 interface Quotation {
   id: number;
   quotation_number: string;
@@ -141,12 +165,14 @@ interface Quotation {
   discount_amount: number;
   total_amount: number;
   currency: string;
+  payment_receiving_method_id?: number | null;
   payment_terms?: string;
   notes_to_customer?: string;
   quoteItems?: QuoteLineItem[];
   approvals?: QuoteApproval[];
   min_approval_count?: number;
   order?: OrderSummary | null;
+  receivingPaymentMethod?: ReceivingPaymentMethod | null;
   created_at: string;
   updated_at: string;
 }
@@ -206,6 +232,9 @@ const QuotationDetail: React.FC = () => {
   const [taxesError, setTaxesError] = useState<string | null>(null);
   const [projectOwners, setProjectOwners] = useState<any[]>([]);
   const [loadingProjectOwners, setLoadingProjectOwners] = useState(false);
+  const [paymentReceivingMethods, setPaymentReceivingMethods] = useState<Array<{ id: number; name: string; currency: string }>>([]);
+  const [editPaymentReceivingMethodId, setEditPaymentReceivingMethodId] = useState<number | ''>('');
+  const [loadingReceivingMethods, setLoadingReceivingMethods] = useState(false);
 
   const handleSendEmail = async () => {
     if (!quotation) return;
@@ -426,6 +455,16 @@ const QuotationDetail: React.FC = () => {
     return () => controller.abort();
   }, [accessToken, addToast]);
 
+  // Fetch payment receiving methods when editing
+  useEffect(() => {
+    if (!isEditing || !accessToken) return;
+    setLoadingReceivingMethods(true);
+    fetchActivePaymentReceivingMethods(accessToken)
+      .then((methods) => setPaymentReceivingMethods(methods))
+      .catch(() => setPaymentReceivingMethods([]))
+      .finally(() => setLoadingReceivingMethods(false));
+  }, [isEditing, accessToken]);
+
   const refreshQuotationDetails = async () => {
     if (!quotationId || !accessToken) return;
 
@@ -479,6 +518,7 @@ const QuotationDetail: React.FC = () => {
     if (!quotation) return;
     setEditError(null);
     setEditData({ ...quotation });
+    setEditPaymentReceivingMethodId(quotation.payment_receiving_method_id || '');
     setIsEditing(true);
   };
 
@@ -535,6 +575,10 @@ const QuotationDetail: React.FC = () => {
           (editData as any).project_owner_id != null
             ? Number((editData as any).project_owner_id)
             : (quotation as any).project_owner_id ?? null,
+        payment_receiving_method_id:
+          editPaymentReceivingMethodId
+            ? Number(editPaymentReceivingMethodId)
+            : null,
       };
 
       const response = await fetch(`/api/quotations/update?id=${quotationId}`, {
@@ -1513,6 +1557,77 @@ const QuotationDetail: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Payment Method */}
+                  {quotation.receivingPaymentMethod && (
+                    <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+                      <h6 className="text-black dark:text-white font-semibold mb-[15px]">Payment Method</h6>
+                      <div className="space-y-[8px] text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Name</span>
+                          <span className="text-black dark:text-white font-medium">{quotation.receivingPaymentMethod.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Type</span>
+                          <span className="text-black dark:text-white font-medium">{quotation.receivingPaymentMethod.type}</span>
+                        </div>
+                        {quotation.receivingPaymentMethod.type === 'Bank' && quotation.receivingPaymentMethod.account_holder_name && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Account Holder</span>
+                            <span className="text-black dark:text-white">{quotation.receivingPaymentMethod.account_holder_name}</span>
+                          </div>
+                        )}
+                        {quotation.receivingPaymentMethod.type === 'Bank' && quotation.receivingPaymentMethod.account_number && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Account Number</span>
+                            <span className="text-black dark:text-white">{quotation.receivingPaymentMethod.account_number}</span>
+                          </div>
+                        )}
+                        {quotation.receivingPaymentMethod.currency && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Currency</span>
+                            <span className="text-black dark:text-white">{quotation.receivingPaymentMethod.currency}</span>
+                          </div>
+                        )}
+                        {quotation.receivingPaymentMethod.type === 'Bank' && quotation.receivingPaymentMethod.bank && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Bank</span>
+                            <span className="text-black dark:text-white">{quotation.receivingPaymentMethod.bank}</span>
+                          </div>
+                        )}
+                        {quotation.receivingPaymentMethod.type === 'Bank' && quotation.receivingPaymentMethod.branch && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Branch</span>
+                            <span className="text-black dark:text-white">{quotation.receivingPaymentMethod.branch}</span>
+                          </div>
+                        )}
+                        {quotation.receivingPaymentMethod.type === 'Bank' && quotation.receivingPaymentMethod.swift_code && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">SWIFT Code</span>
+                            <span className="text-black dark:text-white">{quotation.receivingPaymentMethod.swift_code}</span>
+                          </div>
+                        )}
+                        {quotation.receivingPaymentMethod.type === 'Bank' && quotation.receivingPaymentMethod.iban && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">IBAN</span>
+                            <span className="text-black dark:text-white">{quotation.receivingPaymentMethod.iban}</span>
+                          </div>
+                        )}
+                        {quotation.receivingPaymentMethod.type === 'Mpesa' && quotation.receivingPaymentMethod.paybill && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Paybill</span>
+                            <span className="text-black dark:text-white">{quotation.receivingPaymentMethod.paybill}</span>
+                          </div>
+                        )}
+                        {quotation.receivingPaymentMethod.instruction && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Instruction</span>
+                            <span className="text-black dark:text-white">{quotation.receivingPaymentMethod.instruction}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Actions */}
                   <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                     <h6 className="text-black dark:text-white font-semibold mb-[15px]">Actions</h6>
@@ -2258,7 +2373,7 @@ const QuotationDetail: React.FC = () => {
       <Can any={["ROLE_EDIT_QUOTATION"]}>
         {isEditing && quotation && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[700px] max-h-[90vh] overflow-y-auto">
+            <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[800px] max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-[20px]">
                 <h6 className="font-semibold text-black dark:text-white">Edit Quotation</h6>
                 {isEditSubmitting && (
@@ -2378,9 +2493,24 @@ const QuotationDetail: React.FC = () => {
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
-                </div>
-
-                <div className="sm:grid sm:grid-cols-3 sm:gap-[15px]">
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Payment Receiving Method
+                    </label>
+                    <select
+                      value={editPaymentReceivingMethodId || quotation?.payment_receiving_method_id || ''}
+                      onChange={(e) => setEditPaymentReceivingMethodId(e.target.value ? Number(e.target.value) : '')}
+                      disabled={isEditSubmitting || loadingReceivingMethods}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">{loadingReceivingMethods ? 'Loading...' : 'Select payment receiving method'}</option>
+                      {paymentReceivingMethods.map((method) => (
+                        <option key={method.id} value={method.id}>
+                          {method.name} ({method.currency})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div>
                     <label className="mb-[10px] text-black dark:text-white font-medium block">
                       Valid Until
@@ -2399,6 +2529,9 @@ const QuotationDetail: React.FC = () => {
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
+                </div>
+
+                <div className="sm:grid sm:grid-cols-3 sm:gap-[15px]">
                   <div>
                     <label className="mb-[10px] text-black dark:text-white font-medium block">
                       Tax %
@@ -2448,9 +2581,6 @@ const QuotationDetail: React.FC = () => {
                       placeholder="0.00"
                     />
                   </div>
-                </div>
-
-                <div className="sm:grid sm:grid-cols-3 sm:gap-[15px]">
                   <div>
                     <label className="mb-[10px] text-black dark:text-white font-medium block">
                       Job Reference ID
@@ -2464,6 +2594,9 @@ const QuotationDetail: React.FC = () => {
                       placeholder="E.g. JOB12345"
                     />
                   </div>
+                </div>
+
+                <div className="sm:grid sm:grid-cols-3 sm:gap-[15px]">
                   <div>
                     <label className="mb-[10px] text-black dark:text-white font-medium block">
                       Minimum Approvals
@@ -2500,6 +2633,7 @@ const QuotationDetail: React.FC = () => {
                       placeholder="e.g. 30 days from invoice date"
                     />
                   </div>
+                  
                 </div>
 
                 <div className="sm:grid sm:grid-cols-1 sm:gap-[15px]">

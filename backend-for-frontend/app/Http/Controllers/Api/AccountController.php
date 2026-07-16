@@ -41,7 +41,7 @@ class AccountController extends Controller
         return AccountResource::collection($data);
     }
 
-    public function store(AccountStoreRequest $request)
+    public function store(AccountStoreRequest $request, TransactionService $transactionService)
     {
         $this->authorize('create', \App\Models\Account::class);
         $validated = $request->validated();
@@ -52,7 +52,60 @@ class AccountController extends Controller
         // $validated['balance'] = 0; allow initial balance to be set on creation
         $validated['created_by'] = Auth::id();
         $validated['created_at'] = now();
-        $model = $this->service->create($validated);
+
+        $initialBalance = (float) ($validated['balance'] ?? 0);
+
+        $model = DB::transaction(function () use ($validated, $initialBalance, $commonService, $transactionService, $request) {
+            $account = $this->service->create($validated);
+
+            // Record a ledger (credit) entry for any initial balance
+            if ($initialBalance > 0) {
+                $accountCurrency = (string) $account->currency;
+                $userId = $request->user()?->id;
+                $transactionNumber = $commonService->generateUniqueCode('TRX-');
+
+                $transactionService->create([
+                    'transaction_number' => $transactionNumber,
+                    'transaction_type' => 'topup',
+                    'transaction_date' => now()->toDateString(),
+                    'posted_date' => now()->toDateString(),
+                    'amount' => $initialBalance,
+                    'base_currency' => $accountCurrency,
+                    'tax_amount' => 0,
+                    'net_amount' => $initialBalance,
+                    'transaction_currency' => $accountCurrency,
+                    'exchange_rate' => 1,
+                    'converted_amount' => $initialBalance,
+                    'converted_tax_amount' => 0,
+                    'converted_net_amount' => $initialBalance,
+                    'customer_id' => null,
+                    'company_id' => null,
+                    'source_type' => 'account_initial_balance',
+                    'source_id' => $account->id,
+                    'account_debit' => null,
+                    'account_credit' => $account->id,
+                    'category' => 'revenue',
+                    'payment_method' => 'CASH',
+                    'bank_account' => null,
+                    'check_number' => null,
+                    'transaction_status' => 'cleared',
+                    'related_transaction_id' => null,
+                    'narration' => 'initial balance',
+                    'is_recurring' => false,
+                    'fiscal_year' => now()->year,
+                    'accounting_period' => now()->format('Y-m'),
+                    'is_adjusting_entry' => false,
+                    'cost_center_id' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                    'created_by' => $userId,
+                    'updated_by' => $userId,
+                ]);
+            }
+
+            return $account;
+        });
+
         return new AccountResource($model);
     }
 
@@ -434,7 +487,8 @@ class AccountController extends Controller
         });
 
         $transactionsQuery->get()->each(function ($row) use (&$rows, $accountId) {
-            $settlementForexRate = $row->exchange_rate ?? 1;
+            $shouldApplyForex = $row->should_apply_forex_to_stmt == 1;
+            $settlementForexRate = $shouldApplyForex ? $row->exchange_rate : 1;
             $debitBase = $row->account_debit == $accountId ? $row->amount/$settlementForexRate : 0;
             $creditBase = $row->account_credit == $accountId ? $row->amount/$settlementForexRate : 0;
 
@@ -472,7 +526,7 @@ class AccountController extends Controller
             ['transaction_number', 'asc'],
         ])->values();
         // start with the account's current balance as the initial running balance
-        $runningBalance = $account->balance ?? 0;
+        $runningBalance = 0;
 
         $totalDebit = 0;
         $totalCredit = 0;

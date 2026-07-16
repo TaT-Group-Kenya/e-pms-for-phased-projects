@@ -34,6 +34,7 @@ class QuotationStoreRequest extends FormRequest
             'discount_amount' => ['required', 'numeric', 'min:0'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'currency' => ['required', 'string', 'max:255'],
+            'payment_receiving_method_id' => ['nullable', 'integer', 'exists:payment_receiving_methods,id'],
             'payment_terms' => ['nullable', 'string', 'max:255'],
             'min_approval_count' => ['nullable', 'numeric', 'min:1'],
             'notes_to_customer' => ['nullable', 'string', 'max:255'],

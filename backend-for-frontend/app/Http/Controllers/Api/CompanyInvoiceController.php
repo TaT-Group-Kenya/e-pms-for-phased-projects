@@ -46,7 +46,7 @@ class CompanyInvoiceController extends Controller
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
-        $data->load(['company', 'payments', 'project']);
+        $data->load(['company', 'payments', 'project.projectOwner']);
         return CompanyInvoiceResource::collection($data);
     }
 
@@ -478,32 +478,30 @@ class CompanyInvoiceController extends Controller
 
             // Update accounts account balance: debit decreases balance
             $balanceAfterThis = $currentBalance - $amountToDebitAccount;
-            $account->balance = round($balanceAfterThis, 4);
-            $account->updated_at = now();
-            $account->updated_by = Auth::id();
-            $account->save();
-
-            // Process transaction cost if provided
-            $transactionCost = $validated['transaction_cost'] ?? 0;
+            $unconvertedtrxnCost = $validated['transaction_cost'] ?? 0;
+            $transactionCost = ($unconvertedtrxnCost/$settlementAccRate);
             if ($transactionCost > 0) {
-                //1. Scafold expense & record the ledger entry for the transaction cost
+                $balanceAfterThis -= $transactionCost;
+                if($balanceAfterThis < 0 ) {
+                    throw ValidationException::withMessages([
+                        'account_balance' => ['Selected account does not have sufficient balance and overdraft is not allowed.'],
+                    ]);
+                }
+                $shouldApplyForex = $accountCurrencyCode !== $invoiceCurrencyCode;
                 $this->transactionCostManager->processTransactionCost([
-                    'transaction_cost' => $transactionCost,
+                    'transaction_cost' => $unconvertedtrxnCost,
                     'currency' => $invoiceCurrencyCode,
                     'funding_account_id' => $account->id,
                     'narration' => 'Transaction cost for company invoice ' . $invoice->invoice_number,
                     'exchangeRate' => $settlementAccRate,
                     'user_id' => Auth::id(),
-                ]);
-                //2. Create update account balances
-                $trxnCostToDebitAccount = round($transactionCost/$settlementAccRate, 2);
-                $currentBalance = (float) $account->balance;
-                $balanceAfterThis = $currentBalance - $trxnCostToDebitAccount;
-                $account->balance = round($balanceAfterThis, 4);
-                $account->updated_at = now();
-                $account->updated_by = Auth::id();
-                $account->save();
+                ], $shouldApplyForex);
             }
+            
+            $account->balance = round($balanceAfterThis, 4);
+            $account->updated_at = now();
+            $account->updated_by = Auth::id();
+            $account->save();
 
             // Update invoice status based on remaining balance after this payment.
             // Reuse the existing non-deleted payments total and include this payment.

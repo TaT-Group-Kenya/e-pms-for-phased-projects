@@ -44,7 +44,7 @@ class CustInvoiceController extends Controller
         $filters = $request->except('per_page', 'page');
         // Eager load order for order_number and quotation_number
         $data = $this->service->index($filters, $perPage, $page);
-        $data->load(['order.quotation', 'customer', 'payments']);
+        $data->load(['order.quotation', 'customer', 'payments', 'projectOwner']);
         return CustInvoiceResource::collection($data);
     }
 

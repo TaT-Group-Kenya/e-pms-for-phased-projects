@@ -22,6 +22,7 @@ class QuotationResource extends BaseResource
             'discount_amount' => (float) $this->discount_amount,
             'total_amount' => (float) $this->total_amount,
             'currency' => $this->currency,
+            'payment_receiving_method_id' => $this->payment_receiving_method_id,
             'payment_terms' => $this->payment_terms,
             'min_approval_count' => $this->min_approval_count,
             'notes_to_customer' => $this->notes_to_customer,
@@ -44,6 +45,8 @@ class QuotationResource extends BaseResource
             'updated_by_user' => new UserResource($this->whenLoaded('updatedByUser')),
 
             'project_owner' => new ProjectOwnerResource($this->whenLoaded('projectOwner')),
+
+            'receivingPaymentMethod' => new PaymentReceivingMethodResource($this->whenLoaded('receivingPaymentMethod')),
 
         ];
     }

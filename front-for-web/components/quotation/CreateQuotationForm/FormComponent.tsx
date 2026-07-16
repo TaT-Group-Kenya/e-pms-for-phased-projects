@@ -10,6 +10,7 @@ import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
 import { formatApiError } from "../../../utils/errorHandler";
+import { fetchActivePaymentReceivingMethods } from "../../../utils/paymentReceivingMethods";
 
 const quotationSchema = z.object({
   title: z
@@ -26,6 +27,7 @@ const quotationSchema = z.object({
   project_owner_id: z.string().nullable(),
   valid_until_date: z.string().min(1, "Valid until date is required"),
   currency: z.string().min(1, "Currency is required"),
+  payment_receiving_method_id: z.string().nullable().optional(),
   payment_terms: z.string().optional(),
   notes_to_customer: z.string().optional(),
   discount_percentage: z.string().optional(),
@@ -57,6 +59,7 @@ const CreateQuotationForm: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [projectOwners, setProjectOwners] = useState<any[]>([]);
+  const [paymentReceivingMethods, setPaymentReceivingMethods] = useState<Array<{ id: number; name: string; currency: string }>>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
 
@@ -172,6 +175,16 @@ const CreateQuotationForm: React.FC = () => {
     return () => controller.abort();
   }, [accessToken, addToast]);
 
+  // Fetch payment receiving methods
+  useEffect(() => {
+    if (!accessToken) return;
+    const controller = new AbortController();
+    fetchActivePaymentReceivingMethods(accessToken)
+      .then((methods) => setPaymentReceivingMethods(methods))
+      .catch(() => setPaymentReceivingMethods([]));
+    return () => controller.abort();
+  }, [accessToken]);
+
   const onSubmit: SubmitHandler<QuotationFormData> = async (data) => {
     setIsSubmitting(true);
     setFormError("");
@@ -195,6 +208,7 @@ const CreateQuotationForm: React.FC = () => {
         project_owner_id: data.project_owner_id ? parseInt(data.project_owner_id) : null,
         valid_until_date: data.valid_until_date,
         currency: data.currency,
+        payment_receiving_method_id: data.payment_receiving_method_id ? parseInt(data.payment_receiving_method_id) : null,
         payment_terms: data.payment_terms || "",
         notes_to_customer: data.notes_to_customer || "",
         subtotal_amount: 0,
@@ -274,7 +288,7 @@ const CreateQuotationForm: React.FC = () => {
             )}
 
             <div className="mb-[25px]">
-              <div className="sm:grid sm:grid-cols-4 sm:gap-[25px] mb-[20px]">
+              <div className="sm:grid sm:grid-cols-3 sm:gap-[25px] mb-[20px]">
                 {/* Title - Required */}
                 <div className="mb-[20px] sm:mb-0">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
@@ -365,6 +379,25 @@ const CreateQuotationForm: React.FC = () => {
                   />
                   {renderFieldError("creationDate")}
                 </div>
+
+                {/* Payment Receiving Method */}
+              <div className="mb-[20px]">
+                <label className="mb-[10px] text-black dark:text-white font-medium block">
+                  Payment Receiving Method
+                </label>
+                <select
+                  {...register("payment_receiving_method_id")}
+                  className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
+                >
+                  <option value="">Select payment receiving method</option>
+                  {paymentReceivingMethods.map((method) => (
+                    <option key={method.id} value={method.id}>
+                      {method.name} ({method.currency})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               </div>
 
               {/* Description */}
@@ -469,6 +502,7 @@ const CreateQuotationForm: React.FC = () => {
                   rows={2}
                 />
               </div>
+
             </div>
 
             <div className="mb-[25px]">

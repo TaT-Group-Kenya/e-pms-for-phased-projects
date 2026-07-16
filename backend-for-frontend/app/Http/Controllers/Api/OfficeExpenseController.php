@@ -218,7 +218,7 @@
                     'narration' => 'Transaction cost for office expense ID ' . $expense->id,
                     'exchangeRate' => 1,
                     'user_id' => $userId,
-                ]);
+                ], false);
             }
 
             // Deduct from funding account (amount + transaction cost)

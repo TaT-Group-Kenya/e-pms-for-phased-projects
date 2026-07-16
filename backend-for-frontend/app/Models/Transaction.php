@@ -49,6 +49,7 @@ class Transaction extends Model
         'is_deleted',
         'deleted_at',
         'deleted_by',
+        'should_apply_forex_to_stmt',
     ];
 
     public const TYPE_TOPUP = 'topup';
@@ -71,7 +72,7 @@ class Transaction extends Model
 
     public function costCenter()
     {
-        return $this->belongsTo(CostCenter::class, 'cost_center_id');
+        return $this->belongsTo(Department::class, 'cost_center_id');
     }
 
     public function relatedTransaction()

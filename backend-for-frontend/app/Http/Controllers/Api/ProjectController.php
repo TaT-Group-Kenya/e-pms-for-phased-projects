@@ -27,8 +27,9 @@ class ProjectController extends Controller
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
-        // Eager load customer for project listings to avoid N+1 queries
+        // Eager load customer and projectOwner for project listings to avoid N+1 queries
         $data = $this->service->index($filters, $perPage, $page, 0);
+        $data->load(['customer', 'order', 'creator', 'projectOwner']);
         return ProjectResource::collection($data);
     }
 

@@ -26,6 +26,7 @@ class Quotation extends Model
         'discount_amount',
         'total_amount',
         'currency',
+        'payment_receiving_method_id',
         'payment_terms',
         'min_approval_count',
         'notes_to_customer',
@@ -46,6 +47,11 @@ class Quotation extends Model
     public function projectOwner()
     {
         return $this->belongsTo(ProjectOwner::class, 'project_owner_id');
+    }
+
+    public function receivingPaymentMethod()
+    {
+        return $this->belongsTo(\App\Models\PaymentReceivingMethod::class, 'payment_receiving_method_id');
     }
     
     public function quoteItems()

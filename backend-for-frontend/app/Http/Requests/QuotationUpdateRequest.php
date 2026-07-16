@@ -36,6 +36,7 @@ class QuotationUpdateRequest extends FormRequest
             'discount_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'total_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'currency' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'payment_receiving_method_id' => ['sometimes', 'nullable', 'integer', 'exists:payment_receiving_methods,id'],
             'payment_terms' => ['sometimes', 'nullable', 'string', 'max:255'],
             'min_approval_count' => ['sometimes', 'required', 'numeric', 'min:1'],
             'notes_to_customer' => ['sometimes', 'nullable', 'string', 'max:255'],

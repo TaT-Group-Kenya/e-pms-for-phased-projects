@@ -23,9 +23,10 @@ class TransactionCostManagerService
      *     @var float $exchangeRate The exchange rate for currency conversion
      *     @var int $userId The user ID creating the entries
      * }
+     * @param $applyForex whether to apply forex when building acc statement later on
      * @return OfficeExpense|null
      */
-    public function processTransactionCost(array $data): ?OfficeExpense
+    public function processTransactionCost(array $data, bool $applyForex = true): ?OfficeExpense
     {
         $transactionCost = $data['transaction_cost'] ?? 0;
         
@@ -34,7 +35,7 @@ class TransactionCostManagerService
             return null;
         }
 
-        return DB::transaction(function () use ($data, $transactionCost) {
+        return DB::transaction(function () use ($data, $transactionCost, $applyForex) {
             // Step 1: Get or create "Transaction charges" category
             $category = $this->getOrCreateTransactionChargesCategory();
             
@@ -57,7 +58,8 @@ class TransactionCostManagerService
                 $data['funding_account_id'],
                 $data['narration'] ?? '',
                 $data['exchangeRate'] ??  1,
-                $data['user_id'] ?? null
+                $data['user_id'] ?? null,
+                $applyForex
             );
             
             return $expense;
@@ -118,7 +120,7 @@ class TransactionCostManagerService
     /**
      * Settle an office expense (create payment and transaction).
      */
-    protected function settleOfficeExpense(int $expenseId, float $amount, int $fundingAccountId, string $narration, float $exchangeRate, ?int $userId): void
+    protected function settleOfficeExpense(int $expenseId, float $amount, int $fundingAccountId, string $narration, float $exchangeRate, ?int $userId, bool $applyForex = true): void
     {
         $expense = OfficeExpense::findOrFail($expenseId);
         
@@ -173,6 +175,7 @@ class TransactionCostManagerService
             'fiscal_year' => now()->year,
             'accounting_period' => now()->format('Y-m'),
             'is_adjusting_entry' => false,
+            'should_apply_forex_to_stmt' => $applyForex,
             'cost_center_id' => $expense->cost_center_id,
             'created_by' => $userId ?? auth()->id(),
             'created_at' => now(),

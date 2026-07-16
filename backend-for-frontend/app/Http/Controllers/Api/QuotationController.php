@@ -58,6 +58,7 @@ class QuotationController extends Controller
             'documents',
             'approvals',
             'order',
+            'receivingPaymentMethod',
         ]));
     }
 
@@ -65,7 +66,7 @@ class QuotationController extends Controller
     {
         $this->authorize('view', $quotation);
 
-        return new QuotationResource($this->service->find($quotation->id, ['customer', 'quoteItems', 'documents', 'approvals', 'order.orderItems']));
+        return new QuotationResource($this->service->find($quotation->id, ['customer', 'quoteItems', 'documents', 'approvals', 'order.orderItems', 'receivingPaymentMethod']));
     }
 
     public function update(QuotationUpdateRequest $request, Quotation $quotation)
@@ -135,6 +136,7 @@ class QuotationController extends Controller
                 'documents',
                 'approvals',
                 'order.orderItems',
+                'receivingPaymentMethod',
             ]));
         }
 
@@ -199,6 +201,7 @@ class QuotationController extends Controller
             'documents',
             'approvals',
             'order.orderItems',
+            'receivingPaymentMethod',
         ]));
     }
 
@@ -361,6 +364,7 @@ class QuotationController extends Controller
             'documents',
             'approvals.user',
             'order',
+            'receivingPaymentMethod',
         ]);
 
         // Load sender/company details from sys_configs, with sensible fallbacks
@@ -379,6 +383,7 @@ class QuotationController extends Controller
         $senderName = $configValues['NAME'] ?? config('app.name', 'EPMS');
         $senderEmail = $configValues['EMAIL'] ?? config('mail.from.address', 'no-reply@example.com');
         $generatedAt = now();
+        $receivingPaymentMethod = $quotation->receivingPaymentMethod ?? null;
 
         $data = [
             'quotation'          => $quotation,
@@ -392,6 +397,7 @@ class QuotationController extends Controller
             'senderState'        => $configValues['STATE']   ?? null,
             'senderCountry'      => $configValues['COUNTRY'] ?? null,
             'generatedAt'        => $generatedAt,
+            'receivingPaymentMethod' => $receivingPaymentMethod,
         ];
 
         // Render the Blade view to HTML and generate a PDF using Dompdf

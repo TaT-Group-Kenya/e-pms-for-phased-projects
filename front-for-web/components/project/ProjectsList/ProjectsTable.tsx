@@ -29,6 +29,10 @@ interface Project {
   customer?: { name: string };
   created_at?: string;
   order?: { title?: string } | null;
+  project_owner?: {
+    id: number;
+    name: string;
+  };
   created_by_user?: {
     first_name?: string;
     last_name?: string;
@@ -221,6 +225,7 @@ const ProjectsList: React.FC = () => {
     project.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     project.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (project.customer?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (project.project_owner?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (project.order?.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     project.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (project.job_reference_id || "").toLowerCase().includes(searchTerm.toLowerCase())
@@ -319,6 +324,9 @@ const ProjectsList: React.FC = () => {
                       Customer
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Project Owner
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Tags
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -367,6 +375,9 @@ const ProjectsList: React.FC = () => {
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           {project.customer?.name || "N/A"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {project.project_owner?.name || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {project.tags || "-"}
@@ -423,7 +434,7 @@ const ProjectsList: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={13}
+                        colSpan={14}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm ? "No projects match your search" : "No projects found"}

@@ -11,7 +11,7 @@ class QuotationService
         int $perPage = 15,
         int $page = 1,
         int $offset = 0,
-        array $with = ['customer', 'createdByUser', 'updatedByUser', 'projectOwner']
+        array $with = ['customer', 'createdByUser', 'updatedByUser', 'projectOwner', 'receivingPaymentMethod']
     ) {
         // optimized query: apply eager loading and simple filters
         $query = Quotation::query();
@@ -31,7 +31,7 @@ class QuotationService
 
     public function find(int $id, array $with = [])
     {
-        $with = array_merge($with, ['customer', 'createdByUser', 'updatedByUser', 'projectOwner']);
+        $with = array_merge($with, ['customer', 'createdByUser', 'updatedByUser', 'projectOwner', 'receivingPaymentMethod']);
         $query = Quotation::query();
         if (!empty($with)) $query->with($with);
         return $query->findOrFail($id);

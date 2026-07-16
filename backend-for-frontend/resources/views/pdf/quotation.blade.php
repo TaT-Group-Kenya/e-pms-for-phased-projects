@@ -228,6 +228,42 @@
         </div>
     </div>
 
+    @if(isset($receivingPaymentMethod) && $receivingPaymentMethod !== null)
+        <div class="section card" style="margin-top: 8px;">
+            <h3>Payment Details</h3>
+            <div class="mb-2">
+                @if(!empty($receivingPaymentMethod->currency))
+                    <div class="text-sm mt-1"><strong>Currency:</strong> {{ $receivingPaymentMethod->currency }}</div>
+                @endif
+                @if(!empty($receivingPaymentMethod->paybill))
+                    <div class="text-sm mt-1"><strong>Paybill:</strong> {{ $receivingPaymentMethod->paybill }}</div>
+                @endif
+                @if(!empty($receivingPaymentMethod->account_holder_name))
+                    <div class="text-sm mt-1"><strong>Account Holder Name:</strong> {{ $receivingPaymentMethod->account_holder_name }}</div>
+                @endif
+                @if(!empty($receivingPaymentMethod->account_number))
+                    <div class="text-sm mt-1"><strong>Account Number:</strong> {{ $receivingPaymentMethod->account_number }}</div>
+                @endif
+                @if(!empty($receivingPaymentMethod->bank))
+                    <div class="text-sm mt-1"><strong>Bank:</strong> {{ $receivingPaymentMethod->bank }}</div>
+                @endif
+                @if(!empty($receivingPaymentMethod->branch))
+                    <div class="text-sm mt-1"><strong>Branch:</strong> {{ $receivingPaymentMethod->branch }}</div>
+                @endif
+                @if(!empty($receivingPaymentMethod->swift_code))
+                    <div class="text-sm mt-1"><strong>SWIFT Code:</strong> {{ $receivingPaymentMethod->swift_code }}</div>
+                @endif
+                @if(!empty($receivingPaymentMethod->iban))
+                    <div class="text-sm mt-1"><strong>IBAN:</strong> {{ $receivingPaymentMethod->iban }}</div>
+                @endif
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 8px 0;">
+                @if(!empty($receivingPaymentMethod->instruction))
+                    <div class="text-sm mt-1"><strong>Instruction:</strong> {{ $receivingPaymentMethod->instruction }}</div>
+                @endif
+            </div>
+        </div>
+    @endif
+
     @if($quotation->payment_terms || $quotation->notes_to_customer)
         <div class="section">
             <h3>Additional Information</h3>

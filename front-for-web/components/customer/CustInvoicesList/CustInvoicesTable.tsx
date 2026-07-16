@@ -27,6 +27,10 @@ interface CustInvoiceSummary {
   customer: {
     name: string;
   }
+  project_owner?: {
+    id: number;
+    name: string;
+  };
 }
 
 interface ApprovedOrderSummary {
@@ -170,7 +174,8 @@ const CustInvoicesTable: React.FC = () => {
       inv.status.toLowerCase().includes(lowerSearch) ||
       (inv.job_reference_id || "").toLowerCase().includes(lowerSearch) ||
       (inv.order_number || "").toLowerCase().includes(lowerSearch) ||
-      (inv.quotation_number || "").toLowerCase().includes(lowerSearch);
+      (inv.quotation_number || "").toLowerCase().includes(lowerSearch) ||
+      (inv.project_owner?.name || "").toLowerCase().includes(lowerSearch);
 
     const matchesStatus =
       statusFilter === "all" || inv.status.toLowerCase() === statusFilter.toLowerCase();
@@ -438,6 +443,9 @@ const CustInvoicesTable: React.FC = () => {
                       Customer
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Project Owner
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Subtotal
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -511,6 +519,9 @@ const CustInvoicesTable: React.FC = () => {
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           {inv.customer?.name || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap text-sm">
+                          {inv.project_owner?.name || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <span className="font-semibold">
@@ -590,7 +601,7 @@ const CustInvoicesTable: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={9}
+                        colSpan={16}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm || statusFilter !== "all"

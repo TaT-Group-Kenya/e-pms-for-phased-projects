@@ -87,5 +87,5 @@ class CompanyInvoice extends Model
         // Supporting documents reference the invoice via invoice_id
         return $this->hasMany(CompanyInvoiceDocument::class, 'invoice_id');
     }
-    
+
 }

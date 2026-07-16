@@ -44,6 +44,7 @@ class OrderController extends Controller
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+        $data->load(['customer', 'creator', 'projectOwner']);
         return OrderResource::collection($data);
     }
 

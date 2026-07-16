@@ -277,7 +277,7 @@ export default function OfficeExpensePaymentsReportPage() {
                   className="form-select rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 px-4 h-[42px]"
                 >
                   <option value="">All Accounts</option>
-                  {sourceAccountOptions.filter(a => a.currency === 'KES').map((c: any) => (
+                  {sourceAccountOptions.map((c: any) => (
                     <option key={c.id || c.value} value={c.id || c.value}>
                       {c.name || c.label}
                     </option>

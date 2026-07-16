@@ -26,6 +26,10 @@ interface Quotation {
   currency: string;
   customer?: { name: string };
   created_at?: string;
+  project_owner?: {
+    id: number;
+    name: string;
+  };
   created_by_user?: {
     first_name?: string;
     middle_name?: string;
@@ -208,6 +212,7 @@ const QuotationsList: React.FC = () => {
     quotation.quotation_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (quotation.job_reference_id || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (quotation.customer?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (quotation.project_owner?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     quotation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quotation.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -320,6 +325,9 @@ const QuotationsList: React.FC = () => {
                       Customer
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Project Owner
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       <span style={{ minWidth: 200, display: 'inline-block' }}>Title</span>
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -365,6 +373,9 @@ const QuotationsList: React.FC = () => {
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {quotation.customer?.name || "-"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {quotation.project_owner?.name || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           <Link
@@ -438,7 +449,7 @@ const QuotationsList: React.FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={12}
+                        colSpan={13}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm || statusFilter !== "all" ? "No quotations match your criteria" : "No quotations found"}
