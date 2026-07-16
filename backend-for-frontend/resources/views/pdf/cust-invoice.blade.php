@@ -41,7 +41,6 @@
 </head>
 <body>
     @php
-            $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
         $headerImage = file_exists(public_path('header-01-landscape.jpeg')) ? public_path('header-01-landscape.jpeg') : null;
     @endphp
     <div class="header-image">
@@ -57,23 +56,12 @@
     @endif
 
     <div class="header">
-        <table>
-            <tr>
-                <td class="logo">
-                    @if($logoData)
-                        <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
-                    @else
-                        <div class="brand-name">{{ $senderName }}</div>
-                    @endif
-                </td>
-                <td style="text-align: right;">
-                    <h1>Invoice</h1>
-                    <div class="muted">Invoice #: {{ $invoice->invoice_number }}</div>
-                    <div class="muted">Date: {{ optional($invoice->created_at)->format('d/m/Y') }}</div>
-                    <div class="badge badge-status mt-2">{{ $invoice->status_label ?? ucfirst($invoice->status) }}</div>
-                </td>
-            </tr>
-        </table>
+        <div style="text-align: right;">
+            <h1>Invoice</h1>
+            <div class="muted">Invoice #: {{ $invoice->invoice_number }}</div>
+            <div class="muted">Date: {{ optional($invoice->created_at)->format('d/m/Y') }}</div>
+            <div class="badge badge-status mt-2">{{ $invoice->status_label ?? ucfirst($invoice->status) }}</div>
+        </div>
     </div>
 
     <div class="section">

@@ -133,19 +133,6 @@
         @endif
     </div>
     <div class="header">
-        <div>
-            <div class="brand-name">{{ $senderName }}</div>
-            <div class="brand-sub">
-                {{ $senderAddressLine1 }}
-                @if($senderCity) · {{ $senderCity }}@endif
-                @if($senderCountry) · {{ $senderCountry }}@endif
-            </div>
-            <div class="brand-sub">
-                @if($senderPhone) Tel: {{ $senderPhone }} · @endif
-                @if($senderEmail) {{ $senderEmail }} @endif
-                @if($senderWebsite) · {{ $senderWebsite }} @endif
-            </div>
-        </div>
         <div style="text-align:right;">
             <div class="statement-title">Account Statement</div>
             <div class="statement-subtitle">

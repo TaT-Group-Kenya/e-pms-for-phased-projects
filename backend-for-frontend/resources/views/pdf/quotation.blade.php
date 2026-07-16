@@ -41,7 +41,6 @@
 </head>
 <body>
     @php
-            $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
         $headerImage = file_exists(public_path('header-01-landscape.jpeg')) ? public_path('header-01-landscape.jpeg') : null;
     @endphp
     <div class="header-image">
@@ -52,13 +51,7 @@
     <div class="header">
         <table>
             <tr>
-                <td class="logo">
-                    @if($logoData)
-                        <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
-                    @else
-                        <div class="brand-name">{{ $senderName }}</div>
-                    @endif
-                </td>
+                <td class="logo"></td>
                 <td style="text-align: right;">
                     <h1>Quotation</h1>
                     <div class="muted">Quote #: {{ $quotation->quotation_number }}</div>

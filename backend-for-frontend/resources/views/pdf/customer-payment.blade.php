@@ -32,7 +32,6 @@
 </head>
 <body>
 @php
-        $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
         $headerImage = file_exists(public_path('header-01-landscape.jpeg')) ? public_path('header-01-landscape.jpeg') : null;
     $number = $payment->transaction_number ?? ('CUST-PAYMENT-' . $payment->id);
     $currency = $payment->currency ?? '';
@@ -45,27 +44,14 @@
 </div>
 
 <div class="header">
-    <table class="magic-table">
-        <tr>
-            <td style="width: 50%; vertical-align: top; padding-right: 8px;">
-                <div class="logo">
-@if($logoData)
-            <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
-        @else
-            <div class="brand-name">{{ $senderName }}</div>
-        @endif
-                </div>
-            </td>
-            <td style="width: 50%; vertical-align: top; text-align: right;">
+    <div style="text-align: right;">
 <h1>Customer Payment Receipt</h1>
         <div class="muted">Payment Ref: {{ $number }}</div>
         <div class="muted">Date: {{ optional($payment->payment_date ?? $payment->created_at)->format('d/m/Y') }}</div>
         @if($payment->payment_status)
             <div class="text-sm mt-1">Status: <span class="font-semibold">{{ ucfirst($payment->payment_status) }}</span></div>
         @endif
-            </td>
-        </tr>
-    </table>
+    </div>
 </div>
 
 <div class="section two-col">

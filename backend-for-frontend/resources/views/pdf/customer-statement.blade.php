@@ -3,7 +3,6 @@
 <head>
 
     @php
-        $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
         $headerImage = file_exists(public_path('header-01-landscape.jpeg')) ? public_path('header-01-landscape.jpeg') : null;
     @endphp
 
@@ -48,13 +47,6 @@
         @endif
     </div>
 
-    <div class="center logo" style="margin-bottom: 12px;">
-        @if($logoData)
-            <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
-        @else
-            <div class="brand-name">{{ $meta['customer_name'] }}</div>
-        @endif
-    </div>
 
     <div class="center">
         <div class="title">Customer Statement of Account</div>

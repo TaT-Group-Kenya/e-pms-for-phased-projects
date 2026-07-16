@@ -41,7 +41,6 @@
 </head>
 <body>
     @php
-            $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
         $headerImage = file_exists(public_path('header-01-landscape.jpeg')) ? public_path('header-01-landscape.jpeg') : null;
     @endphp
     <div class="header-image">
@@ -57,21 +56,10 @@
     @endif
 
     <div class="header">
-        <table>
-            <tr>
-                <td class="logo">
-                    @if($logoData)
-                        <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
-                    @else
-                        <div class="brand-name">{{ $senderName ?? config('app.name', 'EPMS') }}</div>
-                    @endif
-                </td>
-                <td style="text-align:right;">
-                    <h1>Company Credit Note</h1>
-                    <div class="badge badge-status">{{ strtoupper($creditNote->status) }}</div>
-                </td>
-            </tr>
-        </table>
+        <div style="text-align:right;">
+            <h1>Company Credit Note</h1>
+            <div class="badge badge-status">{{ strtoupper($creditNote->status) }}</div>
+        </div>
     </div>
 
     <div class="section two-col" style="gap: 40px;">

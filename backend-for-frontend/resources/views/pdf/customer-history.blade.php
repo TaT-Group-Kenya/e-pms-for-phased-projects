@@ -23,7 +23,6 @@
 </head>
 <body>
 @php
-        $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
         $headerImage = file_exists(public_path('header-01-landscape.jpeg')) ? public_path('header-01-landscape.jpeg') : null;
 @endphp
 
@@ -34,25 +33,10 @@
 </div>
 
 <div class="header">
-    <table class="magic-table">
-        <tr>
-            <td style="width: 50%; vertical-align: top; padding-right: 8px;">
-                <div class="logo">
-                    @if($logoData)
-                    <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
-                    @else
-                    <div class="brand-name">{{ $senderName ?? 'Company' }}</div>
-                    @endif
-
-
-                </div>
-            </td>
-            <td style="width: 50%; vertical-align: top; text-align: right;">
-                <h1>Customer History Report</h1>
-                <div class="muted">Generated on {{ $generatedAt->format('d M Y H:i') }}</div>
-            </td>
-        </tr>
-    </table>
+    <div style="text-align: right;">
+        <h1>Customer History Report</h1>
+        <div class="muted">Generated on {{ $generatedAt->format('d M Y H:i') }}</div>
+    </div>
 </div>
 <div class="section">
     <table class="table">

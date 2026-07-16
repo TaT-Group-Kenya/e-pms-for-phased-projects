@@ -41,41 +41,14 @@
 </head>
 <body>
     @php
-        // Prefer the company's own logo when available, otherwise fall back
-        // to the default EPMS logo or brand name.
-        $companyLogoPath = null;
-
-        if ($invoice->company && !empty($invoice->company->logo)) {
-            // Logos are stored under storage/app/public/logos, so resolve from storage.
-            $candidate = storage_path('app/public/logos/' . $invoice->company->logo);
-
-            if (file_exists($candidate)) {
-                $companyLogoPath = $candidate;
-            } else {
-                // As a secondary attempt, try the public/storage symlink location if it exists.
-                $publicStorageCandidate = public_path('storage/logos/' . $invoice->company->logo);
-                if (file_exists($publicStorageCandidate)) {
-                    $companyLogoPath = $publicStorageCandidate;
-                }
-            }
-        }
-        if ($companyLogoPath && file_exists($companyLogoPath)) {
         $headerImage = file_exists(public_path('header-01-landscape.jpeg')) ? public_path('header-01-landscape.jpeg') : null;
     @endphp
+
     <div class="header-image">
         @if($headerImage && file_exists($headerImage))
             <img src="data:image/jpeg;base64,{{ base64_encode(file_get_contents($headerImage)) }}" alt="Header Image">
         @endif
     </div>
-            $logoPath = $companyLogoPath;
-        } else {
-            $logoPath = $defaultLogoPath;
-        }
-
-        $logoData = ($logoPath && file_exists($logoPath))
-            ? base64_encode(file_get_contents($logoPath))
-            : null;
-    @endphp
 
     @if($invoice->status === 'paid')
         <div style="position: fixed; top: 40%; left: 10%; width: 80%; text-align: center; font-size: 240px; font-weight: 700; color: #a7abb1; opacity: 0.12; transform: rotate(-30deg); z-index: 0;">
@@ -83,23 +56,12 @@
         </div>
     @endif
     <div class="header">
-        <table>
-            <tr>
-                <td class="logo">
-                    @if($logoData)
-                        <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
-                    @else
-                        <div class="brand-name">{{ $senderName }}</div>
-                    @endif
-                </td>
-                <td style="text-align: right;">
-                    <h1>Company Invoice</h1>
-                    <div class="muted">Invoice #: {{ $invoice->invoice_number }}</div>
-                    <div class="muted">Date: {{ optional($invoice->created_at)->format('d/m/Y') }}</div>
-                    <div class="badge badge-status mt-2">{{ ucfirst($invoice->status) }}</div>
-                </td>
-            </tr>
-        </table>
+        <div style="text-align: right;">
+            <h1>Company Invoice</h1>
+            <div class="muted">Invoice #: {{ $invoice->invoice_number }}</div>
+            <div class="muted">Date: {{ optional($invoice->created_at)->format('d/m/Y') }}</div>
+            <div class="badge badge-status mt-2">{{ ucfirst($invoice->status) }}</div>
+        </div>
     </div>
 
     <div class="section">

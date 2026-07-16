@@ -7,7 +7,6 @@
         @page { margin: 40px 40px 60px 40px; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111827; }
         .header { width: 100%; margin-bottom: 20px; }
-        .header .logo { float: left; }
         .header > div:last-child { float: right; text-align: right; }
         .logo img { height: 40px; width: auto; }
         .brand-name { font-size: 18px; font-weight: 700; color: #111827; }
@@ -38,7 +37,6 @@
 </head>
 <body>
 @php
-        $logoData = file_exists($instanceLogo) ? base64_encode(file_get_contents($instanceLogo)) : null;
         $headerImage = file_exists(public_path('header-01-landscape.jpeg')) ? public_path('header-01-landscape.jpeg') : null;
     $number = $entry->transaction_number ?? ('COMP-LEDGER-' . $entry->id);
 @endphp
@@ -50,27 +48,14 @@
 </div>
 
 <div class="header">
-    <table class="magic-table">
-        <tr>
-            <td style="width: 50%; vertical-align: top; padding-right: 8px;">
-                <div class="logo">
-@if($logoData)
-            <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
-        @else
-            <div class="brand-name">{{ $senderName }}</div>
-        @endif
-                </div>
-            </td>
-            <td style="width: 50%; vertical-align: top; text-align: right;">
-<h1>Company Ledger Entry</h1>
+    <div style="text-align: right;">
+        <h1>Company Ledger Entry</h1>
         <div class="muted">Entry #: {{ $number }}</div>
         <div class="muted">Date: {{ optional($entry->transaction_date ?? $entry->created_at)->format('d/m/Y') }}</div>
         @if($entry->transaction_status)
             <div class="badge badge-status mt-2">{{ ucfirst($entry->transaction_status) }}</div>
         @endif
-            </td>
-        </tr>
-    </table>
+    </div>
 </div>
 
 <div class="section two-col">
