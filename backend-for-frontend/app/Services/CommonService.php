@@ -34,8 +34,8 @@ class CommonService
         $length = (int) (SysConfig::where('name', $lengthConfig)->value('value') ?? 6);
 
         /** @var \Illuminate\Database\Eloquent\Model $modelClass */
-        $latest = $modelClass::where('is_deleted', false)
-            ->orderBy('created_at', 'desc')
+        $latest = $modelClass::where('id', '>', 0)
+            ->orderBy('id', 'desc')
             ->first();
 
         $currentNumber = $latest ? (string) $latest->{$numberColumn} : null;
