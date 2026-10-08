@@ -45,7 +45,7 @@ export default function PdcIssuedListPage() {
       <Can any={["ROLE_VIEW_PDC_ISSUED_COMPANY"]} fallback={<div>You do not have permission to view PDC issued.</div>}>
         <div className="trezo-card-header bg-white mb-[20px] md:mb-[25px] flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-md gap-[15px]">
           <div className="trezo-card-title">
-            <h5 className="!mb-0">PDC Issued (Company)</h5>
+            <h5 className="!mb-0">PDC Issued (Service Provider)</h5>
           </div>
           <div className="flex flex-col gap-[12px] w-1/2 md:flex-row md:flex-wrap md:items-center md:justify-end">
             <div className="relative flex-1 md:flex-none md:w-[200px]">
@@ -98,7 +98,7 @@ export default function PdcIssuedListPage() {
                   <thead className="text-black dark:text-white">
                     <tr>
                       <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Title</th>
-                      <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Company</th>
+                      <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Service Provider</th>
                       <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Cheque No</th>
                       <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Cheque Date</th>
                       <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Amount</th>

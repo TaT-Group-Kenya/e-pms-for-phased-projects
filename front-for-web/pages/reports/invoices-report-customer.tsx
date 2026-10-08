@@ -142,10 +142,10 @@ export default function InvoicesReportCustomerPage() {
     }
     const columns = [
       'Date',
-      'Job Reference ID',
+      'BOL Number ',
       'Customer',
       'Invoice #',
-      'Project Name',
+      'Consignment',
       'Currency',
       'Amount',
       'Paid',
@@ -318,10 +318,10 @@ export default function InvoicesReportCustomerPage() {
                   <thead>
                     <tr>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Date</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Reference ID</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">BOL Number</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Customer</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Invoice #</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Project Name</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Consignment</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Currency</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Amount</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Paid</th>

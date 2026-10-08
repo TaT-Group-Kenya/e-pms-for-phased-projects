@@ -78,7 +78,7 @@ const CompanyCreditNotesTable: React.FC = () => {
         const data: any = await resp.json().catch(() => null)
 
         if (!resp.ok) {
-          addToast(data?.message || 'Failed to load company credit notes', 'error')
+          addToast(data?.message || 'Failed to load Service Provider credit notes', 'error')
           setCreditNotes([])
           return
         }
@@ -107,8 +107,8 @@ const CompanyCreditNotesTable: React.FC = () => {
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return
         // eslint-disable-next-line no-console
-        console.error('fetch company credit notes error', err)
-        addToast('Error loading company credit notes. Please try again.', 'error')
+        console.error('fetch Service Provider credit notes error', err)
+        addToast('Error loading Service Provider credit notes. Please try again.', 'error')
         setCreditNotes([])
       } finally {
         setLoading(false)
@@ -177,7 +177,7 @@ const CompanyCreditNotesTable: React.FC = () => {
       const data: any = await resp.json().catch(() => null)
 
       if (!resp.ok) {
-        addToast(data?.message || 'Failed to load company invoices', 'error')
+        addToast(data?.message || 'Failed to load Service Provider invoices', 'error')
         setInvoices([])
         return
       }
@@ -199,8 +199,8 @@ const CompanyCreditNotesTable: React.FC = () => {
       setInvoices(mapped)
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error('fetch company invoices for credit note error', err)
-      addToast('Error loading company invoices.', 'error')
+      console.error('fetch Service Provider invoices for credit note error', err)
+      addToast('Error loading Service Provider invoices.', 'error')
       setInvoices([])
     } finally {
       setInvoicesLoading(false)
@@ -264,14 +264,14 @@ const CompanyCreditNotesTable: React.FC = () => {
       const data: any = await resp.json().catch(() => null)
 
       if (!resp.ok) {
-        throw new Error(data?.message || 'Failed to create company credit note')
+        throw new Error(data?.message || 'Failed to create Service Provider credit note')
       }
 
-      addToast(data?.message || 'Company credit note created successfully', 'success')
+      addToast(data?.message || 'Service Provider credit note created successfully', 'success')
       setShowCreateModal(false)
       setReloadKey((prev) => prev + 1)
     } catch (e: any) {
-      addToast(e?.message || 'Failed to create company credit note', 'error')
+      addToast(e?.message || 'Failed to create Service Provider credit note', 'error')
     } finally {
       setCreatingCreditNote(false)
     }
@@ -283,7 +283,7 @@ const CompanyCreditNotesTable: React.FC = () => {
 
       <div className="trezo-card-header bg-white dark:bg-[#0c1427] mb-[20px] md:mb-[25px] flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-md gap-[15px]">
         <div className="trezo-card-title">
-          <h5 className="!mb-0">All Company Credit Notes</h5>
+          <h5 className="!mb-0">All Service Provider Credit Notes</h5>
         </div>
 
         <div className="flex items-center gap-[15px] w-full md:w-auto flex-wrap md:flex-nowrap">
@@ -325,7 +325,7 @@ const CompanyCreditNotesTable: React.FC = () => {
                 <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
                   add
                 </i>
-                Create Company Credit Note
+                Create Service Provider Credit Note
               </span>
             </button>
           </Can>
@@ -334,7 +334,7 @@ const CompanyCreditNotesTable: React.FC = () => {
 
       <p className="mt-[3px] text-[11px] text-danger-500">
         Only invoices in <span className="font-medium">paid</span> status are eligible for
-        company credit notes.
+        Service Provider credit notes.
       </p>
 
       <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md overflow-hidden">
@@ -451,8 +451,8 @@ const CompanyCreditNotesTable: React.FC = () => {
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm || statusFilter !== 'all'
-                          ? 'No company credit notes match your criteria'
-                          : 'No company credit notes found'}
+                          ? 'No Service Provider credit notes match your criteria'
+                          : 'No Service Provider credit notes found'}
                       </td>
                     </tr>
                   )}
@@ -467,7 +467,7 @@ const CompanyCreditNotesTable: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white dark:bg-[#0c1427] rounded-md shadow-lg w-full max-w-2xl p-[20px] md:p-[25px]">
             <div className="flex items-center justify-between mb-[15px]">
-              <h5 className="!mb-0">Create Company Credit Note</h5>
+              <h5 className="!mb-0">Create Service Provider Credit Note</h5>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
@@ -478,7 +478,7 @@ const CompanyCreditNotesTable: React.FC = () => {
             </div>
 
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-[10px]">
-              Select the company invoice for which you want to create a credit note. The credit note
+              Select the Service Provider invoice for which you want to create a credit note. The credit note
               will be created as a draft with zero amounts; you can add items and taxes on the
               credit note detail page.
             </p>

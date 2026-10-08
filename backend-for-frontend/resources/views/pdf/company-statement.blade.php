@@ -18,6 +18,7 @@
         .center { text-align: center; }
         .title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
         .sub { font-size: 13px; color:#6B7280; margin-bottom: 8px; }
+        .sub2 { font-size: 13px; color:#000000; margin-bottom: 8px; }
         .addresses { display:flex; justify-content:space-between; margin-bottom:12px; }
         .addr { width:48%; font-size:13px; }
         .addr .label { font-weight:600; color:#6B7280; text-transform:uppercase; letter-spacing:.06em; }
@@ -49,44 +50,19 @@
 
 
     <div class="center">
-        <div class="title">Vendor Statement of Account</div>
+        <div class="title">Service Provider Statement of Account</div>
     </div>
 
     <div class="section">
         <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 30px;">
             <tr>
-                <!-- From -->
-                <td style="width: 50%; vertical-align: top; padding-right: 8px;">
-                    <div style="margin-top: 16px;">
-                        <h2>From:</h2>
-                        <div class="text-sm"><span class="font-semibold">{{ $senderName }}</span></div>
-                        @if(!empty($senderAddressLine1))
-                            <div class="text-sm mt-1">{{ $senderAddressLine1 }}</div>
-                        @endif
-                        @if(!empty($senderCity) || !empty($senderState) || !empty($senderCountry))
-                            <div class="text-sm">
-                                {{ trim(($senderCity ?? '') . (isset($senderCity, $senderState) ? ', ' : '') . ($senderState ?? '')) }}
-                                @if(!empty($senderCountry))
-                                    {{ isset($senderCity) || isset($senderState) ? ', ' : '' }}{{ $senderCountry }}
-                                @endif
-                            </div>
-                        @endif
-                        @if(!empty($senderPhone))
-                            <div class="text-sm mt-1">Phone: {{ $senderPhone }}</div>
-                        @endif
-                        @if(!empty($senderEmail))
-                            <div class="text-sm mt-1">Email: {{ $senderEmail }}</div>
-                        @endif
-                    </div>
-                </td>
-
                 <!-- Bill To on the far right, text left-aligned inside -->
-                <td style="width: 50%; vertical-align: top; padding-left: 8px; text-align: right;">
+                <td style="width: 100%; vertical-align: top; padding-left: 8px; text-align: center;">
                     <div style="margin-top: 16px;">
-                        <h2>To:</h2>
+                        <h3>Company Details:</h3>
                         <div class="text-sm">
                             @if($meta['company_name'])
-                                <span class="font-semibold">{{ $meta['company_name'] }}</span>
+                                <div class="text-sm mt-1"><b>{{ $meta['company_name'] }}</b></div>
                             @else
                                 -
                             @endif
@@ -103,12 +79,7 @@
                                     @endif
                                 </div>
                             @endif
-                            @if(!empty($meta['company']['phone']))
-                                <div class="text-sm mt-1">Phone: {{ $meta['company']['phone'] }}</div>
-                            @endif
-                            @if(!empty($meta['company']['email']))
-                                <div class="text-sm mt-1">Email: {{ $meta['company']['email'] }}</div>
-                            @endif
+                            
                         @endif
                     </div>
                 </td>
@@ -120,7 +91,7 @@
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Job Ref</th>
+                <th>BOL Number</th>
                 <th>Document #</th>
                 <th>Details</th>
                 <th class="text-right">Debit Amount({{ $account->currency ?? 'KES' }})</th>

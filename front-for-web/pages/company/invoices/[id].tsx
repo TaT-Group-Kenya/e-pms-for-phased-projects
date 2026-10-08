@@ -1602,7 +1602,7 @@ export default function CompanyInvoiceDetailPage() {
 
                       {primaryPhase && (
                         <div className="flex justify-between items-center pt-[10px]">
-                          <span className="text-gray-600 dark:text-gray-400">Project Phase:</span>
+                          <span className="text-gray-600 dark:text-gray-400">Consignment Phase:</span>
                           <span className="text-black dark:text-white text-sm text-right">
                             <span className="font-semibold">{primaryPhase.name}</span>
                             {primaryPhase.code && (
@@ -1964,7 +1964,7 @@ export default function CompanyInvoiceDetailPage() {
                   {invoice.project && (
                     <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                       <h6 className="text-black dark:text-white font-semibold mb-[15px]">
-                        Project
+                        Consignment
                       </h6>
 
                       <div className="space-y-[8px] text-sm">
@@ -2663,7 +2663,7 @@ export default function CompanyInvoiceDetailPage() {
 
               <div>
                 <label className="block text-xs font-medium mb-[5px]">
-                  Project Currency Forex Rate <span className="text-danger-500 dark:text-gray-400">*</span>
+                  Consignment Currency Forex Rate <span className="text-danger-500 dark:text-gray-400">*</span>
                 </label>
                 <input
                   type="number"
@@ -2888,7 +2888,7 @@ export default function CompanyInvoiceDetailPage() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-medium mb-[5px]">Project Phase</label>
+                <label className="block text-xs font-medium mb-[5px]">Consignment Phase</label>
                 <select
                   value={itemProjectPhaseId != null ? String(itemProjectPhaseId) : ''}
                   onChange={(e) => {
@@ -2909,7 +2909,7 @@ export default function CompanyInvoiceDetailPage() {
                 </select>
                 {!companyPhases.length && company && (
                   <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
-                    No project phases are currently assigned to this company.
+                    No Consignment phases are currently assigned to this Service Provider.
                   </p>
                 )}
               </div>
@@ -3123,7 +3123,7 @@ export default function CompanyInvoiceDetailPage() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-medium mb-[5px]">Project Phase (optional)</label>
+                <label className="block text-xs font-medium mb-[5px]">Consignment Phase (optional)</label>
                 <select
                   value={editItemProjectPhaseId != null ? String(editItemProjectPhaseId) : ''}
                   onChange={(e) => {

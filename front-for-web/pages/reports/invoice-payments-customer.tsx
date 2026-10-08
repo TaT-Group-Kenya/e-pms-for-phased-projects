@@ -150,7 +150,7 @@ export default function InvoicePaymentsCustomerReportPage() {
       'ID',
       'Date',
       'Customer',
-      'Job Reference ID',
+      'BOL Number',
       'Invoice #',
       'Currency',
       'Amount',
@@ -258,7 +258,7 @@ export default function InvoicePaymentsCustomerReportPage() {
                 </select>
               </div>
               <div className="flex flex-col">
-                <label htmlFor="job_reference_id" className="mb-1 text-sm text-gray-600">Job Reference ID</label>
+                <label htmlFor="job_reference_id" className="mb-1 text-sm text-gray-600">BOL Number</label>
                 <input
                   id="job_reference_id"
                   type="text"
@@ -266,7 +266,7 @@ export default function InvoicePaymentsCustomerReportPage() {
                   value={filters.job_reference_id}
                   onChange={handleFilterChange}
                   className="form-input rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 px-4 h-[42px]"
-                  placeholder="Job Reference ID"
+                  placeholder="BOL Number"
                 />
               </div>
               <div className="flex flex-col">
@@ -338,7 +338,7 @@ export default function InvoicePaymentsCustomerReportPage() {
                       <th className="whitespace-nowrap min-w-[80px] text-left px-4 py-2">ID</th>
                       <th className="whitespace-nowrap min-w-[140px] text-left px-4 py-2">Date</th>
                       <th className="whitespace-nowrap min-w-[160px] text-left px-4 py-2">Customer</th>
-                      <th className="whitespace-nowrap min-w-[160px] text-left px-4 py-2">Job Reference ID</th>
+                      <th className="whitespace-nowrap min-w-[160px] text-left px-4 py-2">BOL Number</th>
                       <th className="whitespace-nowrap min-w-[140px] text-left px-4 py-2">Invoice #</th>
                       <th className="whitespace-nowrap min-w-[100px] text-left px-4 py-2">Currency</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Amount</th>

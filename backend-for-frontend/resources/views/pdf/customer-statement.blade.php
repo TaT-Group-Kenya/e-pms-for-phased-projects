@@ -55,38 +55,13 @@
     <div class="section">
         <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 30px;">
             <tr>
-                <!-- From -->
-                <td style="width: 50%; vertical-align: top; padding-right: 8px;">
-                    <div style="margin-top: 16px;">
-                        <h2>From:</h2>
-                        <div class="text-sm"><span class="font-semibold">{{ $senderName }}</span></div>
-                        @if(!empty($senderAddressLine1))
-                            <div class="text-sm mt-1">{{ $senderAddressLine1 }}</div>
-                        @endif
-                        @if(!empty($senderCity) || !empty($senderState) || !empty($senderCountry))
-                            <div class="text-sm">
-                                {{ trim(($senderCity ?? '') . (isset($senderCity, $senderState) ? ', ' : '') . ($senderState ?? '')) }}
-                                @if(!empty($senderCountry))
-                                    {{ isset($senderCity) || isset($senderState) ? ', ' : '' }}{{ $senderCountry }}
-                                @endif
-                            </div>
-                        @endif
-                        @if(!empty($senderPhone))
-                            <div class="text-sm mt-1">Phone: {{ $senderPhone }}</div>
-                        @endif
-                        @if(!empty($senderEmail))
-                            <div class="text-sm mt-1">Email: {{ $senderEmail }}</div>
-                        @endif
-                    </div>
-                </td>
-
                 <!-- Bill To on the far right, text left-aligned inside -->
-                <td style="width: 50%; vertical-align: top; padding-left: 8px; text-align: right;">
+                <td style="width: 100%; vertical-align: top; padding-left: 8px; text-align: center;">
                     <div style="margin-top: 16px;">
-                        <h2>To:</h2>
+                        <h3>Customer Details:</h3>
                         <div class="text-sm">
                             @if($meta['customer_name'])
-                                <span class="font-semibold">{{ $meta['customer_name'] }}</span>
+                                <span class="text-sm mt-1"><b>{{ $meta['customer_name'] }}</b></span>
                             @else
                                 -
                             @endif
@@ -103,12 +78,6 @@
                                     @endif
                                 </div>
                             @endif
-                            @if(!empty($meta['customer']['phone']))
-                                <div class="text-sm mt-1">Phone: {{ $meta['customer']['phone'] }}</div>
-                            @endif
-                            @if(!empty($meta['customer']['email']))
-                                <div class="text-sm mt-1">Email: {{ $meta['customer']['email'] }}</div>
-                            @endif
                         @endif
                     </div>
                 </td>
@@ -120,7 +89,7 @@
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Job Ref</th>
+                <th>BOL Number</th>
                 <th>Document #</th>
                 <th>Details</th>
                 <th class="text-right">Debit Amount({{ $account->currency ?? 'KES' }})</th>

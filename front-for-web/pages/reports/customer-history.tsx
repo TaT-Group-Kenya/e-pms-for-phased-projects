@@ -103,12 +103,12 @@ export default function CustomerHistoryReportPage() {
   function exportCsv() {
     const columns = [
       'Date',
-      'Job Reference ID',
+      'BOL Number',
       'Customer',
       'Title',
       'Category',
-      'Source Origin',
-      'Location',
+      'Destination',
+      'CFS',
       'Currency',
       'Amount',
       'Created By',
@@ -220,12 +220,12 @@ export default function CustomerHistoryReportPage() {
                   <thead>
                     <tr>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Date</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Reference ID</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">BOL Number</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Customer</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Title</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Category</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Source Origin</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Location</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Destination</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">CFS</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Currency</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Amount</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Created By</th>

@@ -77,7 +77,7 @@ const ProjectSearchableReportingTable: React.FC = () => {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch projects`);
+          throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch consignments`);
         }
 
         const data = await response.json();
@@ -87,9 +87,9 @@ const ProjectSearchableReportingTable: React.FC = () => {
         setProjects(projectsData);
         setError(null);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'An error occurred while fetching projects';
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred while fetching consignments';
         setError(errorMessage);
-        console.error('Fetch projects error:', err);
+        console.error('Fetch consignments error:', err);
         setProjects([]);
       } finally {
         setLoading(false);
@@ -213,7 +213,7 @@ const ProjectSearchableReportingTable: React.FC = () => {
 
   // Export to CSV function
   const handleExportCSV = () => {
-    const headers = ['ID', 'Code', 'Project Name', 'Description', 'Customer', 'Category', 'Timeline', 'Budget', 'Status', 'Priority', 'Progress', 'Tags'];
+    const headers = ['ID', 'Code', 'Consignment', 'Description', 'Customer', 'Category', 'Timeline', 'Budget', 'Status', 'Priority', 'Progress', 'Container Numbers'];
     const rows = filteredProjects.map((project) => {
       const customer = customers.find((c) => c.id === project.customer_id);
       const category = projectCategories.find((cat) => cat.id === project.project_category_id);
@@ -271,7 +271,7 @@ const ProjectSearchableReportingTable: React.FC = () => {
               </label>
               <input
                 type="text"
-                placeholder="Search project here....."
+                placeholder="Search consignment here....."
                 value={searchTerm}
                 onChange={handleSearch}
                 className="bg-gray-50 border border-gray-50 h-[36px] text-xs rounded-md w-full block text-black pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] ltr:md:pr-[16px] rtl:pl-[13px] rtl:md:pl-[16px] placeholder:text-gray-500 outline-0 dark:bg-[#15203c] dark:text-white dark:border-[#15203c] dark:placeholder:text-gray-400"
@@ -356,7 +356,7 @@ const ProjectSearchableReportingTable: React.FC = () => {
         <div className="trezo-card-content">
           {loading && (
             <div className="text-center py-[40px] text-gray-500">
-              <p>Loading projects...</p>
+              <p>Loading consignments...</p>
             </div>
           )}
 
@@ -385,7 +385,7 @@ const ProjectSearchableReportingTable: React.FC = () => {
                       Code
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap ltr:first:rounded-tl-md ltr:last:rounded-tr-md rtl:first:rounded-tr-md rtl:last:rounded-tl-md">
-                      Project Name
+                      Consignment
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap ltr:first:rounded-tl-md ltr:last:rounded-tr-md rtl:first:rounded-tr-md rtl:last:rounded-tl-md">
                       Timeline
@@ -415,7 +415,7 @@ const ProjectSearchableReportingTable: React.FC = () => {
                   {projectsToDisplay.length === 0 ? (
                     <tr>
                       <td colSpan={10} className="text-center py-[40px] text-gray-500">
-                        No projects found
+                        No consignments found
                       </td>
                     </tr>
                   ) : (

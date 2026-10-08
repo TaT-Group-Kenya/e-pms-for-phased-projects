@@ -329,7 +329,7 @@ export default function PdcIssuedDetailPage() {
 
                 <div className="p-4 border rounded-md bg-slate-50 dark:bg-[#111827]">
                   <div className="text-sm text-gray-500 font-semibold">
-                    Company
+                    Service Provider
                   </div>
                   <div className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
                     {item.company

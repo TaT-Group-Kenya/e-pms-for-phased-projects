@@ -86,7 +86,7 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
         return;
       }
 
-      addToast("Project category updated successfully", "success");
+      addToast("Category updated successfully", "success");
       onSuccess();
     } catch (err) {
       console.error("Error updating category:", err);
@@ -100,7 +100,7 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-[20px]">
       <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-full max-w-[500px]">
         <div className="mb-[20px]">
-          <h6 className="!mb-0">Edit Project Category</h6>
+          <h6 className="!mb-0">Edit Category</h6>
         </div>
 
         {error && (
@@ -122,7 +122,7 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
               className={`h-[44px] rounded-md text-black dark:text-white border ${
                 errors.name ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
               } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-              placeholder="E.g. Web Development"
+              placeholder="E.g. Export"
               disabled={isSubmitting}
             />
             {errors.name && (

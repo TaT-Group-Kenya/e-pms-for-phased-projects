@@ -139,7 +139,7 @@ export default function OrdersSummaryReportPage() {
     function exportCsv() {
         const columns = [
             'Date',
-            'Job Reference ID',
+            'BOL Number',
             'Customer',
             'Title',
             'Currency',
@@ -288,7 +288,7 @@ export default function OrdersSummaryReportPage() {
                                     <thead>
                                         <tr>
                                             <th className="whitespace-nowrap min-w-[140px] text-left px-4 py-2">Date</th>
-                                            <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Reference ID</th>
+                                            <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">BOL Number</th>
                                             <th className="whitespace-nowrap min-w-[160px] text-left px-4 py-2">Customer</th>
                                             <th className="whitespace-nowrap min-w-[200px] text-left px-4 py-2">Title</th>
                                             <th className="whitespace-nowrap min-w-[100px] text-left px-4 py-2">Currency</th>

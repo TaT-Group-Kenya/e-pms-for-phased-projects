@@ -21,7 +21,7 @@ export default function ProjectDetailsPage() {
     <AuthenticatedLayout>
       <>
         <div className="mb-[25px] md:flex items-center justify-between">
-          <h5 className="!mb-0">Project Details</h5>
+          <h5 className="!mb-0">Consignment Details</h5>
 
           <ol className="breadcrumb mt-[12px] md:mt-0">
             <li className="breadcrumb-item inline-block relative text-sm mx-[11px] ltr:first:ml-0 rtl:first:mr-0 ltr:last:mr-0 rtl:last:ml-0">
@@ -41,7 +41,7 @@ export default function ProjectDetailsPage() {
                 href="/project/project-list"
                 className="inline-block relative transition-all hover:text-primary-500"
               >
-                Projects
+                Consignments
               </Link>
             </li>
 

@@ -13,11 +13,11 @@ import { formatApiError } from "../../../utils/errorHandler";
 
 // Zod schema for form validation - based on ProjectStoreRequest
 const projectSchema = z.object({
-  name: z.string().min(1, "Project name is required").max(255, "Project name must not exceed 255 characters"),
+  name: z.string().min(1, "Consignment name is required").max(255, "Consignment name must not exceed 255 characters"),
   creationDate: z.string().min(1, "Creation date is required"),
   description: z.string().min(1, "Description is required").max(255, "Description must not exceed 255 characters"),
   customer_id: z.string().min(1, "Customer is required"),
-  project_category_id: z.string().min(1, "Project category is required"),
+  project_category_id: z.string().min(1, "Consignment category is required"),
   project_source_origin_id: z.string().optional(),
   project_location_id: z.string().optional(),
   no_of_phases: z.string().min(1, "Number of phases is required"),
@@ -228,7 +228,7 @@ const CreateProjectForm: React.FC = () => {
         return;
       }
 
-      setSuccessMessage("Project created successfully!");
+      setSuccessMessage("Consignment created successfully!");
       reset();
       setTags([]);
 
@@ -236,8 +236,8 @@ const CreateProjectForm: React.FC = () => {
         router.push("/project/project-list");
       }, 2000);
     } catch (err) {
-      console.error("Error creating project:", err);
-      setFormError("An error occurred while creating the project");
+      console.error("Error creating Consignment:", err);
+      setFormError("An error occurred while creating the Consignment");
     } finally {
       setIsSubmitting(false);
     }
@@ -282,7 +282,7 @@ const CreateProjectForm: React.FC = () => {
               <div className="mb-[20px] sm:mb-0 flex gap-4">
                 <div className="flex-1">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Project Name <span className="text-danger-500">*</span>
+                    Consignment Name <span className="text-danger-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -290,7 +290,7 @@ const CreateProjectForm: React.FC = () => {
                     className={`h-[44px] rounded-md text-black dark:text-white border ${
                       errors.name ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
                     } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                    placeholder="E.g. Website Redesign"
+                    placeholder="E.g. Clearance and Transport"
                   />
                   {renderFieldError("name")}
                 </div>
@@ -319,7 +319,7 @@ const CreateProjectForm: React.FC = () => {
                   className={`rounded-md text-black dark:text-white border ${
                     errors.description ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
                   } bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                  placeholder="Enter project description"
+                  placeholder="Enter Consignment description"
                   rows={3}
                 />
                 {renderFieldError("description")}
@@ -350,7 +350,7 @@ const CreateProjectForm: React.FC = () => {
               {/* Project Category - Required */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Category <span className="text-danger-500">*</span>
+                  Consignment Category <span className="text-danger-500">*</span>
                 </label>
                 <select
                   {...register("project_category_id")}
@@ -372,14 +372,14 @@ const CreateProjectForm: React.FC = () => {
               {/* Project Source - Optional */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Source
+                  Destination
                 </label>
                 <select
                   {...register("project_source_origin_id")}
                   disabled={loadingData}
                   className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
                 >
-                  <option value="">{loadingData ? "Loading sources..." : "Select a source (optional)"}</option>
+                  <option value="">{loadingData ? "Loading destinations..." : "Select a destination (optional)"}</option>
                   {projectSources.map((source) => (
                     <option key={source.id} value={source.id.toString()}>
                       {source.name}
@@ -391,14 +391,14 @@ const CreateProjectForm: React.FC = () => {
               {/* Project Location - Optional */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Location
+                  CFS
                 </label>
                 <select
                   {...register("project_location_id")}
                   disabled={loadingData}
                   className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
                 >
-                  <option value="">{loadingData ? "Loading locations..." : "Select a location (optional)"}</option>
+                  <option value="">{loadingData ? "Loading cfss..." : "Select a CFS (optional)"}</option>
                   {projectLocations.map((location) => (
                     <option key={location.id} value={location.id.toString()}>
                       {location.name}
@@ -523,7 +523,7 @@ const CreateProjectForm: React.FC = () => {
                   } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer`}
                 >
                   <option value="">Select priority</option>
-                  <option value="Low">Low</option>
+                  <option value="Normal">Normal</option>
                   <option value="Medium">Medium</option>
                   <option value="High">High</option>
                 </select>
@@ -551,7 +551,7 @@ const CreateProjectForm: React.FC = () => {
               {/* Tags - Optional */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Tags
+                  Container Numbers
                 </label>
                 <div className={`rounded-md border ${
                   tags.length === 0 && !errors.tags ? "border-gray-200 dark:border-[#172036]" : 
@@ -587,7 +587,7 @@ const CreateProjectForm: React.FC = () => {
                       }
                     }}
                     className="w-full outline-0 bg-transparent text-black dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
-                    placeholder={tags.length === 0 ? "E.g. web, frontend, api (Press Enter to add)" : "Press Enter to add"}
+                    placeholder={tags.length === 0 ? "E.g. MSNU5897323, MSNU5897324, MSNU5897325 (Press Enter to add)" : "Press Enter to add"}
                   />
                 </div>
                 {renderFieldError("tags")}
@@ -608,7 +608,7 @@ const CreateProjectForm: React.FC = () => {
                 disabled={isSubmitting}
                 className="px-[25px] py-[10px] rounded-md bg-primary-500 text-white hover:bg-primary-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? "Creating..." : "Create Project"}
+                {isSubmitting ? "Creating..." : "Create Consignment"}
               </button>
             </div>
           </div>

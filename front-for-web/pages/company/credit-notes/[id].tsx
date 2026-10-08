@@ -181,7 +181,7 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
       const data: any = await resp.json().catch(() => null)
 
       if (!resp.ok) {
-        throw new Error(data?.message || 'Failed to load company credit note')
+        throw new Error(data?.message || 'Failed to load Service Provider credit note')
       }
 
       const cn = data?.data || data
@@ -261,7 +261,7 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
 
       setCreditNote(mapped)
     } catch (e: any) {
-      addToast(e?.message || 'Failed to load company credit note', 'error')
+      addToast(e?.message || 'Failed to load Service Provider credit note', 'error')
       setCreditNote(null)
     } finally {
       setLoading(false)
@@ -809,13 +809,13 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
       <AuthenticatedLayout>
         <div className="text-center py-[60px]">
           <p className="text-gray-500 dark:text-gray-400 mb-[20px]">
-            Company credit note not found
+            Service Provider credit note not found
           </p>
           <Link
             href="/company/invoices/invoice-list"
             className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[24px] py-[11px] bg-primary-500 text-white hover:bg-primary-600"
           >
-            Back to Company Invoices
+            Back to Service Provider Invoices
           </Link>
         </div>
       </AuthenticatedLayout>
@@ -834,7 +834,7 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
 
       <div className="mb-[25px] md:flex items-center justify-between">
         <div>
-          <h5 className="!mb-1">Company Credit Note</h5>
+          <h5 className="!mb-1">Service Provider Credit Note</h5>
           <p className="text-sm text-gray-500">
             Credit Note #{creditNote.credit_note_number || creditNote.id}
           </p>
@@ -858,7 +858,7 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
               href="/company/invoices/invoice-list"
               className="hover:text-primary-500"
             >
-              Company Invoices
+              Service Provider Invoices
             </Link>
           </li>
 
@@ -1556,7 +1556,7 @@ const CompanyCreditNoteDetailPage: React.FC = () => {
                     Related Transactions
                   </h6>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Company ledger entries linked to this credit note.
+                    Service Provider ledger entries linked to this credit note.
                   </p>
                 </div>
                 <div className="text-right">

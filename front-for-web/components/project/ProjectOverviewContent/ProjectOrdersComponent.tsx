@@ -31,7 +31,7 @@ const ProjectOrdersComponent: React.FC<ProjectOrdersComponentProps> = ({ order }
               <i className="material-symbols-outlined text-[48px] text-gray-400">shopping_cart</i>
             </div>
             <p className="text-gray-600 dark:text-gray-400 font-medium">No order available</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-[8px]">An order will appear here once one is created for this project</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-[8px]">An order will appear here once one is created for this Consignment</p>
           </div>
         </div>
       </div>

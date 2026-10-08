@@ -36,8 +36,8 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ project }) => {
       projectActivities.push({
         id: 1,
         timestamp: "Today",
-        title: "Project Progress Update",
-        description: `Project is currently at ${project.progress}% completion. The project is making steady progress towards completion.`,
+        title: "Consignment Progress Update",
+        description: `Consignment is currently at ${project.progress}% completion. The Consignment is making steady progress towards completion.`,
         author: project.name,
         color: "bg-primary-500",
       });
@@ -45,17 +45,17 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ project }) => {
 
     if (project.status) {
       const statusMessages: { [key: string]: string } = {
-        'in progress': 'The project is actively being worked on by the team.',
-        'pending': 'The project is awaiting to start and resource allocation.',
-        'completed': 'The project has been successfully completed and delivered.',
-        'on hold': 'The project has been temporarily paused pending further action.',
+        'in progress': 'The Consignment is actively being worked on by the team.',
+        'pending': 'The Consignment is awaiting to start and resource allocation.',
+        'completed': 'The Consignment has been successfully completed and delivered.',
+        'on hold': 'The Consignment has been temporarily paused pending further action.',
       };
 
       projectActivities.push({
         id: 2,
         timestamp: "2 days ago",
-        title: `Project Status: ${project.status}`,
-        description: statusMessages[project.status.toLowerCase()] || `Project status is ${project.status}.`,
+        title: `Consignment Status: ${project.status}`,
+        description: statusMessages[project.status.toLowerCase()] || `Consignment status is ${project.status}.`,
         author: project.name,
         color: "bg-warning-500",
       });
@@ -65,8 +65,8 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ project }) => {
       projectActivities.push({
         id: 3,
         timestamp: "3+ days ago",
-        title: "Project Created",
-        description: `Project ${project.name} was created and initialized in the system.`,
+        title: "Consignment Created",
+        description: `Consignment ${project.name} was created and initialized in the system.`,
         author: project.name,
         color: "bg-success-500",
       });
@@ -79,7 +79,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({ project }) => {
             id: 1,
             timestamp: "N/A",
             title: "No Activity",
-            description: "No project activity has been recorded yet.",
+            description: "No Consignment activity has been recorded yet.",
             author: "System",
             color: "bg-gray-500",
           },

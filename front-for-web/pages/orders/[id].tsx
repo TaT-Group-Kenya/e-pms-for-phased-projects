@@ -1154,7 +1154,7 @@ const OrderDetailPage: React.FC = () => {
           <h5 className="!mb-1">Order Details</h5>
           <p className="text-sm text-gray-500">Order #{order.order_number}</p>
           <p className="text-sm text-gray-500">
-            Job Ref: <span className="font-semibold">{order.job_reference_id || "-"}</span>
+            BOL Number: <span className="font-semibold">{order.job_reference_id || "-"}</span>
           </p>
         </div>
 
@@ -1274,7 +1274,7 @@ const OrderDetailPage: React.FC = () => {
                     }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">work</i>
-                  Order Project
+                  Order Consignment
                 </button>
               </li>
             </ul>
@@ -1312,7 +1312,7 @@ const OrderDetailPage: React.FC = () => {
                       </div>
 
                       <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
-                        <span className="text-gray-600 dark:text-gray-400">Job Ref:</span>
+                        <span className="text-gray-600 dark:text-gray-400">BOL Number:</span>
                         <span className="text-black dark:text-white font-semibold">
                           {order.job_reference_id || "-"}
                         </span>
@@ -1618,7 +1618,7 @@ const OrderDetailPage: React.FC = () => {
                   {order.project_owner && (
                     <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                       <h6 className="text-black dark:text-white font-semibold mb-[15px]">
-                        Project Owner
+                        Consignee
                       </h6>
 
                       <div className="space-y-[8px] text-sm">
@@ -1654,7 +1654,7 @@ const OrderDetailPage: React.FC = () => {
                   {order.project && (
                     <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                       <h6 className="text-black dark:text-white font-semibold mb-[15px]">
-                        Project
+                        Consignment
                       </h6>
 
                       <div className="space-y-[8px] text-sm">
@@ -1720,7 +1720,7 @@ const OrderDetailPage: React.FC = () => {
                             </i>
                             {isGeneratingInvoice
                               ? "Generating Invoice..."
-                              : "Approve (Generate Invoice & Project)"}
+                              : "Approve (Generate Invoice & Consignment)"}
                           </button>
                         )}
 
@@ -1988,7 +1988,7 @@ const OrderDetailPage: React.FC = () => {
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <h6 className="text-black dark:text-white font-semibold mb-[15px]">
-                  Order Project
+                  Order Consignment
                 </h6>
 
                 {order.project ? (
@@ -2059,7 +2059,7 @@ const OrderDetailPage: React.FC = () => {
                   </div>
                 ) : (
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    There is no project setup for this order yet.
+                    There is no Consignment setup for this order yet.
                   </p>
                 )}
               </div>
@@ -2113,7 +2113,7 @@ const OrderDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="mb-[10px] text-black dark:text-white font-medium block">
-                      Job Reference ID
+                      BOL Number
                     </label>
                     <input
                       type="text"
@@ -2121,7 +2121,7 @@ const OrderDetailPage: React.FC = () => {
                       onChange={(e) => handleEditFieldChange("job_reference_id", e.target.value)}
                       disabled={true}
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      placeholder="E.g. JOB12345"
+                      placeholder="E.g. MEDUM2822382"
                     />
                   </div>
                   <div>

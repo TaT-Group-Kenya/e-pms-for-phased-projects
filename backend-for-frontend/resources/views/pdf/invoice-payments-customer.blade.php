@@ -45,7 +45,7 @@
                 <th>ID</th>
                 <th>Date</th>
                 <th>Customer</th>
-                <th>Job Reference ID</th>
+                <th>BOL Number</th>
                 <th>Invoice #</th>
                 <th>Currency</th>
                 <th>Amount</th>

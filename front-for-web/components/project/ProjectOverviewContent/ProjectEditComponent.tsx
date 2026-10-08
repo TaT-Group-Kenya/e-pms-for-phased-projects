@@ -187,7 +187,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
     const missingFields: string[] = [];
 
     if (!editFormData.name || !editFormData.name.trim()) {
-      missingFields.push("Project Name");
+      missingFields.push("Consignment Name");
     }
 
     if (!editFormData.created_at || !editFormData.created_at.toString().trim()) {
@@ -199,7 +199,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
     }
 
     if (!editFormData.project_category_id) {
-      missingFields.push("Project Category");
+      missingFields.push("Consignment Category");
     }
 
     if (!editFormData.priority || !editFormData.priority.toString().trim()) {
@@ -247,7 +247,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
       const data = await response.json();
 
       if (!response.ok) {
-        setUpdateMessage({ type: 'error', text: data.message || "Failed to update project" });
+        setUpdateMessage({ type: 'error', text: data.message || "Failed to update Consignment" });
         return;
       }
 
@@ -255,20 +255,20 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
       const updatedProject = data.data || editFormData;
       setEditFormData(updatedProject);
       setIsEditMode(false);
-      setUpdateMessage({ type: 'success', text: 'Project updated successfully' });
+      setUpdateMessage({ type: 'success', text: 'Consignment updated successfully' });
 
       // Trigger parent refresh
       onProjectUpdated?.();
     } catch (err) {
-      console.error("Error updating project:", err);
-      setUpdateMessage({ type: 'error', text: 'Error updating project' });
+      console.error("Error updating Consignment:", err);
+      setUpdateMessage({ type: 'error', text: 'Error updating Consignment' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteProject = async () => {
-    if (!window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
+    if (!window.confirm("Are you sure you want to delete this Consignment? This action cannot be undone.")) {
       return;
     }
 
@@ -283,18 +283,18 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
 
       if (!response.ok) {
         const data = await response.json();
-        addToast(data.message || "Failed to delete project", "error");
+        addToast(data.message || "Failed to delete Consignment", "error");
         return;
       }
 
-      addToast("Project deleted successfully", "success");
+      addToast("Consignment deleted successfully", "success");
       onProjectDeleted?.();
       setTimeout(() => {
         router.push("/project/project-list");
       }, 1500);
     } catch (err) {
-      console.error("Error deleting project:", err);
-      addToast("Error deleting project", "error");
+      console.error("Error deleting Consignment:", err);
+      addToast("Error deleting Consignment", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -309,14 +309,14 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
       <div className="pt-[20px]">
         <div className="flex items-center justify-between mb-[20px]">
           <h6 className="font-semibold text-black dark:text-white">
-            Edit Project
+            Edit Consignment
           </h6>
           {!isEditMode && (
             <div className="flex gap-[8px]">
               <button
                 onClick={handleEdit}
                 className="inline-flex items-center justify-center w-[36px] h-[36px] rounded-md border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Edit project"
+                title="Edit Consignment"
                 disabled={isSubmitting}
               >
                 <i className="material-symbols-outlined !text-[18px]">edit</i>
@@ -324,7 +324,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               <button
                 onClick={handleDeleteProject}
                 className="inline-flex items-center justify-center w-[36px] h-[36px] rounded-md border border-danger-500 text-danger-500 hover:bg-danger-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Delete project"
+                title="Delete Consignment"
                 disabled={isSubmitting}
               >
                 <i className="material-symbols-outlined !text-[18px] text-danger-500">delete</i>
@@ -367,7 +367,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
             <div className="sm:grid sm:grid-cols-3 sm:gap-[25px]">
                 <div className="flex-1">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Project Name <span className="text-danger-500">*</span>
+                    Consignment Name <span className="text-danger-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -392,7 +392,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               {/* Project Code */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Code
+                  Consignment Code
                 </label>
                 <input
                   type="text"
@@ -426,7 +426,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               {/* Project Category */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Category <span className="text-danger-500">*</span>
+                  Consignment Category <span className="text-danger-500">*</span>
                 </label>
                 <select
                   value={editFormData.project_category_id || ""}
@@ -446,7 +446,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               {/* Project Source */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Source
+                  Destination
                 </label>
                 <select
                   value={editFormData.project_source_origin_id || ""}
@@ -459,7 +459,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                   disabled={loadingData}
                   className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
                 >
-                  <option value="">Select a source (optional)</option>
+                  <option value="">Select a Destination (optional)</option>
                   {projectSources.map((source) => (
                     <option key={source.id} value={source.id.toString()}>
                       {source.name}
@@ -471,7 +471,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               {/* Project Location */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Location
+                  CFS
                 </label>
                 <select
                   value={editFormData.project_location_id || ""}
@@ -484,7 +484,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                   disabled={loadingData}
                   className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
                 >
-                  <option value="">Select a location (optional)</option>
+                  <option value="">Select a CFS (optional)</option>
                   {projectLocations.map((location) => (
                     <option key={location.id} value={location.id.toString()}>
                       {location.name}
@@ -522,7 +522,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                   className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer"
                 >
                   <option value="">Select priority</option>
-                  <option value="Low">Low</option>
+                  <option value="Normal">Normal</option>
                   <option value="Medium">Medium</option>
                   <option value="High">High</option>
                 </select>
@@ -629,14 +629,14 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                 onChange={(e) => handleFormChange("description", e.target.value)}
                 rows={4}
                 className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
-                placeholder="Enter project description"
+                placeholder="Enter Consignment description"
               />
             </div>
 
             {/* Tags */}
             <div>
               <label className="mb-[10px] text-black dark:text-white font-medium block">
-                Tags <span className="text-danger-500">*</span>
+                Container Numbers <span className="text-danger-500">*</span>
               </label>
               <div className="rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[12px] py-[8px] block w-full outline-0 transition-all focus:border-primary-500">
                 <div className="flex flex-wrap gap-[8px] mb-[8px]">
@@ -670,7 +670,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                   }}
                   required
                   className="w-full outline-0 bg-transparent text-black dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
-                  placeholder={tags.length === 0 ? "E.g. web, frontend, api (Press Enter to add)" : "Press Enter to add"}
+                  placeholder={tags.length === 0 ? "E.g. MSNU5897323, MSNU5897324, MSNU5897325 (Press Enter to add)" : "Press Enter to add"}
                 />
               </div>
             </div>
@@ -697,11 +697,11 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
           <div className="space-y-[15px]">
             <div className="sm:grid sm:grid-cols-2 sm:gap-[25px]">
               <div>
-                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Project Name</span>
+                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Consignment Name</span>
                 <p className="text-black dark:text-white font-medium">{project?.name || "N/A"}</p>
               </div>
               <div>
-                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Project Code</span>
+                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Consignment Code</span>
                 <p className="text-black dark:text-white font-medium">{project?.code || "N/A"}</p>
               </div>
               <div>
@@ -723,11 +723,11 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                 <p className="text-black dark:text-white font-medium">{project?.progress || 0}%</p>
               </div>
               <div>
-                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Source</span>
+                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Destination</span>
                 <p className="text-black dark:text-white font-medium">{project?.source_origin?.name || "N/A"}</p>
               </div>
               <div>
-                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Location</span>
+                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">CFS</span>
                 <p className="text-black dark:text-white font-medium">{project?.location?.name || "N/A"}</p>
               </div>
             </div>

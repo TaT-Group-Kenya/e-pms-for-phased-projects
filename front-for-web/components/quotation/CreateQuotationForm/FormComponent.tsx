@@ -19,8 +19,8 @@ const quotationSchema = z.object({
     .max(255, "Title must not exceed 255 characters"),
   job_reference_id: z
     .string()
-    .min(1, "Job reference ID is required")
-    .max(32, "Job reference ID must not exceed 32 characters"),
+    .min(1, "BOL Number is required")
+    .max(32, "BOL Number must not exceed 32 characters"),
   // status is hidden, set in API call
   description: z.string().optional(),
   customer_id: z.string().min(1, "Customer is required"),
@@ -300,7 +300,7 @@ const CreateQuotationForm: React.FC = () => {
                     className={`h-[44px] rounded-md text-black dark:text-white border ${
                       errors.title ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
                     } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                    placeholder="E.g. Website Development Quote"
+                    placeholder="E.g. Clearing and Transport"
                   />
                   {renderFieldError("title")}
                 </div>
@@ -308,7 +308,7 @@ const CreateQuotationForm: React.FC = () => {
                 {/* Job Reference ID - Required */}
                 <div className="mb-[20px] sm:mb-0">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Job Reference ID <span className="text-danger-500">*</span>
+                    BOL Number <span className="text-danger-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -318,7 +318,7 @@ const CreateQuotationForm: React.FC = () => {
                         ? "border-danger-500"
                         : "border-gray-200 dark:border-[#172036]"
                     } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                    placeholder="E.g. JOB12345"
+                    placeholder="E.g. MEDUM2822382"
                   />
                   {renderFieldError("job_reference_id")}
                 </div>
@@ -348,14 +348,14 @@ const CreateQuotationForm: React.FC = () => {
                 {/* Project Owner - Optional */}
                 <div className="mb-[20px] sm:mb-0">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Project Owner
+                    Consignee
                   </label>
                   <select
                     {...register("project_owner_id")}
                     disabled={!selectedCustomer}
                     className={`h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    <option value="">{!selectedCustomer ? "Select a customer first" : "Select Project Owner"}</option>
+                    <option value="">{!selectedCustomer ? "Select a customer first" : "Select Consignee"}</option>
                     {projectOwners.map((owner) => (
                       <option key={owner.id} value={owner.id}>
                         {owner.name}

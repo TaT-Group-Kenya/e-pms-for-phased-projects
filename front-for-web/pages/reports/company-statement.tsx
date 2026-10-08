@@ -57,7 +57,7 @@ export default function CompanyStatementReportPage() {
 
   const validateFilters = (): boolean => {
     if (!filters.company_id || !filters.currency_code || !filters.from || !filters.to) {
-      const msg = 'Company, currency, from and to date filters are required.';
+      const msg = 'Service Provider, currency, from and to date filters are required.';
       setError(msg);
       addToast(msg, 'error');
       return false;
@@ -93,7 +93,7 @@ export default function CompanyStatementReportPage() {
         setData(Array.isArray(result.rows) ? result.rows : []);
         setTotals(result.totals || {});
       } else {
-        const msg = result.error || 'Failed to fetch company statement';
+        const msg = result.error || 'Failed to fetch Service Provider statement';
         setError(msg);
         addToast(msg, 'error');
       }
@@ -132,7 +132,7 @@ export default function CompanyStatementReportPage() {
       const urlObj = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = urlObj;
-      a.download = 'company-statement.pdf';
+      a.download = 'service-provider-statement.pdf';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -147,7 +147,7 @@ export default function CompanyStatementReportPage() {
       addToast('No data to export', 'warning');
       return;
     }
-    const columns = ['Date', 'Job Ref', 'Document #', 'Company', 'Description', 'Debit', 'Credit', 'Balance'];
+    const columns = ['Date', 'BOL Number', 'Document #', 'Company', 'Description', 'Debit', 'Credit', 'Balance'];
     const rows = data.map(row => [
       row.date || row.created_at || '',
       row.job_reference || '',
@@ -173,7 +173,7 @@ export default function CompanyStatementReportPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'company-statement.csv';
+    a.download = 'service-provider-statement.csv';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -193,8 +193,8 @@ export default function CompanyStatementReportPage() {
           <div className="mb-6">
             <div className="bg-white rounded-lg shadow p-5 flex items-center justify-between">
               <div>
-                <h5 className="!mb-0">Company Statement</h5>
-                <p className="text-sm text-gray-500">Generate account statements for companies with CSV and PDF export.</p>
+                <h5 className="!mb-0">Service Provider Statement</h5>
+                <p className="text-sm text-gray-500">Generate account statements for Service Providers with CSV and PDF export.</p>
               </div>
               <div className="flex gap-2">
                 <button
@@ -216,7 +216,7 @@ export default function CompanyStatementReportPage() {
           <div className="bg-white rounded-lg shadow p-5 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex flex-col">
-                <label htmlFor="company_id" className="mb-1 text-sm text-gray-600">Company</label>
+                <label htmlFor="company_id" className="mb-1 text-sm text-gray-600">Service Provider</label>
                 <select
                   id="company_id"
                   name="company_id"
@@ -224,7 +224,7 @@ export default function CompanyStatementReportPage() {
                   onChange={handleFilterChange}
                   className="form-select rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 py-3 px-4"
                 >
-                  <option value="">Select company</option>
+                  <option value="">Select Service Provider</option>
                   {companies.map(company => (
                     <option key={company.id} value={company.id}>
                       {company.name || `#${company.id}`}
@@ -296,7 +296,7 @@ export default function CompanyStatementReportPage() {
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="px-4 py-3 text-left font-semibold text-gray-600">Date</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-600">Job Ref</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">BOL Number</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-600">Document #</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-600">Company</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-600">Description</th>

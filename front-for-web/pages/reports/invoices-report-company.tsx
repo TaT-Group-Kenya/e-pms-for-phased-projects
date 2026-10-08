@@ -143,10 +143,10 @@ export default function InvoicesReportCompanyPage() {
     }
     const columns = [
       'Date',
-      'Job Reference ID',
+      'BOL Number',
       'Company',
       'Invoice #',
-      'Project Name',
+      'Consignment',
       'Currency',
       'Amount',
       'Paid',
@@ -213,7 +213,7 @@ export default function InvoicesReportCompanyPage() {
           {/* Card 1: Title & Export */}
           <div className="mb-6">
             <div className="bg-white rounded-lg shadow p-5 flex items-center justify-between">
-              <h5 className="!mb-0">Invoices Report Company</h5>
+              <h5 className="!mb-0">Invoices Report Service Provider</h5>
               <div className="flex gap-2">
                 <button
                   className="rounded-full bg-transparent text-primary-500 px-4 py-2 flex items-center gap-2 hover:bg-primary-50 transition"
@@ -307,7 +307,7 @@ export default function InvoicesReportCompanyPage() {
               <div className="flex flex-col items-center justify-center py-12">
                 <i className="material-symbols-outlined text-6xl text-primary-300 mb-4">hourglass_empty</i>
                 <h3 className="text-xl font-semibold mb-2 text-gray-700">Run report to see data</h3>
-                <p className="text-gray-500 mb-4 text-center">No data has been requested yet.<br />Set your filters and click <span className='font-semibold text-primary-500'>Run Report</span> to generate your invoices company report.</p>
+                <p className="text-gray-500 mb-4 text-center">No data has been requested yet.<br />Set your filters and click <span className='font-semibold text-primary-500'>Run Report</span> to generate your invoices Service Provider report.</p>
                 <div className="flex items-center gap-2">
                   <i className="material-symbols-outlined text-2xl text-primary-500">play_circle</i>
                   <span className="text-primary-500 font-medium">Ready to run your report?</span>
@@ -319,10 +319,10 @@ export default function InvoicesReportCompanyPage() {
                   <thead>
                     <tr>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Date</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Reference ID</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">BOL Number</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Company</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Invoice #</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Project Name</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Consignment</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Currency</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Amount</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Paid</th>

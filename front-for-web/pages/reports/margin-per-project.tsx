@@ -153,9 +153,9 @@ export default function MarginPerProjectReportPage() {
   function exportCsv() {
     const columns = [
       'Date',
-      'Job Reference ID',
+      'BOL Number',
       'Customer',
-      'Project Name',
+      'Consignment',
       'Revenue',
       'Cost',
       'Margin',
@@ -330,9 +330,9 @@ export default function MarginPerProjectReportPage() {
                   <thead>
                     <tr>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Date</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Reference ID</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">BOL Number</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Customer</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Project Name</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Consignment</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Revenue</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Cost</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Margin</th>

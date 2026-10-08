@@ -147,7 +147,7 @@ export default function CustomerStatementReportPage() {
       addToast('No data to export', 'warning');
       return;
     }
-    const columns = ['Date', 'Job Ref', 'Document #', 'Customer', 'Description', 'Debit', 'Credit', 'Balance'];
+    const columns = ['Date', 'BOL Number', 'Document #', 'Customer', 'Description', 'Debit', 'Credit', 'Balance'];
     const rows = data.map(row => [
       row.date || row.created_at || '',
       row.job_reference || '',
@@ -296,7 +296,7 @@ export default function CustomerStatementReportPage() {
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="px-4 py-3 text-left font-semibold text-gray-600">Date</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-600">Job Ref</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">BOL Number</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-600">Document #</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-600">Customer</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-600">Description</th>

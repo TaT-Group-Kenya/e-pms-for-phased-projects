@@ -162,7 +162,7 @@ export default function GeneralLedgerReportPage() {
       ['Payables Net', formatCurrency(totals?.payables?.net ?? 0, 'KES')],
     ];
     // Receivables table
-        const receivableColumns = ['Transaction #', 'Project', 'Customer', 'Amount', 'Currency', 'Tax', 'Net', 'Date'];
+        const receivableColumns = ['Transaction #', 'Consignment', 'Customer', 'Amount', 'Currency', 'Tax', 'Net', 'Date'];
     const receivableRows = (data.receivables || []).map(row => [
           row.transaction_number ?? '',
           row.project_name ?? '',
@@ -174,7 +174,7 @@ export default function GeneralLedgerReportPage() {
       formatDateTime(row.created_at || row.date || ''),
     ]);
     // Payables table
-        const payableColumns = ['Transaction #', 'Project', 'Company', 'Amount', 'Currency', 'Tax', 'Net', 'Date'];
+        const payableColumns = ['Transaction #', 'Consignment', 'Service Provider', 'Amount', 'Currency', 'Tax', 'Net', 'Date'];
     const payableRows = (data.payables || []).map(row => [
           row.transaction_number ?? '',
           row.project_name ?? '',
@@ -238,7 +238,7 @@ export default function GeneralLedgerReportPage() {
           <div className="bg-white rounded-lg shadow p-5 mb-6">
             <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="flex flex-col">
-                <label htmlFor="project_id" className="mb-1 text-sm text-gray-600">Project</label>
+                <label htmlFor="project_id" className="mb-1 text-sm text-gray-600">Consignment</label>
                 <select
                   id="project_id"
                   name="project_id"
@@ -246,14 +246,14 @@ export default function GeneralLedgerReportPage() {
                   onChange={handleFilterChange}
                   className="form-select rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 px-4 h-[42px]"
                 >
-                  <option value="">All Projects</option>
+                  <option value="">All Consignments</option>
                   {projectOptions.map((p: any) => (
                     <option key={p.id || p.value} value={p.id || p.value}>{p.name || p.label || p.code}</option>
                   ))}
                 </select>
               </div>
               <div className="flex flex-col">
-                <label htmlFor="company_id" className="mb-1 text-sm text-gray-600">Company</label>
+                <label htmlFor="company_id" className="mb-1 text-sm text-gray-600">Service Provider</label>
                 <select
                   id="company_id"
                   name="company_id"
@@ -261,7 +261,7 @@ export default function GeneralLedgerReportPage() {
                   onChange={handleFilterChange}
                   className="form-select rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 px-4 h-[42px]"
                 >
-                  <option value="">All Companies</option>
+                  <option value="">All Service Providers</option>
                   {companyOptions.map((c: any) => (
                     <option key={c.id || c.value} value={c.id || c.value}>{c.name || c.label}</option>
                   ))}
@@ -356,7 +356,7 @@ export default function GeneralLedgerReportPage() {
                   <thead>
                     <tr>
                       <th className="text-left">Transaction #</th>
-                      <th className="text-left">Project</th>
+                      <th className="text-left">Consignment</th>
                       <th className="text-left">Customer</th>
                       <th className="text-left">Amount</th>
                       <th className="text-left">Currency</th>
@@ -398,8 +398,8 @@ export default function GeneralLedgerReportPage() {
                   <thead>
                     <tr>
                       <th className="text-left">Transaction #</th>
-                      <th className="text-left">Project</th>
-                      <th className="text-left">Company</th>
+                      <th className="text-left">Consignment</th>
+                      <th className="text-left">Service Provider</th>
                       <th className="text-left">Amount</th>
                       <th className="text-left">Currency</th>
                       <th className="text-left">Tax</th>

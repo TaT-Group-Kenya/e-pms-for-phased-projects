@@ -290,7 +290,7 @@ const CustomerLedgerTable: React.FC = () => {
       "Invoice Number",
       "Customer",
       "Type",
-      "Job Reference ID",
+      "BOL Number",
       "Amount (Net)",
       "Tax Amount",
       "Total Amount",
@@ -456,7 +456,7 @@ const CustomerLedgerTable: React.FC = () => {
                   Type
                 </th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Job Ref ID
+                  BOL Number
                 </th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                   Amount (Net)

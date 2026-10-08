@@ -43,10 +43,10 @@
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Job Reference ID</th>
+                <th>BOL Number</th>
                 <th>Customer</th>
                 <th>Invoice #</th>
-                <th>Project Name</th>
+                <th>Consignment</th>
                 <th>Currency</th>
                 <th>Amount</th>
                 <th>Paid</th>

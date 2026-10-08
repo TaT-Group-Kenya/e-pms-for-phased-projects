@@ -5,12 +5,12 @@ import Can from '../../../components/auth/Can'
 export default function CompanyInvoiceListPage() {
   return (
     <AuthenticatedLayout>
-      <Can any={["ROLE_VIEW_COMPANY_INVOICE"]} fallback={<div>You do not have permission to view company invoices.</div>}>
+      <Can any={["ROLE_VIEW_COMPANY_INVOICE"]} fallback={<div>You do not have permission to view Service Provider invoices.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
         <div>
-          <h5 className="!mb-1">Company Invoices</h5>
+          <h5 className="!mb-1">Service Provider Invoices</h5>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Review and manage all company invoices.
+            Review and manage all Service Provider invoices.
           </p>
         </div>
 
@@ -28,7 +28,7 @@ export default function CompanyInvoiceListPage() {
           </li>
 
           <li className="breadcrumb-item inline-block relative text-sm mx-[11px] ltr:first:ml-0 rtl:first:mr-0 ltr:last:mr-0 rtl:last:ml-0">
-            Company Invoices
+            Service Provider Invoices
           </li>
         </ol>
         </div>

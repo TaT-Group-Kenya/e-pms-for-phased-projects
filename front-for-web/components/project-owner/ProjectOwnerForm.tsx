@@ -110,7 +110,7 @@ const ProjectOwnerForm: React.FC<ProjectOwnerFormProps> = ({
       <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-full max-w-[800px] max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-[25px]">
           <h6 className="font-semibold text-black dark:text-white text-lg">
-            {initialData ? "Edit Project Owner" : "Add Project Owner"}
+            {initialData ? "Edit Consignee" : "Add Consignee"}
           </h6>
           <button
             type="button"
@@ -271,7 +271,7 @@ const ProjectOwnerForm: React.FC<ProjectOwnerFormProps> = ({
                 value={formData.description}
                 onChange={(e) => handleFormChange("description", e.target.value)}
                 className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
-                placeholder="Enter project owner description"
+                placeholder="Enter Consignee description"
                 rows={3}
               />
             </div>

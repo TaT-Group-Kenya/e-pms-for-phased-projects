@@ -11,7 +11,7 @@ import { formatApiError } from "../../../utils/errorHandler";
 
 const sourceOriginSchema = z.object({
   code: z.string().optional(),
-  name: z.string().min(1, "Source name is required").max(255, "Name must not exceed 255 characters"),
+  name: z.string().min(1, "Destination is required").max(255, "Name must not exceed 255 characters"),
   description: z.string().optional(),
 });
 
@@ -77,15 +77,15 @@ const EditSourceOriginModal: React.FC<EditSourceOriginModalProps> = ({
 
       if (!response.ok) {
         const formattedError = formatApiError(responseData);
-        setError(`Failed to update project source: ${formattedError}`);
+        setError(`Failed to update destination: ${formattedError}`);
         return;
       }
 
-      addToast("Project source updated successfully", "success");
+      addToast("Destination updated successfully", "success");
       onSuccess();
     } catch (err) {
-      console.error("Error updating project source:", err);
-      setError("Failed to update the project source. Please check your connection and try again.");
+      console.error("Error updating Destination:", err);
+      setError("Failed to update the Destination. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -95,7 +95,7 @@ const EditSourceOriginModal: React.FC<EditSourceOriginModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-[20px]">
       <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-full max-w-[500px]">
         <div className="mb-[20px]">
-          <h6 className="!mb-0">Edit Project Source</h6>
+          <h6 className="!mb-0">Edit Destination</h6>
         </div>
 
         {error && (
@@ -117,7 +117,7 @@ const EditSourceOriginModal: React.FC<EditSourceOriginModalProps> = ({
 
           <div className="mb-[20px]">
             <label className="mb-[10px] text-black dark:text-white font-medium block">
-              Source Name <span className="text-danger-500">*</span>
+              Name <span className="text-danger-500">*</span>
             </label>
             <input
               type="text"
@@ -125,7 +125,7 @@ const EditSourceOriginModal: React.FC<EditSourceOriginModalProps> = ({
               className={`h-[44px] rounded-md text-black dark:text-white border ${
                 errors.name ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
               } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-              placeholder="E.g. Referral, Tender, Direct"
+              placeholder="E.g. Juba"
             />
             {errors.name && <p className="text-danger-500 text-sm mt-1">{errors.name.message}</p>}
           </div>

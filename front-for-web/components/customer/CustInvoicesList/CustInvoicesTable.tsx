@@ -428,7 +428,7 @@ const CustInvoicesTable: React.FC = () => {
                       Invoice #
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Job Ref ID
+                      BOL Number
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Order #
@@ -443,7 +443,7 @@ const CustInvoicesTable: React.FC = () => {
                       Customer
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Project Owner
+                      Consignee
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Subtotal

@@ -48,8 +48,8 @@ const SourceOriginList: React.FC = () => {
         const data = await response.json();
 
         if (!response.ok) {
-          const message = formatApiError(data) || "Failed to fetch project sources";
-          console.error("Error response fetching project sources:", data);
+          const message = formatApiError(data) || "Failed to fetch Destinations";
+          console.error("Error response fetching Destinations:", data);
           addToast(message, "error");
           setItems([]);
           return;
@@ -58,8 +58,8 @@ const SourceOriginList: React.FC = () => {
         const list = data.data || data;
         setItems(Array.isArray(list) ? list : []);
       } catch (err) {
-        console.error("Error fetching project sources:", err);
-        addToast("Error loading project sources", "error");
+        console.error("Error fetching Destinations:", err);
+        addToast("Error loading Destinations", "error");
       } finally {
         setLoading(false);
       }
@@ -97,12 +97,12 @@ const SourceOriginList: React.FC = () => {
       }
 
       setItems(items.filter((item) => item.id !== deleteTargetId));
-      addToast("Project source deleted successfully", "success");
+      addToast("Destination deleted successfully", "success");
       setShowDeleteModal(false);
       setDeleteTargetId(null);
     } catch (err) {
-      console.error("Error deleting project source:", err);
-      addToast("Error deleting project source", "error");
+      console.error("Error deleting Destination:", err);
+      addToast("Error deleting Destination", "error");
     } finally {
       setDeleting(null);
     }
@@ -125,12 +125,12 @@ const SourceOriginList: React.FC = () => {
 
       <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md p-[20px] md:p-[25px]">
         <div className="flex items-center justify-between mb-[25px]">
-          <h6 className="!mb-0">Project Sources</h6>
+          <h6 className="!mb-0">Destinations</h6>
           <button
             onClick={() => setShowModal(true)}
             className="px-[20px] py-[8px] rounded-md bg-primary-500 text-white hover:bg-primary-600 transition-all font-medium text-sm"
           >
-            + Add Source
+            + Add Destination
           </button>
         </div>
 
@@ -159,13 +159,13 @@ const SourceOriginList: React.FC = () => {
               {loading ? (
                 <tr>
                   <td colSpan={5} className="py-[20px] px-[15px] text-center text-gray-500">
-                    Loading project sources...
+                    Loading Destinations...
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-[20px] px-[15px] text-center text-gray-500">
-                    No project sources found
+                    No Destinations found
                   </td>
                 </tr>
               ) : (
@@ -190,7 +190,7 @@ const SourceOriginList: React.FC = () => {
                           onClick={() => handleEdit(item)}
                           disabled={deleting === item.id}
                           className="hover:text-primary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
-                          title="Edit project source"
+                          title="Edit Destination"
                         >
                           <i className="material-symbols-outlined !text-[20px] text-primary-500">edit</i>
                         </button>
@@ -198,7 +198,7 @@ const SourceOriginList: React.FC = () => {
                           onClick={() => handleDelete(item.id)}
                           disabled={deleting === item.id}
                           className="hover:text-danger-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
-                          title="Delete project source"
+                          title="Delete Destination"
                         >
                           <i className="material-symbols-outlined !text-[20px] text-danger-500">delete</i>
                         </button>
@@ -230,8 +230,8 @@ const SourceOriginList: React.FC = () => {
 
       <DeleteConfirmationModal
         isOpen={showDeleteModal}
-        title="Delete Project Source"
-        message="Are you sure you want to delete this project source? This action cannot be undone."
+        title="Delete Destination"
+        message="Are you sure you want to delete this Destination? This action cannot be undone."
         onConfirm={handleConfirmDelete}
         onCancel={() => {
           setShowDeleteModal(false);

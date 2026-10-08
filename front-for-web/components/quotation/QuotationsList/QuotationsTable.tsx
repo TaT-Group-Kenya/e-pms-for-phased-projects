@@ -265,7 +265,7 @@ const QuotationsList: React.FC = () => {
             </label>
             <input
               type="text"
-              placeholder="Search quotations (number, job ref, title, status)..."
+              placeholder="Search quotations (number, BOL Number, title, status)..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -319,13 +319,13 @@ const QuotationsList: React.FC = () => {
                       Quotation #
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Job Ref
+                      BOL Number
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Customer
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Project Owner
+                      Consignee
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       <span style={{ minWidth: 200, display: 'inline-block' }}>Title</span>

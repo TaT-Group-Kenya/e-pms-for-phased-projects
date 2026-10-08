@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Invoices Report - Company</title>
+    <title>Invoices Report - Service Provider</title>
     <style>
         @page { margin: 40px 40px 60px 40px; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111827; }
@@ -34,7 +34,7 @@
 
 <div class="header">
     <div style="text-align: right;">
-        <h1>Invoices Report - Company</h1>
+        <h1>Invoices Report - Service Provider</h1>
         <div class="muted">Generated on {{ $generatedAt->format('d M Y H:i') }}</div>
     </div>
 </div>
@@ -43,7 +43,7 @@
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Job Reference ID</th>
+                <th>BOL Number</th>
                 <th>Company</th>
                 <th>Invoice #</th>
                 <th>Project Name</th>

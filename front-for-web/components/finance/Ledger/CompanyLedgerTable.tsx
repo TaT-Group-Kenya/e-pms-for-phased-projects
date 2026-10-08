@@ -288,9 +288,9 @@ const CompanyLedgerTable: React.FC = () => {
     const headers = [
       "Date",
       "Invoice Number",
-      "Company",
+      "Service Provider",
       "Type",
-      "Job Reference ID",
+      "BOL Number",
       "Amount (Net)",
       "Tax Amount",
       "Total Amount",
@@ -450,13 +450,13 @@ const CompanyLedgerTable: React.FC = () => {
                   Invoice #
                 </th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Company
+                  Service Provider
                 </th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                   Type
                 </th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                  Job Ref ID
+                  BOL Number
                 </th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                   Amount (Net)

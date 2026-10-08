@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Projects Summary Report</title>
+    <title>Consignments Summary Report</title>
     <style>
         @page { margin: 40px 40px 60px 40px; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111827; }
@@ -34,7 +34,7 @@
 
 <div class="header">
     <div style="text-align: right;">
-        <h1>Projects Summary Report</h1>
+        <h1>Consignments Summary Report</h1>
         <div class="muted">Generated on {{ $generatedAt->format('d M Y H:i') }}</div>
     </div>
 </div>
@@ -43,13 +43,13 @@
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Job Ref</th>
+                <th>BOL Number</th>
                 <th>Customer</th>
-                <th>Project Name</th>
+                <th>Consignments</th>
                 <th>Category</th>
-                <th>Source Origin</th>
-                <th>Location</th>
-                <th>Project Owner</th>
+                <th>Destination</th>
+                <th>CFS</th>
+                <th>Consignee</th>
                 <th>Currency</th>
                 <th>Amount</th>
                 <th>Created By</th>

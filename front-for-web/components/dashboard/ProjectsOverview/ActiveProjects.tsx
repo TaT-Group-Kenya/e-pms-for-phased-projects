@@ -26,7 +26,7 @@ const ActiveProjects: React.FC<ActiveProjectsProps> = ({ value }) => {
             <i className="material-symbols-outlined !text-5xl">stacks</i>
           </div>
           <div>
-            <span className="block">Active Projects</span>
+            <span className="block">Active Consignments</span>
             <h5 className="!mb-0 !text-[20px] mt-[2px]">{current}</h5>
           </div>
         </div>

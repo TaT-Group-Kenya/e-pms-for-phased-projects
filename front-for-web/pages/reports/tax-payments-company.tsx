@@ -166,7 +166,7 @@ export default function TaxPaymentsCompanyReportPage() {
           {/* Card 1: Title & Export */}
           <div className="mb-6">
             <div className="bg-white rounded-lg shadow p-5 flex items-center justify-between">
-              <h5 className="!mb-0">Tax Payments (Company) Report</h5>
+              <h5 className="!mb-0">Tax Payments (Service Provider) Report</h5>
               <div className="flex gap-2">
                 <button
                   className="rounded-full bg-transparent text-primary-500 px-4 py-2 flex items-center gap-2 hover:bg-primary-50 transition"
@@ -196,7 +196,7 @@ export default function TaxPaymentsCompanyReportPage() {
                   className="form-select rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 py-3 px-4"
                 >
                   <option value="customer">Customer</option>
-                  <option value="company">Company</option>
+                  <option value="company">Service Provider</option>
                 </select>
               </div>
               <div className="flex flex-col">
@@ -237,7 +237,7 @@ export default function TaxPaymentsCompanyReportPage() {
               )}
               {type === 'company' && (
                 <div className="flex flex-col">
-                  <label htmlFor="company_id" className="mb-1 text-sm text-gray-600">Company</label>
+                  <label htmlFor="company_id" className="mb-1 text-sm text-gray-600">Service Provider</label>
                   <select
                     id="company_id"
                     name="company_id"
@@ -245,7 +245,7 @@ export default function TaxPaymentsCompanyReportPage() {
                     onChange={handleFilterChange}
                     className="form-select rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 py-3 px-4"
                   >
-                    <option value="">All Companies</option>
+                    <option value="">All Service Providers</option>
                     {companies.map((c) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}

@@ -400,7 +400,7 @@ const QuotationDetail: React.FC = () => {
         if (err instanceof DOMException && err.name === "AbortError") {
           return;
         }
-        console.error("Error fetching project owners:", err);
+        console.error("Error fetching consignees:", err);
       } finally {
         setLoadingProjectOwners(false);
       }
@@ -1229,7 +1229,7 @@ const QuotationDetail: React.FC = () => {
               Quote #: <span className="font-semibold">{quotation.quotation_number}</span>
             </p>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              Job Ref: <span className="font-semibold">{quotation.job_reference_id || "-"}</span>
+              BOL Number: <span className="font-semibold">{quotation.job_reference_id || "-"}</span>
             </p>
           </div>
 
@@ -1342,7 +1342,7 @@ const QuotationDetail: React.FC = () => {
 
                       {quotation.project && (
                         <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
-                          <span className="text-gray-600 dark:text-gray-400">Related Project:</span>
+                          <span className="text-gray-600 dark:text-gray-400">Related Consignment:</span>
                           <span className="text-black dark:text-white font-semibold">
                             {quotation.project.code} - {quotation.project.name}
                           </span>
@@ -1521,7 +1521,7 @@ const QuotationDetail: React.FC = () => {
                       </div>
 
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Job Ref</span>
+                        <span className="text-gray-600 dark:text-gray-400">BOL Number</span>
                         <span className="text-black dark:text-white font-medium">
                           {quotation.job_reference_id || "-"}
                         </span>
@@ -1529,7 +1529,7 @@ const QuotationDetail: React.FC = () => {
 
                       {quotation.project_owner && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600 dark:text-gray-400">Project Owner</span>
+                          <span className="text-gray-600 dark:text-gray-400">Consignee</span>
                           <span className="text-black dark:text-white font-medium">
                             {quotation.project_owner.name}
                           </span>
@@ -2150,7 +2150,7 @@ const QuotationDetail: React.FC = () => {
                     onChange={(e) => handleItemFormChange("item_name", e.target.value)}
                     disabled={isItemSubmitting}
                     className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    placeholder="E.g. Design work for phase"
+                    placeholder="E.g. Clearance and Transport"
                   />
                 </div>
 
@@ -2440,7 +2440,7 @@ const QuotationDetail: React.FC = () => {
                   </div>
                   <div>
                     <label className="mb-[10px] text-black dark:text-white font-medium block">
-                      Project Owner
+                      Consignee
                     </label>
                     <select
                       value={(editData as any).project_owner_id != null ? String((editData as any).project_owner_id) : (quotation as any).project_owner_id ? String((quotation as any).project_owner_id) : ""}
@@ -2453,7 +2453,7 @@ const QuotationDetail: React.FC = () => {
                       disabled={isEditSubmitting || loadingProjectOwners}
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <option value="">{loadingProjectOwners ? "Loading..." : "Select Project Owner"}</option>
+                      <option value="">{loadingProjectOwners ? "Loading..." : "Select Consignee"}</option>
                       {projectOwners.map((owner) => (
                         <option key={owner.id} value={owner.id}>
                           {owner.name}
@@ -2583,7 +2583,7 @@ const QuotationDetail: React.FC = () => {
                   </div>
                   <div>
                     <label className="mb-[10px] text-black dark:text-white font-medium block">
-                      Job Reference ID
+                      BOL Number
                     </label>
                     <input
                       type="text"
@@ -2591,7 +2591,7 @@ const QuotationDetail: React.FC = () => {
                       onChange={(e) => handleEditFieldChange("job_reference_id", e.target.value)}
                       disabled={isEditSubmitting}
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      placeholder="E.g. JOB12345"
+                      placeholder="E.g. MEDUM2822382"
                     />
                   </div>
                 </div>

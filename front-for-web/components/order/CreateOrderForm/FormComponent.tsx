@@ -130,7 +130,7 @@ const CreateOrderForm: React.FC = () => {
 
       if (!jobRef) {
         setFormError(
-          "The selected quotation is missing a Job Reference ID. Please choose a different quotation or contact your administrator."
+          "The selected quotation is missing a BOL Number. Please choose a different quotation or contact your administrator."
         );
         setIsSubmitting(false);
         return;
@@ -243,14 +243,14 @@ const CreateOrderForm: React.FC = () => {
                 {/* Job Reference ID (derived from quotation) */}
                 <div>
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Job Reference ID
+                    BOL Number
                   </label>
                   <input
                     type="text"
                     value={selectedQuotation?.job_reference_id || ""}
                     readOnly
                     className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-gray-50 dark:bg-[#15203c] px-[17px] block w-full outline-0 cursor-not-allowed"
-                    placeholder="Select a quotation to see its Job Reference ID"
+                    placeholder="Select a quotation to see its BOL Number"
                   />
                 </div>
 
@@ -263,7 +263,7 @@ const CreateOrderForm: React.FC = () => {
                     {...register("title")}
                     className={`h-[44px] rounded-md text-black dark:text-white border ${errors.title ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
                       } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                    placeholder="E.g. Website Development Order"
+                    placeholder="E.g. Clearance and Transport"
                   />
                   {renderFieldError("title")}
                 </div>
