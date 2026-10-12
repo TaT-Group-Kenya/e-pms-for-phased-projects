@@ -2,9 +2,8 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use App\Models\CustInvoice;
+use Illuminate\Foundation\Http\FormRequest;
 
 class CustPaymentAllocationStoreRequest extends FormRequest
 {
@@ -21,12 +20,12 @@ class CustPaymentAllocationStoreRequest extends FormRequest
                 'nullable',
                 'exists:cust_invoices,id',
                 function ($attribute, $value, $fail) {
-                    if (!$value) {
+                    if (! $value) {
                         return;
                     }
 
                     $invoice = CustInvoice::find($value);
-                    if (!$invoice) {
+                    if (! $invoice) {
                         return;
                     }
 

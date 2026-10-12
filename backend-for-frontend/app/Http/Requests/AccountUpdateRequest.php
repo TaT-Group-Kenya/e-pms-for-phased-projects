@@ -20,8 +20,8 @@ class AccountUpdateRequest extends FormRequest
             )],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],
-            'type' => ['sometimes', 'required', Rule::in(['cash','mpesa','bank'])],
-            'group' => ['sometimes', 'required', Rule::in(['Petty','Checking','Savings'])],
+            'type' => ['sometimes', 'required', Rule::in(['cash', 'mpesa', 'bank'])],
+            'group' => ['sometimes', 'required', Rule::in(['Petty', 'Checking', 'Savings'])],
             // currency and balance are controlled by the backend and cannot be changed via update
             'currency' => ['sometimes', 'string', 'max:10', 'exists:currencies,code'],
             'balance' => ['sometimes', 'numeric', 'max:100000000000000'],

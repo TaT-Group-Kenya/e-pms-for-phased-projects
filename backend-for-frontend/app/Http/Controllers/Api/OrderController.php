@@ -1,37 +1,43 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
-use Dompdf\Dompdf;
-use Dompdf\Options;
+use App\Http\Requests\OrderStoreRequest;
+use App\Http\Requests\OrderUpdateRequest;
+use App\Http\Resources\CustInvoiceResource;
+use App\Http\Resources\OrderResource;
+use App\Models\CustInvoiceDocument;
+use App\Models\CustInvoiceItem;
+use App\Models\Download;
 use App\Models\Order;
-use App\Models\Quotation;
 use App\Models\OrderItem;
 use App\Models\Project;
-use App\Models\Download;
+use App\Models\Quotation;
 use App\Models\SysConfig;
 use App\Services\CommonService;
 use App\Services\OrderService;
 use App\Services\OrderToCustInvoiceService;
 use App\Services\ProjectService;
-use App\Http\Resources\OrderResource;
-use App\Http\Resources\CustInvoiceResource;
-use App\Http\Requests\OrderStoreRequest;
-use App\Http\Requests\OrderUpdateRequest;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class OrderController extends Controller
 {
     protected $service;
+
     protected $orderToCustInvoiceService;
 
     protected $projectService;
 
-    public function __construct(OrderService $service, OrderToCustInvoiceService $orderToCustInvoiceService, ProjectService $projectService) {
+    public function __construct(OrderService $service, OrderToCustInvoiceService $orderToCustInvoiceService, ProjectService $projectService)
+    {
         $this->service = $service;
         $this->orderToCustInvoiceService = $orderToCustInvoiceService;
         $this->projectService = $projectService;
@@ -39,19 +45,20 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\Order::class);
+        $this->authorize('viewAny', Order::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
         $data->load(['customer', 'creator', 'projectOwner']);
+
         return OrderResource::collection($data);
     }
 
     public function store(OrderStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\Order::class);
-        
+        $this->authorize('create', Order::class);
+
         $model = DB::transaction(function () use ($request) {
             $validated = $request->validated();
             $validated['created_by'] = Auth::id();
@@ -60,7 +67,7 @@ class OrderController extends Controller
             // If an order is being linked to a quotation, enforce the
             // same business rules as generateFromQuotation: the
             // quotation must be approved and must not already have an order.
-            if (!empty($validated['quotation_id'])) {
+            if (! empty($validated['quotation_id'])) {
                 $quotation = Quotation::with(['order', 'quoteItems'])
                     ->findOrFail($validated['quotation_id']);
 
@@ -82,18 +89,19 @@ class OrderController extends Controller
                     ], 422);
                 }
 
-                // Ensure job_reference_id on the order matches the quotation
-                $validated['job_reference_id'] = $quotation->job_reference_id;
+                // Ensure bol_number + container linkage on the order match the quotation
+                $validated['bol_number'] = $quotation->bol_number;
+                $validated['ship_container_id'] = $quotation->ship_container_id;
             }
 
             $overrides = [
-                'project_id'        => $validated['project_id']       ?? null,
-                'customer_id'       => $validated['customer_id']      ?? null,
-                'title'             => $validated['title']            ?? null,
-                'description'       => $validated['description']      ?? null,
-                'status'            => $validated['status']           ?? 'sent',
-                'payment_terms'     => $validated['payment_terms']    ?? null,
-                'notes_to_customer' => $validated['notes_to_customer']?? null,
+                'project_id' => $validated['project_id'] ?? null,
+                'customer_id' => $validated['customer_id'] ?? null,
+                'title' => $validated['title'] ?? null,
+                'description' => $validated['description'] ?? null,
+                'status' => $validated['status'] ?? 'sent',
+                'payment_terms' => $validated['payment_terms'] ?? null,
+                'notes_to_customer' => $validated['notes_to_customer'] ?? null,
             ];
 
             // Remove null overrides so quotation values are used where
@@ -108,7 +116,7 @@ class OrderController extends Controller
         });
 
         // If the transaction returned an error response, forward it
-        if ($model instanceof \Illuminate\Http\JsonResponse) {
+        if ($model instanceof JsonResponse) {
             return $model;
         }
 
@@ -158,7 +166,7 @@ class OrderController extends Controller
         });
 
         // If the transaction returned an error response, forward it
-        if ($order instanceof \Illuminate\Http\JsonResponse) {
+        if ($order instanceof JsonResponse) {
             return $order;
         }
 
@@ -171,6 +179,7 @@ class OrderController extends Controller
 
         return DB::transaction(function () use ($order) {
             $order->loadMissing(['orderItems', 'documents', 'project', 'customer', 'quotation', 'creator', 'updater', 'projectOwner']);
+
             return new OrderResource($order);
         });
     }
@@ -183,7 +192,7 @@ class OrderController extends Controller
         if ($order->status === 'approved') {
             return response()->json([
                 'message' => 'Approved orders cannot be edited. Unapprove the order first if you need to make changes.',
-                'errors'  => [
+                'errors' => [
                     'status' => ['This order is approved and locked for editing.'],
                 ],
             ], 422);
@@ -204,7 +213,7 @@ class OrderController extends Controller
                 // Ensure the order is linked to a project before creating an invoice,
                 // because customer invoices require a non-null project_id.
                 $updatedOrder->loadMissing(['project']);
-                if (!$updatedOrder->project) {
+                if (! $updatedOrder->project) {
                     $project = $this->createProjectFromOrder($updatedOrder, $userId);
 
                     $updatedOrder->project_id = $project->id;
@@ -232,36 +241,36 @@ class OrderController extends Controller
      */
     protected function createProjectFromOrder(Order $order, ?int $userId = null): Project
     {
-        $commonService = new CommonService();
+        $commonService = new CommonService;
         do {
             $code = $commonService->generateUniqueCode('PRJ-');
         } while (Project::where('code', $code)->exists());
 
-        $name = 'Project for order ' . $order->order_number;
+        $name = 'Project for order '.$order->order_number;
 
         $projectData = [
-            'code'                  => $code,
-            'name'                  => $name,
-            'job_reference_id'       => $order->job_reference_id,
-            'project_owner_id'      => $order->project_owner_id,
-            'description'           => $order->description,
-            'order_id'              => $order->id,
-            'customer_id'           => $order->customer_id,
-            'project_category_id'   => null,
+            'code' => $code,
+            'name' => $name,
+            'bol_number' => $order->bol_number,
+            'project_owner_id' => $order->project_owner_id,
+            'description' => $order->description,
+            'order_id' => $order->id,
+            'customer_id' => $order->customer_id,
+            'project_category_id' => null,
             'project_source_origin_id' => null,
-            'project_location_id'   => null,
-            'no_of_phases'          => '1',
-            'start_date'            => now()->toDateString(),
-            'end_date'              => now()->addMonth()->toDateString(),
-            'budget_estimate'       => $order->total_amount,
-            'status'                => 'draft',
-            'priority'              => 'medium',
-            'progress'              => '0',
-            'tags'                  => null,
-            'currency'              => $order->currency,
-            'created_by'            => $userId,
-            'created_at'            => $order->created_at,
-            'updated_by'            => $userId,
+            'project_location_id' => null,
+            'no_of_phases' => '1',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addMonth()->toDateString(),
+            'budget_estimate' => $order->total_amount,
+            'status' => 'draft',
+            'priority' => 'medium',
+            'progress' => '0',
+            'tags' => null,
+            'currency' => $order->currency,
+            'created_by' => $userId,
+            'created_at' => $order->created_at,
+            'updated_by' => $userId,
         ];
 
         return $this->projectService->create($projectData);
@@ -277,7 +286,7 @@ class OrderController extends Controller
         if ($order->status !== 'approved') {
             return response()->json([
                 'message' => 'Invoice can only be generated from approved orders.',
-                'errors'  => [
+                'errors' => [
                     'status' => ['Order must be approved before generating an invoice.'],
                 ],
             ], 422);
@@ -286,7 +295,7 @@ class OrderController extends Controller
         if ($order->custInvoices()->exists()) {
             return response()->json([
                 'message' => 'An invoice already exists for this order.',
-                'errors'  => [
+                'errors' => [
                     'order_id' => ['Only one customer invoice is allowed per order.'],
                 ],
             ], 422);
@@ -305,7 +314,7 @@ class OrderController extends Controller
             // Ensure the order is linked to a project before creating an invoice,
             // because customer invoices require a non-null project_id.
             $order->loadMissing(['project']);
-            if (!$order->project) {
+            if (! $order->project) {
                 $project = $this->createProjectFromOrder($order, $userId);
                 $order->project_id = $project->id;
                 $order->save();
@@ -351,6 +360,7 @@ class OrderController extends Controller
             });
 
             $this->service->delete($order->id, $deletedBy);
+
             return response()->noContent();
         });
     }
@@ -414,14 +424,14 @@ class OrderController extends Controller
         $subject = sprintf(
             'Order %s%s',
             $order->order_number,
-            $projectName ? ' - ' . $projectName : ''
+            $projectName ? ' - '.$projectName : ''
         );
 
         $mailData = [
-            'order'         => $order,
+            'order' => $order,
             'recipientName' => $recipientName,
-            'projectName'   => $projectName,
-            'fromName'      => $fromName,
+            'projectName' => $projectName,
+            'fromName' => $fromName,
         ];
 
         try {
@@ -429,14 +439,14 @@ class OrderController extends Controller
                 $message->to($order->customer->email, $recipientName)
                     ->subject($subject)
                     ->attach($fullPath, [
-                        'as'   => $fileName,
+                        'as' => $fileName,
                         'mime' => 'application/pdf',
                     ]);
             });
         } catch (\Throwable $e) {
             \Log::error('Failed to send order email', [
                 'order_id' => $order->id,
-                'error'    => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -462,7 +472,7 @@ class OrderController extends Controller
         if ($order->status !== 'approved') {
             return response()->json([
                 'message' => 'Only approved orders can be unapproved.',
-                'errors'  => [
+                'errors' => [
                     'status' => ['This order is not currently approved.'],
                 ],
             ], 422);
@@ -478,7 +488,7 @@ class OrderController extends Controller
                     if ($invoice->payments()->exists()) {
                         return response()->json([
                             'message' => 'Order cannot be unapproved because a related customer invoice has recorded payments.',
-                            'errors'  => [
+                            'errors' => [
                                 'invoice' => ['Reverse or remove payments before unapproving the order.'],
                             ],
                         ], 422);
@@ -488,11 +498,11 @@ class OrderController extends Controller
                 foreach ($invoices as $invoice) {
                     $deletedBy = $request->user()?->id;
 
-                    $invoice->invoiceItems()->get()->each(function (\App\Models\CustInvoiceItem $item) use ($deletedBy) {
+                    $invoice->invoiceItems()->get()->each(function (CustInvoiceItem $item) use ($deletedBy) {
                         $item->softDelete($deletedBy);
                     });
 
-                    $invoice->documents()->get()->each(function (\App\Models\CustInvoiceDocument $doc) use ($deletedBy) {
+                    $invoice->documents()->get()->each(function (CustInvoiceDocument $doc) use ($deletedBy) {
                         $doc->softDelete($deletedBy);
                     });
 
@@ -509,7 +519,7 @@ class OrderController extends Controller
             return $order;
         });
 
-        if ($updated instanceof \Illuminate\Http\JsonResponse) {
+        if ($updated instanceof JsonResponse) {
             return $updated;
         }
 
@@ -548,22 +558,22 @@ class OrderController extends Controller
         $generatedAt = now();
 
         $data = [
-            'order'             => $order,
-            'senderName'        => $senderName,
-            'senderEmail'       => $senderEmail,
-            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
-            'senderPhone'       => $configValues['PHONE']   ?? null,
-            'senderWebsite'     => $configValues['WEBSITE'] ?? config('app.url'),
-            'senderAddressLine1'=> $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'        => $configValues['CITY']    ?? null,
-            'senderState'       => $configValues['STATE']   ?? null,
-            'senderCountry'     => $configValues['COUNTRY'] ?? null,
-            'generatedAt'       => $generatedAt,
+            'order' => $order,
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $configValues['INSTANCE_LOGO'] ?? null,
+            'senderPhone' => $configValues['PHONE'] ?? null,
+            'senderWebsite' => $configValues['WEBSITE'] ?? config('app.url'),
+            'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
+            'senderCity' => $configValues['CITY'] ?? null,
+            'senderState' => $configValues['STATE'] ?? null,
+            'senderCountry' => $configValues['COUNTRY'] ?? null,
+            'generatedAt' => $generatedAt,
         ];
 
         $html = view('pdf.order', $data)->render();
 
-        $options = new Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
 
         $dompdf = new Dompdf($options);
@@ -573,8 +583,8 @@ class OrderController extends Controller
 
         $output = $dompdf->output();
 
-        $fileName = $order->order_number . '.pdf';
-        $relativePath = 'orders/' . $fileName;
+        $fileName = $order->order_number.'.pdf';
+        $relativePath = 'orders/'.$fileName;
 
         Storage::disk('public')->put($relativePath, $output);
 
@@ -589,9 +599,9 @@ class OrderController extends Controller
         $download->save();
 
         return [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
     }
 }

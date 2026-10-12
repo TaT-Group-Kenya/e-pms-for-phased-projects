@@ -149,7 +149,7 @@ export default function OrdersSummaryReportPage() {
         ];
         const rows = data.map(row => [
             row.created_at ? formatDateTime(row.created_at) : '',
-            row.job_reference_id,
+            row.bol_number,
             row.customer_name,
             row.title,
             row.currency,
@@ -306,7 +306,7 @@ export default function OrdersSummaryReportPage() {
                                             data.map((row, idx) => (
                                                 <tr key={idx} className={idx % 2 === 0 ? "bg-gray-50 border-b border-gray-200" : "bg-white border-b border-gray-200"}>
                                                     <td className="whitespace-nowrap min-w-[140px] text-left px-4 py-2">{row.created_at ? formatDateTime(row.created_at) : ''}</td>
-                                                    <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.job_reference_id}</td>
+                                                    <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.bol_number}</td>
                                                     <td className="whitespace-nowrap min-w-[160px] text-left px-4 py-2">{row.customer_name}</td>
                                                     <td className="whitespace-nowrap min-w-[200px] text-left px-4 py-2">{row.title}</td>
                                                     <td className="whitespace-nowrap min-w-[100px] text-left px-4 py-2">{row.currency}</td>

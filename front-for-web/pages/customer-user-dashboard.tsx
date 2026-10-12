@@ -43,7 +43,7 @@ import { formatCurrency } from '../utils/format';
 export interface Quotation {
   id: number;
   quotation_number: string;
-  job_reference_id: string;
+  bol_number: string;
   customer_id: number;
   title: string;
   description: string;
@@ -70,7 +70,7 @@ export interface Quotation {
 export interface Order {
   id: number;
   order_number: string;
-  job_reference_id: string;
+  bol_number: string;
   quotation_id: number;
   project_id: number;
   customer_id: number;
@@ -125,7 +125,7 @@ export interface Invoice {
 export interface CreditNote {
   id: number;
   credit_note_number: string;
-  job_reference_id?: string;
+  bol_number?: string;
   customer_id?: number;
   title: string;
   description?: string;

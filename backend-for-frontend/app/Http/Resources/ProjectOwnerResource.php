@@ -3,7 +3,6 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProjectOwnerResource extends BaseResource
 {
@@ -34,13 +33,13 @@ class ProjectOwnerResource extends BaseResource
                 : ($this->relationLoaded('projects') ? $this->projects->count() : 0),
 
             'customer' => CustomerResource::collection($this->whenLoaded('customer')),
-            
+
             'projects' => ProjectResource::collection($this->whenLoaded('projects')),
-            
+
             'quotations' => QuotationResource::collection($this->whenLoaded('quotations')),
-            
+
             'orders' => OrderResource::collection($this->whenLoaded('orders')),
-            
+
             'invoices' => CustInvoiceResource::collection($this->whenLoaded('invoices')),
         ];
     }

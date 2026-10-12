@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class ProjectStoreRequest extends FormRequest
 {
@@ -16,7 +15,7 @@ class ProjectStoreRequest extends FormRequest
     {
         return [
             'order_id' => ['required', 'exists:orders,id'],
-            'job_reference_id' => ['nullable', 'string', 'max:255'],
+            'bol_number' => ['nullable', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['string', 'max:255'],
             'customer_id' => ['required', 'exists:customers,id'],

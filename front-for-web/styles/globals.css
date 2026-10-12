@@ -310,6 +310,8 @@
   .text-orange-900 { color: var(--color-orange-900); }
   .text-info-500 { color: var(--color-info-500); }
   .text-warning-500 { color: var(--color-warning-500); }
+  .text-warning-700 { color: var(--color-warning-700); }
+  .text-warning-900 { color: var(--color-warning-900); }
   .text-danger-50 { color: var(--color-danger-50); }
   .text-danger-100 { color: var(--color-danger-100); }
   .text-danger-200 { color: var(--color-danger-200); }

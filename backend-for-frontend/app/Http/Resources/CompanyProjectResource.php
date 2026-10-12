@@ -20,9 +20,12 @@ class CompanyProjectResource extends BaseResource
             // Hide budget_estimate in nested project
             'project' => $this->whenLoaded('project', function () {
                 $project = $this->project;
-                if (!$project) return null;
+                if (! $project) {
+                    return null;
+                }
                 $data = (new ProjectResource($project))->toArray(request());
                 unset($data['budget_estimate']);
+
                 return $data;
             }),
 

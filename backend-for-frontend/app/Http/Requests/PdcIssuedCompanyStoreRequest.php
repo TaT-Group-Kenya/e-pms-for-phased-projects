@@ -18,7 +18,7 @@ class PdcIssuedCompanyStoreRequest extends FormRequest
             'company_id' => ['required', 'integer', 'exists:companies,id'],
             'invoice_id' => ['nullable', 'integer', 'exists:company_invoices,id'],
             'cheque_number' => ['required', 'string', 'max:255'],
-            'cheque_date' => ['required', 'date', 'after_or_equal:today'],//maturity date
+            'cheque_date' => ['required', 'date', 'after_or_equal:today'], // maturity date
             'issued_date' => ['required', 'date'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'currency' => ['required', 'string', 'max:10'],

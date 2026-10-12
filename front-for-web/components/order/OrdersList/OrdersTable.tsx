@@ -11,7 +11,7 @@ import Can from "../../auth/Can";
 interface OrderSummary {
   id: number;
   order_number: string;
-  job_reference_id?: string;
+  bol_number?: string;
   project_id: number | null;
   customer_id: number | null;
   title: string;
@@ -155,7 +155,7 @@ const OrdersTable: React.FC = () => {
     const lowerSearch = searchTerm.toLowerCase();
     const matchesSearch =
       order.order_number.toLowerCase().includes(lowerSearch) ||
-      (order.job_reference_id || "").toLowerCase().includes(lowerSearch) ||
+      (order.bol_number || "").toLowerCase().includes(lowerSearch) ||
       (order.customer?.name || "").toLowerCase().includes(lowerSearch) ||
       (order.project_owner?.name || "").toLowerCase().includes(lowerSearch) ||
       order.title.toLowerCase().includes(lowerSearch) ||
@@ -305,7 +305,7 @@ const OrdersTable: React.FC = () => {
                           </Link>
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
-                          {order.job_reference_id || "-"}
+                          {order.bol_number || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {order.customer?.name || "-"}

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class ProjectPhase extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'project_phases';
 
     protected $fillable = [
@@ -28,7 +29,7 @@ class ProjectPhase extends Model
         'deleted_at',
         'deleted_by',
     ];
-    
+
     public function project()
     {
         return $this->belongsTo(Project::class, 'project_id');

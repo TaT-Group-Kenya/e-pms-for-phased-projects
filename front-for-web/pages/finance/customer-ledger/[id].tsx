@@ -83,7 +83,7 @@ interface CustomerLedgerDetail {
   project_id?: number | null;
   project_code?: string | null;
   project_name?: string | null;
-  project_job_reference_id?: string | null;
+  project_bol_number?: string | null;
   project_status?: string | null;
   project_priority?: string | null;
   project_progress?: string | null;
@@ -341,12 +341,12 @@ const CustomerLedgerDetailPageInner: React.FC = () => {
             typeof src.customerInvoice.project === "object"
               ? src.customerInvoice.project.name ?? null
               : null,
-          project_job_reference_id:
+          project_bol_number:
             src.customerInvoice &&
             typeof src.customerInvoice === "object" &&
             src.customerInvoice.project &&
             typeof src.customerInvoice.project === "object"
-              ? src.customerInvoice.project.job_reference_id ?? null
+              ? src.customerInvoice.project.bol_number ?? null
               : null,
           project_status:
             src.customerInvoice &&
@@ -704,8 +704,8 @@ const CustomerLedgerDetailPageInner: React.FC = () => {
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-[2px]">
                         {entry.project_code ? `Code: ${entry.project_code}` : ""}
-                        {entry.project_job_reference_id
-                          ? `${entry.project_code ? " · " : ""}Job Ref: ${entry.project_job_reference_id}`
+                        {entry.project_bol_number
+                          ? `${entry.project_code ? " · " : ""}BOL Number: ${entry.project_bol_number}`
                           : ""}
                       </p>
                       {(entry.project_status || entry.project_priority || entry.project_progress) && (

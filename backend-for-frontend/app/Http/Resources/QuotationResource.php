@@ -6,10 +6,19 @@ class QuotationResource extends BaseResource
 {
     public function toArray($request): array
     {
+        // Container numbers come through the linked ship container entry
+        $numbers = null;
+        if ($this->relationLoaded('shipContainer') && $this->shipContainer) {
+            $numbers = $this->shipContainer->numbers->pluck('container_no')->all();
+        }
+
         return [
             'id' => $this->id,
             'quotation_number' => $this->quotation_number,
-            'job_reference_id' => $this->job_reference_id,
+            'bol_number' => $this->bol_number,
+            'ship_container_id' => $this->ship_container_id,
+            'ship_container' => $this->whenLoaded('shipContainer', new ShipContainerResource($this->shipContainer)),
+            'ship_container_numbers' => $numbers,
             'customer_id' => $this->customer_id,
             'project_owner_id' => $this->project_owner_id,
             'title' => $this->title,
@@ -45,6 +54,8 @@ class QuotationResource extends BaseResource
             'updated_by_user' => new UserResource($this->whenLoaded('updatedByUser')),
 
             'project_owner' => new ProjectOwnerResource($this->whenLoaded('projectOwner')),
+
+            'client_name' => $this->projectOwner?->name ?? $this->project_owner_id,
 
             'receivingPaymentMethod' => new PaymentReceivingMethodResource($this->whenLoaded('receivingPaymentMethod')),
 

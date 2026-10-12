@@ -10,7 +10,7 @@ class ProjectsRoadmapResource extends BaseResource
     {
         return [
             'id' => $this->resource['id'],
-            'job_reference_id' => $this->resource['job_reference_id'],
+            'bol_number' => $this->resource['bol_number'],
             'name' => $this->resource['name'],
             'progress' => $this->resource['progress'],
         ];

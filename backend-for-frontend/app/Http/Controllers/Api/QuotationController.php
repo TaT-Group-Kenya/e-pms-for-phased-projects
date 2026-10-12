@@ -1,49 +1,51 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
+use App\Http\Requests\QuotationStoreRequest;
+use App\Http\Requests\QuotationUpdateRequest;
+use App\Http\Resources\QuotationResource;
+use App\Models\Download;
+use App\Models\Quotation;
+use App\Models\QuoteApproval;
+use App\Models\QuoteLineItem;
+use App\Models\SysConfig;
+use App\Services\CommonService;
+use App\Services\QuotationService;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
-use Dompdf\Dompdf;
-use Dompdf\Options;
-use App\Models\Quotation;
-use App\Models\Download;
-use App\Models\SysConfig;
-use App\Services\QuotationService;
-use App\Services\CommonService;
-use App\Http\Resources\QuotationResource;
-use App\Http\Requests\QuotationStoreRequest;
-use App\Http\Requests\QuotationUpdateRequest;
-use Illuminate\Validation\Rule;
-use App\Models\QuoteLineItem;
-use App\Models\QuoteApproval;
 
 class QuotationController extends Controller
 {
     protected $service;
 
-    public function __construct(QuotationService $service) {
+    public function __construct(QuotationService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\Quotation::class);
+        $this->authorize('viewAny', Quotation::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return QuotationResource::collection($data);
     }
 
     public function store(QuotationStoreRequest $request)
     {
         $this->authorize('create', Quotation::class);
-        $commonService = new CommonService();
+        $commonService = new CommonService;
         $quotationNumber = $commonService->getNextQuotationNumber();
-        
+
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $validated['created_at'] = $validated['creationDate'] ?? now();
@@ -51,9 +53,13 @@ class QuotationController extends Controller
         $validated['description'] = $validated['description'] ?? $validated['title'];
 
         $model = $this->service->create($validated);
+        $model->setRelation('shipContainer', $model->shipContainer()->with('numbers')->first());
+        $model->syncBolNumberFromContainer();
 
         return new QuotationResource($model->load([
             'customer',
+            'projectOwner',
+            'shipContainer.numbers',
             'quoteItems',
             'documents',
             'approvals',
@@ -66,7 +72,7 @@ class QuotationController extends Controller
     {
         $this->authorize('view', $quotation);
 
-        return new QuotationResource($this->service->find($quotation->id, ['customer', 'quoteItems', 'documents', 'approvals', 'order.orderItems', 'receivingPaymentMethod']));
+        return new QuotationResource($this->service->find($quotation->id, ['customer', 'shipContainer.numbers', 'quoteItems', 'documents', 'approvals', 'order.orderItems', 'receivingPaymentMethod']));
     }
 
     public function update(QuotationUpdateRequest $request, Quotation $quotation)
@@ -89,7 +95,7 @@ class QuotationController extends Controller
                 ],
             ], 422);
         }
-        
+
         // No more project-level validation; quotations are standalone
 
         // If quotation is currently sent, only allow status to be changed back to draft
@@ -99,7 +105,7 @@ class QuotationController extends Controller
             $allowedKeys = ['status', 'updated_by', 'created_at'];
             $extraKeys = array_diff($updatableKeys, $allowedKeys);
 
-            if (!empty($extraKeys)) {
+            if (! empty($extraKeys)) {
                 return response()->json([
                     'message' => 'Only the status can be changed for sent quotations, and only back to draft.',
                     'errors' => [
@@ -108,7 +114,7 @@ class QuotationController extends Controller
                 ], 422);
             }
 
-            if (!array_key_exists('status', $validated) || $validated['status'] !== 'draft') {
+            if (! array_key_exists('status', $validated) || $validated['status'] !== 'draft') {
                 return response()->json([
                     'message' => 'Sent quotations can only be changed back to draft.',
                     'errors' => [
@@ -181,9 +187,9 @@ class QuotationController extends Controller
             && $originalStatus !== 'sent'
         ) {
             QuoteApproval::create([
-                'user_id'    => Auth::id(),
-                'quote_id'   => $updated->id,
-                'action'     => 'make',
+                'user_id' => Auth::id(),
+                'quote_id' => $updated->id,
+                'action' => 'make',
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]);
@@ -195,8 +201,15 @@ class QuotationController extends Controller
         // Ensure quotation amounts always match line items and percentages
         $this->recalculateQuotationTotals($updated->id);
 
+        // Keep the legacy bol_number column in sync when the container linkage changes
+        if (array_key_exists('ship_container_id', $validated) || array_key_exists('customer_id', $validated)) {
+            $updated->setRelation('shipContainer', $updated->shipContainer()->with('numbers')->first());
+            $updated->syncBolNumberFromContainer();
+        }
+
         return new QuotationResource($updated->loadMissing([
             'customer',
+            'shipContainer.numbers',
             'quoteItems',
             'documents',
             'approvals',
@@ -277,20 +290,20 @@ class QuotationController extends Controller
         $fullPath = Storage::disk('public')->path($relativePath);
 
         $recipientName = $quotation->customer->name ?? 'Customer';
-        $projectName = null;
+        $projectName = '';
         $fromName = config('mail.from.name', config('app.name', 'EPMS'));
 
         $subject = sprintf(
             'Quotation %s%s',
             $quotation->quotation_number,
-            $projectName ? ' - ' . $projectName : ''
+            $projectName ? ' - '.$projectName : ''
         );
 
         $mailData = [
-            'quotation'     => $quotation,
+            'quotation' => $quotation,
             'recipientName' => $recipientName,
-            'projectName'   => $projectName,
-            'fromName'      => $fromName,
+            'projectName' => $projectName,
+            'fromName' => $fromName,
         ];
 
         try {
@@ -298,14 +311,14 @@ class QuotationController extends Controller
                 $message->to($quotation->customer->email, $recipientName)
                     ->subject($subject)
                     ->attach($fullPath, [
-                        'as'   => $fileName,
+                        'as' => $fileName,
                         'mime' => 'application/pdf',
                     ]);
             });
         } catch (\Throwable $e) {
             \Log::error('Failed to send quotation email', [
                 'quotation_id' => $quotation->id,
-                'error'        => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -324,7 +337,7 @@ class QuotationController extends Controller
     protected function recalculateQuotationTotals(int $quotationId): void
     {
         $quotation = Quotation::with('quoteItems')->find($quotationId);
-        if (!$quotation) {
+        if (! $quotation) {
             return;
         }
 
@@ -386,24 +399,24 @@ class QuotationController extends Controller
         $receivingPaymentMethod = $quotation->receivingPaymentMethod ?? null;
 
         $data = [
-            'quotation'          => $quotation,
-            'senderName'         => $senderName,
-            'senderEmail'        => $senderEmail,
-            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
-            'senderPhone'        => $configValues['PHONE']   ?? null,
-            'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
+            'quotation' => $quotation,
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $configValues['INSTANCE_LOGO'] ?? null,
+            'senderPhone' => $configValues['PHONE'] ?? null,
+            'senderWebsite' => $configValues['WEBSITE'] ?? config('app.url'),
             'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'         => $configValues['CITY']    ?? null,
-            'senderState'        => $configValues['STATE']   ?? null,
-            'senderCountry'      => $configValues['COUNTRY'] ?? null,
-            'generatedAt'        => $generatedAt,
+            'senderCity' => $configValues['CITY'] ?? null,
+            'senderState' => $configValues['STATE'] ?? null,
+            'senderCountry' => $configValues['COUNTRY'] ?? null,
+            'generatedAt' => $generatedAt,
             'receivingPaymentMethod' => $receivingPaymentMethod,
         ];
 
         // Render the Blade view to HTML and generate a PDF using Dompdf
         $html = view('pdf.quotation', $data)->render();
 
-        $options = new Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
 
         $dompdf = new Dompdf($options);
@@ -413,8 +426,8 @@ class QuotationController extends Controller
 
         $output = $dompdf->output();
 
-        $fileName = $quotation->quotation_number . '.pdf';
-        $relativePath = 'quotations/' . $fileName;
+        $fileName = $quotation->quotation_number.'.pdf';
+        $relativePath = 'quotations/'.$fileName;
 
         // Persist the PDF to storage (public disk) so it can be reused/replaced
         Storage::disk('public')->put($relativePath, $output);
@@ -431,9 +444,9 @@ class QuotationController extends Controller
         $download->save();
 
         return [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
     }
 }

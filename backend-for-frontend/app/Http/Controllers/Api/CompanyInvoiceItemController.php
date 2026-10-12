@@ -1,36 +1,40 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\CompanyInvoiceItem;
-use App\Services\CompanyInvoiceItemService;
-use App\Http\Resources\CompanyInvoiceItemResource;
 use App\Http\Requests\CompanyInvoiceItemStoreRequest;
 use App\Http\Requests\CompanyInvoiceItemUpdateRequest;
+use App\Http\Resources\CompanyInvoiceItemResource;
+use App\Models\CompanyInvoiceItem;
+use App\Services\CompanyInvoiceItemService;
+use Illuminate\Http\Request;
 
 class CompanyInvoiceItemController extends Controller
 {
     protected $service;
 
-    public function __construct(CompanyInvoiceItemService $service) {
+    public function __construct(CompanyInvoiceItemService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\CompanyInvoiceItem::class);
+        $this->authorize('viewAny', CompanyInvoiceItem::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return CompanyInvoiceItemResource::collection($data);
     }
 
     public function store(CompanyInvoiceItemStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\CompanyInvoiceItem::class);
+        $this->authorize('create', CompanyInvoiceItem::class);
         $model = $this->service->create($request->validated());
+
         return new CompanyInvoiceItemResource($model);
     }
 
@@ -46,6 +50,7 @@ class CompanyInvoiceItemController extends Controller
         $this->authorize('update', $companyInvoiceItem);
 
         $updated = $this->service->update($companyInvoiceItem->id, $request->validated());
+
         return new CompanyInvoiceItemResource($updated);
     }
 
@@ -54,6 +59,7 @@ class CompanyInvoiceItemController extends Controller
         $this->authorize('delete', $companyInvoiceItem);
 
         $this->service->delete($companyInvoiceItem->id);
+
         return response()->noContent();
     }
 }

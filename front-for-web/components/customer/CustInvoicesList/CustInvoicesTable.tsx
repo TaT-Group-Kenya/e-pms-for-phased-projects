@@ -10,7 +10,7 @@ import Can from "../../auth/Can";
 
 interface CustInvoiceSummary {
   id: number;
-  job_reference_id?: string;
+  bol_number?: string;
   order_number?: string;
   quotation_number?: string;
   invoice_number: string;
@@ -108,7 +108,7 @@ const CustInvoicesTable: React.FC = () => {
           invoice_number: inv.invoice_number,
           title: inv.title ?? null,
           status: inv.status,
-          job_reference_id: inv.job_reference_id ?? null,
+          bol_number: inv.bol_number ?? null,
           order_number: inv.order_number ?? null,
           quotation_number: inv.quotation_number ?? null,
           subtotal_amount: Number(inv.subtotal_amount ?? 0),
@@ -172,7 +172,7 @@ const CustInvoicesTable: React.FC = () => {
       inv.invoice_number.toLowerCase().includes(lowerSearch) ||
       (inv.title || "").toLowerCase().includes(lowerSearch) ||
       inv.status.toLowerCase().includes(lowerSearch) ||
-      (inv.job_reference_id || "").toLowerCase().includes(lowerSearch) ||
+      (inv.bol_number || "").toLowerCase().includes(lowerSearch) ||
       (inv.order_number || "").toLowerCase().includes(lowerSearch) ||
       (inv.quotation_number || "").toLowerCase().includes(lowerSearch) ||
       (inv.project_owner?.name || "").toLowerCase().includes(lowerSearch);
@@ -490,7 +490,7 @@ const CustInvoicesTable: React.FC = () => {
                           </Link>
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
-                          {inv.job_reference_id || ""}
+                          {inv.bol_number || ""}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           {inv.order_number || ""}

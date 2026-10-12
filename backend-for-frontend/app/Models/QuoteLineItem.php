@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class QuoteLineItem extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'quote_line_items';
 
     protected $fillable = [
@@ -44,6 +45,7 @@ class QuoteLineItem extends Model
             // Derive tax amount per line when taxable
             if (! $item->is_taxable) {
                 $item->item_amount = 0;
+
                 return;
             }
 
@@ -62,5 +64,4 @@ class QuoteLineItem extends Model
     {
         return $this->belongsTo(Quotation::class, 'quotation_id');
     }
-
 }

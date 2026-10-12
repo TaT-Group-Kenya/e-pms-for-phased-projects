@@ -2,17 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'orders';
 
     protected $fillable = [
         'order_number',
-        'job_reference_id',
+        'bol_number',
+        'ship_container_id',
         'quotation_id',
         'project_id',
         'customer_id',
@@ -40,6 +42,11 @@ class Order extends Model
     public function quotation()
     {
         return $this->belongsTo(Quotation::class, 'quotation_id');
+    }
+
+    public function shipContainer()
+    {
+        return $this->belongsTo(ShipContainer::class, 'ship_container_id');
     }
 
     public function project()
@@ -72,9 +79,9 @@ class Order extends Model
         return $this->hasMany(CustInvoice::class, 'order_id');
     }
 
-    public function setJobReferenceIdAttribute($value): void
+    public function setBolNumberAttribute($value): void
     {
-        $this->attributes['job_reference_id'] = $value !== null
+        $this->attributes['bol_number'] = $value !== null
             ? strtoupper((string) $value)
             : null;
     }

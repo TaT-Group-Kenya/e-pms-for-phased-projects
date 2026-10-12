@@ -1,44 +1,56 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\CompanyCreditNote;
-use App\Models\CompanyInvoice;
-use App\Services\CompanyCreditNoteService;
-use App\Services\CommonService;
-use App\Http\Resources\CompanyCreditNoteResource;
 use App\Http\Requests\CompanyCreditNoteStoreRequest;
 use App\Http\Requests\CompanyCreditNoteUpdateRequest;
+use App\Http\Resources\CompanyCreditNoteResource;
+use App\Models\Account;
+use App\Models\CompanyCreditNote;
+use App\Models\CompanyInvoice;
+use App\Models\CompanyPayment;
+use App\Models\CompanyTransactionsLedger;
+use App\Models\Download;
+use App\Models\SysConfig;
+use App\Services\CommonService;
+use App\Services\CompanyCreditNoteService;
+use App\Services\CurrencyConversionService;
+use Carbon\Carbon;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CompanyCreditNoteController extends Controller
 {
     protected $service;
 
-    public function __construct(CompanyCreditNoteService $service) {
+    public function __construct(CompanyCreditNoteService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\CompanyCreditNote::class);
+        $this->authorize('viewAny', CompanyCreditNote::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return CompanyCreditNoteResource::collection($data);
     }
 
     public function store(CompanyCreditNoteStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\CompanyCreditNote::class);
+        $this->authorize('create', CompanyCreditNote::class);
         $validated = $request->validated();
 
-        if (!empty($validated['invoice_id'])) {
+        if (! empty($validated['invoice_id'])) {
             $invoice = CompanyInvoice::find($validated['invoice_id']);
 
-            if (!$invoice) {
+            if (! $invoice) {
                 return response()->json([
                     'message' => 'The selected invoice is invalid.',
                 ], 422);
@@ -52,19 +64,19 @@ class CompanyCreditNoteController extends Controller
         }
 
         // Auto-generate a unique credit note number if not provided
-        $commonService = new CommonService();
+        $commonService = new CommonService;
 
         $number = $commonService->getNextCompanyCreditNoteNumber();
 
         $validated['credit_note_number'] = $number;
-        $validated['title'] = $validated['reason'] ?? 'Credit Note for Invoice ' . ($invoice->invoice_number);
+        $validated['title'] = $validated['reason'] ?? 'Credit Note for Invoice '.($invoice->invoice_number);
         $validated['description'] = $validated['title'];
-        $validated['notes_to_customer'] = $validated['notes_to_customer'] ?? 'Correction for invoice ' . ($invoice->invoice_number);
-        
+        $validated['notes_to_customer'] = $validated['notes_to_customer'] ?? 'Correction for invoice '.($invoice->invoice_number);
 
         $validated['created_by'] = Auth::id();
 
         $model = $this->service->create($validated);
+
         return new CompanyCreditNoteResource($model);
     }
 
@@ -91,6 +103,7 @@ class CompanyCreditNoteController extends Controller
             'invoice',
             'items',
         ]);
+
         return new CompanyCreditNoteResource($updated);
     }
 
@@ -112,13 +125,13 @@ class CompanyCreditNoteController extends Controller
         ]);
 
         // Ensure refund date is not older than credit note creation date
-        $refundDate = \Carbon\Carbon::parse($validated['date'])->toDateString();
-        $creditNoteCreatedAt = $companyCreditNote->created_at instanceof \Carbon\Carbon
+        $refundDate = Carbon::parse($validated['date'])->toDateString();
+        $creditNoteCreatedAt = $companyCreditNote->created_at instanceof Carbon
             ? $companyCreditNote->created_at->toDateString()
-            : \Carbon\Carbon::parse($companyCreditNote->created_at)->toDateString();
+            : Carbon::parse($companyCreditNote->created_at)->toDateString();
         if ($refundDate < $creditNoteCreatedAt) {
             return response()->json([
-                'message' => 'Refund date cannot be earlier than the credit note creation date (' . $creditNoteCreatedAt . ').',
+                'message' => 'Refund date cannot be earlier than the credit note creation date ('.$creditNoteCreatedAt.').',
             ], 422);
         }
 
@@ -130,7 +143,7 @@ class CompanyCreditNoteController extends Controller
             ], 422);
         }
 
-        $existingRefund = \App\Models\CompanyTransactionsLedger::where('source_type', 'company_credit_note')
+        $existingRefund = CompanyTransactionsLedger::where('source_type', 'company_credit_note')
             ->where('source_id', $companyCreditNote->id)
             ->where('transaction_type', 'refund')
             ->where('is_deleted', false)
@@ -153,7 +166,7 @@ class CompanyCreditNoteController extends Controller
 
         $userId = $request->user()?->id;
 
-        $account = \App\Models\Account::findOrFail($validated['receiving_account']);
+        $account = Account::findOrFail($validated['receiving_account']);
 
         if ($account->currency !== $companyCreditNote->currency) {
             return response()->json([
@@ -164,7 +177,7 @@ class CompanyCreditNoteController extends Controller
         $invoiceCurrencyCode = $companyCreditNote->currency;
         $baseCurrencyForLocalTaxationCode = 'KES';
 
-        $conversionService = new \App\Services\CurrencyConversionService();
+        $conversionService = new CurrencyConversionService;
         $conversion = $conversionService->convertToBaseFromInvoice(
             $amount,
             $invoiceCurrencyCode,
@@ -186,11 +199,11 @@ class CompanyCreditNoteController extends Controller
             $account,
             $userId
         ) {
-            $commonService = new \App\Services\CommonService();
+            $commonService = new CommonService;
 
             do {
                 $transactionNumber = $commonService->generateUniqueCode('CMPREF-');
-            } while (\App\Models\CompanyPayment::where('transaction_number', $transactionNumber)->exists());
+            } while (CompanyPayment::where('transaction_number', $transactionNumber)->exists());
 
             $taxPortion = (float) $companyCreditNote->tax_amount;
             $netPortion = (float) $companyCreditNote->subtotal_amount;
@@ -203,7 +216,7 @@ class CompanyCreditNoteController extends Controller
             }
 
             $validated['receipt_number'] = $validated['receipt_number'] ?? $transactionNumber;
-            $payment = \App\Models\CompanyPayment::create([
+            $payment = CompanyPayment::create([
                 'transaction_number' => $transactionNumber,
                 'direction' => 'incoming',
                 'transaction_type' => 'refund',
@@ -225,10 +238,10 @@ class CompanyCreditNoteController extends Controller
                 'reconciliation_date' => null,
                 'created_at' => now(),
                 'updated_by' => $userId,
-                'created_by' => $userId
+                'created_by' => $userId,
             ]);
 
-            $ledger = \App\Models\CompanyTransactionsLedger::create([
+            $ledger = CompanyTransactionsLedger::create([
                 'company_payment_id' => $payment->id,
                 'transaction_number' => $payment->transaction_number,
                 'transaction_type' => 'refund',
@@ -249,13 +262,13 @@ class CompanyCreditNoteController extends Controller
                 'source_id' => $companyCreditNote->id,
                 'account_debit' => null,
                 'account_credit' => (string) $account->id,
-                    'category' => 'revenue',
+                'category' => 'revenue',
                 'payment_method' => $validated['payment_method'] ?? null,
                 'bank_account' => null,
                 'check_number' => null,
                 'transaction_status' => 'cleared',
                 'related_transaction_id' => null,
-                'narration' => 'Refund for Company Credit Note ' . $companyCreditNote->credit_note_number,
+                'narration' => 'Refund for Company Credit Note '.$companyCreditNote->credit_note_number,
                 'is_recurring' => false,
                 'fiscal_year' => now()->year,
                 'accounting_period' => now()->format('Ym'),
@@ -326,7 +339,7 @@ class CompanyCreditNoteController extends Controller
             ], 422);
         }
 
-        $download = \App\Models\Download::where('name', $companyCreditNote->credit_note_number)->first();
+        $download = Download::where('name', $companyCreditNote->credit_note_number)->first();
 
         if ($download && \Storage::disk('public')->exists($download->path)) {
             $relativePath = $download->path;
@@ -346,14 +359,14 @@ class CompanyCreditNoteController extends Controller
         $subject = sprintf(
             'Company Credit Note %s%s',
             $companyCreditNote->credit_note_number,
-            $projectName ? ' - ' . $projectName : ''
+            $projectName ? ' - '.$projectName : ''
         );
 
         $mailData = [
-            'creditNote'    => $companyCreditNote,
+            'creditNote' => $companyCreditNote,
             'recipientName' => $recipientName,
-            'projectName'   => $projectName,
-            'fromName'      => $fromName,
+            'projectName' => $projectName,
+            'fromName' => $fromName,
         ];
 
         try {
@@ -362,14 +375,14 @@ class CompanyCreditNoteController extends Controller
                 $message->to($company->email, $recipientName)
                     ->subject($subject)
                     ->attach($fullPath, [
-                        'as'   => $fileName,
+                        'as' => $fileName,
                         'mime' => 'application/pdf',
                     ]);
             });
         } catch (\Throwable $e) {
             \Log::error('Failed to send company credit note email', [
                 'company_credit_note_id' => $companyCreditNote->id,
-                'error'      => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -396,14 +409,14 @@ class CompanyCreditNoteController extends Controller
         ]);
 
         // Fetch ledger rows for this company credit note (refunds)
-        $ledgerRows = \App\Models\CompanyTransactionsLedger::where('source_type', 'company_credit_note')
+        $ledgerRows = CompanyTransactionsLedger::where('source_type', 'company_credit_note')
             ->where('source_id', $companyCreditNote->id)
             ->where('transaction_type', 'refund')
             ->where('is_deleted', false)
             ->get();
         $companyCreditNote->ledgerRows = $ledgerRows;
 
-        $configValues = \App\Models\SysConfig::whereIn('name', [
+        $configValues = SysConfig::whereIn('name', [
             'NAME',
             'EMAIL',
             'INSTANCE_LOGO',
@@ -420,37 +433,37 @@ class CompanyCreditNoteController extends Controller
         $generatedAt = now();
 
         $data = [
-            'creditNote'         => $companyCreditNote,
-            'senderName'         => $senderName,
-            'senderEmail'        => $senderEmail,
-            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
-            'senderPhone'        => $configValues['PHONE']   ?? null,
-            'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
+            'creditNote' => $companyCreditNote,
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $configValues['INSTANCE_LOGO'] ?? null,
+            'senderPhone' => $configValues['PHONE'] ?? null,
+            'senderWebsite' => $configValues['WEBSITE'] ?? config('app.url'),
             'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'         => $configValues['CITY']    ?? null,
-            'senderState'        => $configValues['STATE']   ?? null,
-            'senderCountry'      => $configValues['COUNTRY'] ?? null,
-            'generatedAt'        => $generatedAt,
+            'senderCity' => $configValues['CITY'] ?? null,
+            'senderState' => $configValues['STATE'] ?? null,
+            'senderCountry' => $configValues['COUNTRY'] ?? null,
+            'generatedAt' => $generatedAt,
         ];
 
         $html = view('pdf.company-credit-note', $data)->render();
 
-        $options = new \Dompdf\Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
 
-        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
         $output = $dompdf->output();
 
-        $fileName = $companyCreditNote->credit_note_number . '.pdf';
-        $relativePath = 'company-credit-notes/' . $fileName;
+        $fileName = $companyCreditNote->credit_note_number.'.pdf';
+        $relativePath = 'company-credit-notes/'.$fileName;
 
         \Storage::disk('public')->put($relativePath, $output);
 
-        $download = \App\Models\Download::firstOrNew(['name' => $companyCreditNote->credit_note_number]);
+        $download = Download::firstOrNew(['name' => $companyCreditNote->credit_note_number]);
         $download->path = $relativePath;
         $download->updated_at = now();
         $download->updated_by = $userId;
@@ -461,9 +474,9 @@ class CompanyCreditNoteController extends Controller
         $download->save();
 
         return [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
     }
 
@@ -472,6 +485,7 @@ class CompanyCreditNoteController extends Controller
         $this->authorize('delete', $companyCreditNote);
 
         $this->service->delete($companyCreditNote->id, Auth::id());
+
         return response()->noContent();
     }
 }

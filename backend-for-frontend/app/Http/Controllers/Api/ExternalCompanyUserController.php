@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
+use App\Http\Resources\CompanyProjectResource;
+use App\Services\ExternalCompanyUserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\Controller;
-use App\Services\ExternalCompanyUserService;
 
-class ExternalCompanyUserController extends Controller {
+class ExternalCompanyUserController extends Controller
+{
     protected $service;
 
     public function __construct(ExternalCompanyUserService $service)
@@ -19,6 +21,7 @@ class ExternalCompanyUserController extends Controller {
     {
         $companyId = Auth::user()->company_id;
         $data = $this->service->getOverview($companyId);
+
         return response()->json($data);
     }
 
@@ -26,6 +29,7 @@ class ExternalCompanyUserController extends Controller {
     {
         $companyId = Auth::user()->company_id;
         $data = $this->service->getInvoices($companyId);
+
         return response()->json($data);
     }
 
@@ -33,6 +37,7 @@ class ExternalCompanyUserController extends Controller {
     {
         $companyId = Auth::user()->company_id;
         $data = $this->service->getCreditNotes($companyId);
+
         return response()->json($data);
     }
 
@@ -40,6 +45,7 @@ class ExternalCompanyUserController extends Controller {
     {
         $companyId = Auth::user()->company_id;
         $projects = $this->service->getProjects($companyId);
-        return response()->json(\App\Http\Resources\CompanyProjectResource::collection($projects));
+
+        return response()->json(CompanyProjectResource::collection($projects));
     }
 }

@@ -10,7 +10,7 @@ trait HasLogicalDeletion
     {
         static::addGlobalScope('not_deleted', function (Builder $builder) {
             $table = $builder->getModel()->getTable();
-            $builder->where($table . '.is_deleted', false);
+            $builder->where($table.'.is_deleted', false);
         });
     }
 
@@ -25,7 +25,7 @@ trait HasLogicalDeletion
 
         return $query
             ->withoutGlobalScope('not_deleted')
-            ->where($table . '.is_deleted', true);
+            ->where($table.'.is_deleted', true);
     }
 
     public function softDelete(?int $deletedBy = null): bool
@@ -33,7 +33,7 @@ trait HasLogicalDeletion
         $this->is_deleted = true;
         $this->deleted_at = now();
 
-        if (!is_null($deletedBy)) {
+        if (! is_null($deletedBy)) {
             $this->deleted_by = $deletedBy;
         }
 

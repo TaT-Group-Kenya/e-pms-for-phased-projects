@@ -60,6 +60,7 @@ use App\Policies\{
     CustomerTransactionsLedgerPolicy,
     PdcReceivedCustomerPolicy,
     PdcIssuedCompanyPolicy,
+    ShipContainerPolicy,
 };
 
 class AuthServiceProvider extends ServiceProvider
@@ -122,6 +123,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\CustomerTransactionsLedger::class => CustomerTransactionsLedgerPolicy::class,
         \App\Models\PdcReceivedCustomer::class => PdcReceivedCustomerPolicy::class,
         \App\Models\PdcIssuedCompany::class => PdcIssuedCompanyPolicy::class,
+        \App\Models\ShipContainer::class => ShipContainerPolicy::class,
     ];
 
     public function register(): void

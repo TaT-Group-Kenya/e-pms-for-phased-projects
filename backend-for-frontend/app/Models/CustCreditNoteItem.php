@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class CustCreditNoteItem extends Model
 {
@@ -50,6 +50,7 @@ class CustCreditNoteItem extends Model
 
             if (! $isTaxable) {
                 $item->tax_amount = 0;
+
                 return;
             }
 

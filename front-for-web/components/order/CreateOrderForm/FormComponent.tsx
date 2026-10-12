@@ -42,7 +42,7 @@ interface QuotationOption {
   id: number;
   quotation_number: string;
   title?: string | null;
-  job_reference_id?: string | null;
+  bol_number?: string | null;
 }
 
 const CreateOrderForm: React.FC = () => {
@@ -126,7 +126,7 @@ const CreateOrderForm: React.FC = () => {
         (q) => q.id === Number(data.quotation_id)
       );
 
-      const jobRef = selected?.job_reference_id || "";
+      const jobRef = selected?.bol_number || "";
 
       if (!jobRef) {
         setFormError(
@@ -143,7 +143,7 @@ const CreateOrderForm: React.FC = () => {
         payment_terms: data.payment_terms || "",
         notes_to_customer: data.notes_to_customer || "",
         created_at: data.created_at || new Date().toISOString(),
-        job_reference_id: jobRef,
+        bol_number: jobRef,
       };
 
       const response = await fetch("/api/orders/create", {
@@ -240,14 +240,14 @@ const CreateOrderForm: React.FC = () => {
                   </select>
                   {renderFieldError("quotation_id")}
                 </div>
-                {/* Job Reference ID (derived from quotation) */}
+                {/* BOL Number (derived from quotation) */}
                 <div>
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
                     BOL Number
                   </label>
                   <input
                     type="text"
-                    value={selectedQuotation?.job_reference_id || ""}
+                    value={selectedQuotation?.bol_number || ""}
                     readOnly
                     className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-gray-50 dark:bg-[#15203c] px-[17px] block w-full outline-0 cursor-not-allowed"
                     placeholder="Select a quotation to see its BOL Number"

@@ -17,8 +17,8 @@ class AccountStoreRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:255'],
-            'type' => ['required', Rule::in(['cash','mpesa','bank'])],
-            'group' => ['required', Rule::in(['Petty','Checking','Savings'])],
+            'type' => ['required', Rule::in(['cash', 'mpesa', 'bank'])],
+            'group' => ['required', Rule::in(['Petty', 'Checking', 'Savings'])],
             // currency and balance are set in the backend; do not require them from the client
             'currency' => ['sometimes', 'string', 'max:10', 'exists:currencies,code'],
             'balance' => ['sometimes', 'numeric', 'max:100000000000000'],

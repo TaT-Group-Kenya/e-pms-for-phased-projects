@@ -65,7 +65,7 @@
                         -
                     @endif
                 </td>
-                <td>{{ $project['job_reference_id'] ?? '-' }}</td>
+                <td>{{ $project['bol_number'] ?? '-' }}</td>
                 <td>{{ $project['customer_name'] ?? '-' }}</td>
                 <td><strong>{{ $project['name'] ?? '-' }}</strong></td>
                 <td>{{ $project['project_category'] ?? '-' }}</td>

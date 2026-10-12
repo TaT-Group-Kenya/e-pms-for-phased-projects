@@ -14,7 +14,7 @@ interface Project {
   code: string;
   name: string;
   description?: string;
-  job_reference_id?: string;
+  bol_number?: string;
   customer_id?: number;
   project_category_id?: number;
   no_of_phases?: number;
@@ -228,7 +228,7 @@ const ProjectsList: React.FC = () => {
     (project.project_owner?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (project.order?.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     project.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (project.job_reference_id || "").toLowerCase().includes(searchTerm.toLowerCase())
+    (project.bol_number || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Calculate pagination display values
@@ -360,7 +360,7 @@ const ProjectsList: React.FC = () => {
                           {project.created_at ? new Date(project.created_at).toLocaleDateString() : ""}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
-                          {project.job_reference_id || ""}
+                          {project.bol_number || ""}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {project.order?.title || "-"}

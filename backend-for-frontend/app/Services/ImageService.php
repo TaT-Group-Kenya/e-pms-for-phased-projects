@@ -9,8 +9,8 @@ class ImageService
     public function serveLogo(string $filename)
     {
         $path = "logos/{$filename}";
-        
-        if (!Storage::disk('public')->exists($path)) {
+
+        if (! Storage::disk('public')->exists($path)) {
             throw new \Exception('Image not found', 404);
         }
 

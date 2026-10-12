@@ -16,11 +16,11 @@ class CompanyBankUpdateRequest extends FormRequest
     {
         return [
             'company_id' => ['nullable', 'exists:companies,id'],
-            'type' => ['sometimes', 'required', Rule::in(['Bank','MPESA'])],
+            'type' => ['sometimes', 'required', Rule::in(['Bank', 'MPESA'])],
             'account_no' => ['sometimes', 'required', 'string', 'max:255'],
             'swiftcode' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('company_banks')->ignore(
-                    $this->route('company_bank')
-                )],
+                $this->route('company_bank')
+            )],
             'branch' => ['sometimes', 'required', 'string', 'max:255'],
             'account_holder_name' => ['sometimes', 'required', 'string', 'max:255'],
         ];

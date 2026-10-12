@@ -1,53 +1,57 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use App\Http\Requests\AccountStoreRequest;
+use App\Http\Requests\AccountUpdateRequest;
+use App\Http\Resources\AccountResource;
 use App\Models\Account;
-use App\Models\CustomerTransactionsLedger;
 use App\Models\CompanyTransactionsLedger;
-use App\Models\Transaction;
+use App\Models\CustomerTransactionsLedger;
+use App\Models\Download;
 use App\Models\PdcIssuedCompany;
 use App\Models\PdcReceivedCustomer;
+use App\Models\SysConfig;
+use App\Models\Transaction;
 use App\Services\AccountService;
 use App\Services\CommonService;
 use App\Services\TransactionService;
-use App\Http\Resources\AccountResource;
-use App\Http\Requests\AccountStoreRequest;
-use App\Http\Requests\AccountUpdateRequest;
-use App\Models\Download;
-use App\Models\SysConfig;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class AccountController extends Controller
 {
     protected $service;
 
-    public function __construct(AccountService $service) {
+    public function __construct(AccountService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\Account::class);
+        $this->authorize('viewAny', Account::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page, 0);
+
         return AccountResource::collection($data);
     }
 
     public function store(AccountStoreRequest $request, TransactionService $transactionService)
     {
-        $this->authorize('create', \App\Models\Account::class);
+        $this->authorize('create', Account::class);
         $validated = $request->validated();
 
         // Generate account code in backend using CommonService
-        $commonService = new CommonService();
+        $commonService = new CommonService;
         $validated['code'] = $commonService->generateUniqueCode('INT-ACC-');
         // $validated['balance'] = 0; allow initial balance to be set on creation
         $validated['created_by'] = Auth::id();
@@ -112,6 +116,7 @@ class AccountController extends Controller
     public function show(Account $account)
     {
         $this->authorize('view', $account);
+
         return new AccountResource($account);
     }
 
@@ -125,6 +130,7 @@ class AccountController extends Controller
         $validated['updated_by'] = Auth::id();
         $validated['updated_at'] = now();
         $updated = $this->service->update($account->id, $validated);
+
         return new AccountResource($updated);
     }
 
@@ -160,7 +166,7 @@ class AccountController extends Controller
 
         $exchangeRate = 1.0;
         if ($sourceCurrency && $targetCurrency && $sourceCurrency !== $targetCurrency) {
-            if (!isset($data['exchange_rate'])) {
+            if (! isset($data['exchange_rate'])) {
                 return response()->json([
                     'message' => 'Exchange rate is required when source and target currencies differ.',
                 ], 422);
@@ -223,7 +229,7 @@ class AccountController extends Controller
             $sourceCurrency,
             $targetCurrency
         ) {
-            $commonService = new CommonService();
+            $commonService = new CommonService;
             $transactionNumber = $commonService->generateUniqueCode('TRX-');
 
             // Record debit on the source account in its own currency
@@ -362,7 +368,7 @@ class AccountController extends Controller
     /**
      * Prepare statement rows and meta for an account.
      *
-     * @return array{0: \Illuminate\Support\Collection, 1: array}
+     * @return array{0: Collection, 1: array}
      */
     protected function buildStatementData(Request $request, Account $account): array
     {
@@ -459,8 +465,8 @@ class AccountController extends Controller
             */
             $companyPayment = $row->payment;
             $settlementForexRate = $companyPayment?->settlement_account_forex_rate;
-            $debitBase = $row->account_debit == $accountId ? $row->amount/$settlementForexRate : 0;
-            $creditBase = $row->account_credit == $accountId ? $row->amount/$settlementForexRate : 0;
+            $debitBase = $row->account_debit == $accountId ? $row->amount / $settlementForexRate : 0;
+            $creditBase = $row->account_credit == $accountId ? $row->amount / $settlementForexRate : 0;
 
             $rows->push([
                 'source' => 'company_ledger',
@@ -489,8 +495,8 @@ class AccountController extends Controller
         $transactionsQuery->get()->each(function ($row) use (&$rows, $accountId) {
             $shouldApplyForex = $row->should_apply_forex_to_stmt == 1;
             $settlementForexRate = $shouldApplyForex ? $row->exchange_rate : 1;
-            $debitBase = $row->account_debit == $accountId ? $row->amount/$settlementForexRate : 0;
-            $creditBase = $row->account_credit == $accountId ? $row->amount/$settlementForexRate : 0;
+            $debitBase = $row->account_debit == $accountId ? $row->amount / $settlementForexRate : 0;
+            $creditBase = $row->account_credit == $accountId ? $row->amount / $settlementForexRate : 0;
 
             $rows->push([
                 'source' => 'transaction',
@@ -578,8 +584,7 @@ class AccountController extends Controller
     /**
      * Build the account statement PDF, persist it and track in downloads.
      *
-     * @param \Illuminate\Support\Collection $rows
-     * @param array $meta
+     * @param  Collection  $rows
      * @return array{fileName: string, relativePath: string, output: string}
      */
     protected function buildAccountStatementPdf(Account $account, $rows, array $meta, ?int $userId = null): array
@@ -601,24 +606,24 @@ class AccountController extends Controller
         $generatedAt = now();
 
         $data = [
-            'account'            => $account,
-            'rows'               => $rows,
-            'meta'               => $meta,
-            'senderName'         => $senderName,
-            'senderEmail'        => $senderEmail,
-            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
-            'senderPhone'        => $configValues['PHONE']   ?? null,
-            'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
+            'account' => $account,
+            'rows' => $rows,
+            'meta' => $meta,
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $configValues['INSTANCE_LOGO'] ?? null,
+            'senderPhone' => $configValues['PHONE'] ?? null,
+            'senderWebsite' => $configValues['WEBSITE'] ?? config('app.url'),
             'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'         => $configValues['CITY']    ?? null,
-            'senderState'        => $configValues['STATE']   ?? null,
-            'senderCountry'      => $configValues['COUNTRY'] ?? null,
-            'generatedAt'        => $generatedAt,
+            'senderCity' => $configValues['CITY'] ?? null,
+            'senderState' => $configValues['STATE'] ?? null,
+            'senderCountry' => $configValues['COUNTRY'] ?? null,
+            'generatedAt' => $generatedAt,
         ];
 
         $html = view('pdf.account-statement', $data)->render();
 
-        $options = new Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
 
         $dompdf = new Dompdf($options);
@@ -628,13 +633,13 @@ class AccountController extends Controller
 
         $output = $dompdf->output();
 
-        $number = $account->code ?: ('ACCOUNT-' . $account->id);
-        $fileName = $number . '-statement.pdf';
-        $relativePath = 'account-statements/' . $fileName;
+        $number = $account->code ?: ('ACCOUNT-'.$account->id);
+        $fileName = $number.'-statement.pdf';
+        $relativePath = 'account-statements/'.$fileName;
 
         Storage::disk('public')->put($relativePath, $output);
 
-        $downloadKey = 'account-statement:' . $number;
+        $downloadKey = 'account-statement:'.$number;
         $download = Download::firstOrNew(['name' => $downloadKey]);
         $download->path = $relativePath;
         $download->updated_at = now();
@@ -646,9 +651,9 @@ class AccountController extends Controller
         $download->save();
 
         return [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
     }
 

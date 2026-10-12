@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class Account extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'accounts';
 
     public $timestamps = false;
@@ -29,5 +30,4 @@ class Account extends Model
         'deleted_at',
         'deleted_by',
     ];
-
 }

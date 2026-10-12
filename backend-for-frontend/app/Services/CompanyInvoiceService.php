@@ -15,24 +15,27 @@ class CompanyInvoiceService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = CompanyInvoice::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
         $query->orderByDesc('id');
-        
+
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-        
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
     {
         $query = CompanyInvoice::query();
-        if (!empty($with)) $query->with($with);
+        if (! empty($with)) {
+            $query->with($with);
+        }
+
         return $query->findOrFail($id);
     }
 
@@ -46,6 +49,7 @@ class CompanyInvoiceService
         $model = CompanyInvoice::findOrFail($id);
         unset($data['subtotal_amount'], $data['tax_amount'], $data['discount_amount'], $data['total_amount']); // prevent updating these fields
         $model->update($data);
+
         return $model;
     }
 

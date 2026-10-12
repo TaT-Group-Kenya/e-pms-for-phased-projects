@@ -13,6 +13,7 @@ class OfficeExpenseService
             $query->where($key, $value);
         }
         $query->orderByDesc('id');
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
@@ -30,12 +31,14 @@ class OfficeExpenseService
     {
         $model = OfficeExpense::findOrFail($id);
         $model->update($data);
+
         return $model;
     }
 
     public function delete(int $id)
     {
         $model = OfficeExpense::findOrFail($id);
+
         return $model->delete();
     }
 }

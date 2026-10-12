@@ -2,19 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
-use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
 class Project extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'projects';
 
     protected $fillable = [
         'code',
         'name',
-        'job_reference_id',
+        'bol_number',
         'description',
         'order_id',
         'customer_id',

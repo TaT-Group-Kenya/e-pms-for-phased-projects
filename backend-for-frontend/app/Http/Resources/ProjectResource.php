@@ -10,7 +10,7 @@ class ProjectResource extends BaseResource
             'id' => $this->id,
             'code' => $this->code,
             'name' => $this->name,
-            'job_reference_id' => $this->job_reference_id,
+            'bol_number' => $this->bol_number,
             'description' => $this->description,
             'order_id' => $this->order_id,
             'customer_id' => $this->customer_id,
@@ -51,9 +51,9 @@ class ProjectResource extends BaseResource
             ),
 
             'customer_invoices' => CustInvoiceResource::collection($this->whenLoaded('customer_invoices')),
-            
+
             'company_invoices' => CompanyInvoiceResource::collection($this->whenLoaded('company_invoices')),
-            
+
             'in_coming_payments' => CustPaymentResource::collection(collect($this->in_coming_payments ?? [])),
 
             'out_going_payments' => CompanyPaymentResource::collection(collect($this->out_going_payments ?? [])),

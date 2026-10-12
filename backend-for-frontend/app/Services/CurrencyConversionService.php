@@ -17,16 +17,16 @@ class CurrencyConversionService
         // When invoice currency is same as base, no conversion.
         if ($invoiceCurrencyCode === $baseCurrencyCode) {
             return [
-                'exchange_rate'    => 1.0,
+                'exchange_rate' => 1.0,
                 'converted_amount' => $amount,
-                'base_currency'    => $baseCurrencyCode,
+                'base_currency' => $baseCurrencyCode,
             ];
         }
 
         // current_forex_rate is stored as: 1 invoiceCurrency = rate * baseCurrency (KES).
         $invoiceRate = Currency::where('code', $invoiceCurrencyCode)->value('current_forex_rate');
 
-        if (!is_numeric($invoiceRate) || (float) $invoiceRate <= 0.0) {
+        if (! is_numeric($invoiceRate) || (float) $invoiceRate <= 0.0) {
             $invoiceRate = 1.0;
         }
 
@@ -34,9 +34,9 @@ class CurrencyConversionService
         $convertedAmount = $amount * $exchangeRate;
 
         return [
-            'exchange_rate'    => $exchangeRate,
+            'exchange_rate' => $exchangeRate,
             'converted_amount' => $convertedAmount,
-            'base_currency'    => $baseCurrencyCode,
+            'base_currency' => $baseCurrencyCode,
         ];
     }
 }

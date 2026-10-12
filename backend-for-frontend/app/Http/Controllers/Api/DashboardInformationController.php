@@ -3,29 +3,33 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Services\DashboardInformationService;
-use App\Http\Resources\Dashboard\ProjectsOverviewResource;
-use App\Http\Resources\Dashboard\ProjectsRoadmapResource;
-use App\Http\Resources\Dashboard\ProjectsProgressOverviewResource;
-use App\Http\Resources\Dashboard\RecentProgressUpdateResource;
-use App\Http\Resources\Dashboard\LatestProjectResource;
-use App\Http\Resources\Dashboard\ProjectsAnalysisResource;
 use App\Http\Resources\Dashboard\CurrencyPreferenceResource;
-use App\Http\Resources\Dashboard\PendingCustInvoicesResource;
+use App\Http\Resources\Dashboard\LatestProjectResource;
 use App\Http\Resources\Dashboard\PendingCompanyInvoicesResource;
-use App\Http\Resources\Dashboard\RecentOrderResource;
+use App\Http\Resources\Dashboard\PendingCustInvoicesResource;
+use App\Http\Resources\Dashboard\ProjectsAnalysisResource;
+use App\Http\Resources\Dashboard\ProjectsOverviewResource;
+use App\Http\Resources\Dashboard\ProjectsProgressOverviewResource;
+use App\Http\Resources\Dashboard\ProjectsRoadmapResource;
 use App\Http\Resources\Dashboard\QuotationsOverviewResource;
+use App\Http\Resources\Dashboard\RecentOrderResource;
+use App\Http\Resources\Dashboard\RecentProgressUpdateResource;
+use App\Models\CompanyInvoice;
+use App\Models\CustInvoice;
+use App\Models\Order;
+use App\Models\Project;
+use App\Models\ProjectProgressUpdate;
+use App\Models\Quotation;
+use App\Services\DashboardInformationService;
+use Illuminate\Http\Request;
 
 class DashboardInformationController extends Controller
 {
-    public function __construct(protected DashboardInformationService $service)
-    {
-    }
+    public function __construct(protected DashboardInformationService $service) {}
 
     public function projectsOverview(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\Project::class);
+        $this->authorize('viewAny', Project::class);
         $range = $request->get('range', 'last_6_months');
 
         return new ProjectsOverviewResource($this->service->getProjectsOverview($range));
@@ -33,7 +37,7 @@ class DashboardInformationController extends Controller
 
     public function projectsRoadmap(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\Project::class);
+        $this->authorize('viewAny', Project::class);
 
         $range = $request->get('range', 'this_week');
         $items = $this->service->getProjectsRoadmap($range);
@@ -43,7 +47,7 @@ class DashboardInformationController extends Controller
 
     public function projectsProgressOverview(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\Project::class);
+        $this->authorize('viewAny', Project::class);
 
         $range = $request->get('range', 'last_6_months');
         $data = $this->service->getProjectsProgressOverview($range);
@@ -53,7 +57,7 @@ class DashboardInformationController extends Controller
 
     public function recentProgressUpdates(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\ProjectProgressUpdate::class);
+        $this->authorize('viewAny', ProjectProgressUpdate::class);
 
         $limit = (int) $request->get('limit', 10);
         $items = $this->service->getRecentProgressUpdates($limit);
@@ -63,7 +67,7 @@ class DashboardInformationController extends Controller
 
     public function latestProjects(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\Project::class);
+        $this->authorize('viewAny', Project::class);
 
         $limit = (int) $request->get('limit', 20);
         $items = $this->service->getLatestProjects($limit);
@@ -73,7 +77,7 @@ class DashboardInformationController extends Controller
 
     public function projectsAnalysis(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\Project::class);
+        $this->authorize('viewAny', Project::class);
 
         $range = $request->get('range', 'last_7_days');
         $data = $this->service->getProjectsAnalysis($range);
@@ -83,7 +87,7 @@ class DashboardInformationController extends Controller
 
     public function currencyPreference(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\CustInvoice::class);
+        $this->authorize('viewAny', CustInvoice::class);
 
         $range = $request->get('range', 'last_7_days');
         $data = $this->service->getCurrencyPreference($range);
@@ -93,7 +97,7 @@ class DashboardInformationController extends Controller
 
     public function pendingCustInvoices(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\CustInvoice::class);
+        $this->authorize('viewAny', CustInvoice::class);
 
         $range = $request->get('range', 'last_7_days');
         $data = $this->service->getPendingCustInvoices($range);
@@ -103,7 +107,7 @@ class DashboardInformationController extends Controller
 
     public function pendingCompanyInvoices(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\CompanyInvoice::class);
+        $this->authorize('viewAny', CompanyInvoice::class);
 
         $range = $request->get('range', 'last_7_days');
         $data = $this->service->getPendingCompanyInvoices($range);
@@ -113,7 +117,7 @@ class DashboardInformationController extends Controller
 
     public function recentOrders(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\Order::class);
+        $this->authorize('viewAny', Order::class);
 
         $range = $request->get('range', 'last_7_days');
         $limit = (int) $request->get('limit', 10);
@@ -124,7 +128,7 @@ class DashboardInformationController extends Controller
 
     public function quotationsOverview(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\Quotation::class);
+        $this->authorize('viewAny', Quotation::class);
 
         $range = $request->get('range', 'last_7_days');
         $data = $this->service->getQuotationsOverview($range);

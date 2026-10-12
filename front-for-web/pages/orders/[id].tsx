@@ -85,7 +85,7 @@ interface ProjectOwnerSummary {
 interface OrderDetail {
   id: number;
   order_number: string;
-  job_reference_id?: string;
+  bol_number?: string;
   quotation_id: number | null;
   project_id: number | null;
   customer_id: number | null;
@@ -588,7 +588,7 @@ const OrderDetailPage: React.FC = () => {
         currency: (editData.currency || order.currency || "").toString(),
         payment_terms: (editData.payment_terms ?? order.payment_terms ?? "").toString(),
         notes_to_customer: (editData.notes_to_customer ?? order.notes_to_customer ?? "").toString(),
-        job_reference_id: (editData.job_reference_id ?? order.job_reference_id ?? "").toString(),
+        bol_number: (editData.bol_number ?? order.bol_number ?? "").toString(),
         created_at: editData.created_at ?? order.created_at,
       };
 
@@ -1154,7 +1154,7 @@ const OrderDetailPage: React.FC = () => {
           <h5 className="!mb-1">Order Details</h5>
           <p className="text-sm text-gray-500">Order #{order.order_number}</p>
           <p className="text-sm text-gray-500">
-            BOL Number: <span className="font-semibold">{order.job_reference_id || "-"}</span>
+            BOL Number: <span className="font-semibold">{order.bol_number || "-"}</span>
           </p>
         </div>
 
@@ -1314,7 +1314,7 @@ const OrderDetailPage: React.FC = () => {
                       <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
                         <span className="text-gray-600 dark:text-gray-400">BOL Number:</span>
                         <span className="text-black dark:text-white font-semibold">
-                          {order.job_reference_id || "-"}
+                          {order.bol_number || "-"}
                         </span>
                       </div>
 
@@ -2117,8 +2117,8 @@ const OrderDetailPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      value={editData.job_reference_id ?? order.job_reference_id ?? ""}
-                      onChange={(e) => handleEditFieldChange("job_reference_id", e.target.value)}
+                      value={editData.bol_number ?? order.bol_number ?? ""}
+                      onChange={(e) => handleEditFieldChange("bol_number", e.target.value)}
                       disabled={true}
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="E.g. MEDUM2822382"

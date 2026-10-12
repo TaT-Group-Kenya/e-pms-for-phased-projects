@@ -15,7 +15,7 @@ class ProjectPhaseService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = ProjectPhase::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
         // Handle soft-delete visibility flags
@@ -33,17 +33,20 @@ class ProjectPhaseService
             $query->where($key, $value);
         }
         $query->orderByDesc('id');
-        
+
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-        
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
     {
         $query = ProjectPhase::query();
-        if (!empty($with)) $query->with($with);
+        if (! empty($with)) {
+            $query->with($with);
+        }
+
         return $query->findOrFail($id);
     }
 
@@ -56,6 +59,7 @@ class ProjectPhaseService
     {
         $model = ProjectPhase::findOrFail($id);
         $model->update($data);
+
         return $model;
     }
 
@@ -66,13 +70,13 @@ class ProjectPhaseService
 
     /**
      * Generate unique project phase code with format PRP-XXXX-XXXX (numeric)
-    */
+     */
     public function generateUniquePhaseCode($prefix = 'PRP-'): string
     {
         do {
-            $code = $prefix . str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT) . '-' . str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+            $code = $prefix.str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT).'-'.str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
         } while (ProjectPhase::where('code', $code)->exists());
-        
+
         return $code;
     }
 }

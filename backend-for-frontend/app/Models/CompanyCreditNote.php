@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Traits\HasLogicalDeletion;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\Traits\HasLogicalDeletion;
 
 class CompanyCreditNote extends Model
 {

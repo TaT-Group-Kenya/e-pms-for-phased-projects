@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class CustInvoiceStoreRequest extends FormRequest
 {
@@ -16,7 +15,7 @@ class CustInvoiceStoreRequest extends FormRequest
     {
         return [
             'order_id' => ['required', 'integer', 'exists:orders,id'],
-            'job_reference_id' => ['nullable', 'string', 'max:255'],
+            'bol_number' => ['nullable', 'string', 'max:255'],
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:255'],
             'payment_terms' => ['nullable', 'string', 'max:255'],

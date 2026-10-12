@@ -36,6 +36,25 @@ interface SidebarSection {
 
 const SECTIONS: SidebarSection[] = [
   {
+    id: "shipContainers",
+    label: "Container List",
+    icon: "sailing",
+    group: "main",
+    items: [
+      {
+        label: "All Containers",
+        href: "/ship-containers",
+        matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_SHIP_CONTAINER"],
+      },
+      {
+        label: "Register Shipment",
+        href: "/ship-containers/create",
+        requiredRoles: ["ROLE_ADD_SHIP_CONTAINER"],
+      },
+    ],
+  },
+  {
     id: "customers",
     label: "Customers",
     icon: "family_group",

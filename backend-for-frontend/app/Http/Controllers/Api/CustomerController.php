@@ -1,47 +1,51 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\Customer;
-use App\Services\CustomerService;
-use App\Http\Resources\CustomerResource;
 use App\Http\Requests\CustomerStoreRequest;
 use App\Http\Requests\CustomerUpdateRequest;
+use App\Http\Resources\CustomerResource;
+use App\Models\Customer;
+use App\Services\CustomerService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CustomerController extends Controller
 {
     protected $service;
 
-    public function __construct(CustomerService $service) {
+    public function __construct(CustomerService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\Customer::class);
+        $this->authorize('viewAny', Customer::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return CustomerResource::collection($data);
     }
 
     public function store(CustomerStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\Customer::class);
+        $this->authorize('create', Customer::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
-        
+
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
-            $filename = time() . '.' . strtolower($file->getClientOriginalExtension());
+            $filename = time().'.'.strtolower($file->getClientOriginalExtension());
             $file->storeAs('logos', $filename, 'public');
             $validated['logo'] = $filename;
         }
-        
+
         $model = $this->service->create($validated);
+
         return new CustomerResource($model);
     }
 
@@ -56,7 +60,7 @@ class CustomerController extends Controller
             'quotations',
             'orders',
             'invoices',
-            'projectOwners'
+            'projectOwners',
         ]);
 
         return new CustomerResource($customer);
@@ -68,15 +72,16 @@ class CustomerController extends Controller
 
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
-        
+
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
-            $filename = time() . '.' . strtolower($file->getClientOriginalExtension());
+            $filename = time().'.'.strtolower($file->getClientOriginalExtension());
             $file->storeAs('logos', $filename, 'public');
             $validated['logo'] = $filename;
         }
-        
+
         $updated = $this->service->update($customer->id, $validated);
+
         return new CustomerResource($updated);
     }
 
@@ -85,6 +90,7 @@ class CustomerController extends Controller
         $this->authorize('delete', $customer);
 
         $this->service->delete($customer->id, Auth::id());
+
         return response()->noContent();
     }
 }

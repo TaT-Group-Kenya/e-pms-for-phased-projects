@@ -22,7 +22,7 @@ interface CustomerLedgerRow {
   category?: string | null;
   transaction_status?: string | null;
   customer_invoice_invoice_number?: string | null;
-  customer_invoice_project_job_reference_id?: string | null;
+  customer_invoice_project_bol_number?: string | null;
   created_by_user_name?: string | null;
 }
 
@@ -111,12 +111,12 @@ const CustomerLedgerTable: React.FC = () => {
             r.customerInvoice && typeof r.customerInvoice === "object"
               ? r.customerInvoice.invoice_number ?? null
               : null,
-          customer_invoice_project_job_reference_id:
+          customer_invoice_project_bol_number:
             r.customerInvoice &&
             typeof r.customerInvoice === "object" &&
             r.customerInvoice.project &&
             typeof r.customerInvoice.project === "object"
-              ? r.customerInvoice.project.job_reference_id ?? null
+              ? r.customerInvoice.project.bol_number ?? null
               : null,
           created_by_user_name: (() => {
             if (r.createdByUser && typeof r.createdByUser === "object") {
@@ -224,7 +224,7 @@ const CustomerLedgerTable: React.FC = () => {
         (r.transaction_status || "").toLowerCase().includes(term) ||
         (r.customer_name || "").toLowerCase().includes(term) ||
         (r.customer_invoice_invoice_number || "").toLowerCase().includes(term) ||
-        (r.customer_invoice_project_job_reference_id || "")
+        (r.customer_invoice_project_bol_number || "")
           .toLowerCase()
           .includes(term) ||
         (r.created_by_user_name || "").toLowerCase().includes(term)
@@ -302,7 +302,7 @@ const CustomerLedgerTable: React.FC = () => {
       r.customer_invoice_invoice_number ?? "",
       r.customer_name ?? (r.customer_id != null ? String(r.customer_id) : ""),
       r.transaction_type ?? "",
-      r.customer_invoice_project_job_reference_id ?? "",
+      r.customer_invoice_project_bol_number ?? "",
       r.net_amount != null ? r.net_amount : "",
       r.tax_amount != null ? r.tax_amount : "",
       r.amount != null ? r.amount : "",
@@ -519,7 +519,7 @@ const CustomerLedgerTable: React.FC = () => {
                       {r.transaction_type || "-"}
                     </td>
                     <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                      {r.customer_invoice_project_job_reference_id || "-"}
+                      {r.customer_invoice_project_bol_number || "-"}
                     </td>
                     <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
                       {r.net_amount != null

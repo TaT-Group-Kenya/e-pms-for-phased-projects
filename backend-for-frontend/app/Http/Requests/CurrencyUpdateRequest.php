@@ -16,8 +16,8 @@ class CurrencyUpdateRequest extends FormRequest
     {
         return [
             'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('currencies')->ignore(
-                    $this->route('currency')
-                )],
+                $this->route('currency')
+            )],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],
             'current_forex_rate' => ['sometimes', 'required', 'numeric', 'min:0'],

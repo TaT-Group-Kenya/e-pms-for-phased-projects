@@ -16,8 +16,8 @@ class LanguageUpdateRequest extends FormRequest
     {
         return [
             'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('languages')->ignore(
-                    $this->route('language')
-                )],
+                $this->route('language')
+            )],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],
         ];

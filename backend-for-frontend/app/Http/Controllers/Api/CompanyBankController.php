@@ -1,36 +1,40 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\CompanyBank;
-use App\Services\CompanyBankService;
-use App\Http\Resources\CompanyBankResource;
 use App\Http\Requests\CompanyBankStoreRequest;
 use App\Http\Requests\CompanyBankUpdateRequest;
+use App\Http\Resources\CompanyBankResource;
+use App\Models\CompanyBank;
+use App\Services\CompanyBankService;
+use Illuminate\Http\Request;
 
 class CompanyBankController extends Controller
 {
     protected $service;
 
-    public function __construct(CompanyBankService $service) {
+    public function __construct(CompanyBankService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\CompanyBank::class);
+        $this->authorize('viewAny', CompanyBank::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return CompanyBankResource::collection($data);
     }
 
     public function store(CompanyBankStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\CompanyBank::class);
+        $this->authorize('create', CompanyBank::class);
         $model = $this->service->create($request->validated());
+
         return new CompanyBankResource($model);
     }
 
@@ -46,6 +50,7 @@ class CompanyBankController extends Controller
         $this->authorize('update', $companyBank);
 
         $updated = $this->service->update($companyBank->id, $request->validated());
+
         return new CompanyBankResource($updated);
     }
 
@@ -54,6 +59,7 @@ class CompanyBankController extends Controller
         $this->authorize('delete', $companyBank);
 
         $this->service->delete($companyBank->id);
+
         return response()->noContent();
     }
 }

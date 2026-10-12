@@ -150,7 +150,7 @@ export default function CustomerStatementReportPage() {
     const columns = ['Date', 'BOL Number', 'Document #', 'Customer', 'Description', 'Debit', 'Credit', 'Balance'];
     const rows = data.map(row => [
       row.date || row.created_at || '',
-      row.job_reference || '',
+      row.bol_number || '',
       row.document_number || '',
       row.customer_name || '',
       row.description || '',
@@ -314,7 +314,7 @@ export default function CustomerStatementReportPage() {
                     {data.map((row, index) => (
                       <tr key={`${row.document_number || row.transaction_number || index}-${index}`}>
                         <td className="px-4 py-3">{formatDateTime(row.date || row.created_at)}</td>
-                        <td className="px-4 py-3">{row.job_reference || '-'}</td>
+                        <td className="px-4 py-3">{row.bol_number || '-'}</td>
                         <td className="px-4 py-3">{row.document_number || '-'}</td>
                         <td className="px-4 py-3">{row.customer_name || '-'}</td>
                         <td className="px-4 py-3">{row.description || '-'}</td>

@@ -68,7 +68,7 @@
                         -
                     @endif
                 </td>
-                <td>{{ $invoice['job_reference_id'] ?? '-' }}</td>
+                <td>{{ $invoice['bol_number'] ?? '-' }}</td>
                 <td>{{ $invoice['customer'] ?? '-' }}</td>
                 <td>{{ $invoice['invoice_number'] ?? '-' }}</td>
                 <td>{{ $invoice['project_name'] ?? '-' }}</td>

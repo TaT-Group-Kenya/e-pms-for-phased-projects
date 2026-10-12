@@ -12,7 +12,7 @@ class ProjectsSummaryResource extends JsonResource
         $createdByName = null;
 
         if ($creator) {
-            $fullName = trim(($creator->first_name ?? '') . ' ' . ($creator->last_name ?? ''));
+            $fullName = trim(($creator->first_name ?? '').' '.($creator->last_name ?? ''));
             if ($fullName !== '') {
                 $createdByName = $fullName;
             } else {
@@ -23,7 +23,7 @@ class ProjectsSummaryResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'job_reference_id' => $this->job_reference_id,
+            'bol_number' => $this->bol_number,
             'order_id' => $this->order_id,
             'order_title' => optional($this->order)->title,
             'customer_id' => $this->customer_id,
@@ -41,7 +41,7 @@ class ProjectsSummaryResource extends JsonResource
             'end_date' => $this->end_date,
             'budget_estimate' => $this->budget_estimate,
             'currency' => $this->currency,
-            'assigned_companies' => $this->assigned_companies ? $this->assigned_companies->map(function($company) {
+            'assigned_companies' => $this->assigned_companies ? $this->assigned_companies->map(function ($company) {
                 return [
                     'id' => $company ? $company->id : null,
                     'name' => $company ? $company->name : null,

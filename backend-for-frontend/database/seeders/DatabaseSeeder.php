@@ -24,6 +24,9 @@ class DatabaseSeeder extends Seeder
             CompanySeeder::class,
             CustomerSeeder::class,
             SysConfigSeeder::class,
+            ShipContainerSupportSeeder::class,
+            ShipContainerSeeder::class,
+            QuotationSeeder::class,
         ]);
     }
 }

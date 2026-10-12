@@ -14,7 +14,7 @@ class ProjectLocationService
         array $with = []
     ) {
         $query = ProjectLocation::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
         // Handle soft-delete visibility flags
@@ -40,7 +40,10 @@ class ProjectLocationService
     public function find(int $id, array $with = [])
     {
         $query = ProjectLocation::query();
-        if (!empty($with)) $query->with($with);
+        if (! empty($with)) {
+            $query->with($with);
+        }
+
         return $query->findOrFail($id);
     }
 
@@ -53,6 +56,7 @@ class ProjectLocationService
     {
         $model = ProjectLocation::findOrFail($id);
         $model->update($data);
+
         return $model;
     }
 

@@ -1,51 +1,54 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
+use App\Http\Requests\OfficeExpenseDocumentStoreRequest;
+use App\Http\Requests\OfficeExpenseDocumentUpdateRequest;
+use App\Http\Resources\OfficeExpenseDocumentResource;
+use App\Models\OfficeExpense;
+use App\Models\OfficeExpenseDocument;
+use App\Services\OfficeExpenseDocumentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Models\OfficeExpenseDocument;
-use App\Models\OfficeExpense;
-use App\Services\OfficeExpenseDocumentService;
-use App\Http\Resources\OfficeExpenseDocumentResource;
-use App\Http\Requests\OfficeExpenseDocumentStoreRequest;
-use App\Http\Requests\OfficeExpenseDocumentUpdateRequest;
 
 class OfficeExpenseDocumentController extends Controller
 {
     protected $service;
 
-    public function __construct(OfficeExpenseDocumentService $service) {
+    public function __construct(OfficeExpenseDocumentService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\OfficeExpenseDocument::class);
+        $this->authorize('viewAny', OfficeExpenseDocument::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return OfficeExpenseDocumentResource::collection($data);
     }
 
     public function store(OfficeExpenseDocumentStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\OfficeExpenseDocument::class);
-        
+        $this->authorize('create', OfficeExpenseDocument::class);
+
         $validated = $request->validated();
 
-        if (!empty($validated['expense_id'])) {
-          $expense = OfficeExpense::findOrFail($validated['expense_id']);
-          if ($expense->status === 'paid') {
-              return response()->json([
-                  'message' => 'Documents cannot be added to a paid expense.',
-                  'errors'  => [
-                      'expense_id' => ['This expense is paid and locked for changes.'],
-                  ],
-              ], 422);
-          }
+        if (! empty($validated['expense_id'])) {
+            $expense = OfficeExpense::findOrFail($validated['expense_id']);
+            if ($expense->status === 'paid') {
+                return response()->json([
+                    'message' => 'Documents cannot be added to a paid expense.',
+                    'errors' => [
+                        'expense_id' => ['This expense is paid and locked for changes.'],
+                    ],
+                ], 422);
+            }
         }
 
         if ($request->hasFile('document_file')) {
@@ -56,8 +59,8 @@ class OfficeExpenseDocumentController extends Controller
                 : null;
 
             $originalName = $file->getClientOriginalName();
-            $prefix = $expense ? 'expense-' . $expense->id : 'expense';
-            $fileName = $prefix . '-' . $originalName;
+            $prefix = $expense ? 'expense-'.$expense->id : 'expense';
+            $fileName = $prefix.'-'.$originalName;
 
             $path = $file->storeAs('office-expense-documents', $fileName, 'public');
             $validated['document_path'] = $path;
@@ -65,6 +68,7 @@ class OfficeExpenseDocumentController extends Controller
 
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
+
         return new OfficeExpenseDocumentResource($model);
     }
 
@@ -83,7 +87,7 @@ class OfficeExpenseDocumentController extends Controller
         if ($expense && $expense->status === 'paid') {
             return response()->json([
                 'message' => 'Documents on a paid expense cannot be edited.',
-                'errors'  => [
+                'errors' => [
                     'expense_id' => ['This expense is paid and locked for changes.'],
                 ],
             ], 422);
@@ -102,14 +106,15 @@ class OfficeExpenseDocumentController extends Controller
             $expense = $officeExpenseDocument->expense ?? OfficeExpense::findOrFail($officeExpenseDocument->expense_id);
 
             $originalName = $file->getClientOriginalName();
-            $prefix = $expense ? 'expense-' . $expense->id : 'expense';
-            $fileName = $prefix . '-' . $originalName;
+            $prefix = $expense ? 'expense-'.$expense->id : 'expense';
+            $fileName = $prefix.'-'.$originalName;
 
             $path = $file->storeAs('office-expense-documents', $fileName, 'public');
             $validated['document_path'] = $path;
         }
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($officeExpenseDocument->id, $validated);
+
         return new OfficeExpenseDocumentResource($updated);
     }
 
@@ -121,7 +126,7 @@ class OfficeExpenseDocumentController extends Controller
         if ($expense && $expense->status === 'paid') {
             return response()->json([
                 'message' => 'Documents on a paid expense cannot be deleted.',
-                'errors'  => [
+                'errors' => [
                     'expense_id' => ['This expense is paid and locked for changes.'],
                 ],
             ], 422);
@@ -133,6 +138,7 @@ class OfficeExpenseDocumentController extends Controller
         }
 
         $this->service->delete($officeExpenseDocument->id);
+
         return response()->noContent();
     }
 
@@ -140,13 +146,13 @@ class OfficeExpenseDocumentController extends Controller
     {
         $this->authorize('view', $officeExpenseDocument);
 
-        if (!$officeExpenseDocument->document_path) {
+        if (! $officeExpenseDocument->document_path) {
             return response()->json(['message' => 'Document file not found'], 404);
         }
 
-        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+        $disk = Storage::disk('public');
 
-        if (!$disk->exists($officeExpenseDocument->document_path)) {
+        if (! $disk->exists($officeExpenseDocument->document_path)) {
             return response()->json(['message' => 'Document file missing on server'], 404);
         }
 

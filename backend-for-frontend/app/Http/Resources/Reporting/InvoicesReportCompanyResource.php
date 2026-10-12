@@ -15,9 +15,9 @@ class InvoicesReportCompanyResource extends JsonResource
         return [
             'id' => $this->id,
             'date' => $this->created_at,
-            'job_reference_id' => $this->project && isset($this->project->job_reference_id)
-                ? $this->project->job_reference_id
-                : ($this->job_reference_id ?? null),
+            'bol_number' => $this->project && isset($this->project->bol_number)
+                ? $this->project->bol_number
+                : ($this->bol_number ?? null),
             'company' => $this->company_name ?? ($this->company ? $this->company->name : null),
             'invoice_number' => $this->invoice_number ?? $this->id,
             'project_name' => $this->project_name ?? ($this->project ? $this->project->name : null),

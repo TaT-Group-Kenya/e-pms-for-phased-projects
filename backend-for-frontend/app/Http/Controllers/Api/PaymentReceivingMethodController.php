@@ -3,19 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\PaymentReceivingMethod;
-use App\Services\PaymentReceivingMethodService;
-use App\Http\Resources\PaymentReceivingMethodResource;
 use App\Http\Requests\PaymentReceivingMethodStoreRequest;
 use App\Http\Requests\PaymentReceivingMethodUpdateRequest;
+use App\Http\Resources\PaymentReceivingMethodResource;
+use App\Models\PaymentReceivingMethod;
+use App\Services\PaymentReceivingMethodService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PaymentReceivingMethodController extends Controller
 {
     protected $service;
 
-    public function __construct(PaymentReceivingMethodService $service) {
+    public function __construct(PaymentReceivingMethodService $service)
+    {
         $this->service = $service;
     }
 
@@ -27,6 +28,7 @@ class PaymentReceivingMethodController extends Controller
         $search = $request->get('search');
         $filters = $request->except('per_page', 'page', 'search');
         $data = $this->service->index($filters, $perPage, $page, 0, [], $search);
+
         return PaymentReceivingMethodResource::collection($data);
     }
 
@@ -36,12 +38,14 @@ class PaymentReceivingMethodController extends Controller
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
+
         return new PaymentReceivingMethodResource($model);
     }
 
     public function show(PaymentReceivingMethod $paymentReceivingMethod)
     {
         $this->authorize('view', $paymentReceivingMethod);
+
         return new PaymentReceivingMethodResource($paymentReceivingMethod);
     }
 
@@ -55,11 +59,12 @@ class PaymentReceivingMethodController extends Controller
             $paymentReceivingMethod->custInvoices()->where('status', '!=', 'paid')->exists()
         ) {
             return response()->json([
-                'message' => 'Cannot set method inactive: it is attached to a customer invoice that is not paid.'
+                'message' => 'Cannot set method inactive: it is attached to a customer invoice that is not paid.',
             ], 422);
         }
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($paymentReceivingMethod->id, $validated);
+
         return new PaymentReceivingMethodResource($updated);
     }
 
@@ -69,10 +74,11 @@ class PaymentReceivingMethodController extends Controller
         // Prevent deletion if attached to unpaid invoice
         if ($paymentReceivingMethod->custInvoices()->where('status', '!=', 'paid')->exists()) {
             return response()->json([
-                'message' => 'Cannot delete: method is attached to a customer invoice that is not paid.'
+                'message' => 'Cannot delete: method is attached to a customer invoice that is not paid.',
             ], 422);
         }
         $paymentReceivingMethod->softDelete(auth()->id());
+
         return response()->json(['message' => 'Payment receiving method soft deleted.']);
         // Add relationship for checking invoices
         // (This is a helper for the controller, not a real method)
@@ -85,6 +91,7 @@ class PaymentReceivingMethodController extends Controller
         $paymentReceivingMethod = PaymentReceivingMethod::withDeleted()->findOrFail($id);
         $this->authorize('update', $paymentReceivingMethod);
         $paymentReceivingMethod->restore();
+
         return new PaymentReceivingMethodResource($paymentReceivingMethod);
     }
 }

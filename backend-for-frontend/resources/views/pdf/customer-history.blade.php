@@ -43,7 +43,7 @@
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Job Reference ID</th>
+                <th>BOL Number</th>
                 <th>Customer</th>
                 <th>Title</th>
                 <th>Category</th>
@@ -64,7 +64,7 @@
                         -
                     @endif
                 </td>
-                <td>{{ $row['job_reference_id'] ?? '-' }}</td>
+                <td>{{ $row['bol_number'] ?? '-' }}</td>
                 <td>{{ $row['customer_name'] ?? '-' }}</td>
                 <td>{{ $row['title'] ?? '-' }}</td>
                 <td>{{ $row['project_category'] ?? '-' }}</td>

@@ -145,7 +145,23 @@ interface ReceivingPaymentMethod {
 interface Quotation {
   id: number;
   quotation_number: string;
-  job_reference_id?: string;
+  bol_number?: string;
+  ship_container_id?: number | null;
+  ship_container?: {
+    id: number;
+    reference_number: string;
+    container_type: string;
+    client_name?: string | null;
+    port_in?: string | null;
+    port_out?: string | null;
+    get_in?: string | null;
+    get_out?: string | null;
+    eta?: string | null;
+    etd?: string | null;
+    bl_no?: string | null;
+    container_numbers?: string[];
+  } | null;
+  ship_container_numbers?: string[] | null;
   title: string;
   description?: string;
   status: string;
@@ -209,6 +225,39 @@ const QuotationDetail: React.FC = () => {
   const [deleteItem, setDeleteItem] = useState<QuoteLineItem | null>(null);
   const [isDeletingItem, setIsDeletingItem] = useState(false);
   const [deleteItemError, setDeleteItemError] = useState<string | null>(null);
+
+  /** Container numbers of the linked ship container entry */
+  const containerNumbers = useMemo<string[]>(() => {
+    if (Array.isArray(quotation?.ship_container_numbers)) {
+      return quotation.ship_container_numbers;
+    }
+    if (Array.isArray(quotation?.ship_container?.container_numbers)) {
+      return quotation.ship_container.container_numbers;
+    }
+    return [];
+  }, [quotation]);
+
+  const copyContainerNumbers = async (numbers: string[]) => {
+    const text = numbers.join(", ");
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      addToast("Container numbers copied to clipboard.", "success");
+    } catch {
+      addToast("Could not copy to clipboard. Please copy manually.", "error");
+    }
+  };
 
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [approvalAction, setApprovalAction] = useState<string>("make");
@@ -557,8 +606,9 @@ const QuotationDetail: React.FC = () => {
         currency: editData.currency ?? quotation.currency,
         payment_terms: (editData.payment_terms ?? quotation.payment_terms ?? "").toString(),
         notes_to_customer: (editData.notes_to_customer ?? quotation.notes_to_customer ?? "").toString(),
-        job_reference_id: (editData.job_reference_id ?? quotation.job_reference_id ?? "").toString(),
         // tax_percentage removed; tax_amount is driven by backend/tax items.
+        // bol_number removed from the edit form: it is derived server-side from
+        // the linked ship container entry.
         discount_percentage:
           typeof editData.discount_percentage === "number"
             ? editData.discount_percentage
@@ -1229,7 +1279,7 @@ const QuotationDetail: React.FC = () => {
               Quote #: <span className="font-semibold">{quotation.quotation_number}</span>
             </p>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              BOL Number: <span className="font-semibold">{quotation.job_reference_id || "-"}</span>
+              BOL Number: <span className="font-semibold">{quotation.bol_number || "-"}</span>
             </p>
           </div>
 
@@ -1523,9 +1573,18 @@ const QuotationDetail: React.FC = () => {
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600 dark:text-gray-400">BOL Number</span>
                         <span className="text-black dark:text-white font-medium">
-                          {quotation.job_reference_id || "-"}
+                          {quotation.bol_number || "-"}
                         </span>
                       </div>
+
+                      {quotation.ship_container_id && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Ship Container</span>
+                          <Link href={`/ship-containers/${quotation.ship_container_id}`} className="text-primary-500 hover:text-primary-600 font-medium">
+                            {quotation.ship_container?.reference_number || "View"}
+                          </Link>
+                        </div>
+                      )}
 
                       {quotation.project_owner && (
                         <div className="flex justify-between text-sm">
@@ -1683,6 +1742,74 @@ const QuotationDetail: React.FC = () => {
           {/* Line Items Tab */}
           {activeTab === 1 && (
             <div className="pt-[20px]">
+              {/* Linked ship container info */}
+              {quotation.ship_container_id && (
+                <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md border-l-4 border-primary-500">
+                  <div className="flex items-center justify-between mb-[15px]">
+                    <h6 className="text-black dark:text-white font-semibold flex items-center gap-2">
+                      <i className="material-symbols-outlined !text-[20px] text-primary-500">sailing</i>
+                      Linked Ship Container
+                    </h6>
+                    <Link
+                      href={`/ship-containers/${quotation.ship_container_id}`}
+                      className="text-[13px] text-primary-500 hover:text-primary-600 inline-flex items-center gap-1"
+                    >
+                      Open container entry
+                      <i className="material-symbols-outlined !text-[16px]">arrow_forward</i>
+                    </Link>
+                  </div>
+
+                  <div className="grid gap-[15px] sm:grid-cols-2 lg:grid-cols-4">
+                    <div>
+                      <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-[4px]">Reference</p>
+                      <p className="text-black dark:text-white text-sm font-medium">{quotation.ship_container?.reference_number || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-[4px]">Client / Consignee</p>
+                      <p className="text-black dark:text-white text-sm">{quotation.ship_container?.client_name || quotation.project_owner?.name || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-[4px]">
+                        {quotation.ship_container?.container_type?.includes("export") ? "Port Out" : "Port In"}
+                      </p>
+                      <p className="text-black dark:text-white text-sm">{quotation.ship_container?.port_in || quotation.ship_container?.port_out || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-[4px]">Get In (Arrival)</p>
+                      <p className="text-black dark:text-white text-sm">{quotation.ship_container?.get_in?.replace("T", " ").slice(0, 16) || "—"}</p>
+                    </div>
+                  </div>
+
+                  {containerNumbers.length > 0 && (
+                    <div className="mt-[15px] pt-[15px] border-t border-gray-50 dark:border-[#15203c]">
+                      <div className="flex items-center justify-between mb-[8px]">
+                        <p className="text-[12px] text-gray-500 dark:text-gray-400">
+                          Container Numbers ({containerNumbers.length})
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => copyContainerNumbers(containerNumbers)}
+                          className="inline-flex items-center gap-[4px] bg-gray-50 dark:bg-[#15203c] border border-gray-100 dark:border-[#15203c] text-gray-600 dark:text-gray-300 rounded-md px-[8px] py-[3px] text-[12px] hover:text-primary-500 hover:border-primary-300 transition-all"
+                        >
+                          <i className="material-symbols-outlined !text-[14px]">content_copy</i>
+                          Copy all
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-[8px]">
+                        {containerNumbers.map((number) => (
+                          <span
+                            key={number}
+                            className="inline-block bg-primary-50 dark:bg-[#15203c] border border-primary-100 dark:border-[#1c2a4a] text-primary-700 dark:text-gray-200 rounded-md px-[8px] py-[3px] text-[12px] font-medium tracking-wide"
+                          >
+                            {number}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <div className="flex items-center justify-between mb-[20px]">
                   <h6 className="text-black dark:text-white font-semibold">Quote Line Items</h6>
@@ -2579,19 +2706,6 @@ const QuotationDetail: React.FC = () => {
                       disabled={isEditSubmitting}
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="0.00"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-[10px] text-black dark:text-white font-medium block">
-                      BOL Number
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.job_reference_id ?? quotation.job_reference_id ?? ""}
-                      onChange={(e) => handleEditFieldChange("job_reference_id", e.target.value)}
-                      disabled={isEditSubmitting}
-                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      placeholder="E.g. MEDUM2822382"
                     />
                   </div>
                 </div>

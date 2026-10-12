@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class OrderDocument extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'order_documents';
 
     protected $fillable = [
@@ -22,7 +23,7 @@ class OrderDocument extends Model
         'deleted_at',
         'deleted_by',
     ];
-    
+
     public function order()
     {
         return $this->belongsTo(Order::class);
@@ -30,6 +31,6 @@ class OrderDocument extends Model
 
     public function getDocumentUrlAttribute()
     {
-        return asset('storage/' . $this->document_path);
+        return asset('storage/'.$this->document_path);
     }
 }

@@ -37,6 +37,12 @@ class SysConfigSeeder extends Seeder
             ['readonly' => true, 'name' => 'QUOTATION_NUMBER_INCREMENT', 'value' => '1'],
             ['readonly' => true, 'name' => 'QUOTATION_NUMBER_LENGTH', 'value' => '6'],
 
+            ['readonly' => true, 'name' => 'SHIP_CONTAINER_REFERENCE_PREFIX', 'value' => 'SHC-'],
+            ['readonly' => true, 'name' => 'SHIP_CONTAINER_REFERENCE_INCREMENT', 'value' => '1'],
+            ['readonly' => true, 'name' => 'SHIP_CONTAINER_REFERENCE_LENGTH', 'value' => '6'],
+            ['readonly' => false, 'name' => 'SHIP_CONTAINER_TRANSIT_EXIT_DAYS', 'value' => '30'],
+            ['readonly' => false, 'name' => 'SHIP_CONTAINER_TRANSIT_NOTIFY_DAY', 'value' => '25'],
+
             ['readonly' => true, 'name' => 'NAME', 'value' => 'Infosol Kenya Ltd'],
             ['readonly' => true, 'name' => 'EMAIL', 'value' => 'info@infosolkenyaltd.com'],
             ['readonly' => true, 'name' => 'ADDRESS_LINE_1', 'value' => '1148 Valley Road Park'],

@@ -15,7 +15,7 @@ class UserService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = User::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
         // Handle soft-delete visibility flags
@@ -33,17 +33,20 @@ class UserService
             $query->where($key, $value);
         }
         $query->orderByDesc('id');
-        
+
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-        
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
     {
         $query = User::query();
-        if (!empty($with)) $query->with($with);
+        if (! empty($with)) {
+            $query->with($with);
+        }
+
         return $query->findOrFail($id);
     }
 
@@ -55,17 +58,17 @@ class UserService
     public function update(int $id, array $data)
     {
         $model = User::findOrFail($id);
-        
+
         // Perform the update
         $result = $model->update($data);
-        
-        if (!$result) {
+
+        if (! $result) {
             throw new \Exception('Failed to update user in database');
         }
-        
+
         // Refresh the model to get the latest data from database
         $model->refresh();
-        
+
         return $model;
     }
 

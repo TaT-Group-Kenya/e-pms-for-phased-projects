@@ -24,7 +24,7 @@ class OrderDocumentUpdateRequest extends FormRequest
                 'mimes:pdf,xlsx,docx,jpg,jpeg,png',
                 'max:3072', // max size in KB (3MB)
             ],
-            'document_type' => ['sometimes', 'required', Rule::in(['proposal','terms','attachments'])],
+            'document_type' => ['sometimes', 'required', Rule::in(['proposal', 'terms', 'attachments'])],
         ];
     }
 

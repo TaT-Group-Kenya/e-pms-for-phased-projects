@@ -3,18 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\CustPaymentStoreRequest;
+use App\Http\Requests\CustPaymentUpdateRequest;
+use App\Http\Resources\CustPaymentResource;
 use App\Models\CustPayment;
 use App\Models\Download;
 use App\Models\SysConfig;
 use App\Services\CustPaymentService;
-use App\Http\Resources\CustPaymentResource;
-use App\Http\Requests\CustPaymentStoreRequest;
-use App\Http\Requests\CustPaymentUpdateRequest;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class CustPaymentController extends Controller
 {
@@ -36,7 +36,7 @@ class CustPaymentController extends Controller
         $with = [
             'invoices.customer',
             'invoices.project',
-            'createdByUser'
+            'createdByUser',
         ];
 
         $data = $this->service->index($filters, $perPage, $page, 0, $with);
@@ -140,24 +140,24 @@ class CustPaymentController extends Controller
         $primaryInvoice = $invoices->first();
 
         $data = [
-            'payment'            => $payment,
-            'invoices'           => $invoices,
-            'primaryInvoice'     => $primaryInvoice,
-            'senderName'         => $senderName,
-            'senderEmail'        => $senderEmail,
-            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
-            'senderPhone'        => $configValues['PHONE']   ?? null,
-            'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
+            'payment' => $payment,
+            'invoices' => $invoices,
+            'primaryInvoice' => $primaryInvoice,
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $configValues['INSTANCE_LOGO'] ?? null,
+            'senderPhone' => $configValues['PHONE'] ?? null,
+            'senderWebsite' => $configValues['WEBSITE'] ?? config('app.url'),
             'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'         => $configValues['CITY']    ?? null,
-            'senderState'        => $configValues['STATE']   ?? null,
-            'senderCountry'      => $configValues['COUNTRY'] ?? null,
-            'generatedAt'        => $generatedAt,
+            'senderCity' => $configValues['CITY'] ?? null,
+            'senderState' => $configValues['STATE'] ?? null,
+            'senderCountry' => $configValues['COUNTRY'] ?? null,
+            'generatedAt' => $generatedAt,
         ];
 
         $html = view('pdf.customer-payment', $data)->render();
 
-        $options = new Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
 
         $dompdf = new Dompdf($options);
@@ -167,13 +167,13 @@ class CustPaymentController extends Controller
 
         $output = $dompdf->output();
 
-        $number = $payment->transaction_number ?: ('CUST-PAYMENT-' . $payment->id);
-        $fileName = $number . '.pdf';
-        $relativePath = 'cust-payments/' . $fileName;
+        $number = $payment->transaction_number ?: ('CUST-PAYMENT-'.$payment->id);
+        $fileName = $number.'.pdf';
+        $relativePath = 'cust-payments/'.$fileName;
 
         Storage::disk('public')->put($relativePath, $output);
 
-        $downloadKey = 'cust-payment:' . $number;
+        $downloadKey = 'cust-payment:'.$number;
         $download = Download::firstOrNew(['name' => $downloadKey]);
         $download->path = $relativePath;
         $download->updated_at = now();
@@ -185,9 +185,9 @@ class CustPaymentController extends Controller
         $download->save();
 
         return [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class BaseResource extends JsonResource
@@ -22,7 +23,7 @@ class BaseResource extends JsonResource
         }
 
         // If it's a Carbon or DateTime instance, convert to ISO string
-        if ($timestamp instanceof \Carbon\Carbon || $timestamp instanceof \DateTime) {
+        if ($timestamp instanceof Carbon || $timestamp instanceof \DateTime) {
             return $timestamp->format(\DateTime::ATOM);
         }
 

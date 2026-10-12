@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class OfficeExpensePayment extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'office_expense_payments';
 
     protected $fillable = [
@@ -45,7 +46,8 @@ class OfficeExpensePayment extends Model
         return $this->belongsTo(OfficeExpense::class, 'expense_id');
     }
 
-    public function transaction(){
+    public function transaction()
+    {
         return $this->belongsTo(Transaction::class, 'transaction_id');
     }
 }

@@ -17,7 +17,7 @@ class CustCreditNoteService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = CustCreditNote::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
         // Handle soft-delete visibility flags
@@ -36,17 +36,20 @@ class CustCreditNoteService
             $query->where($key, $value);
         }
         $query->orderByDesc('id');
-        
+
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-        
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
     {
         $query = CustCreditNote::query();
-        if (!empty($with)) $query->with($with);
+        if (! empty($with)) {
+            $query->with($with);
+        }
+
         return $query->findOrFail($id);
     }
 
@@ -58,7 +61,7 @@ class CustCreditNoteService
         $data['total_amount'] = 0;
 
         // Generate unique credit_note_number
-        $commonService = new \App\Services\CommonService();
+        $commonService = new CommonService;
         $creditNoteNumber = $commonService->getNextCustCreditNoteNumber();
         $data['credit_note_number'] = $creditNoteNumber;
 
@@ -103,6 +106,7 @@ class CustCreditNoteService
         }
 
         $model->update($data);
+
         return $model;
     }
 

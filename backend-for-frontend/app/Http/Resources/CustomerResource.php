@@ -30,13 +30,13 @@ class CustomerResource extends BaseResource
                 : ($this->relationLoaded('projects') ? $this->projects->count() : 0),
 
             'users' => UserResource::collection($this->whenLoaded('users')),
-            
+
             'projects' => ProjectResource::collection($this->whenLoaded('projects')),
-            
+
             'quotations' => QuotationResource::collection($this->whenLoaded('quotations')),
-            
+
             'orders' => OrderResource::collection($this->whenLoaded('orders')),
-            
+
             'invoices' => CustInvoiceResource::collection($this->whenLoaded('invoices')),
 
             'projectOwners' => ProjectOwnerResource::collection($this->whenLoaded('projectOwners')),

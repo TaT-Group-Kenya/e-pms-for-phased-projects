@@ -2,14 +2,13 @@
 
 namespace App\Services;
 
-use App\Models\Project;
-use App\Models\ProjectProgressUpdate;
-use App\Models\CustInvoice;
-use App\Models\CustPaymentAllocation;
 use App\Models\CompanyInvoice;
 use App\Models\CompanyPayment;
-use App\Models\Customer;
+use App\Models\CustInvoice;
+use App\Models\CustPaymentAllocation;
 use App\Models\Order;
+use App\Models\Project;
+use App\Models\ProjectProgressUpdate;
 use App\Models\Quotation;
 use Carbon\Carbon;
 
@@ -24,8 +23,7 @@ class DashboardInformationService
         protected CustomerService $customerService,
         protected QuotationService $quotationService,
         protected CurrencyConversionService $currencyConversionService,
-    ) {
-    }
+    ) {}
 
     public function getProjectsOverview(string $range = 'last_6_months'): array
     {
@@ -34,7 +32,7 @@ class DashboardInformationService
         // Derive the current period from the requested range
         [$currentStart, $currentEnd] = $this->resolveRange($range);
 
-        if (!$currentStart || !$currentEnd) {
+        if (! $currentStart || ! $currentEnd) {
             // Fallback to a sensible default if range is unsupported
             $currentStart = $now->copy()->subMonths(5)->startOfMonth();
             $currentEnd = $now->copy()->endOfMonth();
@@ -95,12 +93,12 @@ class DashboardInformationService
             $query->whereBetween('created_at', [$start, $end]);
         }
 
-        $projects = $query->orderByDesc('created_at')->limit(7)->get(['id', 'job_reference_id', 'name', 'progress']);
+        $projects = $query->orderByDesc('created_at')->limit(7)->get(['id', 'bol_number', 'name', 'progress']);
 
         return $projects->map(function (Project $project) {
             return [
                 'id' => $project->id,
-                'job_reference_id' => $project->job_reference_id,
+                'bol_number' => $project->bol_number,
                 'name' => $project->name,
                 'progress' => (float) ($project->progress ?? 0),
             ];
@@ -113,7 +111,7 @@ class DashboardInformationService
 
         [$start, $end] = $this->resolveRange($range);
 
-        if (!$start || !$end) {
+        if (! $start || ! $end) {
             $start = $now->copy()->subMonths(5)->startOfMonth();
             $end = $now->copy()->endOfMonth();
         }
@@ -146,7 +144,7 @@ class DashboardInformationService
             return [
                 'id' => $update->id,
                 'project_id' => $update->project_id,
-                'job_reference_id' => $update->project?->job_reference_id,
+                'bol_number' => $update->project?->bol_number,
                 'project_name' => $update->project?->name,
                 'phase_name' => $update->projectPhase?->name,
                 'comment' => $update->comment,
@@ -193,7 +191,7 @@ class DashboardInformationService
 
         [$start, $end] = $this->resolveRange($monthRange);
 
-        if (!$start || !$end) {
+        if (! $start || ! $end) {
             // Fallback to last 6 months when something unexpected is passed in.
             $start = $now->copy()->subMonths(5)->startOfMonth();
             $end = $now->copy()->endOfMonth();
@@ -257,12 +255,12 @@ class DashboardInformationService
         }
 
         foreach ($projects as $project) {
-            if (!$project->budget_estimate) {
+            if (! $project->budget_estimate) {
                 continue;
             }
 
             $monthKey = Carbon::parse($project->created_at)->format('Y-m');
-            if (!array_key_exists($monthKey, $budgetByMonth)) {
+            if (! array_key_exists($monthKey, $budgetByMonth)) {
                 continue;
             }
 
@@ -274,12 +272,12 @@ class DashboardInformationService
         }
 
         foreach ($companyPayments as $payment) {
-            if (!$payment->net_amount) {
+            if (! $payment->net_amount) {
                 continue;
             }
 
             $monthKey = Carbon::parse($payment->payment_date)->format('Y-m');
-            if (!array_key_exists($monthKey, $expensesByMonth)) {
+            if (! array_key_exists($monthKey, $expensesByMonth)) {
                 continue;
             }
 
@@ -291,12 +289,12 @@ class DashboardInformationService
         }
 
         foreach ($custInvoices as $invoice) {
-            if (!$invoice->total_amount) {
+            if (! $invoice->total_amount) {
                 continue;
             }
 
             $monthKey = Carbon::parse($invoice->created_at)->format('Y-m');
-            if (!array_key_exists($monthKey, $revenueByMonth)) {
+            if (! array_key_exists($monthKey, $revenueByMonth)) {
                 continue;
             }
 
@@ -373,7 +371,7 @@ class DashboardInformationService
         $invoiceIds = $invoices->pluck('id')->all();
 
         $paidByInvoice = [];
-        if (!empty($invoiceIds)) {
+        if (! empty($invoiceIds)) {
             $paidByInvoice = CustPaymentAllocation::whereIn('cust_payment_allocations.invoice_id', $invoiceIds)
                 ->where(function ($q) {
                     $q->where('cust_payment_allocations.is_deleted', 0)->orWhereNull('cust_payment_allocations.is_deleted');
@@ -389,7 +387,7 @@ class DashboardInformationService
         $result = [];
         foreach ($invoices as $invoice) {
             $currency = $invoice->currency;
-            if (!$currency) {
+            if (! $currency) {
                 continue;
             }
 
@@ -428,7 +426,7 @@ class DashboardInformationService
         $invoiceIds = $invoices->pluck('id')->all();
 
         $paidByInvoice = [];
-        if (!empty($invoiceIds)) {
+        if (! empty($invoiceIds)) {
             $paidByInvoice = CompanyPayment::whereIn('invoice_id', $invoiceIds)
                 ->where('is_deleted', 0)
                 ->where('transaction_type', 'receipt')
@@ -441,7 +439,7 @@ class DashboardInformationService
         $result = [];
         foreach ($invoices as $invoice) {
             $currency = $invoice->currency;
-            if (!$currency) {
+            if (! $currency) {
                 continue;
             }
 

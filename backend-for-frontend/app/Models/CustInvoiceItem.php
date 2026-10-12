@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class CustInvoiceItem extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'cust_invoice_items';
 
     protected $fillable = [
@@ -44,6 +45,7 @@ class CustInvoiceItem extends Model
 
             if (! $isTaxable) {
                 $item->tax_amount = 0;
+
                 return;
             }
 
@@ -94,5 +96,4 @@ class CustInvoiceItem extends Model
     {
         return $this->belongsTo(CustInvoice::class, 'invoice_id');
     }
-
 }

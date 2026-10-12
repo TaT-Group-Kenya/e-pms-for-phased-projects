@@ -1,44 +1,48 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Project;
-use App\Models\Order;
-use App\Services\ProjectService;
-use App\Http\Resources\ProjectResource;
-use App\Services\CommonService;
 use App\Http\Requests\ProjectStoreRequest;
 use App\Http\Requests\ProjectUpdateRequest;
+use App\Http\Resources\ProjectResource;
+use App\Models\CompanyPayment;
+use App\Models\CustPayment;
+use App\Models\Order;
+use App\Models\Project;
+use App\Services\CommonService;
+use App\Services\ProjectService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
     protected $service;
 
-    public function __construct(ProjectService $service) {
+    public function __construct(ProjectService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\Project::class);
+        $this->authorize('viewAny', Project::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         // Eager load customer and projectOwner for project listings to avoid N+1 queries
         $data = $this->service->index($filters, $perPage, $page, 0);
         $data->load(['customer', 'order', 'creator', 'projectOwner']);
+
         return ProjectResource::collection($data);
     }
 
     public function store(ProjectStoreRequest $request)
     {
         $this->authorize('create', Project::class);
-        
+
         $validated = $request->validated();
-        
+
         // Ensure the project customer matches the customer on the related order
         $order = Order::findOrFail($validated['order_id']);
         if ((int) $validated['customer_id'] !== (int) $order->customer_id) {
@@ -50,13 +54,13 @@ class ProjectController extends Controller
             ], 422);
         }
 
-        // Set job_reference_id from order if present
-        if (isset($order->job_reference_id)) {
-            $validated['job_reference_id'] = $order->job_reference_id;
+        // Set bol_number from order if present
+        if (isset($order->bol_number)) {
+            $validated['bol_number'] = $order->bol_number;
         }
 
         do {
-            $commonService = new CommonService();
+            $commonService = new CommonService;
             $code = $commonService->generateUniqueCode('PRJ-');
         } while (Project::where('code', $code)->exists());
 
@@ -64,10 +68,11 @@ class ProjectController extends Controller
         $validated['created_by'] = Auth::id();
         $validated['created_at'] = $validated['created_at'] ?? now();
         $validated['quote_item_id'] = null;
-        $validated['start_date'] = is_null($validated['start_date']) ? new \DateTime() : $validated['start_date'];
-        $validated['end_date'] = is_null($validated['end_date']) ? new \DateTime() : $validated['end_date'];
+        $validated['start_date'] = is_null($validated['start_date']) ? new \DateTime : $validated['start_date'];
+        $validated['end_date'] = is_null($validated['end_date']) ? new \DateTime : $validated['end_date'];
 
         $model = $this->service->create($validated);
+
         return new ProjectResource($model);
     }
 
@@ -85,7 +90,7 @@ class ProjectController extends Controller
             'order',
             'customer_invoice',
             'company_invoices',
-            'projectOwner'
+            'projectOwner',
         ]);
 
         // Fetch incoming payments from customer invoices
@@ -93,7 +98,7 @@ class ProjectController extends Controller
         if ($project->customer_invoice) {
             $invoice = $project->customer_invoice;
 
-            $incomingPayments = \App\Models\CustPayment::whereHas('allocations', function ($query) use ($invoice) {
+            $incomingPayments = CustPayment::whereHas('allocations', function ($query) use ($invoice) {
                 $query->where('invoice_id', $invoice->id);
             })->where('payment_type', 'normal')->with('allocations')->get();
         }
@@ -102,7 +107,7 @@ class ProjectController extends Controller
         $outgoingPayments = [];
         if ($project->company_invoices && count($project->company_invoices) > 0) {
             $invoiceIds = $project->company_invoices->pluck('id')->toArray();
-            $outgoingPayments = \App\Models\CompanyPayment::with(['invoice.company'])->where('payment_type', 'normal')->whereIn('invoice_id', $invoiceIds)->get();
+            $outgoingPayments = CompanyPayment::with(['invoice.company'])->where('payment_type', 'normal')->whereIn('invoice_id', $invoiceIds)->get();
         }
 
         // Attach payments to project
@@ -120,7 +125,7 @@ class ProjectController extends Controller
         $validated['updated_by'] = Auth::id();
         $validated['created_at'] = $validated['created_at'] ?? $project->created_at;
         $validated['updated_at'] = $validated['updated_at'] ?? now();
-        
+
         // If this project is linked to an order, prevent changing the customer
         // to anything other than the order's customer
         $project->loadMissing('order');
@@ -134,18 +139,18 @@ class ProjectController extends Controller
                 ], 422);
             }
         }
-        
+
         $updated = $this->service->update($project->id, $validated);
-        
+
         // If project status is being changed, update all project phases status
         if (isset($validated['status']) && $validated['status'] !== $project->status) {
             $updated->phases()->update([
                 'status' => $validated['status'],
                 'updated_by' => Auth::id(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
         }
-        
+
         return new ProjectResource($updated);
     }
 
@@ -154,6 +159,7 @@ class ProjectController extends Controller
         $this->authorize('delete', $project);
 
         $this->service->delete($project->id, Auth::id());
+
         return response()->noContent();
     }
 }

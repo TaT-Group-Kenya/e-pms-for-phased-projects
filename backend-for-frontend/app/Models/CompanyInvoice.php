@@ -59,11 +59,12 @@ class CompanyInvoice extends Model
 
     public function pdcsIssued()
     {
-        return $this->hasMany(\App\Models\PdcIssuedCompany::class, 'invoice_id');
+        return $this->hasMany(PdcIssuedCompany::class, 'invoice_id');
     }
 
     /**
      * Get the total amount paid to this invoice so far.
+     *
      * @return float
      */
     public function getTotalPaidAttribute()
@@ -73,6 +74,7 @@ class CompanyInvoice extends Model
         if ($payments && $payments->count() > 0) {
             return (float) $payments->sum('amount_paid');
         }
+
         return 0.0;
     }
 
@@ -87,5 +89,4 @@ class CompanyInvoice extends Model
         // Supporting documents reference the invoice via invoice_id
         return $this->hasMany(CompanyInvoiceDocument::class, 'invoice_id');
     }
-
 }

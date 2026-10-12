@@ -12,7 +12,7 @@ interface CompanyInvoiceSummary {
   id: number;
   invoice_number: string;
   project: {
-    job_reference_id?: string | null;
+    bol_number?: string | null;
     project_owner?: {
       id: number;
       name: string;
@@ -575,7 +575,7 @@ const CompanyInvoicesTable: React.FC = () => {
                           </Link>
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
-                          {inv.project.job_reference_id || ""}
+                          {inv.project.bol_number || ""}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px]">
                           {inv.title ? (

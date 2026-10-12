@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
-use App\Models\CustInvoice;
-use App\Models\CustCreditNote;
+use Illuminate\Database\Eloquent\Model;
 
 class CustomerTransactionsLedger extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'customer_transactions_ledger';
 
     protected $fillable = [

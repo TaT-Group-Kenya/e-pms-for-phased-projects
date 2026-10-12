@@ -21,7 +21,7 @@ interface CompanyPaymentSummary {
   projectId?: number | null;
   invoiceNumber?: string | null;
   invoiceId?: number | null;
-  jobReferenceId?: string | null;
+  bolNumber?: string | null;
   transactedBy?: string | null;
 }
 
@@ -86,7 +86,7 @@ const AccountPayablesReportTable: React.FC = () => {
           let projectId: number | null = null;
           let invoiceNumber: string | null = null;
           let invoiceId: number | null = null;
-          let jobReferenceId: string | null = null;
+          let bolNumber: string | null = null;
 
           if (invoice) {
             if (invoice.invoice_number) {
@@ -113,8 +113,8 @@ const AccountPayablesReportTable: React.FC = () => {
               if (invoice.project.id != null) {
                 projectId = Number(invoice.project.id);
               }
-              if (invoice.project.job_reference_id) {
-                jobReferenceId = String(invoice.project.job_reference_id);
+              if (invoice.project.bol_number) {
+                bolNumber = String(invoice.project.bol_number);
               }
             }
           }
@@ -134,7 +134,7 @@ const AccountPayablesReportTable: React.FC = () => {
             projectId,
             invoiceNumber,
             invoiceId,
-            jobReferenceId,
+            bolNumber,
           };
         });
 
@@ -330,7 +330,7 @@ const AccountPayablesReportTable: React.FC = () => {
       p.id,
       p.payment_date ?? "",
       p.companyName ?? "",
-      p.jobReferenceId ?? "",
+      p.bolNumber ?? "",
       p.invoiceNumber ?? "",
       formatCurrency(p.amount_paid, p.currency) ?? "",
       p.transactedBy ?? "",
@@ -523,7 +523,7 @@ const AccountPayablesReportTable: React.FC = () => {
                       {p.companyName || "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.jobReferenceId || "-"}
+                      {p.bolNumber || "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
                       {p.invoiceNumber || "-"}

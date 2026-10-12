@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\Quotation;
-use App\Models\Order;
-use App\Models\CustInvoice;
 use App\Models\CustCreditNote;
-use App\Models\Project;
+use App\Models\CustInvoice;
 use App\Models\CustPayment;
+use App\Models\Order;
+use App\Models\Project;
+use App\Models\Quotation;
 
 class ExternalCustomerUserService
 {
@@ -43,17 +43,18 @@ class ExternalCustomerUserService
             $arr = $invoice->toArray();
             unset($arr['payments']);
             $arr['total_paid'] = $invoice->total_paid;
+
             return $arr;
         });
     }
 
     public function getCustCreditNotes($customerId)
     {
-        return CustCreditNote::whereHas('invoice', function($q) use ($customerId) {
-                $q->where('customer_id', $customerId)
-                  ->where('is_deleted', false)
-                  ->where('status', '!=', 'draft');
-            })
+        return CustCreditNote::whereHas('invoice', function ($q) use ($customerId) {
+            $q->where('customer_id', $customerId)
+                ->where('is_deleted', false)
+                ->where('status', '!=', 'draft');
+        })
             ->where('is_deleted', false)
             ->where('status', '!=', 'draft')
             ->orderByDesc('created_at')
@@ -68,6 +69,7 @@ class ExternalCustomerUserService
             ->orderByDesc('created_at')
             ->get();
     }
+
     /**
      * Get overview summary for customer dashboard
      */
@@ -86,9 +88,9 @@ class ExternalCustomerUserService
         $projectsCount = Project::where('customer_id', $customerId)
             ->where('is_deleted', false)
             ->where('status', '!=', 'draft')->count();
-        $paymentsCount = CustPayment::whereHas('customerLedgerEntries', function($q) use ($customerId) {
-                $q->where('customer_id', $customerId)->where('is_deleted', false);
-            })
+        $paymentsCount = CustPayment::whereHas('customerLedgerEntries', function ($q) use ($customerId) {
+            $q->where('customer_id', $customerId)->where('is_deleted', false);
+        })
             ->where('is_deleted', false)
             ->where('payment_type', 'normal')
             ->count();
@@ -99,7 +101,7 @@ class ExternalCustomerUserService
             ->sum('total_amount');
         $totalPaid = 0;
 
-        $recentQuotations =[];
+        $recentQuotations = [];
         $recentOrders = [];
         $recentInvoices = [];
 
@@ -119,15 +121,15 @@ class ExternalCustomerUserService
                 'quotations' => $recentQuotations,
                 'orders' => $recentOrders,
                 'invoices' => $recentInvoices,
-            ]
+            ],
         ];
     }
 
     public function getCustPayments($customerId)
     {
-        return CustPayment::whereHas('customerLedgerEntries', function($q) use ($customerId) {
-                $q->where('customer_id', $customerId)->where('is_deleted', false);
-            })
+        return CustPayment::whereHas('customerLedgerEntries', function ($q) use ($customerId) {
+            $q->where('customer_id', $customerId)->where('is_deleted', false);
+        })
             ->where('is_deleted', false)
             ->where('payment_type', 'normal')
             ->orderByDesc('created_at')

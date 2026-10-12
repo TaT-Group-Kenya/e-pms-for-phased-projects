@@ -16,14 +16,14 @@ class CompanyInvoiceUpdateRequest extends FormRequest
     {
         return [
             'invoice_number' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('company_invoices')->ignore(
-                    $this->route('company_invoice')
-                )],
+                $this->route('company_invoice')
+            )],
             'project_id' => ['nullable', 'exists:projects,id'],
             'company_id' => ['nullable', 'exists:companies,id'],
             'project_phase_id' => ['nullable', 'exists:project_phases,id'],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],
-            'status' => ['sometimes', 'required', Rule::in(['draft','sent','paid','overdue','partially-paid','cancelled'])],
+            'status' => ['sometimes', 'required', Rule::in(['draft', 'sent', 'paid', 'overdue', 'partially-paid', 'cancelled'])],
             'subtotal_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'tax_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'discount_percentage' => ['sometimes', 'required', 'string', 'max:255'],

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class OfficeExpenseDocument extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'office_expense_documents';
 
     protected $fillable = [
@@ -21,7 +22,7 @@ class OfficeExpenseDocument extends Model
         'deleted_at',
         'deleted_by',
     ];
-    
+
     public function expense()
     {
         return $this->belongsTo(OfficeExpense::class, 'expense_id');
@@ -29,6 +30,6 @@ class OfficeExpenseDocument extends Model
 
     public function getDocumentUrlAttribute()
     {
-        return asset('storage/' . $this->document_path);
+        return asset('storage/'.$this->document_path);
     }
 }

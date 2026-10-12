@@ -24,7 +24,7 @@ export default function ProjectsSummaryReportPage() {
     project_source_origin_id: '',
     project_location_id: '',
     project_owner_id: '',
-    job_reference_id: '',
+    bol_number: '',
     from_date: '',
     to_date: '',
   });
@@ -178,7 +178,7 @@ export default function ProjectsSummaryReportPage() {
     ];
     const rows = data.map(row => [
       row.start_date ? formatDateTime(row.start_date) : '',
-      row.job_reference_id ?? '',
+      row.bol_number ?? '',
       row.customer_name ?? '',
       row.name ?? '',
       row.project_category ?? '',
@@ -319,8 +319,8 @@ export default function ProjectsSummaryReportPage() {
               </select>
               <input
                 type="text"
-                name="job_reference_id"
-                value={filters.job_reference_id}
+                name="bol_number"
+                value={filters.bol_number}
                 onChange={handleFilterChange}
                 className="form-input rounded-lg h-[42px] border border-gray-300 focus:border-primary-500 focus:ring-primary-500 py-3 px-4 mt-6 md:mt-6"
                 placeholder="BOL Number"
@@ -399,7 +399,7 @@ export default function ProjectsSummaryReportPage() {
                       data.map((row, idx) => (
                         <tr key={idx} className={idx % 2 === 0 ? "bg-gray-50 border-b border-gray-200" : "bg-white border-b border-gray-200"}>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.start_date ? formatDateTime(row.start_date) : ''}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.job_reference_id ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.bol_number ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.customer_name}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.name}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_category ?? ''}</td>

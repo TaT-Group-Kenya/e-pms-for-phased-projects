@@ -21,7 +21,7 @@ class CompanyInvoiceStoreRequest extends FormRequest
             'project_phase_id' => ['nullable', 'exists:project_phases,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:255'],
-            'status' => ['required', Rule::in(['draft','sent','paid','overdue','partially-paid','cancelled'])],
+            'status' => ['required', Rule::in(['draft', 'sent', 'paid', 'overdue', 'partially-paid', 'cancelled'])],
             'subtotal_amount' => ['required', 'numeric', 'min:0'],
             'tax_amount' => ['required', 'numeric', 'min:0'],
             'discount_percentage' => ['required', 'string', 'max:255'],

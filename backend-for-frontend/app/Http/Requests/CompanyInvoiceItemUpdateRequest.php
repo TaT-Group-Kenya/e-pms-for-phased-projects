@@ -4,8 +4,6 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Models\CompanyInvoiceItem;
-use App\Models\ProjectPhase;
 
 class CompanyInvoiceItemUpdateRequest extends FormRequest
 {

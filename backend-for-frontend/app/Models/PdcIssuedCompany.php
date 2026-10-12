@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class PdcIssuedCompany extends Model
 {
@@ -53,7 +53,7 @@ class PdcIssuedCompany extends Model
         return $this->belongsTo(Account::class, 'bank_account_id');
     }
 
-     public function createdByUser()
+    public function createdByUser()
     {
         return $this->belongsTo(User::class, 'created_by');
     }

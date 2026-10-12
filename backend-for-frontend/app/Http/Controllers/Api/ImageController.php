@@ -20,8 +20,8 @@ class ImageController extends Controller
         // $this->authorize('viewAny', \App\Models\Customer::class);
 
         $path = "logos/{$filename}";
-        
-        if (!Storage::disk('public')->exists($path)) {
+
+        if (! Storage::disk('public')->exists($path)) {
             return response()->json(['message' => 'Image not found'], 404);
         }
 

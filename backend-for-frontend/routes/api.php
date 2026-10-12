@@ -150,6 +150,12 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('office-expense-payments', App\Http\Controllers\Api\OfficeExpensePaymentController::class);
 		Route::get('office-expense-documents/{officeExpenseDocument}/download', [App\Http\Controllers\Api\OfficeExpenseDocumentController::class, 'download']);
 		Route::apiResource('office-expense-documents', App\Http\Controllers\Api\OfficeExpenseDocumentController::class);
+		// Shipping containers (imports/exports/transit containers and loose units)
+		Route::apiResource('ship-containers', App\Http\Controllers\Api\ShipContainerController::class);
+		Route::post('ship-containers/{ship_container}/get-in', [App\Http\Controllers\Api\ShipContainerController::class, 'getIn']);
+		Route::post('ship-containers/{ship_container}/record-exit', [App\Http\Controllers\Api\ShipContainerController::class, 'recordExit']);
+		Route::get('ship-containers-transit-notifications', [App\Http\Controllers\Api\ShipContainerController::class, 'transitNotifications']);
+		Route::get('ship-containers-statistics', [App\Http\Controllers\Api\ShipContainerController::class, 'statistics']);
 		// Reporting Endpoints
 		Route::prefix('reports')->group(function () {
 			Route::get('orders-summary', [App\Http\Controllers\ReportingController::class, 'ordersSummary']);

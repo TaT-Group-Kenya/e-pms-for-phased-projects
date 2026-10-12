@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\CompanyInvoice;
 use App\Models\CompanyCreditNote;
+use App\Models\CompanyInvoice;
 use App\Models\CompanyProject;
 
 class ExternalCompanyUserService
@@ -15,11 +15,12 @@ class ExternalCompanyUserService
             ->where('status', '!=', 'draft')
             ->orderByDesc('created_at')
             ->get();
-        
+
         return $invoices->map(function ($invoice) {
             $arr = $invoice->toArray();
             unset($arr['payments']);
             $arr['total_paid'] = $invoice->total_paid;
+
             return $arr;
         });
     }
@@ -40,8 +41,8 @@ class ExternalCompanyUserService
             ->where('company_id', $companyId)
             ->where('is_deleted', false)
             ->get();
-        
-            return $allocations;
+
+        return $allocations;
     }
 
     public function getOverview($companyId)
@@ -67,7 +68,7 @@ class ExternalCompanyUserService
             'totals' => [
                 'invoiced' => $totalInvoiced,
                 'paid' => $totalPaid,
-            ]
+            ],
         ];
     }
 }

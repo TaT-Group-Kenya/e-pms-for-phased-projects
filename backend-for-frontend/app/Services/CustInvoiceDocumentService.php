@@ -15,7 +15,7 @@ class CustInvoiceDocumentService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = CustInvoiceDocument::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
         // Handle soft-delete visibility flags
@@ -32,17 +32,20 @@ class CustInvoiceDocumentService
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
-        
+
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-        
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
     {
         $query = CustInvoiceDocument::query();
-        if (!empty($with)) $query->with($with);
+        if (! empty($with)) {
+            $query->with($with);
+        }
+
         return $query->findOrFail($id);
     }
 
@@ -55,6 +58,7 @@ class CustInvoiceDocumentService
     {
         $model = CustInvoiceDocument::findOrFail($id);
         $model->update($data);
+
         return $model;
     }
 

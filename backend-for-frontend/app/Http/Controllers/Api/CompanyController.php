@@ -1,20 +1,22 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Company;
-use App\Services\CompanyService;
-use App\Http\Resources\CompanyResource;
 use App\Http\Requests\CompanyStoreRequest;
 use App\Http\Requests\CompanyUpdateRequest;
+use App\Http\Resources\CompanyResource;
+use App\Models\Company;
+use App\Services\CompanyService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CompanyController extends Controller
 {
     protected $service;
 
-    public function __construct(CompanyService $service) {
+    public function __construct(CompanyService $service)
+    {
         $this->service = $service;
     }
 
@@ -25,6 +27,7 @@ class CompanyController extends Controller
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return CompanyResource::collection($data);
     }
 
@@ -34,15 +37,16 @@ class CompanyController extends Controller
 
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
-        
+
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
-            $filename = time() . '.' . strtolower($file->getClientOriginalExtension());
+            $filename = time().'.'.strtolower($file->getClientOriginalExtension());
             $file->storeAs('logos', $filename, 'public');
             $validated['logo'] = $filename;
         }
-        
+
         $model = $this->service->create($validated);
+
         return new CompanyResource($model);
     }
 
@@ -58,7 +62,7 @@ class CompanyController extends Controller
             'bankAccounts',
             'invoices',
             'bankAccounts',
-            'invoices'
+            'invoices',
         ]);
 
         return new CompanyResource($company);
@@ -69,15 +73,16 @@ class CompanyController extends Controller
         $this->authorize('update', $company);
 
         $validated = $request->validated();
-        
+
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
-            $filename = time() . '.' . strtolower($file->getClientOriginalExtension());
+            $filename = time().'.'.strtolower($file->getClientOriginalExtension());
             $file->storeAs('logos', $filename, 'public');
             $validated['logo'] = $filename;
         }
 
         $updated = $this->service->update($company->id, $validated);
+
         return new CompanyResource($updated);
     }
 
@@ -86,6 +91,7 @@ class CompanyController extends Controller
         $this->authorize('delete', $company);
 
         $this->service->delete($company->id, Auth::id());
+
         return response()->noContent();
     }
 }

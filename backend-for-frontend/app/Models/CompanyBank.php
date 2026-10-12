@@ -24,7 +24,8 @@ class CompanyBank extends Model
         'deleted_at',
         'deleted_by',
     ];
-    public function company():BelongsTo
+
+    public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }

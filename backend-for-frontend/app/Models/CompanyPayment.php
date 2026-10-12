@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class CompanyPayment extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'company_payments';
 
     public $timestamps = false;

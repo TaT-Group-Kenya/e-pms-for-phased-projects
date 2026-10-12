@@ -16,11 +16,11 @@ class TransactionUpdateRequest extends FormRequest
     {
         return [
             'transaction_number' => [
-                'sometimes', 
-                'required', 
-                'string', 
-                'max:255', 
-                Rule::unique('transactions')->ignore($this->route('transaction'))
+                'sometimes',
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('transactions')->ignore($this->route('transaction')),
             ],
             'transaction_type' => ['sometimes', 'required', Rule::in(['topup', 'expense'])],
             'transaction_date' => ['sometimes', 'required', 'date'],

@@ -20,7 +20,7 @@ class InvoicePaymentsResource extends JsonResource
             'company_id' => $this->company_id ?? null,
             'customer_name' => $this->customer_name ?? null,
             'company_name' => $this->company_name ?? null,
-            'job_reference_id' => $this->job_reference_id ?? null,
+            'bol_number' => $this->bol_number ?? null,
             'transacted_by_name' => $this->transacted_by_name ?? null,
             'created_at' => $this->created_at,
         ];

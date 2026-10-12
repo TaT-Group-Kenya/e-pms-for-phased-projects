@@ -1,32 +1,40 @@
 <?php
-    namespace App\Http\Controllers\Api;
-    use App\Http\Controllers\Controller;
-    use Illuminate\Http\Request;
-    use App\Models\OfficeExpense;
-    use App\Services\OfficeExpenseService;
-    use App\Services\OfficeExpensePaymentService;
-    use App\Services\TransactionService;
-    use App\Services\TransactionCostManagerService;
-    use App\Http\Resources\OfficeExpenseResource;
-    use App\Http\Requests\OfficeExpenseStoreRequest;
-    use App\Http\Requests\OfficeExpenseUpdateRequest;
-    use Illuminate\Support\Facades\DB;
 
-    class OfficeExpenseController extends Controller
-    {
-        protected $service;
-        protected $paymentService;
-        protected $transactionService;
+namespace App\Http\Controllers\Api;
 
-        public function __construct(
-            OfficeExpenseService $service,
-            OfficeExpensePaymentService $paymentService,
-            TransactionService $transactionService
-        ) {
-            $this->service = $service;
-            $this->paymentService = $paymentService;
-            $this->transactionService = $transactionService;
-        }
+use App\Http\Controllers\Controller;
+use App\Http\Requests\OfficeExpenseStoreRequest;
+use App\Http\Requests\OfficeExpenseUpdateRequest;
+use App\Http\Resources\OfficeExpenseResource;
+use App\Models\Account;
+use App\Models\OfficeExpense;
+use App\Models\OfficeExpensePayment;
+use App\Services\CommonService;
+use App\Services\OfficeExpensePaymentService;
+use App\Services\OfficeExpenseService;
+use App\Services\TransactionCostManagerService;
+use App\Services\TransactionService;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class OfficeExpenseController extends Controller
+{
+    protected $service;
+
+    protected $paymentService;
+
+    protected $transactionService;
+
+    public function __construct(
+        OfficeExpenseService $service,
+        OfficeExpensePaymentService $paymentService,
+        TransactionService $transactionService
+    ) {
+        $this->service = $service;
+        $this->paymentService = $paymentService;
+        $this->transactionService = $transactionService;
+    }
 
     public function index(Request $request)
     {
@@ -34,7 +42,7 @@
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page', 'search');
-        $query = \App\Models\OfficeExpense::with(['category', 'costCenter', 'payments', 'payments.transaction','payments.transaction.debitAccount','payments.transaction.creditAccount', 'createdByUser']);
+        $query = OfficeExpense::with(['category', 'costCenter', 'payments', 'payments.transaction', 'payments.transaction.debitAccount', 'payments.transaction.creditAccount', 'createdByUser']);
         if ($request->get('with_trashed')) {
             $query->withTrashed();
         }
@@ -46,14 +54,15 @@
         }
         // Dedicated search block
         if ($search = $request->get('search')) {
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('description', 'like', "%$search%")
-                  ->orWhereHas('category', function($q) use ($search) {
-                      $q->where('name', 'like', "%$search%");
-                  });
+                    ->orWhereHas('category', function ($q) use ($search) {
+                        $q->where('name', 'like', "%$search%");
+                    });
             });
         }
         $data = $query->paginate($perPage, ['*'], 'page', $page);
+
         return OfficeExpenseResource::collection($data);
     }
 
@@ -63,39 +72,43 @@
         $data = $request->validated();
         $data['created_by'] = auth()->id();
         $expense = $this->service->create($data);
+
         return new OfficeExpenseResource($expense);
     }
 
     public function show($id)
     {
-        $expense = \App\Models\OfficeExpense::with(['payments', 'payments.transaction','payments.transaction.debitAccount','payments.transaction.creditAccount', 'createdByUser', 'updatedByUser'])->findOrFail($id);
+        $expense = OfficeExpense::with(['payments', 'payments.transaction', 'payments.transaction.debitAccount', 'payments.transaction.creditAccount', 'createdByUser', 'updatedByUser'])->findOrFail($id);
         $this->authorize('view', $expense);
+
         return new OfficeExpenseResource($expense);
     }
 
     public function update(OfficeExpenseUpdateRequest $request, $id)
     {
-        $expense = \App\Models\OfficeExpense::findOrFail($id);
+        $expense = OfficeExpense::findOrFail($id);
         $this->authorize('update', $expense);
         $data = $request->validated();
         $data['updated_by'] = auth()->id();
         \Log::info('Updating office expense', ['id' => $id, 'data' => $data]);
         $expense = $this->service->update($id, $data);
+
         return new OfficeExpenseResource($expense);
     }
 
     public function destroy($id)
     {
-        $expense = \App\Models\OfficeExpense::findOrFail($id);
+        $expense = OfficeExpense::findOrFail($id);
         $this->authorize('delete', $expense);
         if (method_exists($expense, 'trashed') && $expense->trashed()) {
             return response()->json(['message' => 'Already deleted'], 400);
         }
         $expense->delete();
+
         return response()->json(['message' => 'Deleted successfully']);
     }
 
-        /**
+    /**
      * Settle an office expense (pay it in full, single installment only).
      * Payload: amount, date, funding_account, narration, transaction_cost (optional)
      */
@@ -108,7 +121,6 @@
             return response()->json(['message' => 'Expense is already paid.'], 422);
         }
 
-
         $validated = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
             'date' => ['required', 'date'],
@@ -118,23 +130,23 @@
         ]);
 
         // Ensure settlement date is not older than expense creation date
-        $settleDate = \Carbon\Carbon::parse($validated['date'])->toDateString();
-        $expenseCreatedAt = $expense->created_at instanceof \Carbon\Carbon
+        $settleDate = Carbon::parse($validated['date'])->toDateString();
+        $expenseCreatedAt = $expense->created_at instanceof Carbon
             ? $expense->created_at->toDateString()
-            : \Carbon\Carbon::parse($expense->created_at)->toDateString();
+            : Carbon::parse($expense->created_at)->toDateString();
         if ($settleDate < $expenseCreatedAt) {
             return response()->json([
-                'message' => 'Settlement date cannot be earlier than the expense creation date (' . $expenseCreatedAt . ').',
+                'message' => 'Settlement date cannot be earlier than the expense creation date ('.$expenseCreatedAt.').',
             ], 422);
         }
 
         // Ensure full payment only
-        if ((float)$validated['amount'] !== (float)$expense->amount) {
+        if ((float) $validated['amount'] !== (float) $expense->amount) {
             return response()->json(['message' => 'Expense must be settled in full.'], 422);
         }
 
         // Check funding account currency matches expense currency
-        $account = \App\Models\Account::findOrFail($validated['funding_account']);
+        $account = Account::findOrFail($validated['funding_account']);
         if ($account->currency !== $expense->currency) {
             return response()->json(['message' => 'Funding account currency must match expense currency.'], 422);
         }
@@ -142,15 +154,15 @@
         $userId = $request->user()?->id;
         $transactionCost = $validated['transaction_cost'] ?? 0;
 
-        $result = DB::transaction(function () use ($expense, $validated, $userId, $transactionCost, $request) {
+        $result = DB::transaction(function () use ($expense, $validated, $userId, $transactionCost) {
 
             // Generate unique transaction number
-            $commonService = new \App\Services\CommonService();
+            $commonService = new CommonService;
             do {
                 $transactionNumber = $commonService->generateUniqueCode('EXPPAY-');
-            } while (\App\Models\OfficeExpensePayment::where('transaction_number', $transactionNumber)->exists());
+            } while (OfficeExpensePayment::where('transaction_number', $transactionNumber)->exists());
 
-             // Create OfficeExpensePayment
+            // Create OfficeExpensePayment
             $payment = $this->paymentService->create([
                 'expense_id' => $expense->id,
                 'transaction_number' => $transactionNumber,
@@ -189,7 +201,7 @@
                 'category' => 'expense',
                 'payment_method' => 'internal_transfer',
                 'transaction_status' => 'cleared',
-                'narration' => $validated['narration'] ?? 'Payment for office expense ID ' . $expense->id,
+                'narration' => $validated['narration'] ?? 'Payment for office expense ID '.$expense->id,
                 'is_recurring' => false,
                 'fiscal_year' => now()->year,
                 'accounting_period' => now()->format('Y-m'),
@@ -210,19 +222,19 @@
 
             // Process transaction cost if provided and greater than zero
             if ($transactionCost > 0) {
-                $transactionCostManager = new TransactionCostManagerService();
+                $transactionCostManager = new TransactionCostManagerService;
                 $transactionCostManager->processTransactionCost([
                     'transaction_cost' => $transactionCost,
                     'currency' => $expense->currency,
                     'funding_account_id' => $validated['funding_account'],
-                    'narration' => 'Transaction cost for office expense ID ' . $expense->id,
+                    'narration' => 'Transaction cost for office expense ID '.$expense->id,
                     'exchangeRate' => 1,
                     'user_id' => $userId,
                 ], false);
             }
 
             // Deduct from funding account (amount + transaction cost)
-            $account = \App\Models\Account::find($validated['funding_account']);
+            $account = Account::find($validated['funding_account']);
             if ($account) {
                 $currentBalance = (float) $account->balance;
                 $totalDeduction = $validated['amount'] + $transactionCost;
@@ -236,18 +248,20 @@
         });
 
         return (new OfficeExpenseResource($result))->additional([
-            'message' => 'Expense settled successfully.'
+            'message' => 'Expense settled successfully.',
         ]);
     }
 
     public function restore($id)
     {
-        $expense = \App\Models\OfficeExpense::findOrFail($id);
+        $expense = OfficeExpense::findOrFail($id);
         if (method_exists($expense, 'restore')) {
             $this->authorize('update', $expense);
             $expense->restore();
+
             return new OfficeExpenseResource($expense);
         }
+
         return response()->json(['message' => 'Restore not supported'], 400);
     }
 }

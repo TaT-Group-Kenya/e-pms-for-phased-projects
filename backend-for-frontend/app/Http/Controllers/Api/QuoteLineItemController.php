@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\QuoteLineItem;
-use App\Models\Quotation;
-use App\Models\ProjectPhase;
-use App\Services\QuoteLineItemService;
-use App\Http\Resources\QuoteLineItemResource;
 use App\Http\Requests\QuoteLineItemStoreRequest;
 use App\Http\Requests\QuoteLineItemUpdateRequest;
+use App\Http\Resources\QuoteLineItemResource;
+use App\Models\ProjectPhase;
+use App\Models\Quotation;
+use App\Models\QuoteLineItem;
+use App\Services\QuoteLineItemService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class QuoteLineItemController extends Controller
 {
@@ -29,19 +29,20 @@ class QuoteLineItemController extends Controller
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return QuoteLineItemResource::collection($data);
     }
 
     public function store(QuoteLineItemStoreRequest $request)
     {
         $this->authorize('create', QuoteLineItem::class);
-        
+
         $validated = $request->validated();
-        
+
         // Prevent creating line items when quotation is not in draft status
-        if (!empty($validated['quotation_id'])) {
+        if (! empty($validated['quotation_id'])) {
             $quotation = Quotation::find($validated['quotation_id']);
-            if (!$quotation || $quotation->status !== 'draft') {
+            if (! $quotation || $quotation->status !== 'draft') {
                 return response()->json([
                     'message' => 'Line items can only be modified while the quotation is in draft status.',
                     'errors' => [
@@ -51,7 +52,7 @@ class QuoteLineItemController extends Controller
             }
 
             // Enforce that line items cannot mix project phases from different projects
-            if (!empty($validated['project_phase_id'])) {
+            if (! empty($validated['project_phase_id'])) {
                 $phase = ProjectPhase::find($validated['project_phase_id']);
                 if ($phase) {
                     if (empty($quotation->project_id)) {
@@ -102,7 +103,7 @@ class QuoteLineItemController extends Controller
 
         // Prevent updating line items when quotation is not in draft status
         $quotation = $quoteLineItem->quotation ?: Quotation::find($quoteLineItem->quotation_id);
-        if (!$quotation || $quotation->status !== 'draft') {
+        if (! $quotation || $quotation->status !== 'draft') {
             return response()->json([
                 'message' => 'Line items can only be modified while the quotation is in draft status.',
                 'errors' => [
@@ -113,7 +114,7 @@ class QuoteLineItemController extends Controller
 
         // Enforce that line items cannot mix project phases from different projects
         $projectPhaseId = $validated['project_phase_id'] ?? $quoteLineItem->project_phase_id;
-        if (!empty($projectPhaseId)) {
+        if (! empty($projectPhaseId)) {
             $phase = ProjectPhase::find($projectPhaseId);
             if ($phase) {
                 if (empty($quotation->project_id)) {
@@ -151,7 +152,7 @@ class QuoteLineItemController extends Controller
 
         // Prevent deleting line items when quotation is not in draft status
         $quotation = $quoteLineItem->quotation ?: Quotation::find($quoteLineItem->quotation_id);
-        if (!$quotation || $quotation->status !== 'draft') {
+        if (! $quotation || $quotation->status !== 'draft') {
             return response()->json([
                 'message' => 'Line items can only be modified while the quotation is in draft status.',
                 'errors' => [
@@ -167,13 +168,14 @@ class QuoteLineItemController extends Controller
         if ($quotationId) {
             $this->recalculateQuotationTotals($quotationId);
         }
+
         return response()->noContent();
     }
 
     protected function recalculateQuotationTotals(int $quotationId): void
     {
         $quotation = Quotation::with('quoteItems')->find($quotationId);
-        if (!$quotation) {
+        if (! $quotation) {
             return;
         }
 

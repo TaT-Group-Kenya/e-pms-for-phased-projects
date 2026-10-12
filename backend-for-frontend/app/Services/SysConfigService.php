@@ -15,39 +15,44 @@ class SysConfigService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = SysConfig::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
-        
+
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-        
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
     {
         $query = SysConfig::query();
-        if (!empty($with)) $query->with($with);
+        if (! empty($with)) {
+            $query->with($with);
+        }
+
         return $query->findOrFail($id);
     }
 
     public function create(array $data)
     {
         $data['is_file'] = $data['is_file'] ?? false;
+
         return SysConfig::create($data);
     }
 
     public function update(int $id, array $data)
     {
         $model = SysConfig::findOrFail($id);
-        if (!array_key_exists('is_file', $data)) {
+        if (! array_key_exists('is_file', $data)) {
             $data['is_file'] = $model->is_file ?? false;
         }
         $model->update($data);
+
         return $model;
     }
 

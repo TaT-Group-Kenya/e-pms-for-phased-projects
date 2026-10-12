@@ -21,7 +21,7 @@ class CompanyPaymentStoreRequest extends FormRequest
             'net_amount' => ['nullable', 'numeric', 'min:0'],
             'payment_date' => ['required', 'date'],
             'payment_method' => ['required', 'string', 'max:255'],
-            'payment_status' => ['required', Rule::in(['pending','complete'])],
+            'payment_status' => ['required', Rule::in(['pending', 'complete'])],
             'currency' => ['required', 'string', 'max:255'],
             'exchange_rate' => ['required', 'numeric', 'min:0'],
             'forex_rate' => ['nullable', 'numeric', 'min:0'],

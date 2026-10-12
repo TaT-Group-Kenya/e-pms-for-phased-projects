@@ -52,6 +52,7 @@ class CompanyInvoiceItem extends Model
 
             if (! $isTaxable) {
                 $item->tax_amount = 0;
+
                 return;
             }
 

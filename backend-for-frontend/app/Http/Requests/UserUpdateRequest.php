@@ -24,7 +24,7 @@ class UserUpdateRequest extends FormRequest
         \Log::debug('UserUpdateRequest rules', ['route_user' => $routeUser, 'except_id' => $exceptId]);
 
         return [
-            'email' => ['sometimes', 'email', 'max:255', Rule::unique('users','email')->ignore($exceptId)],
+            'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($exceptId)],
             'first_name' => ['sometimes', 'string', 'max:255'],
             'middle_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'last_name' => ['sometimes', 'string', 'max:255'],
@@ -32,7 +32,7 @@ class UserUpdateRequest extends FormRequest
             'email_verified_at' => ['sometimes', 'nullable', 'date'],
             'remember_token' => ['sometimes', 'nullable', 'string', 'max:255'],
             'avatar_pic' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'category' => ['sometimes', Rule::in(['internal','company','customer'])],
+            'category' => ['sometimes', Rule::in(['internal', 'company', 'customer'])],
             'is_active' => ['sometimes', 'boolean'],
             'company_id' => ['sometimes', 'nullable', 'exists:companies,id'],
             'customer_id' => ['sometimes', 'nullable', 'exists:customers,id'],

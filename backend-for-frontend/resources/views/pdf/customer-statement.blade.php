@@ -100,7 +100,7 @@
             @forelse($rows as $row)
                 <tr>
                     <td>{{ !empty($row['transaction_date']) ? \Carbon\Carbon::parse($row['transaction_date'])->format('d/m/Y') : (!empty($row['date']) ? \Carbon\Carbon::parse($row['date'])->format('d/m/Y') : '-') }}</td>
-                    <td>{{ $row['job_reference'] ?? '-' }}</td>
+                    <td>{{ $row['bol_number'] ?? '-' }}</td>
                     <td>{{ $row['document_number'] ?? $row['transaction_number'] ?? '-' }}</td>
                     <td>{{ $row['description'] ?? $row['narration'] ?? '-' }}</td>
                     <td class="text-right">{{ number_format($row['debit_base'] ?? $row['debit_amount'] ?? 0, 2) }}</td>

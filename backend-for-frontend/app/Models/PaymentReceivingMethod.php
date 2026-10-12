@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class PaymentReceivingMethod extends Model
 {
@@ -37,8 +37,8 @@ class PaymentReceivingMethod extends Model
         'is_deleted' => 'boolean',
     ];
 
-       public function custInvoices()
+    public function custInvoices()
     {
-        return $this->hasMany(\App\Models\CustInvoice::class, 'payment_receiving_method_id');
+        return $this->hasMany(CustInvoice::class, 'payment_receiving_method_id');
     }
 }

@@ -131,8 +131,8 @@ const AccountReceivablesReportTable: React.FC = () => {
               invoiceNumbers.push(String(inv.invoice_number));
             }
 
-            if (inv.job_reference_id) {
-              jobRefIds.push(String(inv.job_reference_id));
+            if (inv.bol_number) {
+              jobRefIds.push(String(inv.bol_number));
             }
 
             if (inv.id != null) {

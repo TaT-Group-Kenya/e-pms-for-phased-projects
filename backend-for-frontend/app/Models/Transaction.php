@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'transactions';
 
     protected $fillable = [
@@ -53,6 +54,7 @@ class Transaction extends Model
     ];
 
     public const TYPE_TOPUP = 'topup';
+
     public const TYPE_EXPENSE = 'expense';
 
     public function customer()
@@ -89,5 +91,4 @@ class Transaction extends Model
     {
         return $this->belongsTo(Account::class, 'account_credit');
     }
-
 }

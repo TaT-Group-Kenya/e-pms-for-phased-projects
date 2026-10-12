@@ -11,7 +11,7 @@ class MarginPerProjectResource extends JsonResource
         return [
             'project_id' => $this['project_id'] ?? null,
             'date' => $this['date'] ?? null,
-            'job_reference_id' => $this['job_reference_id'] ?? null,
+            'bol_number' => $this['bol_number'] ?? null,
             'customer' => $this['customer'] ?? null,
             'project_name' => $this['project_name'] ?? null,
             'revenue' => $this['revenue'] ?? 0,

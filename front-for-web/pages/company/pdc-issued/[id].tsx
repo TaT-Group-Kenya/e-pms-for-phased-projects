@@ -306,9 +306,9 @@ export default function PdcIssuedDetailPage() {
                       <span>{item.invoice_number || "-"}</span>
                     )}
                   </div>
-                  {item.invoice?.job_reference_id && (
+                  {item.invoice?.bol_number && (
                     <div className="text-sm text-gray-500 mt-2">
-                      Job Ref: {item.invoice.job_reference_id}
+                      BOL Number: {item.invoice.bol_number}
                     </div>
                   )}
                   {item.invoice?.title && (

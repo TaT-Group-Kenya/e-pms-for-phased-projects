@@ -13,7 +13,7 @@ export default function InvoicePaymentsCompanyReportPage() {
     company_id: '',
     from: '',
     to: '',
-    job_reference_id: '',
+    bol_number: '',
     invoice_number: '',
   });
   const [data, setData] = useState<any[]>([]);
@@ -161,7 +161,7 @@ export default function InvoicePaymentsCompanyReportPage() {
       row.id,
       formatDateTime(row.created_at || row.date || ''),
       row.company_name ?? '',
-      row.job_reference_id ?? '',
+      row.bol_number ?? '',
       row.invoice_number ?? '',
       row.currency ?? '',
       formatCurrency(row.amount, row.currency) ?? '',
@@ -259,12 +259,12 @@ export default function InvoicePaymentsCompanyReportPage() {
                 </select>
               </div>
               <div className="flex flex-col">
-                <label htmlFor="job_reference_id" className="mb-1 text-sm text-gray-600">BOL Number</label>
+                <label htmlFor="bol_number" className="mb-1 text-sm text-gray-600">BOL Number</label>
                 <input
-                  id="job_reference_id"
+                  id="bol_number"
                   type="text"
-                  name="job_reference_id"
-                  value={filters.job_reference_id}
+                  name="bol_number"
+                  value={filters.bol_number}
                   onChange={handleFilterChange}
                   className="form-input rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 px-4 h-[42px]"
                   placeholder="BOL Number"
@@ -357,7 +357,7 @@ export default function InvoicePaymentsCompanyReportPage() {
                           <td className="whitespace-nowrap text-left px-4 py-2">{row.id}</td>
                           <td className="whitespace-nowrap text-left px-4 py-2">{formatDateTime(row.created_at || row.date || '')}</td>
                           <td className="whitespace-nowrap text-left px-4 py-2">{row.company_name ?? ''}</td>
-                          <td className="whitespace-nowrap text-left px-4 py-2">{row.job_reference_id ?? ''}</td>
+                          <td className="whitespace-nowrap text-left px-4 py-2">{row.bol_number ?? ''}</td>
                           <td className="whitespace-nowrap text-left px-4 py-2">{row.invoice_number ?? ''}</td>
                           <td className="whitespace-nowrap text-left px-4 py-2">{row.currency ?? ''}</td>
                           <td className="whitespace-nowrap text-left px-4 py-2">{formatCurrency(row.amount, row.currency) ?? ''}</td>

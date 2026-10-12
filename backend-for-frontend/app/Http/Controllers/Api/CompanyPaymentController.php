@@ -1,31 +1,33 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\CompanyPaymentStoreRequest;
+use App\Http\Requests\CompanyPaymentUpdateRequest;
+use App\Http\Resources\CompanyPaymentResource;
 use App\Models\CompanyPayment;
 use App\Models\Download;
 use App\Models\SysConfig;
 use App\Services\CompanyPaymentService;
-use App\Http\Resources\CompanyPaymentResource;
-use App\Http\Requests\CompanyPaymentStoreRequest;
-use App\Http\Requests\CompanyPaymentUpdateRequest;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class CompanyPaymentController extends Controller
 {
     protected $service;
 
-    public function __construct(CompanyPaymentService $service) {
+    public function __construct(CompanyPaymentService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\CompanyPayment::class);
+        $this->authorize('viewAny', CompanyPayment::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
@@ -36,12 +38,13 @@ class CompanyPaymentController extends Controller
         ];
 
         $data = $this->service->index($filters, $perPage, $page, 0, $with);
+
         return CompanyPaymentResource::collection($data);
     }
 
     public function store(CompanyPaymentStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\CompanyPayment::class);
+        $this->authorize('create', CompanyPayment::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         // $model = $this->service->create($validated);
@@ -64,6 +67,7 @@ class CompanyPaymentController extends Controller
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($companyPayment->id, $validated);
+
         return new CompanyPaymentResource($updated);
     }
 
@@ -72,6 +76,7 @@ class CompanyPaymentController extends Controller
         $this->authorize('delete', $companyPayment);
 
         $this->service->delete($companyPayment->id, Auth::id());
+
         return response()->noContent();
     }
 
@@ -127,23 +132,23 @@ class CompanyPaymentController extends Controller
         $invoice = $payment->invoice;
 
         $data = [
-            'payment'            => $payment,
-            'invoice'            => $invoice,
-            'senderName'         => $senderName,
-            'senderEmail'        => $senderEmail,
-            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
-            'senderPhone'        => $configValues['PHONE']   ?? null,
-            'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
+            'payment' => $payment,
+            'invoice' => $invoice,
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $configValues['INSTANCE_LOGO'] ?? null,
+            'senderPhone' => $configValues['PHONE'] ?? null,
+            'senderWebsite' => $configValues['WEBSITE'] ?? config('app.url'),
             'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'         => $configValues['CITY']    ?? null,
-            'senderState'        => $configValues['STATE']   ?? null,
-            'senderCountry'      => $configValues['COUNTRY'] ?? null,
-            'generatedAt'        => $generatedAt,
+            'senderCity' => $configValues['CITY'] ?? null,
+            'senderState' => $configValues['STATE'] ?? null,
+            'senderCountry' => $configValues['COUNTRY'] ?? null,
+            'generatedAt' => $generatedAt,
         ];
 
         $html = view('pdf.company-payment', $data)->render();
 
-        $options = new Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
 
         $dompdf = new Dompdf($options);
@@ -153,13 +158,13 @@ class CompanyPaymentController extends Controller
 
         $output = $dompdf->output();
 
-        $number = $payment->transaction_number ?: ('COMP-PAYMENT-' . $payment->id);
-        $fileName = $number . '.pdf';
-        $relativePath = 'company-payments/' . $fileName;
+        $number = $payment->transaction_number ?: ('COMP-PAYMENT-'.$payment->id);
+        $fileName = $number.'.pdf';
+        $relativePath = 'company-payments/'.$fileName;
 
         Storage::disk('public')->put($relativePath, $output);
 
-        $downloadKey = 'company-payment:' . $number;
+        $downloadKey = 'company-payment:'.$number;
         $download = Download::firstOrNew(['name' => $downloadKey]);
         $download->path = $relativePath;
         $download->updated_at = now();
@@ -171,9 +176,9 @@ class CompanyPaymentController extends Controller
         $download->save();
 
         return [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
     }
 }

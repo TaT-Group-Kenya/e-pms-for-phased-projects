@@ -1,50 +1,57 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
-use App\Models\Order;
-use App\Models\CustInvoice;
-use App\Models\CustPayment;
-use App\Models\CustPaymentAllocation;
-use App\Models\CustomerTransactionsLedger;
-use App\Models\PdcReceivedCustomer;
-use App\Services\CurrencyConversionService;
-use App\Models\Account;
-use App\Models\Download;
-use App\Models\SysConfig;
-use App\Services\CommonService;
-use App\Services\CustInvoiceService;
-use App\Services\OrderToCustInvoiceService;
-use App\Http\Resources\CustInvoiceResource;
 use App\Http\Requests\CustInvoiceStoreRequest;
 use App\Http\Requests\CustInvoiceUpdateRequest;
+use App\Http\Resources\CustInvoiceResource;
+use App\Models\Account;
+use App\Models\CustInvoice;
+use App\Models\CustomerTransactionsLedger;
+use App\Models\CustPayment;
+use App\Models\CustPaymentAllocation;
+use App\Models\Download;
+use App\Models\Order;
+use App\Models\PdcReceivedCustomer;
+use App\Models\SysConfig;
+use App\Services\CommonService;
+use App\Services\CurrencyConversionService;
+use App\Services\CustInvoiceService;
+use App\Services\OrderToCustInvoiceService;
+use Carbon\Carbon;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class CustInvoiceController extends Controller
 {
     protected $service;
+
     protected $orderToCustInvoiceService;
 
-    public function __construct(CustInvoiceService $service, OrderToCustInvoiceService $orderToCustInvoiceService) {
+    public function __construct(CustInvoiceService $service, OrderToCustInvoiceService $orderToCustInvoiceService)
+    {
         $this->service = $service;
         $this->orderToCustInvoiceService = $orderToCustInvoiceService;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\CustInvoice::class);
+        $this->authorize('viewAny', CustInvoice::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         // Eager load order for order_number and quotation_number
         $data = $this->service->index($filters, $perPage, $page);
         $data->load(['order.quotation', 'customer', 'payments', 'projectOwner']);
+
         return CustInvoiceResource::collection($data);
     }
 
@@ -59,7 +66,7 @@ class CustInvoiceController extends Controller
         if ($order->status !== 'approved') {
             return response()->json([
                 'message' => 'Invoice can only be created from approved orders.',
-                'errors'  => [
+                'errors' => [
                     'status' => ['Order must be approved before creating an invoice.'],
                 ],
             ], 422);
@@ -68,21 +75,21 @@ class CustInvoiceController extends Controller
         if ($order->custInvoices()->exists()) {
             return response()->json([
                 'message' => 'An invoice already exists for this order.',
-                'errors'  => [
+                'errors' => [
                     'order_id' => ['Only one customer invoice is allowed per order.'],
                 ],
             ], 422);
         }
 
         $overrides = [
-            'title'            => $data['title'] ?? null,
-            'description'      => $data['description'] ?? null,
-            'payment_terms'    => $data['payment_terms'] ?? null,
-            'notes_to_customer'=> $data['notes_to_customer'] ?? null,
+            'title' => $data['title'] ?? null,
+            'description' => $data['description'] ?? null,
+            'payment_terms' => $data['payment_terms'] ?? null,
+            'notes_to_customer' => $data['notes_to_customer'] ?? null,
         ];
-        // Set job_reference_id from order if present
-        if (isset($order->job_reference_id)) {
-            $overrides['job_reference_id'] = $order->job_reference_id;
+        // Set bol_number from order if present
+        if (isset($order->bol_number)) {
+            $overrides['bol_number'] = $order->bol_number;
         }
 
         $invoice = DB::transaction(function () use ($request, $order, $overrides) {
@@ -110,7 +117,7 @@ class CustInvoiceController extends Controller
             'creditnotes',
             'documents',
             'pdcsReceived',
-            'projectOwner'
+            'projectOwner',
         ]);
 
         return new CustInvoiceResource($custInvoice);
@@ -124,7 +131,7 @@ class CustInvoiceController extends Controller
         if (! $custInvoice->order || $custInvoice->order->status !== 'approved') {
             return response()->json([
                 'message' => 'Customer invoices can only be edited when linked to an approved order.',
-                'errors'  => [
+                'errors' => [
                     'order_id' => ['Invoice must be associated with an approved order to edit header fields.'],
                 ],
             ], 422);
@@ -143,6 +150,7 @@ class CustInvoiceController extends Controller
             'creditnotes',
             'documents',
         ]);
+
         return new CustInvoiceResource($updated);
     }
 
@@ -151,6 +159,7 @@ class CustInvoiceController extends Controller
         $this->authorize('delete', $custInvoice);
 
         $this->service->delete($custInvoice->id);
+
         return response()->noContent();
     }
 
@@ -170,7 +179,7 @@ class CustInvoiceController extends Controller
         if (! $custInvoice->order || $custInvoice->order->status !== 'approved') {
             return response()->json([
                 'message' => 'Invoice can only be marked as sent when its order is approved.',
-                'errors'  => [
+                'errors' => [
                     'order_id' => ['Invoice must be associated with an approved order to mark as sent.'],
                 ],
             ], 422);
@@ -183,7 +192,7 @@ class CustInvoiceController extends Controller
         if ($custInvoice->status !== 'draft') {
             return response()->json([
                 'message' => 'Only draft invoices can be marked as sent.',
-                'errors'  => [
+                'errors' => [
                     'status' => ['This invoice is not in draft status.'],
                 ],
             ], 422);
@@ -220,7 +229,7 @@ class CustInvoiceController extends Controller
         if (! $custInvoice->order || $custInvoice->order->status !== 'approved') {
             return response()->json([
                 'message' => 'Payments can only be recorded for invoices whose order is approved.',
-                'errors'  => [
+                'errors' => [
                     'order_id' => ['Invoice must be associated with an approved order to add payments.'],
                 ],
             ], 422);
@@ -229,7 +238,7 @@ class CustInvoiceController extends Controller
         if (! in_array($custInvoice->status, ['sent', 'partial-paid'], true)) {
             return response()->json([
                 'message' => 'Payments can only be added when the invoice status is sent or partial-paid.',
-                'errors'  => [
+                'errors' => [
                     'status' => ['Invoice must be in sent or partial-paid status to add payments.'],
                 ],
             ], 422);
@@ -249,14 +258,14 @@ class CustInvoiceController extends Controller
         ]);
 
         // Ensure payment_date is not older than invoice creation date
-        $paymentDate = \Carbon\Carbon::parse($validated['payment_date'])->toDateString();
-        $invoiceCreatedAt = $custInvoice->created_at instanceof \Carbon\Carbon
+        $paymentDate = Carbon::parse($validated['payment_date'])->toDateString();
+        $invoiceCreatedAt = $custInvoice->created_at instanceof Carbon
             ? $custInvoice->created_at->toDateString()
-            : \Carbon\Carbon::parse($custInvoice->created_at)->toDateString();
+            : Carbon::parse($custInvoice->created_at)->toDateString();
         if ($paymentDate < $invoiceCreatedAt) {
             return response()->json([
-                'message' => 'Payment date cannot be earlier than the invoice creation date (' . $invoiceCreatedAt . ').',
-                'errors'  => [
+                'message' => 'Payment date cannot be earlier than the invoice creation date ('.$invoiceCreatedAt.').',
+                'errors' => [
                     'payment_date' => ['Payment date must not be before the invoice creation date.'],
                 ],
             ], 422);
@@ -269,26 +278,26 @@ class CustInvoiceController extends Controller
         if ($account->currency !== $invoice->currency) {
             return response()->json([
                 'message' => 'Benefiting account currency must match invoice currency.',
-                'errors'  => [
+                'errors' => [
                     'account_id' => [
-                        'Selected account currency (' . $account->currency . ') does not match invoice currency (' . $invoice->currency . ').',
+                        'Selected account currency ('.$account->currency.') does not match invoice currency ('.$invoice->currency.').',
                     ],
                 ],
             ], 422);
         }
 
         $invoice = DB::transaction(function () use ($invoice, $validated, $account) {
-            $commonService = new CommonService();
+            $commonService = new CommonService;
 
             // If this is a cheque that matures in the future, persist a PDC and skip immediate posting
             if (strtolower($validated['payment_method']) === 'check') {
                 $chequeDate = isset($validated['cheque_date']) && $validated['cheque_date']
-                    ? \Carbon\Carbon::parse($validated['cheque_date'])->toDateString()
+                    ? Carbon::parse($validated['cheque_date'])->toDateString()
                     : $validated['payment_date'];
 
                 // If receipt_number was not provided, default to chk-{check_number}
                 if (empty($validated['receipt_number'])) {
-                    $validated['receipt_number'] = isset($validated['check_number']) ? 'chk-' . $validated['check_number'] : null;
+                    $validated['receipt_number'] = isset($validated['check_number']) ? 'chk-'.$validated['check_number'] : null;
                 }
 
                 if ($chequeDate > now()->toDateString()) {
@@ -342,7 +351,7 @@ class CustInvoiceController extends Controller
             $existingAllocations = CustPaymentAllocation::where('invoice_id', $invoice->id)
                 ->where('is_deleted', false)
                 ->get();
-            $pdcReserved = \App\Models\PdcReceivedCustomer::where('invoice_id', $invoice->id)
+            $pdcReserved = PdcReceivedCustomer::where('invoice_id', $invoice->id)
                 ->where('is_deleted', false)
                 ->whereIn('status', ['received', 'pending'])
                 ->sum('amount');
@@ -360,7 +369,7 @@ class CustInvoiceController extends Controller
 
                 throw ValidationException::withMessages([
                     'amount_paid' => [
-                        'Payment amount exceeds the outstanding invoice balance by ' . number_format($excess, 2, '.', '') . '.',
+                        'Payment amount exceeds the outstanding invoice balance by '.number_format($excess, 2, '.', '').'.',
                     ],
                 ]);
             }
@@ -390,7 +399,7 @@ class CustInvoiceController extends Controller
             $invoiceCurrencyCode = $invoice->currency;
 
             // Use shared conversion helper: 1 invoice currency unit = exchange_rate * base currency units
-            $conversionService = new CurrencyConversionService();
+            $conversionService = new CurrencyConversionService;
             $conversion = $conversionService->convertToBaseFromInvoice(
                 (float) $validated['amount_paid'],
                 $invoiceCurrencyCode,
@@ -465,7 +474,7 @@ class CustInvoiceController extends Controller
                 'check_number' => $validated['check_number'] ?? null,
                 'transaction_status' => 'cleared',
                 'related_transaction_id' => $validated['related_transaction_id'] ?? null,
-                'narration' => 'Payment for invoice ' . $invoice->invoice_number,
+                'narration' => 'Payment for invoice '.$invoice->invoice_number,
                 'is_recurring' => false,
                 'fiscal_year' => now()->year,
                 'accounting_period' => now()->format('Ym'),
@@ -526,7 +535,7 @@ class CustInvoiceController extends Controller
         if (! $custInvoice->order || $custInvoice->order->status !== 'approved') {
             return response()->json([
                 'message' => 'Payments can only be modified for invoices whose order is approved.',
-                'errors'  => [
+                'errors' => [
                     'order_id' => ['Invoice must be associated with an approved order to modify payments.'],
                 ],
             ], 422);
@@ -553,7 +562,7 @@ class CustInvoiceController extends Controller
         if ($custPayment->reconciled) {
             return response()->json([
                 'message' => 'Reconciled payments cannot be deleted.',
-                'errors'  => [
+                'errors' => [
                     'payment_id' => ['Reverse the reconciliation before deleting this payment.'],
                 ],
             ], 422);
@@ -663,7 +672,7 @@ class CustInvoiceController extends Controller
         if (! $custInvoice->order || $custInvoice->order->status !== 'approved') {
             return response()->json([
                 'message' => 'Payments can only be modified for invoices whose order is approved.',
-                'errors'  => [
+                'errors' => [
                     'order_id' => ['Invoice must be associated with an approved order to modify payments.'],
                 ],
             ], 422);
@@ -690,7 +699,7 @@ class CustInvoiceController extends Controller
         if ($custPayment->reconciled) {
             return response()->json([
                 'message' => 'Reconciled payments cannot be edited.',
-                'errors'  => [
+                'errors' => [
                     'payment_id' => ['Reverse the reconciliation before editing this payment.'],
                 ],
             ], 422);
@@ -794,11 +803,11 @@ class CustInvoiceController extends Controller
         $this->authorize('create', CustInvoice::class);
 
         $data = $request->validate([
-            'order_id'         => ['required', 'integer', 'exists:orders,id'],
-            'title'            => ['nullable', 'string'],
-            'description'      => ['nullable', 'string'],
-            'payment_terms'    => ['nullable', 'string'],
-            'notes_to_customer'=> ['nullable', 'string'],
+            'order_id' => ['required', 'integer', 'exists:orders,id'],
+            'title' => ['nullable', 'string'],
+            'description' => ['nullable', 'string'],
+            'payment_terms' => ['nullable', 'string'],
+            'notes_to_customer' => ['nullable', 'string'],
         ]);
 
         $order = Order::with('custInvoices')->findOrFail($data['order_id']);
@@ -806,7 +815,7 @@ class CustInvoiceController extends Controller
         if ($order->status !== 'approved') {
             return response()->json([
                 'message' => 'Invoice can only be generated from approved orders.',
-                'errors'  => [
+                'errors' => [
                     'status' => ['Order must be approved before generating an invoice.'],
                 ],
             ], 422);
@@ -815,12 +824,11 @@ class CustInvoiceController extends Controller
         if ($order->custInvoices()->exists()) {
             return response()->json([
                 'message' => 'An invoice already exists for this order.',
-                'errors'  => [
+                'errors' => [
                     'order_id' => ['Only one customer invoice is allowed per order.'],
                 ],
             ], 422);
         }
-
 
         $overrides = $request->only([
             'title',
@@ -829,9 +837,9 @@ class CustInvoiceController extends Controller
             'notes_to_customer',
             'payment_receiving_method_id',
         ]);
-        // Set job_reference_id from order if present
-        if (isset($order->job_reference_id)) {
-            $overrides['job_reference_id'] = $order->job_reference_id;
+        // Set bol_number from order if present
+        if (isset($order->bol_number)) {
+            $overrides['bol_number'] = $order->bol_number;
         }
 
         $invoice = DB::transaction(function () use ($request, $order, $overrides) {
@@ -901,14 +909,14 @@ class CustInvoiceController extends Controller
         $subject = sprintf(
             'Invoice %s%s',
             $custInvoice->invoice_number,
-            $projectName ? ' - ' . $projectName : ''
+            $projectName ? ' - '.$projectName : ''
         );
 
         $mailData = [
-            'invoice'       => $custInvoice,
+            'invoice' => $custInvoice,
             'recipientName' => $recipientName,
-            'projectName'   => $projectName,
-            'fromName'      => $fromName,
+            'projectName' => $projectName,
+            'fromName' => $fromName,
         ];
 
         try {
@@ -916,14 +924,14 @@ class CustInvoiceController extends Controller
                 $message->to($custInvoice->customer->email, $recipientName)
                     ->subject($subject)
                     ->attach($fullPath, [
-                        'as'   => $fileName,
+                        'as' => $fileName,
                         'mime' => 'application/pdf',
                     ]);
             });
         } catch (\Throwable $e) {
             \Log::error('Failed to send customer invoice email', [
                 'invoice_id' => $custInvoice->id,
-                'error'      => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -958,7 +966,6 @@ class CustInvoiceController extends Controller
             },
         ]);
 
-
         // Fetch sender/company details
         $configValues = SysConfig::whereIn('name', [
             'NAME',
@@ -985,35 +992,35 @@ class CustInvoiceController extends Controller
         $receivingPaymentMethod = $custInvoice->receivingPaymentMethod ?? null;
 
         $data = [
-            'invoice'            => $custInvoice,
-            'payments'           => $payments,
-            'paymentsTotal'      => $paymentsTotal,
+            'invoice' => $custInvoice,
+            'payments' => $payments,
+            'paymentsTotal' => $paymentsTotal,
             'outstandingBalance' => $outstandingBalance,
-            'senderName'         => $senderName,
-            'senderEmail'        => $senderEmail,
-            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
-            'senderPhone'        => $configValues['PHONE']   ?? null,
-            'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $configValues['INSTANCE_LOGO'] ?? null,
+            'senderPhone' => $configValues['PHONE'] ?? null,
+            'senderWebsite' => $configValues['WEBSITE'] ?? config('app.url'),
             'receivingPaymentMethod' => $receivingPaymentMethod,
-            'senderState'        => $configValues['STATE']   ?? null,
-            'senderCountry'      => $configValues['COUNTRY'] ?? null,
-            'generatedAt'        => $generatedAt,
+            'senderState' => $configValues['STATE'] ?? null,
+            'senderCountry' => $configValues['COUNTRY'] ?? null,
+            'generatedAt' => $generatedAt,
         ];
 
         $html = view('pdf.cust-invoice', $data)->render();
 
-        $options = new \Dompdf\Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
 
-        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
         $output = $dompdf->output();
 
-        $fileName = $custInvoice->invoice_number . '.pdf';
-        $relativePath = 'cust-invoices/' . $fileName;
+        $fileName = $custInvoice->invoice_number.'.pdf';
+        $relativePath = 'cust-invoices/'.$fileName;
 
         Storage::disk('public')->put($relativePath, $output);
 
@@ -1028,9 +1035,9 @@ class CustInvoiceController extends Controller
         $download->save();
 
         return [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
     }
 }

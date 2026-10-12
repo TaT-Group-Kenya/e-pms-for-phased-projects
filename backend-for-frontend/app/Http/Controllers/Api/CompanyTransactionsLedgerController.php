@@ -3,18 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\CompanyTransactionsLedgerStoreRequest;
+use App\Http\Requests\CompanyTransactionsLedgerUpdateRequest;
+use App\Http\Resources\CompanyTransactionsLedgerResource;
 use App\Models\CompanyTransactionsLedger;
 use App\Models\Download;
 use App\Models\SysConfig;
+use App\Services\CompanyTransactionsLedgerService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use App\Services\CompanyTransactionsLedgerService;
-use App\Http\Resources\CompanyTransactionsLedgerResource;
-use App\Http\Requests\CompanyTransactionsLedgerStoreRequest;
-use App\Http\Requests\CompanyTransactionsLedgerUpdateRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class CompanyTransactionsLedgerController extends Controller
 {
@@ -64,7 +64,7 @@ class CompanyTransactionsLedgerController extends Controller
         $this->authorize('view', $companyTransactionsLedger);
 
         $companyTransactionsLedger->loadMissing([
-           'company',
+            'company',
             'customer',
             'payment',
             'relatedTransaction',
@@ -150,22 +150,22 @@ class CompanyTransactionsLedgerController extends Controller
         $generatedAt = now();
 
         $data = [
-            'entry'             => $entry,
-            'senderName'        => $senderName,
-            'senderEmail'       => $senderEmail,
-            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
-            'senderPhone'       => $configValues['PHONE']   ?? null,
-            'senderWebsite'     => $configValues['WEBSITE'] ?? config('app.url'),
-            'senderAddressLine1'=> $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'        => $configValues['CITY']    ?? null,
-            'senderState'       => $configValues['STATE']   ?? null,
-            'senderCountry'     => $configValues['COUNTRY'] ?? null,
-            'generatedAt'       => $generatedAt,
+            'entry' => $entry,
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $configValues['INSTANCE_LOGO'] ?? null,
+            'senderPhone' => $configValues['PHONE'] ?? null,
+            'senderWebsite' => $configValues['WEBSITE'] ?? config('app.url'),
+            'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
+            'senderCity' => $configValues['CITY'] ?? null,
+            'senderState' => $configValues['STATE'] ?? null,
+            'senderCountry' => $configValues['COUNTRY'] ?? null,
+            'generatedAt' => $generatedAt,
         ];
 
         $html = view('pdf.company-ledger-entry', $data)->render();
 
-        $options = new Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
 
         $dompdf = new Dompdf($options);
@@ -175,13 +175,13 @@ class CompanyTransactionsLedgerController extends Controller
 
         $output = $dompdf->output();
 
-        $number = $entry->transaction_number ?: ('COMP-LEDGER-' . $entry->id);
-        $fileName = $number . '.pdf';
-        $relativePath = 'company-ledger/' . $fileName;
+        $number = $entry->transaction_number ?: ('COMP-LEDGER-'.$entry->id);
+        $fileName = $number.'.pdf';
+        $relativePath = 'company-ledger/'.$fileName;
 
         Storage::disk('public')->put($relativePath, $output);
 
-        $downloadKey = 'company-ledger:' . $number;
+        $downloadKey = 'company-ledger:'.$number;
         $download = Download::firstOrNew(['name' => $downloadKey]);
         $download->path = $relativePath;
         $download->updated_at = now();
@@ -193,9 +193,9 @@ class CompanyTransactionsLedgerController extends Controller
         $download->save();
 
         return [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
     }
 }

@@ -13,7 +13,7 @@ import { formatCurrency } from "../../../utils/format";
 interface Quotation {
   id: number;
   quotation_number: string;
-  job_reference_id?: string;
+  bol_number?: string;
   title: string;
   description?: string;
   customer_id?: number;
@@ -210,7 +210,7 @@ const QuotationsList: React.FC = () => {
   // Filter quotations based on search term
   const filteredQuotations = quotations.filter((quotation) =>
     quotation.quotation_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (quotation.job_reference_id || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (quotation.bol_number || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (quotation.customer?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (quotation.project_owner?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     quotation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -369,7 +369,7 @@ const QuotationsList: React.FC = () => {
                           </Link>
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
-                          {quotation.job_reference_id || "-"}
+                          {quotation.bol_number || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {quotation.customer?.name || "-"}
