@@ -3,8 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Models\Quotation;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Unique;
 
 class QuotationUpdateRequest extends QuotationStoreRequest
 {
@@ -41,26 +39,7 @@ class QuotationUpdateRequest extends QuotationStoreRequest
 
     public function rules(): array
     {
-        $routeValue = $this->route('quotation') ?? $this->route('id');
-        $quotationId = $routeValue instanceof Quotation ? (int) $routeValue->getKey() : (is_numeric($routeValue) ? (int) $routeValue : null);
-
         $rules = parent::rules();
-
-        // Container linkage: unique rule must ignore this quotation itself.
-        // Illuminate\Validation\Rules\Unique is a rule OBJECT (not an instance
-        // of the static Rule facade class), so check object types directly.
-        $rules['ship_container_id'] = collect($rules['ship_container_id'])
-            ->map(function ($rule) use ($quotationId) {
-                if ($rule instanceof Unique) {
-                    return Rule::unique('quotations', 'ship_container_id')
-                        ->ignore($quotationId)
-                        ->where(fn ($q) => $q->where('is_deleted', false));
-                }
-
-                return $rule;
-            })
-            ->values()
-            ->all();
 
         // Everything else is partial on update
         foreach (['customer_id', 'project_owner_id', 'ship_container_id', 'title', 'status', 'valid_until_date', 'subtotal_amount', 'tax_amount', 'discount_percentage', 'discount_amount', 'total_amount', 'currency', 'creationDate'] as $key) {
@@ -69,7 +48,7 @@ class QuotationUpdateRequest extends QuotationStoreRequest
             }
         }
 
-        foreach (['bol_number', 'description', 'payment_receiving_method_id', 'payment_terms', 'min_approval_count', 'notes_to_customer'] as $key) {
+        foreach (['bol_number', 'description', 'clearance_deadline', 'payment_receiving_method_id', 'payment_terms', 'min_approval_count', 'notes_to_customer'] as $key) {
             if (isset($rules[$key]) && is_array($rules[$key])) {
                 $rules[$key] = array_map(fn ($r) => $r === 'prohibited' ? 'sometimes' : $r, $rules[$key]);
             }

@@ -51,7 +51,7 @@ class ShipContainerController extends Controller
             return response()->json(['message' => 'Ship container id is required'], 400);
         }
 
-        $container = $this->service->find($id, ['customer', 'projectOwner', 'allocationLocation', 'cfsLocation', 'numbers', 'createdByUser', 'updatedByUser']);
+        $container = $this->service->find($id, ['customer', 'projectOwner', 'allocationLocation', 'cfsLocation', 'numbers', 'createdByUser', 'updatedByUser', 'quotation']);
         $this->authorize('view', $container);
 
         return new ShipContainerResource($container);

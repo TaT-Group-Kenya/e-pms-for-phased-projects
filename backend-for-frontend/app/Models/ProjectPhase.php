@@ -16,6 +16,8 @@ class ProjectPhase extends Model
         'project_id',
         'name',
         'description',
+        'container_numbers',
+        'entry_number',
         'phase_order',
         'status',
         'start_date',

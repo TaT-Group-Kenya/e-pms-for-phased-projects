@@ -108,7 +108,7 @@ class CustInvoiceController extends Controller
         $this->authorize('view', $custInvoice);
 
         $custInvoice->loadMissing([
-            'order',
+            'order.shipContainer.numbers',
             'project',
             'customer',
             'receivingPaymentMethod',

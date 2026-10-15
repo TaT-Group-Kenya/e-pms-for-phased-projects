@@ -22,7 +22,7 @@ interface ProjectDetailsData {
   status: string;
   priority: string;
   progress?: number;
-  tags?: string;
+  container_numbers?: string | null;
   currency?: string;
   customer?: { id: number; name: string };
   category?: { id: number; name: string };
@@ -67,7 +67,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
   const [projectSources, setProjectSources] = useState<Array<{ id: number; name: string }>>([]);
   const [projectLocations, setProjectLocations] = useState<Array<{ id: number; name: string }>>([]);
   const [currencies, setCurrencies] = useState<Array<{ id: number; code: string; symbol: string; name: string }>>([]);
-  const [tags, setTags] = useState<string[]>([]);
+  const [containerNumbers, setContainerNumbers] = useState<string[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   // Auto-dismiss update message after 5 seconds
@@ -172,13 +172,13 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
 
   const handleEdit = () => {
     setIsEditMode(true);
-    setTags(project?.tags ? project.tags.split(',').map(tag => tag.trim()) : []);
+    setContainerNumbers(project?.container_numbers ? project.container_numbers.split(',').map(number => number.trim()) : []);
   };
 
   const handleCancel = () => {
     setIsEditMode(false);
     setEditFormData(project);
-    setTags([]);
+    setContainerNumbers([]);
   };
 
   const handleUpdateProject = async () => {
@@ -210,8 +210,8 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
       missingFields.push("Currency");
     }
 
-    if (!tags || tags.length === 0) {
-      missingFields.push("Tags");
+    if (!containerNumbers || containerNumbers.length === 0) {
+      missingFields.push("Container Numbers");
     }
 
     if (missingFields.length > 0) {
@@ -240,7 +240,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
         body: JSON.stringify({
           ...editFormData,
           created_at: createdAtToSend,
-          tags: tags.join(","),
+          container_numbers: containerNumbers.join(","),
         }),
       });
 
@@ -633,22 +633,22 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               />
             </div>
 
-            {/* Tags */}
+            {/* Container Numbers */}
             <div>
               <label className="mb-[10px] text-black dark:text-white font-medium block">
                 Container Numbers <span className="text-danger-500">*</span>
               </label>
               <div className="rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[12px] py-[8px] block w-full outline-0 transition-all focus:border-primary-500">
                 <div className="flex flex-wrap gap-[8px] mb-[8px]">
-                  {tags.map((tag, index) => (
+                  {containerNumbers.map((number, index) => (
                     <div
                       key={index}
                       className="inline-flex items-center gap-[6px] px-[10px] py-[4px] bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium"
                     >
-                      {tag}
+                      {number}
                       <button
                         type="button"
-                        onClick={() => setTags(tags.filter((_, i) => i !== index))}
+                        onClick={() => setContainerNumbers(containerNumbers.filter((_, i) => i !== index))}
                         className="hover:text-primary-900 dark:hover:text-primary-100 cursor-pointer font-bold"
                       >
                         ×
@@ -662,15 +662,15 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                     if (e.key === "Enter") {
                       e.preventDefault();
                       const value = (e.target as HTMLInputElement).value.trim();
-                      if (value && !tags.includes(value)) {
-                        setTags([...tags, value]);
+                      if (value && !containerNumbers.includes(value)) {
+                        setContainerNumbers([...containerNumbers, value]);
                         (e.target as HTMLInputElement).value = "";
                       }
                     }
                   }}
                   required
                   className="w-full outline-0 bg-transparent text-black dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
-                  placeholder={tags.length === 0 ? "E.g. MSNU5897323, MSNU5897324, MSNU5897325 (Press Enter to add)" : "Press Enter to add"}
+                  placeholder={containerNumbers.length === 0 ? "Enter a container number and press Enter" : "Press Enter to add"}
                 />
               </div>
             </div>

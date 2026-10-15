@@ -10,6 +10,7 @@ import ProjectPhases from "./ProjectPhases";
 import ProjectEditComponent from "./ProjectEditComponent";
 import ProjectPhasesComponent from "./ProjectPhasesComponent";
 import ProjectTransactionsComponent from "./ProjectTransactionsComponent";
+import LinkedShipContainerCard from "../../shipContainers/LinkedShipContainerCard";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
@@ -34,7 +35,7 @@ interface ProjectDetailsData {
   status: string;
   priority: string;
   progress?: number;
-  tags?: string;
+  container_numbers?: string | null;
   currency?: string;
   customer?: { id: number; name: string };
   category?: { id: number; name: string };
@@ -345,11 +346,11 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
                       <span className="block text-black dark:text-white mb-[8px] mt-[20px] font-bold">
                         Container Numbers
                       </span>
-                      {project?.tags && (
+                      {project?.container_numbers && (
                         <ul className="list-disc ltr:pl-[22px] rtl:pr-[22px] mt-[15px]">
-                          {project.tags.split(',').map((tag, index) => (
+                          {project.container_numbers.split(',').map((number, index) => (
                             <li key={index} className="leading-[1.7] mb-[4px] last:mb-0">
-                              {tag.trim()}
+                              {number.trim()}
                             </li>
                           ))}
                         </ul>
@@ -365,6 +366,9 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
                   <ProjectRoadmap project={project} />
 
                   <ProjectOverview project={project} />
+
+                  <LinkedShipContainerCard container={project?.order?.ship_container} title="Shipment at a glance" />
+
                 </div>
               </div>
 
@@ -394,10 +398,13 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
 
           {/* Project Phases Tab */}
           {activeTab === 2 && (
-            <ProjectPhasesComponent
-              projectId={projectId}
-              initialPhases={project?.phases}
-            />
+            <>
+              <LinkedShipContainerCard container={project?.order?.ship_container} />
+              <ProjectPhasesComponent
+                projectId={projectId}
+                initialPhases={project?.phases}
+              />
+            </>
           )}
 
           {/* Orders Tab */}

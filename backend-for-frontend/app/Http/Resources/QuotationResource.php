@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use Carbon\Carbon;
+
 class QuotationResource extends BaseResource
 {
     public function toArray($request): array
@@ -25,6 +27,10 @@ class QuotationResource extends BaseResource
             'description' => $this->description,
             'status' => $this->status,
             'valid_until_date' => $this->formatTimestamp($this->valid_until_date),
+            'clearance_deadline' => $this->formatTimestamp($this->clearance_deadline),
+            'remaining_clearance_days' => $this->clearance_deadline
+                ? (int) Carbon::today()->diffInDays(Carbon::parse($this->clearance_deadline)->startOfDay(), false)
+                : null,
             'subtotal_amount' => (float) $this->subtotal_amount,
             'tax_amount' => (float) $this->tax_amount,
             'discount_percentage' => $this->discount_percentage,

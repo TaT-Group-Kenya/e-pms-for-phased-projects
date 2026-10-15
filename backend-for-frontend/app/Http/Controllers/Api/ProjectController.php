@@ -87,7 +87,7 @@ class ProjectController extends Controller
             'sourceOrigin',
             'location',
             'phases.assignment.company',
-            'order',
+            'order.shipContainer.numbers',
             'customer_invoice',
             'company_invoices',
             'projectOwner',
@@ -125,6 +125,15 @@ class ProjectController extends Controller
         $validated['updated_by'] = Auth::id();
         $validated['created_at'] = $validated['created_at'] ?? $project->created_at;
         $validated['updated_at'] = $validated['updated_at'] ?? now();
+
+        if (($validated['status'] ?? null) === 'complete' && $project->phases()->where(function ($query) {
+            $query->whereNull('entry_number')->orWhereRaw("TRIM(entry_number) = ''");
+        })->exists()) {
+            return response()->json([
+                'message' => 'Every project phase needs an entry number before the project can be completed.',
+                'errors' => ['status' => ['A project phase is missing its entry number.']],
+            ], 422);
+        }
 
         // If this project is linked to an order, prevent changing the customer
         // to anything other than the order's customer

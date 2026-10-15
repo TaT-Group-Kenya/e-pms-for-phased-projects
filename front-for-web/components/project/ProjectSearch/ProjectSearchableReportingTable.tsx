@@ -18,7 +18,7 @@ interface Project {
   status: string;
   priority: string;
   progress: string;
-  tags: string;
+  container_numbers?: string | null;
   currency: string;
   updated_at: string;
   updated_by: number;
@@ -165,7 +165,7 @@ const ProjectSearchableReportingTable: React.FC = () => {
         project.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.tags.toLowerCase().includes(searchTerm.toLowerCase())) &&
+        (project.container_numbers || "").toLowerCase().includes(searchTerm.toLowerCase())) &&
       (categoryFilter === "" || project.project_category_id === parseInt(categoryFilter)) &&
       (customerFilter === "" || project.customer_id === parseInt(customerFilter)) &&
       (statusFilter === "" || project.status === statusFilter)
@@ -229,7 +229,7 @@ const ProjectSearchableReportingTable: React.FC = () => {
         project.status || '',
         project.priority || '',
         project.progress || '',
-        project.tags || '',
+        project.container_numbers || '',
       ];
     });
 
@@ -403,7 +403,7 @@ const ProjectSearchableReportingTable: React.FC = () => {
                       Status
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap ltr:first:rounded-tl-md ltr:last:rounded-tr-md rtl:first:rounded-tr-md rtl:last:rounded-tl-md">
-                      Tags
+                      Container Numbers
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap ltr:first:rounded-tl-md ltr:last:rounded-tr-md rtl:first:rounded-tr-md rtl:last:rounded-tl-md">
                       Action
@@ -494,13 +494,13 @@ const ProjectSearchableReportingTable: React.FC = () => {
 
                         <td className="text-gray-500 dark:text-gray-400 ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] ltr:first:border-l ltr:last:border-r rtl:first:border-r rtl:last:border-l">
                           <div className="flex flex-wrap gap-1">
-                            {project.tags
-                              ? project.tags.split(',').map((tag, idx) => (
+                            {project.container_numbers
+                              ? project.container_numbers.split(',').map((number, idx) => (
                                   <span
                                     key={idx}
                                     className="px-[6px] py-[2px] bg-gray-100 dark:bg-[#15203c] text-gray-700 dark:text-gray-300 rounded text-xs"
                                   >
-                                    {tag.trim()}
+                                    {number.trim()}
                                   </span>
                                 ))
                               : '-'}

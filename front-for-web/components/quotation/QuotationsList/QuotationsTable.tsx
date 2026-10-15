@@ -19,6 +19,7 @@ interface Quotation {
   customer_id?: number;
   status: string;
   valid_until_date: string;
+  remaining_clearance_days?: number | null;
   subtotal_amount: number;
   tax_amount: number;
   discount_amount: number;
@@ -346,6 +347,9 @@ const QuotationsList: React.FC = () => {
                       Valid Until
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Remaining clearance days
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Created By
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
@@ -414,6 +418,9 @@ const QuotationsList: React.FC = () => {
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {quotation.valid_until_date ? new Date(quotation.valid_until_date).toLocaleDateString() : "N/A"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {quotation.remaining_clearance_days ?? "N/A"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           {[

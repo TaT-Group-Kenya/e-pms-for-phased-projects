@@ -31,7 +31,7 @@ class ProjectUpdateRequest extends FormRequest
             'status' => ['sometimes', 'required', 'string', 'max:255'],
             'priority' => ['sometimes', 'required', 'string', 'max:255'],
             'progress' => ['sometimes', 'required', 'string', 'max:255'],
-            'tags' => ['sometimes', 'required', 'string', 'max:255'],
+            'container_numbers' => ['sometimes', 'nullable', 'string', 'max:255'],
             'currency' => ['sometimes', 'required', 'string', 'max:255'],
             'created_at' => ['sometimes', 'nullable', 'date'],
         ];

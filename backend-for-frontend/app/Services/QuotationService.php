@@ -51,7 +51,12 @@ class QuotationService
             }
         }
 
-        return Quotation::create($data);
+        $quotation = Quotation::create($data);
+        if (! empty($quotation->ship_container_id)) {
+            $quotation->shipContainer()->update(['quoted' => true]);
+        }
+
+        return $quotation;
     }
 
     public function update(int $id, array $data)
@@ -67,6 +72,9 @@ class QuotationService
         }
 
         $model->update($data);
+        if (! empty($model->ship_container_id)) {
+            $model->shipContainer()->update(['quoted' => true]);
+        }
 
         return $model;
     }

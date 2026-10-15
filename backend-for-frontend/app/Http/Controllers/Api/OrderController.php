@@ -178,7 +178,7 @@ class OrderController extends Controller
         $this->authorize('view', $order);
 
         return DB::transaction(function () use ($order) {
-            $order->loadMissing(['orderItems', 'documents', 'project', 'customer', 'quotation', 'creator', 'updater', 'projectOwner']);
+            $order->loadMissing(['orderItems', 'documents', 'project', 'customer', 'quotation', 'creator', 'updater', 'projectOwner', 'shipContainer.numbers']);
 
             return new OrderResource($order);
         });
@@ -266,7 +266,7 @@ class OrderController extends Controller
             'status' => 'draft',
             'priority' => 'medium',
             'progress' => '0',
-            'tags' => null,
+            'container_numbers' => $order->shipContainer?->numbers()->pluck('container_no')->implode(', '),
             'currency' => $order->currency,
             'created_by' => $userId,
             'created_at' => $order->created_at,

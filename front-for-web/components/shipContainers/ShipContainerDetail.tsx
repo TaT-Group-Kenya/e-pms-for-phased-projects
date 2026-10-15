@@ -27,6 +27,16 @@ export type ContainerDetail = {
   allocation?: string | number | null
   cfs?: string | number | null
   customer?: { name?: string } | null
+  quoted?: boolean
+  quotation?: {
+    id: number
+    quotation_number?: string | null
+    title?: string | null
+    status?: string | null
+    total_amount?: number | null
+    currency?: string | null
+    created_at?: string | null
+  } | null
   container_numbers?: string[] | null
   status?: string | null
   eta?: string | null
@@ -261,6 +271,52 @@ const ShipContainerDetail: React.FC<{ container: ContainerDetail }> = ({ contain
               </dd>
             </div>
           </dl>
+        </div>
+
+        <div className="trezo-card bg-white dark:bg-[#0c1427] p-[20px] md:p-[25px] rounded-md border-t-4 border-primary-500">
+          <div className="flex items-start justify-between gap-3 mb-[15px]">
+            <div>
+              <h6 className="text-[15px] text-black dark:text-white">Quotation</h6>
+              <p className="text-[12px] text-gray-500 dark:text-gray-400 mt-1">Commercial link for this shipment</p>
+            </div>
+            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+              container.quoted
+                ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+            }`}>
+              {container.quoted ? "Quoted" : "Unquoted"}
+            </span>
+          </div>
+          {container.quotation ? (
+            <div className="space-y-[12px] text-[13px]">
+              <div className="flex justify-between gap-3">
+                <span className="text-gray-500 dark:text-gray-400">Quotation #</span>
+                <Link href={`/quotation/${container.quotation.id}`} className="text-primary-500 hover:underline font-medium">
+                  {container.quotation.quotation_number || `#${container.quotation.id}`}
+                </Link>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-gray-500 dark:text-gray-400">Title</span>
+                <span className="text-black dark:text-white text-right">{container.quotation.title || "—"}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-gray-500 dark:text-gray-400">Status</span>
+                <span className="text-black dark:text-white capitalize">{container.quotation.status || "—"}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-gray-500 dark:text-gray-400">Quoted amount</span>
+                <span className="text-black dark:text-white font-medium">
+                  {container.quotation.total_amount != null
+                    ? `${container.quotation.currency || ""} ${container.quotation.total_amount.toLocaleString()}`
+                    : "—"}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-md bg-gray-50 dark:bg-[#15203c] p-[15px] text-[13px] text-gray-600 dark:text-gray-300">
+              No quotation is linked to this container yet.
+            </div>
+          )}
         </div>
 
         {/* Movement capture (transit types only) */}

@@ -27,7 +27,7 @@ const projectSchema = z.object({
   status: z.enum(["new", "progress", "draft", "complete"]).optional(),
   priority: z.string().min(1, "Priority is required"),
   progress: z.string().min(1, "Progress is required"),
-  tags: z.string().optional(),
+  container_numbers: z.string().optional(),
   currency: z.string().min(1, "Currency is required"),
   updated_by: z.string().optional().nullable(),
   created_by: z.string().optional().nullable(),
@@ -74,7 +74,7 @@ const CreateProjectForm: React.FC = () => {
   const [projectSources, setProjectSources] = useState<ProjectSourceOrigin[]>([]);
   const [projectLocations, setProjectLocations] = useState<ProjectLocation[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
+  const [containerNumbers, setContainerNumbers] = useState<string[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   const {
@@ -207,7 +207,7 @@ const CreateProjectForm: React.FC = () => {
         status: data.status,
         priority: data.priority,
         progress: data.progress,
-        tags: tags.join(","),
+        container_numbers: containerNumbers.join(","),
         currency: data.currency,
         created_at,
       };
@@ -230,7 +230,7 @@ const CreateProjectForm: React.FC = () => {
 
       setSuccessMessage("Consignment created successfully!");
       reset();
-      setTags([]);
+      setContainerNumbers([]);
 
       setTimeout(() => {
         router.push("/project/project-list");
@@ -548,25 +548,22 @@ const CreateProjectForm: React.FC = () => {
                 {renderFieldError("progress")}
               </div>
 
-              {/* Tags - Optional */}
+              {/* Container Numbers - Optional */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
                   Container Numbers
                 </label>
-                <div className={`rounded-md border ${
-                  tags.length === 0 && !errors.tags ? "border-gray-200 dark:border-[#172036]" : 
-                  tags.length === 0 ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
-                } bg-white dark:bg-[#0c1427] px-[12px] py-[8px] block w-full outline-0 transition-all focus:border-primary-500`}>
+                <div className="rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[12px] py-[8px] block w-full outline-0 transition-all focus:border-primary-500">
                   <div className="flex flex-wrap gap-[8px] mb-[8px]">
-                    {tags.map((tag, index) => (
+                    {containerNumbers.map((number, index) => (
                       <div
                         key={index}
                         className="inline-flex items-center gap-[6px] px-[10px] py-[4px] bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium"
                       >
-                        {tag}
+                        {number}
                         <button
                           type="button"
-                          onClick={() => setTags(tags.filter((_, i) => i !== index))}
+                          onClick={() => setContainerNumbers(containerNumbers.filter((_, i) => i !== index))}
                           className="hover:text-primary-900 dark:hover:text-primary-100 cursor-pointer font-bold"
                         >
                           ×
@@ -580,17 +577,17 @@ const CreateProjectForm: React.FC = () => {
                       if (e.key === "Enter") {
                         e.preventDefault();
                         const value = (e.target as HTMLInputElement).value.trim();
-                        if (value && !tags.includes(value)) {
-                          setTags([...tags, value]);
+                        if (value && !containerNumbers.includes(value)) {
+                          setContainerNumbers([...containerNumbers, value]);
                           (e.target as HTMLInputElement).value = "";
                         }
                       }
                     }}
                     className="w-full outline-0 bg-transparent text-black dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
-                    placeholder={tags.length === 0 ? "E.g. MSNU5897323, MSNU5897324, MSNU5897325 (Press Enter to add)" : "Press Enter to add"}
+                    placeholder={containerNumbers.length === 0 ? "Enter a container number and press Enter" : "Press Enter to add"}
                   />
                 </div>
-                {renderFieldError("tags")}
+                {renderFieldError("container_numbers")}
               </div>
             </div>
 

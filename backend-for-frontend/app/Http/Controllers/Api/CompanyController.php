@@ -57,7 +57,7 @@ class CompanyController extends Controller
         // Eager load all relationships
         $company->load([
             'users',
-            'assignments.project',
+            'assignments.project.order.shipContainer.numbers',
             'assignments.phase',
             'bankAccounts',
             'invoices',

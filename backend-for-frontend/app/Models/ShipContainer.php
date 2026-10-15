@@ -239,6 +239,7 @@ class ShipContainer extends Model
         // shared identification / movement
         'customer_id',
         'project_owner_id',
+        'quoted',
         'eta',
         'etd',
         'port_in',
@@ -302,6 +303,7 @@ class ShipContainer extends Model
         'exit_date' => 'datetime',
         'is_deleted' => 'boolean',
         'quantity' => 'decimal:4',
+        'quoted' => 'boolean',
     ];
 
     public static function fieldMap(?string $type = null): array
@@ -347,6 +349,21 @@ class ShipContainer extends Model
     }
 
     /**
+     * BL is used for import/export entries; transit entries use their BOL.
+     */
+    public function documentNumber(): ?string
+    {
+        $usesBol = in_array($this->container_type, [
+            self::TYPE_CONTAINER_TRANSIT,
+            self::TYPE_UNIT_TRANSIT,
+        ], true);
+
+        $number = $usesBol ? $this->bol_no : $this->bl_no;
+
+        return $number !== null ? strtoupper((string) $number) : null;
+    }
+
+    /**
      * All container numbers tracked by this entry.
      */
     public function numbers(): HasMany
@@ -360,6 +377,11 @@ class ShipContainer extends Model
     public function projectOwner()
     {
         return $this->belongsTo(ProjectOwner::class, 'project_owner_id');
+    }
+
+    public function quotation()
+    {
+        return $this->hasOne(Quotation::class, 'ship_container_id');
     }
 
     /**

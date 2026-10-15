@@ -29,6 +29,8 @@ interface ProjectPhase {
   project_id: number;
   name: string;
   description?: string;
+  container_numbers?: string | null;
+  entry_number?: string | null;
   phase_order: string;
   status: 'new' | 'progress' | 'draft' | 'complete';
   start_date?: string;
@@ -228,6 +230,8 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
           project_id: parseInt(projectId),
           name: phaseFormData.name,
           description: phaseFormData.description || null,
+          container_numbers: phaseFormData.container_numbers || null,
+          entry_number: phaseFormData.entry_number || null,
           phase_order: phaseFormData.phase_order,
           status: phaseFormData.status || "new",
           start_date: phaseFormData.start_date || null,
@@ -321,6 +325,8 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
           phase_id: editingPhaseId,
           name: phaseFormData.name,
           description: phaseFormData.description || null,
+          container_numbers: phaseFormData.container_numbers || null,
+          entry_number: phaseFormData.entry_number || null,
           phase_order: phaseFormData.phase_order,
           status: phaseFormData.status || "new",
           start_date: phaseFormData.start_date || null,
@@ -556,6 +562,34 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
                   </div>
                 </div>
 
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Entry Number
+                  </label>
+                  <input
+                    type="text"
+                    value={phaseFormData.entry_number || ""}
+                    onChange={(e) => handlePhaseFormChange("entry_number", e.target.value)}
+                    disabled={isPhaseSubmitting}
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="Required before phase completion or billing"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Container Numbers
+                  </label>
+                  <input
+                    type="text"
+                    value={phaseFormData.container_numbers || ""}
+                    onChange={(e) => handlePhaseFormChange("container_numbers", e.target.value)}
+                    disabled={isPhaseSubmitting}
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="Enter container numbers, separated by commas"
+                  />
+                </div>
+
                 <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">
                   <div>
                     <label className="mb-[10px] text-black dark:text-white font-medium block">
@@ -718,6 +752,34 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
                         <option value="complete">Complete</option>
                     </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Entry Numbers<span className="font-normal text-gray-500 dark:text-gray-400">(Separate multiple entries with commas)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={phaseFormData.entry_number || ""}
+                    onChange={(e) => handlePhaseFormChange("entry_number", e.target.value)}
+                    disabled={isPhaseSubmitting}
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="Required before phase completion or billing"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Container Numbers
+                  </label>
+                  <input
+                    type="text"
+                    value={phaseFormData.container_numbers || ""}
+                    onChange={(e) => handlePhaseFormChange("container_numbers", e.target.value)}
+                    disabled={isPhaseSubmitting}
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    placeholder="Enter container numbers, separated by commas"
+                  />
                 </div>
 
                 <div className="sm:grid sm:grid-cols-2 sm:gap-[15px]">

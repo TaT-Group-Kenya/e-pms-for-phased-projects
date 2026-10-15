@@ -27,6 +27,7 @@ type ListRow = {
   reference_number?: string | null
   container_type: ShipContainerType
   client_name?: string | null
+  quoted?: boolean
   customer?: { name?: string } | null
   project_owner_id?: number | null
   container_identifier?: string | null
@@ -422,6 +423,12 @@ const ShipContainerTypeTable: React.FC<ShipContainerTypeTableProps> = ({ contain
 
     if (key === "client_name") {
       return <span>{row.client_name || "—"}</span>
+    }
+
+    if (key === "quoted") {
+      return row.quoted
+        ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Quoted</span>
+        : <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300">Unquoted</span>
     }
 
     if (key === "container_numbers") {

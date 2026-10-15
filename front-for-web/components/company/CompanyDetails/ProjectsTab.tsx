@@ -16,6 +16,16 @@ interface Project {
   status: string;
   priority: string;
   progress: number | string;
+  bol_number?: string | null;
+  order?: {
+    bol_number?: string | null;
+    ship_container?: {
+      reference_number?: string | null;
+      container_type?: string | null;
+      bl_no?: string | null;
+      bol_no?: string | null;
+    } | null;
+  } | null;
   tags?: string;
   currency: string;
   created_at?: string;
@@ -47,6 +57,7 @@ interface ProjectPhase {
   start_date: string;
   end_date: string;
   progress_percentage: string;
+  container_numbers?: string | null;
   updated_at: string;
   updated_by: number;
   created_at: string;
@@ -86,6 +97,7 @@ interface ProjectsTabProps {
 
 interface ProgressUpdateForm {
   percentage_complete: string;
+  entry_number: string;
   comment: string;
 }
 
@@ -122,6 +134,7 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
   const [successMessage, setSuccessMessage] = useState("");
   const [formData, setFormData] = useState<ProgressUpdateForm>({
     percentage_complete: "",
+    entry_number: "",
     comment: "",
   });
   const [showTimelineModal, setShowTimelineModal] = useState(false);
@@ -153,10 +166,17 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
   };
 
   const filteredAssignments = filterData(company.assignments, searchTerm);
+  const selectedShipContainer = selectedAssignment?.project.order?.ship_container;
+  const usesBolNumber =
+    selectedShipContainer?.container_type === "container_transit" ||
+    selectedShipContainer?.container_type === "unit_transit";
+  const shipDocumentNumber = usesBolNumber
+    ? selectedShipContainer?.bol_no || selectedShipContainer?.bl_no
+    : selectedShipContainer?.bl_no || selectedShipContainer?.bol_no;
 
   const handleOpenModal = (assignment: Assignment) => {
     setSelectedAssignment(assignment);
-    setFormData({ percentage_complete: "", comment: "" });
+    setFormData({ percentage_complete: "", entry_number: "", comment: "" });
     setError("");
     setSuccessMessage("");
     setShowModal(true);
@@ -165,7 +185,7 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedAssignment(null);
-    setFormData({ percentage_complete: "", comment: "" });
+    setFormData({ percentage_complete: "", entry_number: "", comment: "" });
     setError("");
     setSuccessMessage("");
   };
@@ -202,6 +222,7 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
         project_id: selectedAssignment.project_id,
         project_phase_id: selectedAssignment.phase_id,
         percentage_complete: formData.percentage_complete,
+        entry_number: formData.entry_number,
         comment: formData.comment,
       };
 
@@ -216,7 +237,17 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save progress update");
+        const errorDetails =
+          errorData?.errors && typeof errorData.errors === "object"
+            ? errorData.errors
+            : errorData;
+        const validationMessages = errorDetails && typeof errorDetails === "object"
+          ? Object.entries(errorDetails)
+              .filter(([field]) => !["message", "error_code", "errors"].includes(field))
+              .flatMap(([, messages]) => Array.isArray(messages) ? messages : [messages])
+              .filter((message): message is string => typeof message === "string")
+          : [];
+        throw new Error(validationMessages.join(" ") || errorData?.message || "Failed to save progress update");
       }
 
       setSuccessMessage("Progress update saved successfully!");
@@ -475,7 +506,7 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
       {/* Progress Update Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0c1427] rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#0c1427] rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="sticky top-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#0c1427] px-6 py-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-black dark:text-white">
@@ -492,13 +523,32 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
             {/* Modal Body */}
             <div className="px-6 py-4">
               {selectedAssignment && (
-                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    <strong>Project:</strong> {selectedAssignment.project.code} - {selectedAssignment.project.name}
-                  </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    <strong>Phase:</strong> Phase {selectedAssignment.phase?.phase_order || ""}
-                  </p>
+                <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      <strong>Project:</strong> {selectedAssignment.project.code} - {selectedAssignment.project.name}
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      <strong>Phase:</strong> {selectedAssignment.phase?.name || ""}
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 break-words">
+                      <strong>BL / BOL number:</strong>{" "}
+                      {shipDocumentNumber ||
+                        selectedAssignment.project.order?.bol_number ||
+                        selectedAssignment.project.bol_number ||
+                        "—"}
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 break-words">
+                      <strong>Phase container numbers:</strong>{" "}
+                      {selectedAssignment.phase?.container_numbers?.trim() || "—"}
+                    </p>
+                    {selectedAssignment.project.order?.ship_container?.reference_number && (
+                      <p className="text-sm text-gray-700 dark:text-gray-300 break-words sm:col-span-2">
+                        <strong>Ship container reference:</strong>{" "}
+                        {selectedAssignment.project.order.ship_container.reference_number}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -529,6 +579,20 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
                     value={formData.percentage_complete}
                     onChange={handleFormChange}
                     placeholder="e.g., 75"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-[#1a2847] text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Entry Number <span className="font-normal text-gray-500 dark:text-gray-400">(optional; separate multiple entries with commas)</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="entry_number"
+                    value={formData.entry_number}
+                    onChange={handleFormChange}
+                    placeholder=""
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-[#1a2847] text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

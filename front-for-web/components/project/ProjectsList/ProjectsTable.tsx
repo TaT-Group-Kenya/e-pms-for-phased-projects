@@ -24,7 +24,7 @@ interface Project {
   status: string;
   priority: string;
   progress?: number;
-  tags?: string;
+  container_numbers?: string | null;
   currency?: string;
   customer?: { name: string };
   created_at?: string;
@@ -227,7 +227,7 @@ const ProjectsList: React.FC = () => {
     (project.customer?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (project.project_owner?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (project.order?.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.container_numbers?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (project.bol_number || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -380,7 +380,7 @@ const ProjectsList: React.FC = () => {
                           {project.project_owner?.name || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
-                          {project.tags || "-"}
+                          {project.container_numbers || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {project.currency || "-"}

@@ -11,6 +11,7 @@ class OrderResource extends BaseResource
             'order_number' => $this->order_number,
             'bol_number' => $this->bol_number,
             'ship_container_id' => $this->ship_container_id,
+            'ship_container' => new ShipContainerResource($this->whenLoaded('shipContainer')),
             'quotation_id' => $this->quotation_id,
             'project_id' => $this->project_id,
             'customer_id' => $this->customer_id,

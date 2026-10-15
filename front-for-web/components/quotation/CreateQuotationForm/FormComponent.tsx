@@ -25,6 +25,7 @@ const quotationSchema = z.object({
   customer_id: z.string().min(1, "Customer is required"),
   project_owner_id: z.string().nullable(),
   valid_until_date: z.string().min(1, "Valid until date is required"),
+  clearance_deadline: z.string().optional(),
   currency: z.string().min(1, "Currency is required"),
   payment_receiving_method_id: z.string().nullable().optional(),
   payment_terms: z.string().optional(),
@@ -98,7 +99,7 @@ const CreateQuotationForm: React.FC = () => {
     // Load containers assigned to this consignee (client relationship)
     if (!ownerId || !accessToken) return;
     setContainersLoading(true);
-    fetch(`/api/ship-containers/list?per_page=500&project_owner_id=${ownerId}`, {
+    fetch(`/api/ship-containers/list?per_page=500&project_owner_id=${ownerId}&quoted=0`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
       .then((resp) => resp.json())
@@ -238,6 +239,7 @@ const CreateQuotationForm: React.FC = () => {
         customer_id: data.customer_id ? parseInt(data.customer_id) : null,
         project_owner_id: data.project_owner_id ? parseInt(data.project_owner_id) : null,
         valid_until_date: data.valid_until_date,
+        clearance_deadline: data.clearance_deadline || null,
         currency: data.currency,
         payment_receiving_method_id: data.payment_receiving_method_id ? parseInt(data.payment_receiving_method_id) : null,
         payment_terms: data.payment_terms || "",
@@ -481,6 +483,18 @@ const CreateQuotationForm: React.FC = () => {
                     } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500`}
                   />
                   {renderFieldError("valid_until_date")}
+                </div>
+
+                {/* Clearance Deadline */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Clearance Deadline
+                  </label>
+                  <input
+                    type="date"
+                    {...register("clearance_deadline")}
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
+                  />
                 </div>
 
                 {/* Currency - Required */}

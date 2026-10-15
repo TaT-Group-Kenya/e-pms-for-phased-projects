@@ -29,7 +29,7 @@ class ProjectStoreRequest extends FormRequest
             'status' => ['nullable', 'string', 'max:255'],
             'priority' => ['required', 'string', 'max:255'],
             'progress' => ['required', 'string', 'max:255'],
-            'tags' => ['nullable', 'string', 'max:255'],
+            'container_numbers' => ['nullable', 'string', 'max:255'],
             'currency' => ['required', 'string', 'max:255'],
             'created_at' => ['nullable', 'date'],
         ];

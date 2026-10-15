@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import AuthenticatedLayout from "../../components/authenticated/AuthenticatedLayout";
 import { ToastContainer } from "../../components/common/Toast";
+import LinkedShipContainerCard, { type LinkedShipContainer } from "../../components/shipContainers/LinkedShipContainerCard";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 import { useToast } from "../../hooks/useToast";
 import { selectAccessToken } from "../../store/auth/selectors";
@@ -105,6 +106,7 @@ interface OrderDetail {
   customer?: CustomerSummary;
   project?: ProjectSummary;
   project_owner?: ProjectOwnerSummary;
+  ship_container?: LinkedShipContainer | null;
   orderItems?: OrderItem[];
   taxitems?: OrderTaxItem[];
   documents?: OrderDocument[];
@@ -1562,6 +1564,8 @@ const OrderDetailPage: React.FC = () => {
                     </div>
                   </div>
 
+                  <LinkedShipContainerCard container={order.ship_container} title="Shipment at a glance" />
+
                   {/* Customer */}
                   {order.customer && (
                     <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
@@ -1771,6 +1775,8 @@ const OrderDetailPage: React.FC = () => {
           {/* Order Items Tab */}
           {activeTab === 1 && (
             <div className="pt-[20px]">
+              <LinkedShipContainerCard container={order.ship_container} />
+
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <h6 className="text-black dark:text-white font-semibold mb-[15px]">
                   Order Items

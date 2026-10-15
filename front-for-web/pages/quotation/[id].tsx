@@ -175,6 +175,8 @@ interface Quotation {
     name: string;
   } | null;
   valid_until_date: string;
+  clearance_deadline?: string | null;
+  remaining_clearance_days?: number | null;
   subtotal_amount: number;
   tax_amount: number;
   discount_percentage: number;
@@ -603,6 +605,10 @@ const QuotationDetail: React.FC = () => {
           typeof editData.valid_until_date === "string" && editData.valid_until_date
             ? editData.valid_until_date
             : quotation.valid_until_date,
+        clearance_deadline:
+          editData.clearance_deadline !== undefined
+            ? editData.clearance_deadline || null
+            : quotation.clearance_deadline ?? null,
         currency: editData.currency ?? quotation.currency,
         payment_terms: (editData.payment_terms ?? quotation.payment_terms ?? "").toString(),
         notes_to_customer: (editData.notes_to_customer ?? quotation.notes_to_customer ?? "").toString(),
@@ -1403,6 +1409,22 @@ const QuotationDetail: React.FC = () => {
                         <span className="text-gray-600 dark:text-gray-400">Valid Until:</span>
                         <span className="text-black dark:text-white font-semibold">
                           {new Date(quotation.valid_until_date).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                        <span className="text-gray-600 dark:text-gray-400">Clearance Deadline:</span>
+                        <span className="text-black dark:text-white font-semibold">
+                          {quotation.clearance_deadline
+                            ? new Date(quotation.clearance_deadline).toLocaleDateString()
+                            : "N/A"}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                        <span className="text-gray-600 dark:text-gray-400">Remaining clearance days:</span>
+                        <span className="text-black dark:text-white font-semibold">
+                          {quotation.remaining_clearance_days ?? "N/A"}
                         </span>
                       </div>
 
@@ -2652,6 +2674,18 @@ const QuotationDetail: React.FC = () => {
                         return date.toISOString().split("T")[0];
                       })()}
                       onChange={(e) => handleEditFieldChange("valid_until_date", e.target.value)}
+                      disabled={isEditSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Clearance Deadline
+                    </label>
+                    <input
+                      type="date"
+                      value={(editData.clearance_deadline ?? quotation.clearance_deadline ?? "").slice(0, 10)}
+                      onChange={(e) => handleEditFieldChange("clearance_deadline", e.target.value || null)}
                       disabled={isEditSubmitting}
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />

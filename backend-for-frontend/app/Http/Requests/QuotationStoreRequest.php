@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\ProjectOwner;
+use App\Models\Quotation;
 use App\Models\ShipContainer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -45,8 +46,17 @@ class QuotationStoreRequest extends FormRequest
             ],
             'ship_container_id' => [
                 'required',
-                // 1:1 — a ship container entry backs at most one quotation
-                Rule::unique('quotations', 'ship_container_id')->where(fn ($q) => $q->where('is_deleted', false)),
+                function ($attribute, $value, $fail) {
+                    $query = Quotation::where('ship_container_id', $value)
+                        ->where('is_deleted', false);
+                    $routeQuotation = $this->routeQuotation();
+                    if ($routeQuotation) {
+                        $query->where('id', '!=', $routeQuotation->id);
+                    }
+                    if ($query->exists()) {
+                        $fail('This ship container entry is already linked to another quotation (1 quote per container).');
+                    }
+                },
                 function ($attribute, $value, $fail) {
                     $customer = $this->input('customer_id');
                     $owner = $this->input('project_owner_id');
@@ -67,6 +77,14 @@ class QuotationStoreRequest extends FormRequest
                         $fail('The selected container must belong to the selected customer and consignee.');
                     }
                 },
+                function ($attribute, $value, $fail) {
+                    $container = ShipContainer::find($value);
+                    $routeQuotation = $this->routeQuotation();
+
+                    if ($container?->quoted && (! $routeQuotation || (int) $routeQuotation->ship_container_id !== (int) $value)) {
+                        $fail('This ship container has already been quoted and cannot be assigned to another quotation.');
+                    }
+                },
             ],
             // Legacy free-text removed: bol_number is derived from the linked
             // ship container entry (kept for orders/invoices that read the column).
@@ -75,6 +93,7 @@ class QuotationStoreRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:255'],
             'status' => ['required', Rule::in(['draft', 'sent', 'approved', 'rejected', 'revised'])],
             'valid_until_date' => ['required', 'date'],
+            'clearance_deadline' => ['nullable', 'date'],
             'subtotal_amount' => ['required', 'numeric', 'min:0'],
             'tax_amount' => ['required', 'numeric', 'min:0'],
             'discount_percentage' => ['required', 'numeric', 'min:0'],
@@ -98,5 +117,18 @@ class QuotationStoreRequest extends FormRequest
             'project_owner_id.required' => 'A consignee (client) is required.',
             'project_owner_id.exists' => 'The selected consignee must belong to the selected customer.',
         ];
+    }
+
+    private function routeQuotation(): ?Quotation
+    {
+        $routeQuotation = $this->route('quotation');
+        if ($routeQuotation instanceof Quotation) {
+            return $routeQuotation;
+        }
+        if (is_numeric($routeQuotation)) {
+            return Quotation::withDeleted()->find((int) $routeQuotation);
+        }
+
+        return null;
     }
 }

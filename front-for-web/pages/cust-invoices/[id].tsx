@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import { useSelector } from 'react-redux'
 import AuthenticatedLayout from '../../components/authenticated/AuthenticatedLayout'
 import { ToastContainer } from '../../components/common/Toast'
+import LinkedShipContainerCard, { type LinkedShipContainer } from '../../components/shipContainers/LinkedShipContainerCard'
 import { useToast } from '../../hooks/useToast'
 import { selectAccessToken } from '../../store/auth/selectors'
 import Can from '../../components/auth/Can'
@@ -96,6 +97,7 @@ interface OrderSummary {
   status: string
   total_amount: number
   currency: string
+  ship_container?: LinkedShipContainer | null
 }
 
 interface AccountSummary {
@@ -1197,6 +1199,8 @@ export default function CustInvoiceDetailPage() {
                     </div>
                   </div>
 
+                  <LinkedShipContainerCard container={invoice.order?.ship_container} title="Shipment at a glance" />
+
                   {/* Customer */}
                   {invoice.customer && (
                     <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
@@ -1480,6 +1484,8 @@ export default function CustInvoiceDetailPage() {
           {/* Invoice Items Tab */}
           {activeTab === 1 && (
             <div className="pt-[20px]">
+              <LinkedShipContainerCard container={invoice.order?.ship_container} />
+
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <h6 className="text-black dark:text-white font-semibold mb-[15px]">
                   Invoice Items

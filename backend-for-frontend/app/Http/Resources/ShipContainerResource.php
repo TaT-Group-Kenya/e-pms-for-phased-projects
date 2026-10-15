@@ -67,6 +67,19 @@ class ShipContainerResource extends BaseResource
             'project_owner_id' => $this->project_owner_id,
             'project_owner' => $this->whenLoaded('projectOwner', new ProjectOwnerResource($this->projectOwner)),
             'client_name' => $this->projectOwner?->name,
+            'quoted' => (bool) $this->quoted,
+            'quotation' => $this->when(
+                $this->relationLoaded('quotation') && $this->quotation,
+                fn () => [
+                    'id' => $this->quotation->id,
+                    'quotation_number' => $this->quotation->quotation_number,
+                    'title' => $this->quotation->title,
+                    'status' => $this->quotation->status,
+                    'total_amount' => (float) $this->quotation->total_amount,
+                    'currency' => $this->quotation->currency,
+                    'created_at' => $this->formatTimestamp($this->quotation->created_at),
+                ]
+            ),
             'container_numbers' => $this->numbers->pluck('container_no')->all(),
             'eta' => $this->formatTimestamp($this->eta),
             'etd' => $this->formatTimestamp($this->etd),

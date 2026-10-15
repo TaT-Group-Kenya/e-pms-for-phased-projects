@@ -27,6 +27,7 @@ class ShipContainerService
         'bol_no',
         'bl_no',
         'project_owner_id',
+        'quoted',
     ];
 
     public function index(array $filters = [], int $perPage = 15, int $page = 1, int $offset = 0, array $with = []): LengthAwarePaginator

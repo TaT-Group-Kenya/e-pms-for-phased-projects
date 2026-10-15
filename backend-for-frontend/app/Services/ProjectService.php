@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Order;
 use App\Models\Project;
 use App\Models\ProjectPhase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProjectService
 {
@@ -56,10 +58,26 @@ class ProjectService
     public function create(array $data)
     {
         return DB::transaction(function () use ($data) {
-            $project = Project::create($data);
+            if (! empty($data['order_id'])) {
+                $containerNumbers = Order::with('shipContainer.numbers')
+                    ->find($data['order_id'])
+                    ?->shipContainer?->numbers
+                    ->pluck('container_no')
+                    ->filter()
+                    ->values()
+                    ->implode(', ');
+                $data['container_numbers'] = $containerNumbers ?: null;
+            }
 
             // Handle automatic phase creation based on no_of_phases
             $noOfPhases = (int) $data['no_of_phases'];
+            if (($data['status'] ?? null) === 'complete' && $noOfPhases === 1) {
+                throw ValidationException::withMessages([
+                    'status' => ['A project with an automatically created phase cannot be completed until that phase has an entry number.'],
+                ]);
+            }
+
+            $project = Project::create($data);
             if ($noOfPhases === 1) {
                 $this->createPhaseFromProject($project);
             }
@@ -74,6 +92,19 @@ class ProjectService
             $model = Project::findOrFail($id);
             $oldNoOfPhases = (int) $model->no_of_phases;
             $newNoOfPhases = (int) ($data['no_of_phases'] ?? $oldNoOfPhases);
+
+            if (($data['status'] ?? null) === 'complete') {
+                $hasPhaseMissingEntry = $model->phases()->where(function ($query) {
+                    $query->whereNull('entry_number')->orWhereRaw("TRIM(entry_number) = ''");
+                })->exists();
+                $willCreateCompletedPhase = ! $model->phases()->exists() && $newNoOfPhases === 1;
+
+                if ($hasPhaseMissingEntry || $willCreateCompletedPhase) {
+                    throw ValidationException::withMessages([
+                        'status' => ['Every project phase needs an entry number before the project can be completed.'],
+                    ]);
+                }
+            }
 
             $model->update($data);
 
@@ -120,14 +151,20 @@ class ProjectService
      */
     private function createPhaseFromProject(Project $project)
     {
+        $phaseDetails = $this->getPhaseDetails($project);
+
+        // Project/order linkage uses the project's order_id during phase creation.
+        $containerNumbers = $phaseDetails['container_numbers'];
+
         // Generate unique project phase code
         $code = $this->generateUniquePhaseCode();
 
         ProjectPhase::create([
             'project_id' => $project->id,
             'code' => $code,
-            'name' => $project->name,
-            'description' => $project->description,
+            'name' => $phaseDetails['name'],
+            'description' => $phaseDetails['description'],
+            'container_numbers' => $containerNumbers,
             'phase_order' => '1',
             'status' => $project->status,
             'start_date' => $project->start_date,
@@ -140,15 +177,46 @@ class ProjectService
     }
 
     /**
+     * Resolve linked container details through the order_id assigned when the project is created.
+     */
+    private function getPhaseDetails(Project $project): array
+    {
+        $order = $project->order_id
+            ? Order::with('shipContainer.numbers')->find($project->order_id)
+            : null;
+        $containerNumbers = $order?->shipContainer?->numbers
+            ->pluck('container_no')
+            ->filter()
+            ->values()
+            ->all() ?? [];
+        $containerNumbersList = implode(', ', $containerNumbers);
+        $phaseName = $project->name;
+        $phaseDescription = $project->description;
+
+        if ($containerNumbersList !== '') {
+            $phaseName .= ' - '.$containerNumbersList;
+            $phaseDescription = trim(($phaseDescription ? $phaseDescription.' ' : '').'Container numbers: '.$containerNumbersList);
+        }
+
+        return [
+            'container_numbers' => $containerNumbersList ?: null,
+            'name' => $phaseName,
+            'description' => $phaseDescription,
+        ];
+    }
+
+    /**
      * Update the existing phase with project data
      */
     private function updatePhaseFromProject(Project $project)
     {
         $phase = $project->phases()->first();
         if ($phase) {
+            $phaseDetails = $this->getPhaseDetails($project);
             $phase->update([
-                'name' => $project->name,
-                'description' => $project->description,
+                'name' => $phaseDetails['name'],
+                'description' => $phaseDetails['description'],
+                'container_numbers' => $phaseDetails['container_numbers'],
                 'status' => $project->status,
                 'start_date' => $project->start_date,
                 'end_date' => $project->end_date,

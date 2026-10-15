@@ -8,6 +8,7 @@ use App\Http\Requests\CompanyProjectUpdateRequest;
 use App\Http\Resources\CompanyProjectResource;
 use App\Models\Company;
 use App\Models\CompanyProject;
+use App\Models\ProjectPhase;
 use App\Models\ProjectProgressUpdate;
 use App\Services\CompanyProjectService;
 use Illuminate\Http\Request;
@@ -40,6 +41,16 @@ class CompanyProjectController extends Controller
 
         try {
             $validated = $request->validated();
+
+            if ($validated['is_complete'] && ! empty($validated['phase_id'])) {
+                $phase = ProjectPhase::findOrFail($validated['phase_id']);
+                if (blank($phase->entry_number)) {
+                    return response()->json([
+                        'message' => 'An entry number is required before completing a project phase.',
+                        'errors' => ['phase_id' => ['The phase must have an entry number before its assignment can be completed.']],
+                    ], 422);
+                }
+            }
 
             // Check if a record with the same project_id and phase_id already exists
             $existingRecord = CompanyProject::where('project_id', $validated['project_id'])
@@ -105,6 +116,18 @@ class CompanyProjectController extends Controller
         $this->authorize('update', $companyProject);
 
         $validated = $request->validated();
+        $isComplete = $validated['is_complete'] ?? $companyProject->is_complete;
+        $phaseId = $validated['phase_id'] ?? $companyProject->phase_id;
+        if ($isComplete && $phaseId) {
+            $phase = ProjectPhase::findOrFail($phaseId);
+            if (blank($phase->entry_number)) {
+                return response()->json([
+                    'message' => 'An entry number is required before completing a project phase.',
+                    'errors' => ['phase_id' => ['The phase must have an entry number before its assignment can be completed.']],
+                ], 422);
+            }
+        }
+
         $validated['updated_by'] = Auth::id();
         $validated['updated_at'] = now();
 

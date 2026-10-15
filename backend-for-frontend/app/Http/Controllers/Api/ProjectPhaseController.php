@@ -39,6 +39,13 @@ class ProjectPhaseController extends Controller
 
         $validated = $request->validated();
 
+        if (($validated['status'] ?? null) === 'complete' && blank($validated['entry_number'] ?? null)) {
+            return response()->json([
+                'message' => 'An entry number is required before completing a project phase.',
+                'errors' => ['entry_number' => ['Entry number is required to complete a phase.']],
+            ], 422);
+        }
+
         // Check if adding a new phase would exceed the project's no_of_phases limit
         $project = Project::findOrFail($validated['project_id']);
         $currentPhaseCount = ProjectPhase::where('project_id', $validated['project_id'])->count();
@@ -76,7 +83,20 @@ class ProjectPhaseController extends Controller
     {
         $this->authorize('update', $projectPhase);
 
-        $updated = $this->service->update($projectPhase->id, $request->validated());
+        $validated = $request->validated();
+        $entryNumber = array_key_exists('entry_number', $validated)
+            ? $validated['entry_number']
+            : $projectPhase->entry_number;
+        $finalStatus = $validated['status'] ?? $projectPhase->status;
+        $hasCompletedAssignment = $projectPhase->assignment()->where('is_complete', true)->exists();
+        if (blank($entryNumber) && ($finalStatus === 'complete' || $projectPhase->is_billed || $hasCompletedAssignment)) {
+            return response()->json([
+                'message' => 'An entry number is required before completing a project phase.',
+                'errors' => ['entry_number' => ['Entry number is required to complete a phase.']],
+            ], 422);
+        }
+
+        $updated = $this->service->update($projectPhase->id, $validated);
 
         return new ProjectPhaseResource($updated);
     }

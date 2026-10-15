@@ -22,6 +22,7 @@ class Quotation extends Model
         'description',
         'status',
         'valid_until_date',
+        'clearance_deadline',
         'subtotal_amount',
         'tax_amount',
         'discount_percentage',
@@ -100,12 +101,10 @@ class Quotation extends Model
             return;
         }
 
-        $bolNumber = $this->shipContainer
-            ? ($this->shipContainer->bl_no ?? $this->shipContainer->bol_no)
-            : null;
+        $bolNumber = $this->shipContainer?->documentNumber();
 
-        if ($bolNumber !== null && strtoupper((string) $bolNumber) !== $this->bol_number) {
-            $this->bol_number = strtoupper((string) $bolNumber);
+        if ($bolNumber !== $this->bol_number) {
+            $this->bol_number = $bolNumber;
             $this->save();
         }
     }

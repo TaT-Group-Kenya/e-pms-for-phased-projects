@@ -24,7 +24,7 @@ class ProjectResource extends BaseResource
             'status' => $this->status,
             'priority' => $this->priority,
             'progress' => $this->progress,
-            'tags' => $this->tags,
+            'container_numbers' => $this->container_numbers,
             'currency' => $this->currency,
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,

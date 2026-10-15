@@ -81,6 +81,8 @@ class OrderService
      */
     public function createFromQuotation(Quotation $quotation, array $overrides = [], ?int $userId = null): Order
     {
+        $quotation->loadMissing('shipContainer');
+        $container = $quotation->shipContainer;
         $commonService = new CommonService;
         $orderNumber = $commonService->getNextOrderNumber();
 
@@ -100,7 +102,7 @@ class OrderService
             'discount_amount' => $quotation->discount_amount,
             'total_amount' => $quotation->total_amount,
             'currency' => $quotation->currency,
-            'bol_number' => $quotation->bol_number,
+            'bol_number' => $container?->documentNumber(),
             'ship_container_id' => $quotation->ship_container_id,
             'payment_terms' => $overrides['payment_terms'] ?? $quotation->payment_terms,
             'notes_to_customer' => $overrides['notes_to_customer'] ?? $quotation->notes_to_customer,

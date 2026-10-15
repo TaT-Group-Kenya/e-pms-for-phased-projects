@@ -12,6 +12,8 @@ class ProjectPhaseResource extends BaseResource
             'project_id' => $this->project_id,
             'name' => $this->name,
             'description' => $this->description,
+            'container_numbers' => $this->container_numbers,
+            'entry_number' => $this->entry_number,
             'phase_order' => $this->phase_order,
             'status' => $this->status,
             'start_date' => $this->formatTimestamp($this->start_date),

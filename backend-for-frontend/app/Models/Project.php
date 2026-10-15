@@ -29,7 +29,7 @@ class Project extends Model
         'status',
         'priority',
         'progress',
-        'tags',
+        'container_numbers',
         'currency',
         'updated_at',
         'updated_by',
