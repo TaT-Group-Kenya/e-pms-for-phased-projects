@@ -48,7 +48,7 @@ return new class extends Migration
             $table->string('guarantee_status')->nullable();
             $table->string('empty_status')->nullable();
             $table->string('person_incharge')->nullable();
-            $table->enum('status', ['pending', 'in_progress', 'cleared', 'exited', 'on_hold'])->default('pending')->index();
+            $table->enum('status', ['BOOKED', 'EMPTY COLLECTED', 'LOADED', 'RELEASED CUSTOMS', 'RECEIVED AT KPA', 'CONFIRMED LOADING', 'SAILED'])->nullable()->index();
 
             // Transit tracking
             $table->date('last_free_day')->nullable();
@@ -63,7 +63,7 @@ return new class extends Migration
             // Exports / location columns
             $table->string('location')->nullable();
             $table->string('goods_description')->nullable(); // exports "GOODS DESCRIPTION"
-            $table->string('coe')->nullable(); // exports "COE"
+            $table->enum('coe', ['PENDING', 'GENERATED'])->nullable(); // exports "COE"
 
             // Loose unit columns
             $table->string('chassis_no')->nullable();

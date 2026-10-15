@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ProjectLocation;
 use App\Models\ShipContainer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -25,7 +26,13 @@ class ShipContainerStoreRequest extends FormRequest
             $rules = array_merge($rules, $this->typeRules($type));
         }
 
-        return array_merge($rules, $this->sharedRules(false), $this->auditRules(false));
+        $rules = array_merge($rules, $this->sharedRules(false), $this->auditRules(false));
+
+        if ($type !== ShipContainer::TYPE_CONTAINER_EXPORT) {
+            $rules['status'] = ['prohibited'];
+        }
+
+        return $rules;
     }
 
     protected function typeRules(string $type, bool $enforceRequired = true): array
@@ -88,11 +95,29 @@ class ShipContainerStoreRequest extends FormRequest
                 continue;
             }
 
-            if ($attribute === 'allocation' && ! empty($meta['entity'])) {
-                // CFS dropdown sourced from project locations
+            if (in_array($attribute, ['allocation', 'cfs'], true) && ! empty($meta['entity'])) {
+                // CFS dropdowns are sourced from project locations.
+                $locationRule = Rule::exists('project_locations', 'id')->where('is_deleted', false);
+
+                if ($attribute === 'cfs' && in_array($this->method(), ['PUT', 'PATCH'], true)) {
+                    $existingCfs = $this->routeContainer()?->cfs;
+                    if ($existingCfs !== null) {
+                        $locationIds = ProjectLocation::query()
+                            ->where('is_deleted', false)
+                            ->pluck('id')
+                            ->map(fn ($id) => (string) $id)
+                            ->all();
+
+                        if (! in_array((string) $existingCfs, $locationIds, true)) {
+                            $locationIds[] = (string) $existingCfs;
+                            $locationRule = Rule::in($locationIds);
+                        }
+                    }
+                }
+
                 $rules[$attribute] = [
                     'nullable',
-                    Rule::exists('project_locations', 'id')->where('is_deleted', false),
+                    $locationRule,
                 ];
 
                 continue;
@@ -139,7 +164,11 @@ class ShipContainerStoreRequest extends FormRequest
     {
         $param = $this->route('ship_container');
 
-        return $param instanceof ShipContainer ? $param : null;
+        if ($param instanceof ShipContainer) {
+            return $param;
+        }
+
+        return is_numeric($param) ? ShipContainer::withDeleted()->find((int) $param) : null;
     }
 
     protected function sharedRules(bool $isUpdate): array

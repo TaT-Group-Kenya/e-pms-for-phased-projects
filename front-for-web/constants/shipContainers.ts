@@ -26,27 +26,35 @@ export const SHIP_CONTAINER_TYPE_LABELS: Record<ShipContainerType, string> = {
 }
 
 export type ShipContainerStatus =
-  | 'pending'
-  | 'in_progress'
-  | 'cleared'
-  | 'exited'
-  | 'on_hold'
+  | 'BOOKED'
+  | 'EMPTY COLLECTED'
+  | 'LOADED'
+  | 'RELEASED CUSTOMS'
+  | 'RECEIVED AT KPA'
+  | 'CONFIRMED LOADING'
+  | 'SAILED'
 
 export const SHIP_CONTAINER_STATUSES: ShipContainerStatus[] = [
-  'pending',
-  'in_progress',
-  'cleared',
-  'exited',
-  'on_hold',
+  'BOOKED',
+  'EMPTY COLLECTED',
+  'LOADED',
+  'RELEASED CUSTOMS',
+  'RECEIVED AT KPA',
+  'CONFIRMED LOADING',
+  'SAILED',
 ]
 
 export const SHIP_CONTAINER_STATUS_LABELS: Record<ShipContainerStatus, string> = {
-  pending: 'Pending',
-  in_progress: 'In Progress',
-  cleared: 'Cleared',
-  exited: 'Exited',
-  on_hold: 'On Hold',
+  BOOKED: 'BOOKED',
+  'EMPTY COLLECTED': 'EMPTY COLLECTED',
+  LOADED: 'LOADED',
+  'RELEASED CUSTOMS': 'RELEASED CUSTOMS',
+  'RECEIVED AT KPA': 'RECEIVED AT KPA',
+  'CONFIRMED LOADING': 'CONFIRMED LOADING',
+  SAILED: 'SAILED',
 }
+
+export const COE_STATUS_OPTIONS = ['PENDING', 'GENERATED']
 
 // Enum option lists (kept in sync with backend validation constants)
 export const ENTRY_STATUS_OPTIONS = ['registered', 'released', 'settled']
@@ -104,7 +112,7 @@ const FIELD: Record<string, FieldConfig> = {
   guarantee_status: { attribute: 'guarantee_status', label: 'Guarantee Status', kind: 'select', options: GUARANTEE_STATUS_OPTIONS, span: 'half' },
   empty_status: { attribute: 'empty_status', label: 'Empty Status', kind: 'select', options: EMPTY_STATUS_OPTIONS, span: 'half' },
   last_free_day: { attribute: 'last_free_day', label: 'Last Free Day', kind: 'date', span: 'half' },
-  cfs: { attribute: 'cfs', label: 'CFS', span: 'half' },
+  cfs: { attribute: 'cfs', label: 'CFS', kind: 'entity-project_location', span: 'half' },
   tr10_entry_status: { attribute: 'tr10_entry_status', label: 'TR10 Entry Status', kind: 'select', options: TR10_STATUS_OPTIONS, span: 'half' },
   tr12_entry_status: { attribute: 'tr12_entry_status', label: 'TR12 Entry Status', kind: 'select', options: TR12_STATUS_OPTIONS, span: 'half' },
   shipping_agent: { attribute: 'shipping_agent', label: 'Shipping Agent', span: 'half' },
@@ -114,7 +122,7 @@ const FIELD: Record<string, FieldConfig> = {
   entry_number: { attribute: 'entry_number', label: 'Entry', span: 'half' },
   booking_no: { attribute: 'booking_no', label: 'Booking No', span: 'half' },
   location: { attribute: 'location', label: 'Location', span: 'half' },
-  coe: { attribute: 'coe', label: 'COE', span: 'half' },
+  coe: { attribute: 'coe', label: 'COE', kind: 'select', options: COE_STATUS_OPTIONS, span: 'half' },
   vessel: { attribute: 'vessel', label: 'Vessel', span: 'half' },
   chassis_no: { attribute: 'chassis_no', label: 'Chassis No', span: 'half' },
   remarks: { attribute: 'remarks', label: 'Remarks', kind: 'textarea', span: 'full' },
@@ -122,20 +130,13 @@ const FIELD: Record<string, FieldConfig> = {
   station: { attribute: 'station', label: 'Station', span: 'half' },
 }
 
-// Backend marks 'status' as a type field for some types — it is handled by the
-// shared status control; required flag resolved from backend payload when present.
-const withStatus = (fields: FieldConfig[]): FieldConfig[] => [
-  ...fields,
-  { attribute: 'status', label: 'Status', kind: 'select', options: SHIP_CONTAINER_STATUSES, span: 'half' },
-]
-
 export const SHIP_CONTAINER_TYPE_CONFIGS: Record<ShipContainerType, ShipContainerTypeConfig> = {
   container_import: {
     type: 'container_import',
     label: 'Imports Container',
     description: 'Inbound containers cleared through customs locally.',
     transit: false,
-    fields: withStatus([
+    fields: [
       FIELD.customer_id,
       FIELD.project_owner_id,
       { ...FIELD.eta, required: true },
@@ -152,7 +153,7 @@ export const SHIP_CONTAINER_TYPE_CONFIGS: Record<ShipContainerType, ShipContaine
       FIELD.allocation,
       FIELD.guarantee_status,
       FIELD.empty_status,
-    ]),
+    ],
   },
   container_export: {
     type: 'container_export',
@@ -174,6 +175,7 @@ export const SHIP_CONTAINER_TYPE_CONFIGS: Record<ShipContainerType, ShipContaine
       FIELD.get_in,
       FIELD.get_out,
       FIELD.coe,
+      { attribute: 'status', label: 'Status', kind: 'select', options: SHIP_CONTAINER_STATUSES, span: 'half' },
     ],
   },
   container_transit: {
@@ -181,7 +183,7 @@ export const SHIP_CONTAINER_TYPE_CONFIGS: Record<ShipContainerType, ShipContaine
     label: 'Transit Container',
     description: 'Cargo in transit through Kenya (bonded) — the exit clock runs from Get In.',
     transit: true,
-    fields: withStatus([
+    fields: [
       FIELD.customer_id,
       FIELD.project_owner_id,
       { ...FIELD.eta, required: true },
@@ -202,14 +204,14 @@ export const SHIP_CONTAINER_TYPE_CONFIGS: Record<ShipContainerType, ShipContaine
       { ...FIELD.destination, required: true },
       FIELD.gt_expiration_date,
       FIELD.empty_status,
-    ]),
+    ],
   },
   unit_transit: {
     type: 'unit_transit',
     label: 'Transit Unit',
     description: 'Loose units shipped without a container, in transit through Kenya.',
     transit: true,
-    fields: withStatus([
+    fields: [
       FIELD.customer_id,
       FIELD.project_owner_id,
       { ...FIELD.eta, required: true },
@@ -227,14 +229,14 @@ export const SHIP_CONTAINER_TYPE_CONFIGS: Record<ShipContainerType, ShipContaine
       { ...FIELD.bol_no, required: true },
       FIELD.shipping_line,
       FIELD.station,
-    ]),
+    ],
   },
   unit_import: {
     type: 'unit_import',
     label: 'Import Unit',
     description: 'Loose units imported without a container.',
     transit: false,
-    fields: withStatus([
+    fields: [
       FIELD.customer_id,
       FIELD.project_owner_id,
       { ...FIELD.eta, required: true },
@@ -249,16 +251,18 @@ export const SHIP_CONTAINER_TYPE_CONFIGS: Record<ShipContainerType, ShipContaine
       { ...FIELD.shipping_line, required: true },
       FIELD.allocation,
       FIELD.remarks,
-    ]),
+    ],
   },
 }
 
 export const STATUS_BADGE_STYLES: Record<string, string> = {
-  pending: 'bg-warning-50 text-warning-500',
-  in_progress: 'bg-info-50 text-info-500',
-  cleared: 'bg-success-50 text-success-500',
-  exited: 'bg-success-50 text-success-500',
-  on_hold: 'bg-danger-50 text-danger-500',
+  BOOKED: 'bg-warning-50 text-warning-500',
+  'EMPTY COLLECTED': 'bg-info-50 text-info-500',
+  LOADED: 'bg-info-50 text-info-500',
+  'RELEASED CUSTOMS': 'bg-info-50 text-info-500',
+  'RECEIVED AT KPA': 'bg-info-50 text-info-500',
+  'CONFIRMED LOADING': 'bg-success-50 text-success-500',
+  SAILED: 'bg-success-50 text-success-500',
 }
 
 export const transitLabel = (value?: string | null): string => {
@@ -325,6 +329,7 @@ export const SHIP_CONTAINER_TYPE_COLUMNS: Record<ShipContainerType, ListColumn[]
     { key: 'get_in', label: 'Get In' },
     { key: 'get_out', label: 'Get Out' },
     { key: 'coe', label: 'COE' },
+    { key: 'status', label: 'Status' },
     { key: 'created_by_user', label: 'Created By' },
     { key: 'created_at', label: 'Created At' },
     { key: 'updated_by_user', label: 'Updated By' },

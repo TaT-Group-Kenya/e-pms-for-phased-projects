@@ -234,8 +234,8 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
       )
     }
 
-    if (attribute === "allocation") {
-      // CFS (allocation) dropdown sourced from project locations
+    if (attribute === "allocation" || attribute === "cfs") {
+      // CFS dropdowns are sourced from project locations.
       return (
         <div key={attribute} className={spanClass}>
           <label className="mb-[8px] block text-[15px] font-medium text-black dark:text-white">
@@ -243,6 +243,11 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
           </label>
           <select value={value ?? ""} onChange={(e) => setField(attribute, e.target.value)} className={selectClass}>
             <option value="">— Select —</option>
+            {attribute === "cfs" &&
+              value !== "" &&
+              !locations.some((location) => String(location.id) === String(value)) && (
+                <option value={String(value)}>{String(value)} (current value)</option>
+              )}
             {locations.map((location) => (
               <option key={location.id} value={location.id}>
                 {location.name}
@@ -487,24 +492,24 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
               )}
             </div>
 
-            {/* Status control — shared across types */}
-            <div>
-              <label className="mb-[8px] block text-[15px] font-medium text-black dark:text-white">
-                Status
-              </label>
-              <select
-                value={form.status ?? "pending"}
-                onChange={(e) => setField("status", e.target.value)}
-                className={selectClass}
-              >
-                {SHIP_CONTAINER_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {SHIP_CONTAINER_STATUS_LABELS[status]}
-                  </option>
-                ))}
-              </select>
-              {fieldError("status") && <p className="mt-1 text-[13px] text-danger-500">{fieldError("status")}</p>}
-            </div>
+            {containerType === "container_export" && (
+              <div>
+                <label className="mb-[8px] block text-[15px] font-medium text-black dark:text-white">Status</label>
+                <select
+                  value={form.status ?? ""}
+                  onChange={(e) => setField("status", e.target.value)}
+                  className={selectClass}
+                >
+                  <option value="">— Select —</option>
+                  {SHIP_CONTAINER_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {SHIP_CONTAINER_STATUS_LABELS[status]}
+                    </option>
+                  ))}
+                </select>
+                {fieldError("status") && <p className="mt-1 text-[13px] text-danger-500">{fieldError("status")}</p>}
+              </div>
+            )}
 
             {config?.fields
               .filter((field) => field.attribute !== "status" && field.attribute !== "customer_id")

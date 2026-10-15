@@ -32,6 +32,7 @@ class ShipContainerResource extends BaseResource
                     'project_owner_id' => $container->projectOwner?->name ?? $container->project_owner_id,
                     'customer_id' => $container->customer?->name ?? $container->customer_id,
                     'allocation' => $container->allocationLocation?->name ?? $container->allocation,
+                    'cfs' => $container->cfsLocation?->name ?? $container->cfs,
                     default => $container->{$attribute},
                 };
 
@@ -93,10 +94,11 @@ class ShipContainerResource extends BaseResource
             'guarantee_status' => $this->guarantee_status,
             'empty_status' => $this->empty_status,
             'person_incharge' => $this->person_incharge,
-            'status' => $this->status,
+            ...($container->container_type === ShipContainer::TYPE_CONTAINER_EXPORT ? ['status' => $this->status] : []),
             // transit tracking
             'last_free_day' => $this->formatTimestamp($this->last_free_day),
             'cfs' => $this->cfs,
+            'cfs_location' => $this->whenLoaded('cfsLocation', new ProjectLocationResource($this->cfsLocation)),
             'destination' => $this->destination,
             'gt_expiration_date' => $this->formatTimestamp($this->gt_expiration_date),
             'exit_date' => $this->formatTimestamp($this->exit_date),

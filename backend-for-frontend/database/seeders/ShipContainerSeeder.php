@@ -166,8 +166,8 @@ class ShipContainerSeeder extends Seeder
             'port_out' => 'Mombasa Port',
             'get_in' => '2026-10-11 07:00:00',
             'get_out' => '2026-10-14 18:30:00',
-            'coe' => 'COE-2026-0981',
-            'status' => ShipContainer::STATUS_IN_PROGRESS,
+            'coe' => 'GENERATED',
+            'status' => ShipContainer::STATUS_LOADED,
         ]);
 
         $push([
@@ -182,8 +182,8 @@ class ShipContainerSeeder extends Seeder
             'location' => 'Mombasa Port',
             'shipping_line' => 'Evergreen',
             'port_out' => 'Lamu Port',
-            'coe' => 'COE-2026-1004',
-            'status' => ShipContainer::STATUS_PENDING,
+            'coe' => 'PENDING',
+            'status' => ShipContainer::STATUS_BOOKED,
         ]);
 
         $push([
@@ -200,8 +200,8 @@ class ShipContainerSeeder extends Seeder
             'port_out' => 'Mombasa Port',
             'get_in' => '2026-10-04 11:20:00',
             'get_out' => '2026-10-05 15:05:00',
-            'coe' => 'COE-2026-0930',
-            'status' => ShipContainer::STATUS_EXITED,
+            'coe' => 'GENERATED',
+            'status' => ShipContainer::STATUS_SAILED,
         ]);
 
         /*
@@ -218,7 +218,7 @@ class ShipContainerSeeder extends Seeder
             'port_out' => 'Malaba Border',
             'get_in' => '2026-10-02 05:40:00',
             'last_free_day' => '2026-10-12',
-            'cfs' => 'CFM CFS, Nairobi',
+            'cfs' => $locationId(),
             '_numbers' => ['TRANS7734108', 'TRANS7734109'],
             'description' => 'Bonded solar panels bound for Kampala',
             'tr10_entry_status' => 'registered',
@@ -229,7 +229,6 @@ class ShipContainerSeeder extends Seeder
             'destination' => 'Kampala, Uganda',
             'gt_expiration_date' => '2026-11-30',
             'empty_status' => 'loaded',
-            'status' => ShipContainer::STATUS_IN_PROGRESS,
         ]);
 
         $push([
@@ -242,7 +241,7 @@ class ShipContainerSeeder extends Seeder
             'port_out' => 'Namanga Border',
             'get_in' => '2026-09-17 08:05:00',
             'last_free_day' => '2026-09-27',
-            'cfs' => 'CFM CFS, Nairobi',
+            'cfs' => $locationId(),
             '_numbers' => ['TEMU4471206'],
             'description' => 'Medical supplies and tents for South Sudan',
             'tr10_entry_status' => 'released',
@@ -253,7 +252,6 @@ class ShipContainerSeeder extends Seeder
             'destination' => 'Juba, South Sudan',
             'gt_expiration_date' => '2026-11-15',
             'empty_status' => 'loaded',
-            'status' => ShipContainer::STATUS_ON_HOLD,
         ]);
 
         $push([
@@ -267,7 +265,7 @@ class ShipContainerSeeder extends Seeder
             'get_in' => '2026-09-10 10:00:00',
             'get_out' => '2026-09-24 14:30:00',
             'last_free_day' => '2026-09-20',
-            'cfs' => 'CFS Nanyuki Road',
+            'cfs' => $locationId(),
             '_numbers' => ['TGHU8867154'],
             'description' => 'Beverage concentrates for Rwanda bottling plant',
             'tr10_entry_status' => 'settled',
@@ -281,7 +279,6 @@ class ShipContainerSeeder extends Seeder
             'exit_date' => '2026-09-24 14:30:00',
             'exit_border' => 'Malaba',
             'exit_remarks' => 'Escorted convoy 14B, cleared at Malaba OSBP',
-            'status' => ShipContainer::STATUS_EXITED,
         ]);
 
         /*
@@ -303,10 +300,9 @@ class ShipContainerSeeder extends Seeder
             'chassis_no' => 'CHS-TR-889124',
             'remarks' => 'Out-of-gauge cargo; escort vehicle required',
             'registration_no' => 'UT TRACTOR 5521',
-            'cfs' => 'RORO Yard, Mombasa',
+            'cfs' => $locationId(),
             'bol_no' => 'TRBOL-2026-0468',
             'shipping_line' => 'Siginon Transits',
-            'status' => ShipContainer::STATUS_CLEARED,
             'station' => 'Mombasa RORO',
         ]);
 
@@ -324,10 +320,9 @@ class ShipContainerSeeder extends Seeder
             'chassis_no' => 'CHS-TR-903551',
             'remarks' => 'Multi-unit convoy travelling together',
             'registration_no' => 'UT TRACTOR 6574',
-            'cfs' => 'RORO Yard, Mombasa',
+            'cfs' => $locationId(),
             'bol_no' => 'TRBOL-2026-0412',
             'shipping_line' => 'Mol',
-            'status' => ShipContainer::STATUS_IN_PROGRESS,
             'station' => 'Nairobi ICD',
         ]);
 
@@ -346,13 +341,12 @@ class ShipContainerSeeder extends Seeder
             'chassis_no' => 'CHS-TR-771208',
             'remarks' => 'Self-propelling units; driven off at exit',
             'registration_no' => 'UT TRACTOR 4810',
-            'cfs' => 'RORO Yard, Mombasa',
+            'cfs' => $locationId(),
             'bol_no' => 'TRBOL-2026-0361',
             'shipping_line' => 'Siginon Transits',
             'exit_date' => '2026-09-21 09:45:00',
             'exit_border' => 'Busia',
             'exit_remarks' => 'Drove off under escort at Busia OSBP',
-            'status' => ShipContainer::STATUS_EXITED,
             'station' => 'Busia Border',
         ]);
 
@@ -376,7 +370,6 @@ class ShipContainerSeeder extends Seeder
             'shipping_line' => 'Grimaldi',
             'allocation' => $locationId(),
             'remarks' => 'Delivered directly from port after customs release, no storage incurred.',
-            'status' => ShipContainer::STATUS_CLEARED,
         ]);
 
         $push([
@@ -394,7 +387,6 @@ class ShipContainerSeeder extends Seeder
             'shipping_line' => 'Hoegh Autoliners',
             'allocation' => $locationId(),
             'remarks' => 'Awaiting duty assessment before release; valuation submitted.',
-            'status' => ShipContainer::STATUS_IN_PROGRESS,
         ]);
 
         $push([
@@ -412,7 +404,6 @@ class ShipContainerSeeder extends Seeder
             'shipping_line' => 'Grimaldi',
             'allocation' => $locationId(),
             'remarks' => 'Two units, arrived together on the same vessel.',
-            'status' => ShipContainer::STATUS_CLEARED,
         ]);
 
         foreach ($rows as $row) {

@@ -56,9 +56,10 @@ type ListRow = {
   guarantee_status?: string | null
   empty_status?: string | null
   person_incharge?: string | null
-  status: string
+  status?: string | null
   last_free_day?: string | null
   cfs?: string | null
+  cfs_location?: { id?: number; name?: string } | null
   destination?: string | null
   gt_expiration_date?: string | null
   exit_date?: string | null
@@ -227,7 +228,7 @@ const ShipContainerTypeTable: React.FC<ShipContainerTypeTableProps> = ({ contain
         params.append("page", String(page))
         params.append("per_page", String(perPage))
         params.append("container_type", containerType)
-        if (statusFilter !== "all") params.append("status", statusFilter)
+        if (containerType === "container_export" && statusFilter !== "all") params.append("status", statusFilter)
         if (searchTerm) params.append("search", searchTerm)
         activeSecondary.forEach(({ key, value }) => params.append(key, value))
 
@@ -319,7 +320,8 @@ const ShipContainerTypeTable: React.FC<ShipContainerTypeTableProps> = ({ contain
     setPage(1)
   }
 
-  const hasActiveFilters = statusFilter !== "all" || activeSecondary.length > 0 || searchTerm !== ""
+  const hasActiveFilters =
+    (containerType === "container_export" && statusFilter !== "all") || activeSecondary.length > 0 || searchTerm !== ""
 
   const handleDelete = async () => {
     if (!deleteTarget || !accessToken) return
@@ -405,10 +407,11 @@ const ShipContainerTypeTable: React.FC<ShipContainerTypeTableProps> = ({ contain
     }
 
     if (key === "status") {
-      const status = row.status as ShipContainerStatus
+      const status = row.status as ShipContainerStatus | undefined
+      if (!status) return <span>—</span>
       return (
-        <span className={`px-2 py-0.5 rounded-md text-xs ${statusBadge(row.status)}`}>
-          {SHIP_CONTAINER_STATUS_LABELS[status] || row.status}
+        <span className={`px-2 py-0.5 rounded-md text-xs ${statusBadge(status)}`}>
+          {SHIP_CONTAINER_STATUS_LABELS[status] || status}
         </span>
       )
     }
@@ -435,6 +438,10 @@ const ShipContainerTypeTable: React.FC<ShipContainerTypeTableProps> = ({ contain
       // Allocation stores a project-location id; render the location name
       const name = (row as unknown as { allocation_location?: { name?: string } | null })?.allocation_location?.name
       return <span>{name || "—"}</span>
+    }
+
+    if (key === "cfs") {
+      return <span>{row.cfs_location?.name || row.cfs || "—"}</span>
     }
 
     if (key === "created_by_user" || key === "updated_by_user") {
@@ -496,20 +503,22 @@ const ShipContainerTypeTable: React.FC<ShipContainerTypeTableProps> = ({ contain
         </div>
 
         <div className="flex flex-wrap items-center gap-[10px]">
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              resetToFirstPage(() => setStatusFilter(e.target.value))
-            }}
-            className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md md:w-[150px] block text-black dark:text-white px-[13px] outline-0"
-          >
-            <option value="all">All Status</option>
-            {SHIP_CONTAINER_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {SHIP_CONTAINER_STATUS_LABELS[status]}
-              </option>
-            ))}
-          </select>
+          {containerType === "container_export" && (
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                resetToFirstPage(() => setStatusFilter(e.target.value))
+              }}
+              className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md md:w-[190px] block text-black dark:text-white px-[13px] outline-0"
+            >
+              <option value="all">All Status</option>
+              {SHIP_CONTAINER_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {SHIP_CONTAINER_STATUS_LABELS[status]}
+                </option>
+              ))}
+            </select>
+          )}
 
           {secondaryFilters.map((filter) => (
             <select

@@ -49,6 +49,10 @@ class ShipContainerUpdateRequest extends ShipContainerStoreRequest
             $rules = $this->typeRules($type, false);
         }
 
+        if ($type !== ShipContainer::TYPE_CONTAINER_EXPORT) {
+            $rules['status'] = ['prohibited'];
+        }
+
         return array_merge($rules, $this->sharedRules(true));
     }
 }

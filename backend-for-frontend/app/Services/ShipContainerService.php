@@ -82,7 +82,9 @@ class ShipContainerService
         }
 
         foreach ($filters as $key => $value) {
-            if (in_array($key, self::FILTERABLE, true) && $value !== null && $value !== '') {
+            if ($key === 'status' && $value !== null && $value !== '') {
+                $query->where('container_type', ShipContainer::TYPE_CONTAINER_EXPORT)->where('status', $value);
+            } elseif (in_array($key, self::FILTERABLE, true) && $value !== null && $value !== '') {
                 $query->where($key, $value);
             } elseif ($key === 'customer_id' && (is_numeric($value) || (int) $value)) {
                 $query->where('customer_id', (int) $value);
@@ -267,10 +269,6 @@ class ShipContainerService
             $model->exit_remarks = $data['exit_remarks'] ?? null;
             $model->bond_extension_days = isset($data['bond_extension_days']) ? (int) $data['bond_extension_days'] : null;
 
-            // Cargo physically left the country; status no longer reflects an
-            // in-country clearing stage.
-            $model->status = ShipContainer::STATUS_EXITED;
-
             $model->updated_at = now();
             $model->save();
 
@@ -321,7 +319,6 @@ class ShipContainerService
                 'notify_day' => $container->transitNotifyDay(),
                 'days_remaining' => $this->daysRemaining($container),
                 'overdue' => ($container->transitDayNumber() ?? 0) >= $container->transitExitDays(),
-                'status' => $container->status,
             ])
             ->sortByDesc('day_number')
             ->values()
@@ -356,6 +353,8 @@ class ShipContainerService
             ->pluck('total', 'container_type');
 
         $byStatus = ShipContainer::query()
+            ->where('container_type', ShipContainer::TYPE_CONTAINER_EXPORT)
+            ->whereNotNull('status')
             ->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status');

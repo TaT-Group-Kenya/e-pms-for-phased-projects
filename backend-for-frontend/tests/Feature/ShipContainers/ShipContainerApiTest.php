@@ -256,7 +256,7 @@ class ShipContainerApiTest extends TestCase
         $this->assertSame(1, count($found->json('data')));
     }
 
-    public function test_index_filters_by_type_and_status(): void
+    public function test_index_filters_export_containers_by_status(): void
     {
         ShipContainer::create([
             'container_type' => 'container_import',
@@ -268,22 +268,24 @@ class ShipContainerApiTest extends TestCase
             'created_by' => $this->admin->id,
         ]);
         ShipContainer::create([
-            'container_type' => 'container_transit',
+            'container_type' => 'container_export',
             'customer_id' => $this->customer->id,
             'project_owner_id' => $this->owner->id,
-            'bol_no' => 'BOL-A',
-            'shipping_agent' => 'Agent',
-            'destination' => 'Kampala',
+            'etd' => '2026-10-12',
+            'entry_number' => 'EXP-1',
+            'booking_no' => 'BOOK-1',
+            'shipping_line' => 'MSC',
             'quantity' => 1,
-            'status' => 'cleared',
+            'status' => ShipContainer::STATUS_BOOKED,
             'created_by' => $this->admin->id,
         ]);
 
-        $response = $this->getJson('/e-pms/api/v1/ship-containers?container_type=container_transit&status=cleared', $this->authHeaders());
+        $response = $this->getJson('/e-pms/api/v1/ship-containers?container_type=container_export&status='.urlencode(ShipContainer::STATUS_BOOKED), $this->authHeaders());
         $response->assertStatus(200);
         $rows = $response->json('data');
         $this->assertSame(1, count($rows));
-        $this->assertSame('container_transit', $rows[0]['container_type']);
+        $this->assertSame('container_export', $rows[0]['container_type']);
+        $this->assertSame(ShipContainer::STATUS_BOOKED, $rows[0]['status']);
     }
 
     public function test_show_returns_computed_transit_information(): void
@@ -426,11 +428,12 @@ class ShipContainerApiTest extends TestCase
 
         $this->postJson("/e-pms/api/v1/ship-containers/{$container->id}/record-exit", ['exit_date' => '2026-10-08T09:30'], $this->authHeaders())
             ->assertStatus(200)
-            ->assertJsonPath('data.status', 'exited');
+            ->assertJsonMissingPath('data.status');
 
         $fresh = $container->fresh();
         $this->assertSame('2026-10-08 09:30', $fresh->get_out->format('Y-m-d H:i'));
         $this->assertNotNull($fresh->exit_date);
+        $this->assertNull($fresh->status);
     }
 
     public function test_record_exit_applies_only_to_transit_types(): void
@@ -591,5 +594,81 @@ class ShipContainerApiTest extends TestCase
         $this->postJson('/e-pms/api/v1/ship-containers', $bad, $this->authHeaders())
             ->assertStatus(422)
             ->assertJsonValidationErrors(['entry_status', 'do_status', 'empty_status']);
+    }
+
+    public function test_export_status_and_coe_are_limited_to_their_enum_values(): void
+    {
+        $payload = [
+            'container_type' => ShipContainer::TYPE_CONTAINER_EXPORT,
+            'customer_id' => $this->customer->id,
+            'project_owner_id' => $this->owner->id,
+            'etd' => '2026-10-02',
+            'container_numbers' => ['EXPORT-STATUS-1'],
+            'entry_number' => 'EXP-STATUS-1',
+            'booking_no' => 'BOOK-STATUS-1',
+            'shipping_line' => 'MSC',
+            'status' => ShipContainer::STATUS_RELEASED_CUSTOMS,
+            'coe' => 'GENERATED',
+        ];
+
+        $this->postJson('/e-pms/api/v1/ship-containers', $payload, $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('data.status', ShipContainer::STATUS_RELEASED_CUSTOMS)
+            ->assertJsonPath('data.coe', 'GENERATED');
+
+        $bad = $payload;
+        $bad['status'] = 'pending';
+        $bad['coe'] = 'COE-12345';
+
+        $this->postJson('/e-pms/api/v1/ship-containers', $bad, $this->authHeaders())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['status', 'coe']);
+    }
+
+    public function test_status_is_not_accepted_or_returned_for_non_export_containers(): void
+    {
+        $payload = [
+            'container_type' => ShipContainer::TYPE_UNIT_IMPORT,
+            'customer_id' => $this->customer->id,
+            'project_owner_id' => $this->owner->id,
+            'eta' => '2026-10-02',
+            'container_numbers' => ['UNIT-STATUS-1'],
+            'bl_no' => 'BL-STATUS-1',
+            'shipping_line' => 'MSC',
+            'status' => ShipContainer::STATUS_BOOKED,
+        ];
+
+        $this->postJson('/e-pms/api/v1/ship-containers', $payload, $this->authHeaders())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['status']);
+
+        unset($payload['status']);
+        $response = $this->postJson('/e-pms/api/v1/ship-containers', $payload, $this->authHeaders());
+        $response->assertCreated()->assertJsonMissingPath('data.status');
+        $this->assertArrayNotHasKey('status', collect(ShipContainer::fieldMap(ShipContainer::TYPE_UNIT_IMPORT))->all());
+    }
+
+    public function test_transit_cfs_uses_a_project_location_selection(): void
+    {
+        $payload = [
+            'container_type' => ShipContainer::TYPE_CONTAINER_TRANSIT,
+            'customer_id' => $this->customer->id,
+            'project_owner_id' => $this->owner->id,
+            'eta' => '2026-10-02',
+            'container_numbers' => ['TRANSIT-CFS-1'],
+            'bol_no' => 'BOL-CFS-1',
+            'shipping_agent' => 'Agent',
+            'destination' => 'Kampala',
+            'cfs' => $this->location->id,
+        ];
+
+        $this->postJson('/e-pms/api/v1/ship-containers', $payload, $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('data.cfs_location.name', 'CFS Mombasa Bulk');
+
+        $payload['cfs'] = 'free text';
+        $this->postJson('/e-pms/api/v1/ship-containers', $payload, $this->authHeaders())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['cfs']);
     }
 }

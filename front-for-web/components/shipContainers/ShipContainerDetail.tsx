@@ -24,9 +24,11 @@ export type ContainerDetail = {
   client_name?: string | null
   project_owner_id?: number | null
   customer_id?: number | null
+  allocation?: string | number | null
+  cfs?: string | number | null
   customer?: { name?: string } | null
   container_numbers?: string[] | null
-  status: string
+  status?: string | null
   eta?: string | null
   etd?: string | null
   port_in?: string | null
@@ -148,9 +150,11 @@ const ShipContainerDetail: React.FC<{ container: ContainerDetail }> = ({ contain
         <div className="trezo-card-title">
           <h5 className="!mb-0 flex items-center gap-2">
             {container.reference_number || `#${container.id}`}
-            <span className={`px-2 py-0.5 rounded-md text-xs ${statusBadge(container.status)}`}>
-              {SHIP_CONTAINER_STATUS_LABELS[container.status as keyof typeof SHIP_CONTAINER_STATUS_LABELS] || container.status}
-            </span>
+            {container.container_type === "container_export" && container.status && (
+              <span className={`px-2 py-0.5 rounded-md text-xs ${statusBadge(container.status)}`}>
+                {SHIP_CONTAINER_STATUS_LABELS[container.status as keyof typeof SHIP_CONTAINER_STATUS_LABELS] || container.status}
+              </span>
+            )}
           </h5>
           <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1">
             {SHIP_CONTAINER_TYPE_LABELS[container.container_type]}

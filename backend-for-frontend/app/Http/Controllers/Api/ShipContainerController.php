@@ -23,7 +23,7 @@ class ShipContainerController extends Controller
         $page = (int) $request->query('page', 1);
         $filters = $request->except(['per_page', 'page']);
 
-        $containers = $this->service->index($filters, $perPage, $page, 0, ['customer', 'projectOwner', 'allocationLocation', 'numbers', 'createdByUser', 'updatedByUser']);
+        $containers = $this->service->index($filters, $perPage, $page, 0, ['customer', 'projectOwner', 'allocationLocation', 'cfsLocation', 'numbers', 'createdByUser', 'updatedByUser']);
 
         return ShipContainerResource::collection($containers);
     }
@@ -41,7 +41,7 @@ class ShipContainerController extends Controller
 
         $container = $this->service->create($validated);
 
-        return new ShipContainerResource($container->load(['customer', 'projectOwner', 'allocationLocation', 'numbers', 'createdByUser', 'updatedByUser']));
+        return new ShipContainerResource($container->load(['customer', 'projectOwner', 'allocationLocation', 'cfsLocation', 'numbers', 'createdByUser', 'updatedByUser']));
     }
 
     public function show(Request $request, $shipContainer)
@@ -51,7 +51,7 @@ class ShipContainerController extends Controller
             return response()->json(['message' => 'Ship container id is required'], 400);
         }
 
-        $container = $this->service->find($id, ['customer', 'projectOwner', 'allocationLocation', 'numbers', 'createdByUser', 'updatedByUser']);
+        $container = $this->service->find($id, ['customer', 'projectOwner', 'allocationLocation', 'cfsLocation', 'numbers', 'createdByUser', 'updatedByUser']);
         $this->authorize('view', $container);
 
         return new ShipContainerResource($container);
@@ -73,7 +73,7 @@ class ShipContainerController extends Controller
 
         $updated = $this->service->update($id, $validated);
 
-        return new ShipContainerResource($updated->load(['customer', 'projectOwner', 'allocationLocation', 'numbers', 'createdByUser', 'updatedByUser']));
+        return new ShipContainerResource($updated->load(['customer', 'projectOwner', 'allocationLocation', 'cfsLocation', 'numbers', 'createdByUser', 'updatedByUser']));
     }
 
     public function destroy($shipContainer)
@@ -111,7 +111,7 @@ class ShipContainerController extends Controller
 
         $updated = $this->service->getIn($id, $data['get_in'] ?? null);
 
-        return new ShipContainerResource($updated->load(['customer', 'projectOwner', 'allocationLocation', 'numbers', 'createdByUser', 'updatedByUser']));
+        return new ShipContainerResource($updated->load(['customer', 'projectOwner', 'allocationLocation', 'cfsLocation', 'numbers', 'createdByUser', 'updatedByUser']));
     }
 
     /**
@@ -139,7 +139,7 @@ class ShipContainerController extends Controller
 
         $updated = $this->service->recordExit($id, $data);
 
-        return new ShipContainerResource($updated->load(['customer', 'projectOwner', 'allocationLocation', 'numbers', 'createdByUser', 'updatedByUser']));
+        return new ShipContainerResource($updated->load(['customer', 'projectOwner', 'allocationLocation', 'cfsLocation', 'numbers', 'createdByUser', 'updatedByUser']));
     }
 
     /**

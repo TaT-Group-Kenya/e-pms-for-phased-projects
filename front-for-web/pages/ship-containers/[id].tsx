@@ -82,7 +82,8 @@ const ShipContainerDetailPage: NextPage = () => {
                 (container.type_fields ?? []).map((field) => [field.attribute, field.value ?? ''])
               ),
               container_type: container.container_type,
-              status: container.status ?? 'pending',
+              allocation: container.allocation ?? '',
+              cfs: container.cfs ?? '',
               customer_id: container.customer_id ?? '',
               project_owner_id: container.project_owner_id ?? '',
               container_numbers: container.container_numbers ?? [],

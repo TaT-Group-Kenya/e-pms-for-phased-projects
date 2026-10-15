@@ -29,23 +29,31 @@ class ShipContainer extends Model
         self::TYPE_UNIT_IMPORT,
     ];
 
-    public const STATUS_PENDING = 'pending';
+    public const STATUS_BOOKED = 'BOOKED';
 
-    public const STATUS_IN_PROGRESS = 'in_progress';
+    public const STATUS_EMPTY_COLLECTED = 'EMPTY COLLECTED';
 
-    public const STATUS_CLEARED = 'cleared';
+    public const STATUS_LOADED = 'LOADED';
 
-    public const STATUS_EXITED = 'exited';
+    public const STATUS_RELEASED_CUSTOMS = 'RELEASED CUSTOMS';
 
-    public const STATUS_ON_HOLD = 'on_hold';
+    public const STATUS_RECEIVED_AT_KPA = 'RECEIVED AT KPA';
+
+    public const STATUS_CONFIRMED_LOADING = 'CONFIRMED LOADING';
+
+    public const STATUS_SAILED = 'SAILED';
 
     public const STATUSES = [
-        self::STATUS_PENDING,
-        self::STATUS_IN_PROGRESS,
-        self::STATUS_CLEARED,
-        self::STATUS_EXITED,
-        self::STATUS_ON_HOLD,
+        self::STATUS_BOOKED,
+        self::STATUS_EMPTY_COLLECTED,
+        self::STATUS_LOADED,
+        self::STATUS_RELEASED_CUSTOMS,
+        self::STATUS_RECEIVED_AT_KPA,
+        self::STATUS_CONFIRMED_LOADING,
+        self::STATUS_SAILED,
     ];
+
+    public const COE_STATUSES = ['PENDING', 'GENERATED'];
 
     public const DO_STATUS_INVOICE_GENERATED = 'invoice_generated';
 
@@ -160,7 +168,7 @@ class ShipContainer extends Model
             'port_out' => ['label' => 'Port Out (Port of Exit)', 'required' => false],
             'get_in' => ['label' => 'Get In (Arrival Date & Time)', 'required' => false, 'datetime' => true],
             'get_out' => ['label' => 'Get Out (Departure Date & Time)', 'required' => false, 'datetime' => true],
-            'coe' => ['label' => 'COE', 'required' => false],
+            'coe' => ['label' => 'COE', 'required' => false, 'select' => self::COE_STATUSES],
             'status' => ['label' => 'Status', 'required' => false, 'select' => self::STATUSES],
         ],
         self::TYPE_CONTAINER_TRANSIT => [
@@ -172,7 +180,7 @@ class ShipContainer extends Model
             'get_in' => ['label' => 'Get In (Arrival Date & Time)', 'required' => false, 'datetime' => true],
             'get_out' => ['label' => 'Get Out (Departure Date & Time)', 'required' => false, 'datetime' => true],
             'last_free_day' => ['label' => 'Last Free Day', 'required' => false, 'date' => true],
-            'cfs' => ['label' => 'CFS', 'required' => false],
+            'cfs' => ['label' => 'CFS', 'required' => false, 'entity' => 'project_location'],
             'container_numbers' => ['label' => 'Container Numbers', 'required' => true, 'numbers' => true],
             'bol_no' => ['label' => 'BOL No', 'required' => true],
             'description' => ['label' => 'Descriptions', 'required' => false],
@@ -199,10 +207,9 @@ class ShipContainer extends Model
             'chassis_no' => ['label' => 'Chassis No', 'required' => false],
             'remarks' => ['label' => 'Remarks', 'required' => false],
             'registration_no' => ['label' => 'Registration No', 'required' => false],
-            'cfs' => ['label' => 'CFS', 'required' => false],
+            'cfs' => ['label' => 'CFS', 'required' => false, 'entity' => 'project_location'],
             'bol_no' => ['label' => 'BOL No', 'required' => true],
             'shipping_line' => ['label' => 'Shipping Line', 'required' => false],
-            'status' => ['label' => 'Status', 'required' => false, 'select' => self::STATUSES],
             'station' => ['label' => 'Station', 'required' => false],
         ],
         self::TYPE_UNIT_IMPORT => [
@@ -220,7 +227,6 @@ class ShipContainer extends Model
             'shipping_line' => ['label' => 'Shipping Line', 'required' => true],
             'allocation' => ['label' => 'CFS (Allocation)', 'required' => false, 'entity' => 'project_location'],
             'remarks' => ['label' => 'Remarks', 'required' => false],
-            'status' => ['label' => 'Status', 'required' => false, 'select' => self::STATUSES],
         ],
     ];
 
@@ -364,6 +370,11 @@ class ShipContainer extends Model
         return $this->belongsTo(ProjectLocation::class, 'allocation');
     }
 
+    public function cfsLocation()
+    {
+        return $this->belongsTo(ProjectLocation::class, 'cfs');
+    }
+
     /**
      * The date the transit clock runs from (Get In = entered the country,
      * falling back to ETA), transit types only.
@@ -446,7 +457,7 @@ class ShipContainer extends Model
      */
     public function needsExitNotification(): bool
     {
-        if ($this->exit_date !== null || $this->status === self::STATUS_EXITED) {
+        if ($this->exit_date !== null) {
             return false;
         }
 
