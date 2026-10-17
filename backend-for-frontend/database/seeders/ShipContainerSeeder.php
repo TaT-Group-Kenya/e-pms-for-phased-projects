@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\DB;
 class ShipContainerSeeder extends Seeder
 {
     /**
-     * Wipe the ship_containers table and create three fully-populated demo
-     * records for every container type (15 total).
+     * Create three fully-populated demo records for every container type
+     * (15 total), only when no ship container entries already exist.
      *
      * The Client Name is the project owner belonging to the linked customer
      * (project_owner_id — required); foreign consignees have no linked
@@ -25,10 +25,11 @@ class ShipContainerSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        ShipContainer::withDeleted()->get()?->each(fn ($c) => $c->forceDelete());
-        DB::table('ship_container_numbers')->delete();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if (ShipContainer::withDeleted()->exists()) {
+            $this->command?->info('Ship containers already exist; skipping demo seeding.');
+
+            return;
+        }
 
         $admin = User::where('email', 'admin@example.com')->first()
             ?? User::first();

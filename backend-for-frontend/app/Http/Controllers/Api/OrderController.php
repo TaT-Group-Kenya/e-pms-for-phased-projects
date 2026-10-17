@@ -246,7 +246,7 @@ class OrderController extends Controller
             $code = $commonService->generateUniqueCode('PRJ-');
         } while (Project::where('code', $code)->exists());
 
-        $name = 'Project for order '.$order->order_number;
+        $name = 'Consignment for order '.$order->order_number;
 
         $projectData = [
             'code' => $code,

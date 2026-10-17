@@ -26,7 +26,6 @@ class DatabaseSeeder extends Seeder
             SysConfigSeeder::class,
             ShipContainerSupportSeeder::class,
             ShipContainerSeeder::class,
-            QuotationSeeder::class,
         ]);
     }
 }

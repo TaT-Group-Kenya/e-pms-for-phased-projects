@@ -92,6 +92,12 @@ class CustomerTransactionsLedger extends Model
                 ->first();
         }
 
+        if ($this->source_type === 'customer_debit_note') {
+            $debitNote = CustDebitNote::with('invoice.project')->find($this->source_id);
+
+            return $debitNote?->invoice;
+        }
+
         if (in_array($this->source_type, ['cust_invoice'], true)) {
             return CustInvoice::with('project')->find($this->source_id);
         }

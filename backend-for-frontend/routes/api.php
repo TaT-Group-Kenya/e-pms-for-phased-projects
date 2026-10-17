@@ -66,6 +66,13 @@ Route::prefix('/')->group(function () {
 		Route::post('cust-credit-notes/{custCreditNote}/send-email', [App\Http\Controllers\Api\CustCreditNoteController::class, 'sendEmail']);
 		Route::post('cust-credit-notes/{custCreditNote}/refund', [App\Http\Controllers\Api\CustCreditNoteController::class, 'refund']);
 		Route::apiResource('cust-credit-note-items', App\Http\Controllers\Api\CustCreditNoteItemController::class);
+		Route::apiResource('cust-debit-notes', App\Http\Controllers\Api\CustDebitNoteController::class);
+		Route::get('cust-debit-notes/{custDebitNote}/download-pdf', [App\Http\Controllers\Api\CustDebitNoteController::class, 'downloadPdf']);
+		Route::post('cust-debit-notes/{custDebitNote}/send-email', [App\Http\Controllers\Api\CustDebitNoteController::class, 'sendEmail']);
+		Route::apiResource('cust-debit-note-items', App\Http\Controllers\Api\CustDebitNoteItemController::class);
+		Route::get('cust-debit-note-documents/{custDebitNoteDocument}/download', [App\Http\Controllers\Api\CustDebitNoteDocumentController::class, 'download'])
+			->name('cust-debit-note-documents.download');
+		Route::apiResource('cust-debit-note-documents', App\Http\Controllers\Api\CustDebitNoteDocumentController::class);
 		Route::get('cust-invoices/{custInvoice}/download-pdf', [App\Http\Controllers\Api\CustInvoiceController::class, 'downloadPdf']);
 		Route::post('cust-invoices/{custInvoice}/send-email', [App\Http\Controllers\Api\CustInvoiceController::class, 'sendEmail']);
 		Route::post('cust-invoices/{custInvoice}/mark-sent', [App\Http\Controllers\Api\CustInvoiceController::class, 'markSent']);

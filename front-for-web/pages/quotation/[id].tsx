@@ -1422,7 +1422,7 @@ const QuotationDetail: React.FC = () => {
                       </div>
 
                       <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
-                        <span className="text-gray-600 dark:text-gray-400">Remaining clearance days:</span>
+                        <span className="text-gray-600 dark:text-gray-400">Remaining clearance days(No. of free days):</span>
                         <span className="text-black dark:text-white font-semibold">
                           {quotation.remaining_clearance_days ?? "N/A"}
                         </span>

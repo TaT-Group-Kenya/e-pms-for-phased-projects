@@ -21,6 +21,9 @@ use App\Policies\{
     CurrencyPolicy,
     CustCreditNotePolicy,
     CustCreditNoteItemPolicy,
+    CustDebitNotePolicy,
+    CustDebitNoteItemPolicy,
+    CustDebitNoteDocumentPolicy,
     CustInvoicePolicy,
     CustInvoiceDocumentPolicy,
     CustInvoiceItemPolicy,
@@ -87,6 +90,9 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Currency::class => CurrencyPolicy::class,
         \App\Models\CustCreditNote::class => CustCreditNotePolicy::class,
         \App\Models\CustCreditNoteItem::class => CustCreditNoteItemPolicy::class,
+        \App\Models\CustDebitNote::class => CustDebitNotePolicy::class,
+        \App\Models\CustDebitNoteItem::class => CustDebitNoteItemPolicy::class,
+        \App\Models\CustDebitNoteDocument::class => CustDebitNoteDocumentPolicy::class,
         \App\Models\CustInvoice::class => CustInvoicePolicy::class,
         \App\Models\CustInvoiceDocument::class => CustInvoiceDocumentPolicy::class,
         \App\Models\CustInvoiceItem::class => CustInvoiceItemPolicy::class,
@@ -136,4 +142,3 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
     }
 }
-

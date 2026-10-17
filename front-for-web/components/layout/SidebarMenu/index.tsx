@@ -192,6 +192,12 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_CUST_INVOICE"],
       },
       {
+        label: "Debit Notes",
+        href: "/cust-invoices/debit-notes",
+        matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_CUST_DEBIT_NOTE"],
+      },
+      {
         label: "Credit Notes",
         href: "/cust-invoices/credit-notes",
         matchStrategy: "entity",

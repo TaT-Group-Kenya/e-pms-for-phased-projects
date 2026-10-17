@@ -15,6 +15,7 @@ export default function CustomerInvoicesDoc() {
           </p>
           <ul className="list-disc pl-6 mb-3 space-y-1">
             <li>Create and send invoices to customers</li>
+            <li>Create customer debit notes for additional charges</li>
             <li>Create and manage customer credit notes</li>
             <li>Track payment status for each invoice</li>
             <li>Monitor customer receivables and aging</li>
@@ -67,6 +68,24 @@ export default function CustomerInvoicesDoc() {
         </div>
 
       
+        {/* Debit Notes Section */}
+        <div>
+          <h2 className="text-xl font-semibold mb-3">Customer Debit Notes</h2>
+          <p className="mb-3">
+            Use a debit note to record an additional amount due against a customer invoice. Debit notes inherit the invoice currency and customer, and their totals are calculated from line items and tax.
+          </p>
+          <ol className="list-decimal pl-6 mb-3 space-y-1">
+            <li>Open Debit Notes under Customer Invoices and create a note linked to an invoice</li>
+            <li>Add one or more line items with quantities and fixed or percentage taxes</li>
+            <li>Attach supporting documents while the note is still a draft</li>
+            <li>Raise the note to post the additional receivable to the customer ledger</li>
+            <li>Download the debit note PDF or email it to the customer</li>
+          </ol>
+          <p className="text-sm text-gray-600">
+            Raised debit notes are posted once and locked against further changes. Use Draft for preparation and Raised when the additional charge is ready to be recorded.
+          </p>
+        </div>
+
         {/* Credit Notes Section */}
         <div>
           <h2 className="text-xl font-semibold mb-3">Customer Credit Notes</h2>
