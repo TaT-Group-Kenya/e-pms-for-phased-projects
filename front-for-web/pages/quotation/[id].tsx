@@ -160,6 +160,14 @@ interface Quotation {
     etd?: string | null;
     bl_no?: string | null;
     container_numbers?: string[];
+    container_number_details?: Array<{
+      id?: number;
+      container_no: string;
+      size?: number | null;
+      size_unit?: string | null;
+      goods_description?: string | null;
+      entry_number?: string | null;
+    }>;
   } | null;
   ship_container_numbers?: string[] | null;
   title: string;
@@ -194,6 +202,8 @@ interface Quotation {
   created_at: string;
   updated_at: string;
 }
+
+type QuotationContainerNumber = NonNullable<NonNullable<Quotation["ship_container"]>["container_number_details"]>[number]
 
 const QuotationDetail: React.FC = () => {
   const router = useRouter();
@@ -238,6 +248,9 @@ const QuotationDetail: React.FC = () => {
     }
     return [];
   }, [quotation]);
+  const containerNumberDetails: QuotationContainerNumber[] =
+    quotation?.ship_container?.container_number_details ??
+    containerNumbers.map((container_no) => ({ container_no }));
 
   const copyContainerNumbers = async (numbers: string[]) => {
     const text = numbers.join(", ");
@@ -1817,15 +1830,29 @@ const QuotationDetail: React.FC = () => {
                           Copy all
                         </button>
                       </div>
-                      <div className="flex flex-wrap gap-[8px]">
-                        {containerNumbers.map((number) => (
-                          <span
-                            key={number}
-                            className="inline-block bg-primary-50 dark:bg-[#15203c] border border-primary-100 dark:border-[#1c2a4a] text-primary-700 dark:text-gray-200 rounded-md px-[8px] py-[3px] text-[12px] font-medium tracking-wide"
-                          >
-                            {number}
-                          </span>
-                        ))}
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[520px] text-left text-[12px]">
+                          <thead className="text-gray-500 dark:text-gray-400">
+                            <tr>
+                              <th className="py-1 pr-3 font-medium">Container No</th>
+                              <th className="py-1 pr-3 font-medium">Size</th>
+                              <th className="py-1 pr-3 font-medium">Goods Description</th>
+                              <th className="py-1 pr-3 font-medium">Entry Number</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-[#15203c]">
+                            {containerNumberDetails.map((number, index) => (
+                              <tr key={number.id ?? `${number.container_no}-${index}`} className="text-black dark:text-white">
+                                <td className="py-1 pr-3 whitespace-nowrap">{number.container_no}</td>
+                                <td className="py-1 pr-3 whitespace-nowrap">
+                                  {number.size != null ? `${number.size} ${number.size_unit || "feet"}` : "—"}
+                                </td>
+                                <td className="py-1 pr-3">{number.goods_description || "—"}</td>
+                                <td className="py-1 pr-3 whitespace-nowrap">{number.entry_number || "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   )}

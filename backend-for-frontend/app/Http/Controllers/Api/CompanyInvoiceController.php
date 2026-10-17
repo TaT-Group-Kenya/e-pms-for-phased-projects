@@ -121,13 +121,6 @@ class CompanyInvoiceController extends Controller
 
         $phase = ProjectPhase::with('project')->findOrFail($data['project_phase_id']);
 
-        if (blank($phase->entry_number)) {
-            return response()->json([
-                'message' => 'An entry number is required before billing a project phase.',
-                'errors' => ['project_phase_id' => ['The selected phase must have an entry number before it can be billed.']],
-            ], 422);
-        }
-
         // Ensure this phase is assigned to the selected company and is marked complete.
         $assignment = CompanyProject::where('company_id', $data['company_id'])
             ->where('phase_id', $phase->id)

@@ -18,8 +18,6 @@ class ProjectPhaseStoreRequest extends FormRequest
             'project_id' => ['required', 'exists:projects,id'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:255'],
-            'container_numbers' => ['nullable', 'string'],
-            'entry_number' => ['nullable', 'string', 'max:65535'],
             'phase_order' => ['required', 'string', 'max:255'],
             'status' => ['required', Rule::in(['new', 'progress', 'draft', 'complete'])],
             'start_date' => ['nullable', 'date'],

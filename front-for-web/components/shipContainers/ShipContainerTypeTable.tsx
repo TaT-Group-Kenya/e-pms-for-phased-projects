@@ -32,6 +32,14 @@ type ListRow = {
   project_owner_id?: number | null
   container_identifier?: string | null
   container_numbers?: string[] | null
+  container_number_details?: Array<{
+    id?: number
+    container_no: string
+    size?: number | null
+    size_unit?: string | null
+    goods_description?: string | null
+    entry_number?: string | null
+  }> | null
   description?: string | null
   quantity?: string | number | null
   eta?: string | null
@@ -55,6 +63,7 @@ type ListRow = {
   do_status?: string | null
   allocation?: string | number | null
   guarantee_status?: string | null
+  gt_expiry_date?: string | null
   empty_status?: string | null
   person_incharge?: string | null
   status?: string | null
@@ -96,7 +105,6 @@ type PaginationMeta = {
 
 /** Free-text search fields the backend `search` parameter covers. */
 type ActiveFilter = { key: string; value: string }
-
 const PER_PAGE_OPTIONS = [15, 50, 100, 500]
 const DEFAULT_PER_PAGE = 15
 
@@ -115,6 +123,7 @@ const DATE_FIELDS = new Set([
   "etd",
   "last_free_day",
   "gt_expiration_date",
+  "gt_expiry_date",
 ])
 
 const statusBadge = (status: string): string =>
@@ -432,13 +441,9 @@ const ShipContainerTypeTable: React.FC<ShipContainerTypeTableProps> = ({ contain
     }
 
     if (key === "container_numbers") {
-      const list = row.container_numbers ?? []
-      if (list.length === 0) return <span>—</span>
-      return (
-        <span title={list.join(", ")} className="block max-w-[340px] truncate">
-          {list.join(", ")}
-        </span>
-      )
+      const containerNumbers =
+        row.container_numbers ?? row.container_number_details?.map((number) => number.container_no) ?? []
+      return <span>{containerNumbers.length ? containerNumbers.join(", ") : "—"}</span>
     }
 
     if (key === "allocation") {

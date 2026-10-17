@@ -57,7 +57,6 @@ interface ProjectPhase {
   start_date: string;
   end_date: string;
   progress_percentage: string;
-  container_numbers?: string | null;
   updated_at: string;
   updated_by: number;
   created_at: string;
@@ -97,7 +96,6 @@ interface ProjectsTabProps {
 
 interface ProgressUpdateForm {
   percentage_complete: string;
-  entry_number: string;
   comment: string;
 }
 
@@ -134,7 +132,6 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
   const [successMessage, setSuccessMessage] = useState("");
   const [formData, setFormData] = useState<ProgressUpdateForm>({
     percentage_complete: "",
-    entry_number: "",
     comment: "",
   });
   const [showTimelineModal, setShowTimelineModal] = useState(false);
@@ -176,7 +173,7 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
 
   const handleOpenModal = (assignment: Assignment) => {
     setSelectedAssignment(assignment);
-    setFormData({ percentage_complete: "", entry_number: "", comment: "" });
+    setFormData({ percentage_complete: "", comment: "" });
     setError("");
     setSuccessMessage("");
     setShowModal(true);
@@ -185,7 +182,7 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedAssignment(null);
-    setFormData({ percentage_complete: "", entry_number: "", comment: "" });
+    setFormData({ percentage_complete: "", comment: "" });
     setError("");
     setSuccessMessage("");
   };
@@ -222,7 +219,6 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
         project_id: selectedAssignment.project_id,
         project_phase_id: selectedAssignment.phase_id,
         percentage_complete: formData.percentage_complete,
-        entry_number: formData.entry_number,
         comment: formData.comment,
       };
 
@@ -538,10 +534,6 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
                         selectedAssignment.project.bol_number ||
                         "—"}
                     </p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 break-words">
-                      <strong>Phase container numbers:</strong>{" "}
-                      {selectedAssignment.phase?.container_numbers?.trim() || "—"}
-                    </p>
                     {selectedAssignment.project.order?.ship_container?.reference_number && (
                       <p className="text-sm text-gray-700 dark:text-gray-300 break-words sm:col-span-2">
                         <strong>Ship container reference:</strong>{" "}
@@ -579,20 +571,6 @@ const ProjectsTab: React.FC<ProjectsTabProps> = ({
                     value={formData.percentage_complete}
                     onChange={handleFormChange}
                     placeholder="e.g., 75"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-[#1a2847] text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Entry Number <span className="font-normal text-gray-500 dark:text-gray-400">(optional; separate multiple entries with commas)</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="entry_number"
-                    value={formData.entry_number}
-                    onChange={handleFormChange}
-                    placeholder=""
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-[#1a2847] text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

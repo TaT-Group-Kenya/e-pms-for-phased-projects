@@ -170,7 +170,7 @@ class ShipContainerService
     /**
      * Pull the container numbers list out of the payload, if present.
      *
-     * @return list<string>|null null when the payload does not contain numbers
+     * @return list<array<string, mixed>>|null null when the payload does not contain numbers
      */
     private function extractNumbers(array &$data): ?array
     {
@@ -186,9 +186,25 @@ class ShipContainerService
         }
 
         $numbers = collect($raw)
-            ->map(fn ($n) => strtoupper(trim((string) $n)))
-            ->filter(fn ($n) => $n !== '')
-            ->unique()
+            ->map(function ($number) {
+                if (is_string($number)) {
+                    $number = ['container_no' => $number];
+                }
+
+                if (! is_array($number)) {
+                    return null;
+                }
+
+                $number['container_no'] = strtoupper(trim((string) ($number['container_no'] ?? '')));
+                $number['size'] = isset($number['size']) && $number['size'] !== '' ? (int) $number['size'] : null;
+                $number['size_unit'] = $number['size_unit'] ?? 'feet';
+                $number['goods_description'] = $number['goods_description'] ?? null;
+                $number['entry_number'] = $number['entry_number'] ?? null;
+
+                return $number;
+            })
+            ->filter(fn ($number) => $number !== null && $number['container_no'] !== '')
+            ->unique('container_no')
             ->values()
             ->all();
 
@@ -199,7 +215,7 @@ class ShipContainerService
      * Replace the entry's container numbers with the given list, recomputing
      * the quantity to the count of numbers.
      *
-     * @param  list<string>  $numbers
+     * @param  list<array<string, mixed>>  $numbers
      */
     private function syncNumbers(ShipContainer $container, array $numbers, ?int $userId = null): void
     {
@@ -207,7 +223,11 @@ class ShipContainerService
 
         foreach ($numbers as $number) {
             $container->numbers()->create([
-                'container_no' => $number,
+                'container_no' => $number['container_no'],
+                'size' => $number['size'],
+                'size_unit' => $number['size_unit'],
+                'goods_description' => $number['goods_description'],
+                'entry_number' => $number['entry_number'],
                 'created_by' => $userId,
             ]);
         }
@@ -304,6 +324,14 @@ class ShipContainerService
                 'reference_number' => $container->reference_number,
                 'container_type' => $container->container_type,
                 'container_numbers' => $container->numbers->pluck('container_no')->all(),
+                'container_number_details' => $container->numbers->map(fn ($number) => [
+                    'id' => $number->id,
+                    'container_no' => $number->container_no,
+                    'size' => $number->size,
+                    'size_unit' => $number->size_unit,
+                    'goods_description' => $number->goods_description,
+                    'entry_number' => $number->entry_number,
+                ])->all(),
                 'container_identifier' => $container->containerIdentifier(),
                 'client' => $container->projectOwner?->name,
                 'customer' => $container->customer?->name,

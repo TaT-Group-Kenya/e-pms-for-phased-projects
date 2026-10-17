@@ -27,7 +27,6 @@ const projectSchema = z.object({
   status: z.enum(["new", "progress", "draft", "complete"]).optional(),
   priority: z.string().min(1, "Priority is required"),
   progress: z.string().min(1, "Progress is required"),
-  container_numbers: z.string().optional(),
   currency: z.string().min(1, "Currency is required"),
   updated_by: z.string().optional().nullable(),
   created_by: z.string().optional().nullable(),
@@ -74,7 +73,6 @@ const CreateProjectForm: React.FC = () => {
   const [projectSources, setProjectSources] = useState<ProjectSourceOrigin[]>([]);
   const [projectLocations, setProjectLocations] = useState<ProjectLocation[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [containerNumbers, setContainerNumbers] = useState<string[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   const {
@@ -207,7 +205,6 @@ const CreateProjectForm: React.FC = () => {
         status: data.status,
         priority: data.priority,
         progress: data.progress,
-        container_numbers: containerNumbers.join(","),
         currency: data.currency,
         created_at,
       };
@@ -230,7 +227,6 @@ const CreateProjectForm: React.FC = () => {
 
       setSuccessMessage("Consignment created successfully!");
       reset();
-      setContainerNumbers([]);
 
       setTimeout(() => {
         router.push("/project/project-list");
@@ -548,47 +544,6 @@ const CreateProjectForm: React.FC = () => {
                 {renderFieldError("progress")}
               </div>
 
-              {/* Container Numbers - Optional */}
-              <div className="mb-[20px] sm:mb-0">
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Container Numbers
-                </label>
-                <div className="rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[12px] py-[8px] block w-full outline-0 transition-all focus:border-primary-500">
-                  <div className="flex flex-wrap gap-[8px] mb-[8px]">
-                    {containerNumbers.map((number, index) => (
-                      <div
-                        key={index}
-                        className="inline-flex items-center gap-[6px] px-[10px] py-[4px] bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium"
-                      >
-                        {number}
-                        <button
-                          type="button"
-                          onClick={() => setContainerNumbers(containerNumbers.filter((_, i) => i !== index))}
-                          className="hover:text-primary-900 dark:hover:text-primary-100 cursor-pointer font-bold"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <input
-                    type="text"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        const value = (e.target as HTMLInputElement).value.trim();
-                        if (value && !containerNumbers.includes(value)) {
-                          setContainerNumbers([...containerNumbers, value]);
-                          (e.target as HTMLInputElement).value = "";
-                        }
-                      }
-                    }}
-                    className="w-full outline-0 bg-transparent text-black dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
-                    placeholder={containerNumbers.length === 0 ? "Enter a container number and press Enter" : "Press Enter to add"}
-                  />
-                </div>
-                {renderFieldError("container_numbers")}
-              </div>
             </div>
 
             {/* Form Actions */}

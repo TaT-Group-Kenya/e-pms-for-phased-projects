@@ -18,7 +18,6 @@ interface Project {
   status: string;
   priority: string;
   progress: string;
-  container_numbers?: string | null;
   currency: string;
   updated_at: string;
   updated_by: number;
@@ -164,8 +163,7 @@ const ProjectSearchableReportingTable: React.FC = () => {
       (String(project.id).toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (project.container_numbers || "").toLowerCase().includes(searchTerm.toLowerCase())) &&
+        project.description.toLowerCase().includes(searchTerm.toLowerCase())) &&
       (categoryFilter === "" || project.project_category_id === parseInt(categoryFilter)) &&
       (customerFilter === "" || project.customer_id === parseInt(customerFilter)) &&
       (statusFilter === "" || project.status === statusFilter)
@@ -213,7 +211,7 @@ const ProjectSearchableReportingTable: React.FC = () => {
 
   // Export to CSV function
   const handleExportCSV = () => {
-    const headers = ['ID', 'Code', 'Consignment', 'Description', 'Customer', 'Category', 'Timeline', 'Budget', 'Status', 'Priority', 'Progress', 'Container Numbers'];
+    const headers = ['ID', 'Code', 'Consignment', 'Description', 'Customer', 'Category', 'Timeline', 'Budget', 'Status', 'Priority', 'Progress'];
     const rows = filteredProjects.map((project) => {
       const customer = customers.find((c) => c.id === project.customer_id);
       const category = projectCategories.find((cat) => cat.id === project.project_category_id);
@@ -229,7 +227,6 @@ const ProjectSearchableReportingTable: React.FC = () => {
         project.status || '',
         project.priority || '',
         project.progress || '',
-        project.container_numbers || '',
       ];
     });
 
@@ -403,9 +400,6 @@ const ProjectSearchableReportingTable: React.FC = () => {
                       Status
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap ltr:first:rounded-tl-md ltr:last:rounded-tr-md rtl:first:rounded-tr-md rtl:last:rounded-tl-md">
-                      Container Numbers
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap ltr:first:rounded-tl-md ltr:last:rounded-tr-md rtl:first:rounded-tr-md rtl:last:rounded-tl-md">
                       Action
                     </th>
                   </tr>
@@ -414,7 +408,7 @@ const ProjectSearchableReportingTable: React.FC = () => {
                 <tbody className="text-black dark:text-white">
                   {projectsToDisplay.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="text-center py-[40px] text-gray-500">
+                      <td colSpan={9} className="text-center py-[40px] text-gray-500">
                         No consignments found
                       </td>
                     </tr>
@@ -490,21 +484,6 @@ const ProjectSearchableReportingTable: React.FC = () => {
                           >
                             {project.status || 'Unknown'}
                           </span>
-                        </td>
-
-                        <td className="text-gray-500 dark:text-gray-400 ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] ltr:first:border-l ltr:last:border-r rtl:first:border-r rtl:last:border-l">
-                          <div className="flex flex-wrap gap-1">
-                            {project.container_numbers
-                              ? project.container_numbers.split(',').map((number, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="px-[6px] py-[2px] bg-gray-100 dark:bg-[#15203c] text-gray-700 dark:text-gray-300 rounded text-xs"
-                                  >
-                                    {number.trim()}
-                                  </span>
-                                ))
-                              : '-'}
-                          </div>
                         </td>
 
                         <td className="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] border-b border-gray-100 dark:border-[#172036] ltr:first:border-l ltr:last:border-r rtl:first:border-r rtl:last:border-l">

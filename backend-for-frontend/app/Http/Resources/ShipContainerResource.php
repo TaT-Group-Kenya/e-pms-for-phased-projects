@@ -20,7 +20,13 @@ class ShipContainerResource extends BaseResource
                     return [
                         'attribute' => $attribute,
                         'label' => $meta['label'],
-                        'value' => $container->numbers->pluck('container_no')->all(),
+                        'value' => $container->numbers->map(fn ($number) => [
+                            'container_no' => $number->container_no,
+                            'size' => $number->size,
+                            'size_unit' => $number->size_unit,
+                            'goods_description' => $number->goods_description,
+                            'entry_number' => $number->entry_number,
+                        ])->all(),
                         'required' => (bool) ($meta['required'] ?? false),
                         'type' => 'numbers',
                         'options' => null,
@@ -81,6 +87,14 @@ class ShipContainerResource extends BaseResource
                 ]
             ),
             'container_numbers' => $this->numbers->pluck('container_no')->all(),
+            'container_number_details' => $this->numbers->map(fn ($number) => [
+                'id' => $number->id,
+                'container_no' => $number->container_no,
+                'size' => $number->size,
+                'size_unit' => $number->size_unit,
+                'goods_description' => $number->goods_description,
+                'entry_number' => $number->entry_number,
+            ])->all(),
             'eta' => $this->formatTimestamp($this->eta),
             'etd' => $this->formatTimestamp($this->etd),
             'port_in' => $this->port_in,
@@ -105,6 +119,7 @@ class ShipContainerResource extends BaseResource
             'allocation' => $this->allocation,
             'allocation_location' => $this->whenLoaded('allocationLocation', new ProjectLocationResource($this->allocationLocation)),
             'guarantee_status' => $this->guarantee_status,
+            'gt_expiry_date' => $this->formatTimestamp($this->gt_expiry_date),
             'empty_status' => $this->empty_status,
             'person_incharge' => $this->person_incharge,
             ...($container->container_type === ShipContainer::TYPE_CONTAINER_EXPORT ? ['status' => $this->status] : []),

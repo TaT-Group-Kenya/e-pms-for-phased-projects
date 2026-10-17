@@ -17,6 +17,21 @@ import {
 } from "../../constants/shipContainers"
 
 type FormGroup = Record<string, any>
+type ContainerNumberDraft = {
+  container_no: string
+  size: string
+  size_unit: "feet" | "cm" | "m"
+  goods_description: string
+  entry_number: string
+}
+
+const normalizeContainerNumber = (number: any): ContainerNumberDraft => ({
+  container_no: String(typeof number === "string" ? number : number?.container_no ?? ""),
+  size: number?.size == null ? "" : String(number.size),
+  size_unit: number?.size_unit === "cm" || number?.size_unit === "m" ? number.size_unit : "feet",
+  goods_description: String(number?.goods_description ?? ""),
+  entry_number: String(number?.entry_number ?? ""),
+})
 
 const labelFor = (type: ShipContainerType): string => SHIP_CONTAINER_TYPE_LABELS[type]
 
@@ -50,8 +65,14 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
     isEdit && initial?.container_type ? initial.container_type : (defaultType ?? "")
   )
   const [form, setForm] = useState<FormGroup>({})
-  const [numbers, setNumbers] = useState<string[]>([])
-  const [numberInput, setNumberInput] = useState("")
+  const [numbers, setNumbers] = useState<ContainerNumberDraft[]>([])
+  const [numberDraft, setNumberDraft] = useState<ContainerNumberDraft>({
+    container_no: "",
+    size: "",
+    size_unit: "feet",
+    goods_description: "",
+    entry_number: "",
+  })
   const [errors, setErrors] = useState<Record<string, string[]>>({})
   const [saving, setSaving] = useState(false)
   const [customers, setCustomers] = useState<RefOption[]>([])
@@ -67,12 +88,16 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
   useEffect(() => {
     if (isEdit && initial) {
       setForm({ ...initial })
-      // Hydrate the numbers list from the initial payload (array of strings) or type_fields
-      const fromAttribute = Array.isArray(initial.container_numbers) ? initial.container_numbers : null
+      // Prefer structured number records, falling back to the legacy string list.
+      const fromAttribute = Array.isArray(initial.container_number_details)
+        ? initial.container_number_details
+        : Array.isArray(initial.container_numbers)
+          ? initial.container_numbers
+          : null
       const fromTypeFields = Array.isArray(initial.type_fields)
         ? (initial.type_fields.find((f: any) => f.attribute === "container_numbers")?.value ?? null)
         : null
-      setNumbers((fromAttribute ?? fromTypeFields ?? []).map((n: any) => String(n)))
+      setNumbers((fromAttribute ?? fromTypeFields ?? []).map(normalizeContainerNumber))
     } else {
       setForm({})
       setNumbers([])
@@ -176,18 +201,31 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
   }
 
   const addNumber = () => {
-    const value = numberInput.trim().toUpperCase()
+    const value = numberDraft.container_no.trim().toUpperCase()
     if (!value) return
-    if (numbers.some((n) => n.toUpperCase() === value)) {
+    if (numbers.some((n) => n.container_no.toUpperCase() === value)) {
       addToast(`Container number ${value} is already in the list.`, "error")
       return
     }
-    setNumbers((prev) => [...prev, value])
-    setNumberInput("")
+    setNumbers((prev) => [
+      ...prev,
+      { ...numberDraft, container_no: value },
+    ])
+    setNumberDraft({
+      container_no: "",
+      size: "",
+      size_unit: "feet",
+      goods_description: "",
+      entry_number: "",
+    })
   }
 
   const removeNumber = (index: number) => {
     setNumbers((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const setNumberField = (index: number, field: keyof ContainerNumberDraft, value: string) => {
+    setNumbers((prev) => prev.map((number, i) => (i === index ? { ...number, [field]: value } : number)))
   }
 
   const onNumberKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -260,57 +298,169 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
     }
 
     if (kind === "numbers") {
-      // Hidden inside the form: quantity equals the list length (shown as a hint)
       return (
-        <div key={attribute} className="sm:col-span-2">
-          <label className="mb-[8px] block text-[15px] font-medium text-black dark:text-white">
-            {label} {required && <span className="text-danger-500">*</span>}
-            <span className="ml-[8px] text-[12px] font-normal text-gray-500 dark:text-gray-400">
-              ({numbers.length} added — this sets the qty)
+        <div key={attribute} className="trezo-card bg-white dark:bg-[#0c1427] rounded-md p-[20px] md:p-[25px]">
+          <div className="flex items-start justify-between gap-4 mb-[18px]">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex items-center justify-center w-[38px] h-[38px] shrink-0 rounded-md bg-primary-50 dark:bg-primary-500/10 text-primary-500">
+                <i className="material-symbols-outlined !text-[21px]">inventory_2</i>
+              </span>
+              <div>
+                <h6 className="text-[15px] font-semibold text-black dark:text-white">
+                  {label} {required && <span className="text-danger-500">*</span>}
+                </h6>
+                <p className="mt-1 text-[12px] text-gray-500 dark:text-gray-400">
+                  Add shipment numbers and their details. Quantity is calculated from the rows below.
+                </p>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-gray-100 dark:bg-[#15203c] px-3 py-1 text-[12px] font-medium text-gray-600 dark:text-gray-300">
+              {numbers.length} {numbers.length === 1 ? "number" : "numbers"}
             </span>
-          </label>
+          </div>
 
-          <div className="flex gap-[10px]">
-            <input
-              type="text"
-              value={numberInput}
-              onChange={(e) => setNumberInput(e.target.value)}
-              onKeyDown={onNumberKeyDown}
-              placeholder="Type a container number and press Enter"
-              className={inputClass}
-            />
-            <button
-              type="button"
-              onClick={addNumber}
-              disabled={!numberInput.trim()}
-              className="shrink-0 text-[13px] text-white bg-primary-500 hover:bg-primary-600 px-[15px] rounded-md disabled:opacity-50"
-            >
-              <i className="material-symbols-outlined !text-[18px] align-middle">add</i>
-            </button>
+          <div className="rounded-md border border-gray-50 dark:border-[#172036] bg-gray-50/70 dark:bg-[#101a30] p-[15px] md:p-[18px]">
+            <h6 className="mb-[12px] text-[13px] font-medium text-gray-700 dark:text-gray-300">Add a container row</h6>
+            <div className="grid gap-[10px] sm:grid-cols-2 lg:grid-cols-6">
+              <input
+                type="text"
+                value={numberDraft.container_no}
+                onChange={(e) => setNumberDraft((prev) => ({ ...prev, container_no: e.target.value }))}
+                onKeyDown={onNumberKeyDown}
+                placeholder="Container No"
+                aria-label="Container number"
+                className={`${inputClass}`}
+              />
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={numberDraft.size}
+                onChange={(e) => setNumberDraft((prev) => ({ ...prev, size: e.target.value }))}
+                placeholder="Size"
+                aria-label="Container size"
+                className={inputClass}
+              />
+              <select
+                value={numberDraft.size_unit}
+                onChange={(e) =>
+                  setNumberDraft((prev) => ({ ...prev, size_unit: e.target.value as ContainerNumberDraft["size_unit"] }))
+                }
+                aria-label="Container size unit"
+                className={selectClass}
+              >
+                <option value="feet">Feet</option>
+                <option value="cm">cm</option>
+                <option value="m">m</option>
+              </select>
+              <input
+                type="text"
+                value={numberDraft.goods_description}
+                onChange={(e) => setNumberDraft((prev) => ({ ...prev, goods_description: e.target.value }))}
+                placeholder="Goods Description"
+                aria-label="Goods description"
+                className={`${inputClass} lg:col-span-3`}
+              />
+              <input
+                type="text"
+                value={numberDraft.entry_number}
+                onChange={(e) => setNumberDraft((prev) => ({ ...prev, entry_number: e.target.value }))}
+                placeholder="Entry Number"
+                aria-label="Entry number"
+                className={`${inputClass} lg:col-span-1`}
+              />
+              <button
+                type="button"
+                onClick={addNumber}
+                disabled={!numberDraft.container_no.trim()}
+                className="text-[13px] text-white bg-primary-500 hover:bg-primary-600 px-[15px] rounded-md disabled:opacity-50"
+              >
+                <i className="material-symbols-outlined !text-[18px] align-middle">add</i> Add Number
+              </button>
+            </div>
           </div>
 
           {numbers.length > 0 && (
-            <div className="flex flex-wrap gap-[8px] mt-[12px]">
-              {numbers.map((number, index) => (
-                <span
-                  key={`${number}-${index}`}
-                  className="inline-flex items-center gap-[6px] bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] rounded-md px-[10px] py-[6px] text-[13px] text-black dark:text-white"
-                >
-                  {number}
-                  <button
-                    type="button"
-                    onClick={() => removeNumber(index)}
-                    title={`Remove ${number}`}
-                    className="text-danger-500 hover:text-danger-600"
-                  >
-                    <i className="material-symbols-outlined !text-[15px]">cancel</i>
-                  </button>
-                </span>
-              ))}
+            <div className="overflow-x-auto mt-[12px]">
+              <table className="w-full min-w-[760px] text-[13px]">
+                <thead className="bg-gray-50 dark:bg-[#15203c] text-left text-gray-500 dark:text-gray-400">
+                  <tr>
+                    <th className="p-2 font-medium">Container No</th>
+                    <th className="p-2 font-medium">Size</th>
+                    <th className="p-2 font-medium">Unit</th>
+                    <th className="p-2 font-medium">Goods Description</th>
+                    <th className="p-2 font-medium">Entry Number</th>
+                    <th className="p-2" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-[#15203c]">
+                  {numbers.map((number, index) => (
+                    <tr key={`${number.container_no}-${index}`} className="text-black dark:text-white">
+                      <td className="p-2 whitespace-nowrap font-medium">{number.container_no}</td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={number.size}
+                          onChange={(event) => setNumberField(index, "size", event.target.value)}
+                          className={`${inputClass} min-w-[90px]`}
+                          aria-label={`Size for ${number.container_no}`}
+                        />
+                      </td>
+                      <td className="p-2">
+                        <select
+                          value={number.size_unit}
+                          onChange={(event) => setNumberField(index, "size_unit", event.target.value)}
+                          className={selectClass}
+                          aria-label={`Size unit for ${number.container_no}`}
+                        >
+                          <option value="feet">Feet</option>
+                          <option value="cm">cm</option>
+                          <option value="m">m</option>
+                        </select>
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="text"
+                          value={number.goods_description}
+                          onChange={(event) => setNumberField(index, "goods_description", event.target.value)}
+                          className={inputClass}
+                          aria-label={`Goods description for ${number.container_no}`}
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="text"
+                          value={number.entry_number}
+                          onChange={(event) => setNumberField(index, "entry_number", event.target.value)}
+                          className={inputClass}
+                          aria-label={`Entry number for ${number.container_no}`}
+                        />
+                      </td>
+                      <td className="p-2">
+                        <button
+                          type="button"
+                          onClick={() => removeNumber(index)}
+                          title={`Remove ${number.container_no}`}
+                          className="text-danger-500 hover:text-danger-600"
+                        >
+                          <i className="material-symbols-outlined !text-[18px]">delete</i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
-          {errorLine}
+          {errorLine && <div className="mt-3">{errorLine}</div>}
+          {Object.entries(errors)
+            .filter(([name]) => name.startsWith("container_numbers."))
+            .map(([name, messages]) => (
+              <p key={name} className="mt-1 text-[13px] text-danger-500">{messages[0]}</p>
+            ))}
         </div>
       )
     }
@@ -365,6 +515,7 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
   const payload = useMemo(() => {
     const data: FormGroup = { ...form }
     delete data.quantity // server derives it from container numbers
+    delete data.container_number_details
 
     if (!isEdit) data.container_type = containerType
 
@@ -374,7 +525,10 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
       else data[key] = Number(data[key])
     }
 
-    data.container_numbers = numbers
+    data.container_numbers = numbers.map((number) => ({
+      ...number,
+      size: number.size === "" ? null : Number(number.size),
+    }))
 
     return data
   }, [form, containerType, isEdit, numbers])
@@ -469,6 +623,13 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
             <p className="text-[13px] text-gray-500 dark:text-gray-400 mb-[20px] -mt-[10px]">{config.description}</p>
           )}
 
+          <div className="mb-[16px] border-b border-gray-100 pb-[12px] dark:border-[#172036]">
+            <h6 className="text-[14px] font-semibold text-black dark:text-white">Shipment details</h6>
+            <p className="mt-1 text-[12px] text-gray-500 dark:text-gray-400">
+              Enter the customer and shipment information for this registration.
+            </p>
+          </div>
+
           <div className="grid gap-[18px] sm:grid-cols-2">
             {/* Linked customer (required) — the platform customer account */}
             <div>
@@ -512,10 +673,19 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
             )}
 
             {config?.fields
-              .filter((field) => field.attribute !== "status" && field.attribute !== "customer_id")
+              .filter(
+                (field) =>
+                  field.attribute !== "status" &&
+                  field.attribute !== "customer_id" &&
+                  field.attribute !== "container_numbers"
+              )
               .map((field) => renderField(field))}
           </div>
         </div>
+
+        {config?.fields
+          .filter((field) => field.attribute === "container_numbers")
+          .map((field) => <div key={field.attribute} className="mt-[20px]">{renderField(field)}</div>)}
 
         <div className="flex items-center justify-end gap-[12px] mt-[20px]">
           <button

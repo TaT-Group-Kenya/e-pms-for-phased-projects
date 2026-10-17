@@ -154,25 +154,7 @@ class ProjectProgressUpdateController extends Controller
                 ], 422);
             }
 
-            $existingEntryNumbers = array_values(array_filter(
-                array_map('trim', explode(',', (string) $phase->entry_number)),
-                fn ($entryNumber) => $entryNumber !== ''
-            ));
-            $newEntryNumbers = array_values(array_filter(
-                array_map('trim', explode(',', (string) ($validated['entry_number'] ?? ''))),
-                fn ($entryNumber) => $entryNumber !== ''
-            ));
-            $phaseEntryNumber = implode(', ', array_merge($existingEntryNumbers, $newEntryNumbers));
-
-            if ((float) $validated['percentage_complete'] >= 100 && blank($phaseEntryNumber)) {
-                return response()->json([
-                    'message' => 'An entry number is required before completing a project phase.',
-                    'errors' => ['entry_number' => ['Enter an entry number on the phase before reporting 100% completion.']],
-                ], 422);
-            }
-
             // Create the progress update
-            unset($validated['entry_number']);
             $validated['created_by'] = Auth::id();
             $validated['created_at'] = now();
             $validated['updated_at'] = now();
@@ -200,9 +182,6 @@ class ProjectProgressUpdateController extends Controller
                     'updated_by' => Auth::id(),
                     'updated_at' => now(),
                 ];
-                if ($newEntryNumbers !== []) {
-                    $phaseUpdate['entry_number'] = $phaseEntryNumber;
-                }
                 ProjectPhase::where('id', $model->project_phase_id)->update($phaseUpdate);
 
                 // If phase is now complete, mark associated CompanyProject records as complete
@@ -289,13 +268,6 @@ class ProjectProgressUpdateController extends Controller
                 return response()->json([
                     'message' => 'Cannot update progress on completed phases.',
                     'error_code' => 'PHASE_COMPLETE',
-                ], 422);
-            }
-
-            if ((float) $validated['percentage_complete'] >= 100 && blank($phase->entry_number)) {
-                return response()->json([
-                    'message' => 'An entry number is required before completing a project phase.',
-                    'errors' => ['entry_number' => ['Enter an entry number on the phase before reporting 100% completion.']],
                 ], 422);
             }
 

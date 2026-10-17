@@ -24,7 +24,6 @@ class ProjectResource extends BaseResource
             'status' => $this->status,
             'priority' => $this->priority,
             'progress' => $this->progress,
-            'container_numbers' => $this->container_numbers,
             'currency' => $this->currency,
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
@@ -40,6 +39,10 @@ class ProjectResource extends BaseResource
             'location' => new ProjectLocationResource($this->whenLoaded('location')),
 
             'phases' => ProjectPhaseResource::collection($this->whenLoaded('phases')),
+            'ship_containers' => $this->when(
+                $this->relationLoaded('linkedShipContainers'),
+                fn () => ShipContainerResource::collection($this->linkedShipContainers)
+            ),
 
             'order' => new OrderResource($this->whenLoaded('order')),
 

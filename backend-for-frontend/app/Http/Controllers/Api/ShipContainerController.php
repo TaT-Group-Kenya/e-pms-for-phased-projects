@@ -7,6 +7,7 @@ use App\Http\Requests\ShipContainerStoreRequest;
 use App\Http\Requests\ShipContainerUpdateRequest;
 use App\Http\Resources\ShipContainerResource;
 use App\Models\ShipContainer;
+use App\Models\ShipContainerNumber;
 use App\Services\ShipContainerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -74,6 +75,25 @@ class ShipContainerController extends Controller
         $updated = $this->service->update($id, $validated);
 
         return new ShipContainerResource($updated->load(['customer', 'projectOwner', 'allocationLocation', 'cfsLocation', 'numbers', 'createdByUser', 'updatedByUser']));
+    }
+
+    public function updateNumberEntry(Request $request, ShipContainerNumber $shipContainerNumber)
+    {
+        $this->authorize('update', $shipContainerNumber->shipContainer);
+
+        $data = $request->validate([
+            'entry_number' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $shipContainerNumber->entry_number = $data['entry_number'] ?? null;
+        $shipContainerNumber->save();
+
+        return response()->json([
+            'data' => [
+                'id' => $shipContainerNumber->id,
+                'entry_number' => $shipContainerNumber->entry_number,
+            ],
+        ]);
     }
 
     public function destroy($shipContainer)

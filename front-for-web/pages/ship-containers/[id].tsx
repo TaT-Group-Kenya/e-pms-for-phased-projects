@@ -87,6 +87,7 @@ const ShipContainerDetailPage: NextPage = () => {
               customer_id: container.customer_id ?? '',
               project_owner_id: container.project_owner_id ?? '',
               container_numbers: container.container_numbers ?? [],
+              container_number_details: container.container_number_details ?? [],
             }}
           />
         ) : (

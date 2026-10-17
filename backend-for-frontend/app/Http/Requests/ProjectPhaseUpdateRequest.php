@@ -21,8 +21,6 @@ class ProjectPhaseUpdateRequest extends FormRequest
             'project_id' => ['nullable', 'exists:projects,id'],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],
-            'container_numbers' => ['sometimes', 'nullable', 'string'],
-            'entry_number' => ['sometimes', 'nullable', 'string', 'max:65535'],
             'phase_order' => ['sometimes', 'required', 'string', 'max:255'],
             'status' => ['sometimes', 'required', 'string', 'max:255'],
             'start_date' => ['sometimes', 'required', 'date'],

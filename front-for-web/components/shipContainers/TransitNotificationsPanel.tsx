@@ -14,6 +14,14 @@ export type TransitNotificationRow = {
   container_type: ShipContainerType
   container_identifier?: string | null
   container_numbers?: string[] | null
+  container_number_details?: Array<{
+    id?: number
+    container_no: string
+    size?: number | null
+    size_unit?: string | null
+    goods_description?: string | null
+    entry_number?: string | null
+  }> | null
   client?: string | null
   customer?: string | null
   bol_no?: string | null
@@ -28,6 +36,12 @@ export type TransitNotificationRow = {
   days_remaining?: number | null
   overdue?: boolean
 }
+
+type TransitContainerNumber = NonNullable<TransitNotificationRow["container_number_details"]>[number]
+
+const containerNumberDetails = (row: TransitNotificationRow): TransitContainerNumber[] =>
+  row.container_number_details ??
+  (row.container_numbers ?? []).map((container_no) => ({ container_no }))
 
 const TransitNotificationsPanel: React.FC = () => {
   const accessToken = useSelector(selectAccessToken)
@@ -115,11 +129,12 @@ const TransitNotificationsPanel: React.FC = () => {
                     <td className="py-[8px] pr-[12px] whitespace-nowrap">{SHIP_CONTAINER_TYPE_LABELS[row.container_type]}</td>
                     <td className="py-[8px] pr-[12px] whitespace-nowrap">{row.client || "—"}</td>
                     <td className="py-[8px] pr-[12px] whitespace-nowrap">{row.bol_no || "—"}</td>
-                    <td
-                      className="py-[8px] pr-[12px] whitespace-nowrap max-w-[260px] truncate"
-                      title={(row.container_numbers ?? []).join(", ")}
-                    >
-                      {row.container_numbers?.length ? row.container_numbers.join(", ") : "—"}
+                    <td className="py-[8px] pr-[12px]">
+                      {containerNumberDetails(row).length ? (
+                        <span>
+                          {containerNumberDetails(row).map((cn) => cn.container_no).join(", ")}
+                        </span>
+                      ) : "—"}
                     </td>
                     <td className="py-[8px] pr-[12px] whitespace-nowrap">{row.port_in || "—"}</td>
                     <td className="py-[8px] pr-[12px] whitespace-nowrap">{row.get_in ?? row.eta ?? "—"}</td>

@@ -6,12 +6,22 @@ use Illuminate\Database\Eloquent\Model;
 
 class ShipContainerNumber extends Model
 {
+    public const SIZE_UNITS = ['feet', 'cm', 'm'];
+
     protected $table = 'ship_container_numbers';
 
     protected $fillable = [
         'ship_container_id',
         'container_no',
+        'size',
+        'size_unit',
+        'goods_description',
+        'entry_number',
         'created_by',
+    ];
+
+    protected $casts = [
+        'size' => 'integer',
     ];
 
     /**

@@ -55,6 +55,8 @@ class ShipContainer extends Model
 
     public const COE_STATUSES = ['PENDING', 'GENERATED'];
 
+    public const GUARANTEE_STATUSES = ['Pending', 'Received', 'Waiting interchange'];
+
     public const DO_STATUS_INVOICE_GENERATED = 'invoice_generated';
 
     public const DO_STATUS_PENDING_PAYMENT = 'pending_payment';
@@ -151,7 +153,8 @@ class ShipContainer extends Model
             'shipping_line' => ['label' => 'Shipping Line', 'required' => true],
             'do_status' => ['label' => 'DO Status', 'required' => false, 'select' => self::DO_STATUSES],
             'allocation' => ['label' => 'CFS (Allocation)', 'required' => false, 'entity' => 'project_location'],
-            'guarantee_status' => ['label' => 'Guarantee Status', 'required' => false, 'select' => ['not_applicable', 'pending', 'active', 'expired', 'released']],
+            'guarantee_status' => ['label' => 'Guarantee Status', 'required' => false, 'select' => self::GUARANTEE_STATUSES],
+            'gt_expiry_date' => ['label' => 'GT Expiry Date', 'required' => false, 'date' => true],
             'empty_status' => ['label' => 'Empty Status', 'required' => false, 'select' => self::EMPTY_STATUSES],
         ],
         self::TYPE_CONTAINER_EXPORT => [
@@ -262,6 +265,7 @@ class ShipContainer extends Model
         'do_status',
         'allocation',
         'guarantee_status',
+        'gt_expiry_date',
         'empty_status',
         'person_incharge',
         'status',
@@ -300,6 +304,7 @@ class ShipContainer extends Model
         'get_out' => 'datetime',
         'last_free_day' => 'date:Y-m-d',
         'gt_expiration_date' => 'date:Y-m-d',
+        'gt_expiry_date' => 'date:Y-m-d',
         'exit_date' => 'datetime',
         'is_deleted' => 'boolean',
         'quantity' => 'decimal:4',

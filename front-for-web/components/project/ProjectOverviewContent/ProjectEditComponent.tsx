@@ -22,12 +22,18 @@ interface ProjectDetailsData {
   status: string;
   priority: string;
   progress?: number;
-  container_numbers?: string | null;
   currency?: string;
   customer?: { id: number; name: string };
   category?: { id: number; name: string };
   source_origin?: { id: number; name: string };
   location?: { id: number; name: string };
+  ship_containers?: Array<{
+    container_type: string;
+    cfs?: number | string | null;
+    allocation?: number | string | null;
+    cfs_location?: { id: number; name: string } | null;
+    allocation_location?: { id: number; name: string } | null;
+  }>;
   phases?: any[];
   order?: any;
   quotation?: any;
@@ -46,6 +52,27 @@ interface ProjectEditComponentProps {
   projectId?: string;
   onProjectDeleted?: () => void;
   onProjectUpdated?: () => void;
+}
+
+function linkedContainerLocation(project: Pick<ProjectDetailsData, "ship_containers">) {
+  for (const container of project.ship_containers ?? []) {
+    const isTransit = container.container_type === "container_transit" || container.container_type === "unit_transit";
+    const candidates = isTransit
+      ? [container.cfs_location, container.allocation_location]
+      : [container.allocation_location, container.cfs_location];
+    const location = candidates.find((candidate) => candidate?.id);
+    if (location) return location;
+
+    const rawLocationId = isTransit
+      ? container.cfs ?? container.allocation
+      : container.allocation ?? container.cfs;
+    if (rawLocationId != null && String(rawLocationId).trim() !== "") {
+      const id = Number(rawLocationId);
+      if (Number.isInteger(id) && id > 0) return { id, name: "" };
+    }
+  }
+
+  return null;
 }
 
 const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
@@ -67,7 +94,6 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
   const [projectSources, setProjectSources] = useState<Array<{ id: number; name: string }>>([]);
   const [projectLocations, setProjectLocations] = useState<Array<{ id: number; name: string }>>([]);
   const [currencies, setCurrencies] = useState<Array<{ id: number; code: string; symbol: string; name: string }>>([]);
-  const [containerNumbers, setContainerNumbers] = useState<string[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   // Auto-dismiss update message after 5 seconds
@@ -166,19 +192,29 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
   // Initialize form data when project changes
   useEffect(() => {
     if (project) {
-      setEditFormData(project);
+      const linkedLocation = linkedContainerLocation(project);
+      setEditFormData({
+        ...project,
+        project_location_id: linkedLocation?.id ?? project.project_location_id ?? undefined,
+      });
     }
   }, [project]);
 
   const handleEdit = () => {
     setIsEditMode(true);
-    setContainerNumbers(project?.container_numbers ? project.container_numbers.split(',').map(number => number.trim()) : []);
   };
 
   const handleCancel = () => {
     setIsEditMode(false);
-    setEditFormData(project);
-    setContainerNumbers([]);
+    if (project) {
+      const linkedLocation = linkedContainerLocation(project);
+      setEditFormData({
+        ...project,
+        project_location_id: linkedLocation?.id ?? project.project_location_id ?? undefined,
+      });
+    } else {
+      setEditFormData(null);
+    }
   };
 
   const handleUpdateProject = async () => {
@@ -210,10 +246,6 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
       missingFields.push("Currency");
     }
 
-    if (!containerNumbers || containerNumbers.length === 0) {
-      missingFields.push("Container Numbers");
-    }
-
     if (missingFields.length > 0) {
       setUpdateMessage({
         type: 'error',
@@ -240,7 +272,6 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
         body: JSON.stringify({
           ...editFormData,
           created_at: createdAtToSend,
-          container_numbers: containerNumbers.join(","),
         }),
       });
 
@@ -471,20 +502,23 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               {/* Project Location */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  CFS
+                  CFS <span className="text-gray-500 dark:text-gray-400">(optional)</span>
                 </label>
                 <select
                   value={editFormData.project_location_id || ""}
-                  onChange={(e) =>
-                    handleFormChange(
-                      "project_location_id",
-                      e.target.value ? parseInt(e.target.value) : null
-                    )
-                  }
-                  disabled={loadingData}
-                  className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
+                  disabled
+                  aria-readonly="true"
+                  className="h-[55px] rounded-md text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-[#172036] bg-gray-100 dark:bg-[#111827] px-[17px] block w-full outline-0 cursor-not-allowed"
                 >
-                  <option value="">Select a CFS (optional)</option>
+                  <option value="">
+                    {loadingData ? "Loading CFS..." : "No linked CFS"}
+                  </option>
+                  {editFormData.project_location_id &&
+                    !projectLocations.some((location) => location.id === editFormData.project_location_id) && (
+                      <option value={editFormData.project_location_id}>
+                        {linkedContainerLocation(project ?? {})?.name || project?.location?.name || "Linked CFS"}
+                      </option>
+                    )}
                   {projectLocations.map((location) => (
                     <option key={location.id} value={location.id.toString()}>
                       {location.name}
@@ -631,48 +665,6 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                 className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
                 placeholder="Enter Consignment description"
               />
-            </div>
-
-            {/* Container Numbers */}
-            <div>
-              <label className="mb-[10px] text-black dark:text-white font-medium block">
-                Container Numbers <span className="text-danger-500">*</span>
-              </label>
-              <div className="rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[12px] py-[8px] block w-full outline-0 transition-all focus:border-primary-500">
-                <div className="flex flex-wrap gap-[8px] mb-[8px]">
-                  {containerNumbers.map((number, index) => (
-                    <div
-                      key={index}
-                      className="inline-flex items-center gap-[6px] px-[10px] py-[4px] bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium"
-                    >
-                      {number}
-                      <button
-                        type="button"
-                        onClick={() => setContainerNumbers(containerNumbers.filter((_, i) => i !== index))}
-                        className="hover:text-primary-900 dark:hover:text-primary-100 cursor-pointer font-bold"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const value = (e.target as HTMLInputElement).value.trim();
-                      if (value && !containerNumbers.includes(value)) {
-                        setContainerNumbers([...containerNumbers, value]);
-                        (e.target as HTMLInputElement).value = "";
-                      }
-                    }
-                  }}
-                  required
-                  className="w-full outline-0 bg-transparent text-black dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
-                  placeholder={containerNumbers.length === 0 ? "Enter a container number and press Enter" : "Press Enter to add"}
-                />
-              </div>
             </div>
 
             {/* Action Buttons */}

@@ -67,7 +67,7 @@ export const TR10_STATUS_OPTIONS = ['registered', 'released', 'settled', 'coe_ge
 
 export const TR12_STATUS_OPTIONS = ['registered', 'released', 'settled', 't1']
 
-export const GUARANTEE_STATUS_OPTIONS = ['not_applicable', 'pending', 'active', 'expired', 'released']
+export const GUARANTEE_STATUS_OPTIONS = ['Pending', 'Received', 'Waiting interchange']
 
 export type FieldKind = 'text' | 'date' | 'date-time' | 'numeric' | 'select' | 'textarea' | 'entity-project_owner' | 'entity-project_location' | 'numbers'
 
@@ -110,6 +110,7 @@ const FIELD: Record<string, FieldConfig> = {
   do_status: { attribute: 'do_status', label: 'DO Status', kind: 'select', options: DO_STATUS_OPTIONS, span: 'half' },
   allocation: { attribute: 'allocation', label: 'CFS (Allocation)', kind: 'entity-project_location', span: 'half' },
   guarantee_status: { attribute: 'guarantee_status', label: 'Guarantee Status', kind: 'select', options: GUARANTEE_STATUS_OPTIONS, span: 'half' },
+  gt_expiry_date: { attribute: 'gt_expiry_date', label: 'GT Expiry Date', kind: 'date', span: 'half' },
   empty_status: { attribute: 'empty_status', label: 'Empty Status', kind: 'select', options: EMPTY_STATUS_OPTIONS, span: 'half' },
   last_free_day: { attribute: 'last_free_day', label: 'Last Free Day', kind: 'date', span: 'half' },
   cfs: { attribute: 'cfs', label: 'CFS', kind: 'entity-project_location', span: 'half' },
@@ -152,6 +153,7 @@ export const SHIP_CONTAINER_TYPE_CONFIGS: Record<ShipContainerType, ShipContaine
       FIELD.do_status,
       FIELD.allocation,
       FIELD.guarantee_status,
+      FIELD.gt_expiry_date,
       FIELD.empty_status,
     ],
   },
@@ -284,7 +286,7 @@ export type ListColumn = {
 
 /*
  * Per-type listing columns: exactly the fields captured for that type plus
- * shared audit/id columns. `container_numbers` renders comma-joined.
+ * shared audit/id columns. `container_numbers` renders as a compact details table.
  */
 export const SHIP_CONTAINER_TYPE_COLUMNS: Record<ShipContainerType, ListColumn[]> = {
   container_import: [
@@ -306,6 +308,7 @@ export const SHIP_CONTAINER_TYPE_COLUMNS: Record<ShipContainerType, ListColumn[]
     { key: 'do_status', label: 'DO Status' },
     { key: 'allocation', label: 'CFS (Allocation)' },
     { key: 'guarantee_status', label: 'Guarantee' },
+    { key: 'gt_expiry_date', label: 'GT Expiry Date' },
     { key: 'empty_status', label: 'Empty Status' },
     { key: 'created_by_user', label: 'Created By' },
     { key: 'created_at', label: 'Created At' },

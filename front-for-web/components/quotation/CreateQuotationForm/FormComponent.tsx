@@ -63,7 +63,19 @@ const CreateQuotationForm: React.FC = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
   const [selectedConsignee, setSelectedConsignee] = useState<string>("");
-  const [containers, setContainers] = useState<Array<{ id: number; reference_number: string; container_numbers: string[]; container_type: string }>>([]);
+  const [containers, setContainers] = useState<Array<{
+    id: number;
+    reference_number: string;
+    container_numbers: string[];
+    container_number_details: Array<{
+      container_no: string;
+      size?: number | null;
+      size_unit?: string | null;
+      goods_description?: string | null;
+      entry_number?: string | null;
+    }>;
+    container_type: string;
+  }>>([]);
   const [containersLoading, setContainersLoading] = useState(false);
 
   const {
@@ -72,6 +84,7 @@ const CreateQuotationForm: React.FC = () => {
     formState: { errors },
     reset,
     setValue,
+    watch,
   } = useForm<QuotationFormData>({
     resolver: zodResolver(quotationSchema),
     mode: "onBlur",
@@ -110,6 +123,7 @@ const CreateQuotationForm: React.FC = () => {
             id: c.id,
             reference_number: c.reference_number ?? `#${c.id}`,
             container_numbers: Array.isArray(c.container_numbers) ? c.container_numbers : [],
+            container_number_details: Array.isArray(c.container_number_details) ? c.container_number_details : [],
             container_type: c.container_type ?? "",
           }))
         );
@@ -117,6 +131,9 @@ const CreateQuotationForm: React.FC = () => {
       .catch(() => setContainers([]))
       .finally(() => setContainersLoading(false));
   };
+
+  const selectedContainerId = watch("ship_container_id");
+  const selectedContainer = containers.find((container) => String(container.id) === String(selectedContainerId ?? ""));
 
   // Fetch project owners when customer is selected
   useEffect(() => {
@@ -410,11 +427,37 @@ const CreateQuotationForm: React.FC = () => {
                     </option>
                     {containers.map((container) => (
                       <option key={container.id} value={container.id}>
-                        {container.reference_number} — {container.container_numbers.join(", ")}
+                        {container.reference_number}
                       </option>
                     ))}
                   </select>
                   {renderFieldError("ship_container_id")}
+                  {selectedContainer && selectedContainer.container_number_details.length > 0 && (
+                    <div className="overflow-x-auto mt-3">
+                      <table className="w-full min-w-[460px] text-left text-[12px]">
+                        <thead className="text-gray-500 dark:text-gray-400">
+                          <tr>
+                            <th className="py-1 pr-3 font-medium">Container No</th>
+                            <th className="py-1 pr-3 font-medium">Size</th>
+                            <th className="py-1 pr-3 font-medium">Goods Description</th>
+                            <th className="py-1 pr-3 font-medium">Entry Number</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-[#15203c]">
+                          {selectedContainer.container_number_details.map((number, index) => (
+                            <tr key={`${number.container_no}-${index}`} className="text-black dark:text-white">
+                              <td className="py-1 pr-3 whitespace-nowrap">{number.container_no}</td>
+                              <td className="py-1 pr-3 whitespace-nowrap">
+                                {number.size != null ? `${number.size} ${number.size_unit || "feet"}` : "—"}
+                              </td>
+                              <td className="py-1 pr-3">{number.goods_description || "—"}</td>
+                              <td className="py-1 pr-3 whitespace-nowrap">{number.entry_number || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
 
                 {/* Creation Date - Required */}

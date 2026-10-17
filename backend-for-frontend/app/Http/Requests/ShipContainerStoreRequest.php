@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\ProjectLocation;
 use App\Models\ShipContainer;
+use App\Models\ShipContainerNumber;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,6 +13,19 @@ class ShipContainerStoreRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    public function validationData(): array
+    {
+        $data = parent::validationData();
+        if (isset($data['container_numbers']) && is_array($data['container_numbers'])) {
+            $data['container_numbers'] = array_map(
+                fn ($number) => is_string($number) ? ['container_no' => $number] : $number,
+                $data['container_numbers']
+            );
+        }
+
+        return $data;
     }
 
     public function rules(): array
@@ -82,7 +96,12 @@ class ShipContainerStoreRequest extends FormRequest
                     'min:1',
                     'max:500',
                 ];
-                $rules[$attribute.'.*'] = ['required', 'string', 'max:64', 'distinct:ignore-case'];
+                $rules[$attribute.'.*'] = ['required', 'array'];
+                $rules[$attribute.'.*.container_no'] = ['required', 'string', 'max:64', 'distinct:ignore-case'];
+                $rules[$attribute.'.*.size'] = ['nullable', 'integer', 'min:1'];
+                $rules[$attribute.'.*.size_unit'] = ['nullable', Rule::in(ShipContainerNumber::SIZE_UNITS)];
+                $rules[$attribute.'.*.goods_description'] = ['nullable', 'string', 'max:2000'];
+                $rules[$attribute.'.*.entry_number'] = ['nullable', 'string', 'max:255'];
                 $rules['quantity'] = ['prohibited'];
 
                 continue;

@@ -4,6 +4,7 @@ namespace Tests\Feature\ShipContainers;
 
 use App\Models\Customer;
 use App\Models\GroupRole;
+use App\Models\Project;
 use App\Models\ProjectLocation;
 use App\Models\ProjectOwner;
 use App\Models\ShipContainer;
@@ -114,7 +115,10 @@ class ShipContainerApiTest extends TestCase
             'port_in' => 'Mombasa Port',
             'get_in' => '2026-10-03T09:30',
             'bl_no' => 'BL-1001',
-            'container_numbers' => ['MSCU1234567', 'mscu7654321'],
+            'container_numbers' => [
+                ['container_no' => 'MSCU1234567', 'size' => 40, 'size_unit' => 'feet', 'goods_description' => 'Coffee', 'entry_number' => 'ENT-1'],
+                ['container_no' => 'mscu7654321', 'size' => 12, 'size_unit' => 'm', 'goods_description' => 'Tea'],
+            ],
             'entry_status' => 'registered',
             'shipping_line' => 'MSC',
             'do_status' => 'under_process',
@@ -138,6 +142,12 @@ class ShipContainerApiTest extends TestCase
         $this->assertSame('registered', $container->entry_status);
         $this->assertSame('under_process', $container->do_status);
         $this->assertSame('loaded', $container->empty_status);
+        $this->assertSame(40, $container->numbers[0]->size);
+        $this->assertSame('feet', $container->numbers[0]->size_unit);
+        $this->assertSame('Coffee', $container->numbers[0]->goods_description);
+        $this->assertSame('ENT-1', $container->numbers[0]->entry_number);
+        $response->assertJsonPath('data.container_number_details.0.container_no', 'MSCU1234567')
+            ->assertJsonPath('data.container_number_details.0.size', 40);
     }
 
     public function test_store_validates_required_fields_per_type(): void
@@ -246,7 +256,7 @@ class ShipContainerApiTest extends TestCase
             'shipping_line' => 'MSC',
         ], $this->authHeaders());
 
-        $response->assertStatus(422)->assertJsonValidationErrors(['container_numbers.1']);
+        $response->assertStatus(422)->assertJsonValidationErrors(['container_numbers.1.container_no']);
 
         // Secondary number is searchable
         $container = ShipContainer::first();
@@ -670,5 +680,113 @@ class ShipContainerApiTest extends TestCase
         $this->postJson('/e-pms/api/v1/ship-containers', $payload, $this->authHeaders())
             ->assertStatus(422)
             ->assertJsonValidationErrors(['cfs']);
+    }
+
+    public function test_guarantee_status_and_expiry_date_are_validated_for_import_containers(): void
+    {
+        $payload = [
+            'container_type' => ShipContainer::TYPE_CONTAINER_IMPORT,
+            'customer_id' => $this->customer->id,
+            'project_owner_id' => $this->owner->id,
+            'eta' => '2026-10-02',
+            'container_numbers' => ['GUARANTEE-1'],
+            'bl_no' => 'BL-GUARANTEE',
+            'shipping_line' => 'MSC',
+            'guarantee_status' => 'Waiting interchange',
+            'gt_expiry_date' => '2026-12-31',
+        ];
+
+        $this->postJson('/e-pms/api/v1/ship-containers', $payload, $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('data.guarantee_status', 'Waiting interchange')
+            ->assertJsonPath('data.gt_expiry_date', '2026-12-31T00:00:00+00:00');
+
+        $payload['guarantee_status'] = 'active';
+        $this->postJson('/e-pms/api/v1/ship-containers', $payload, $this->authHeaders())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['guarantee_status']);
+    }
+
+    public function test_container_number_details_are_validated_and_updated(): void
+    {
+        $payload = [
+            'container_type' => ShipContainer::TYPE_CONTAINER_IMPORT,
+            'customer_id' => $this->customer->id,
+            'project_owner_id' => $this->owner->id,
+            'eta' => '2026-10-02',
+            'container_numbers' => [
+                ['container_no' => 'DETAIL-1', 'size' => 20, 'size_unit' => 'cm', 'goods_description' => 'Equipment', 'entry_number' => 'ENTRY-44'],
+            ],
+            'bl_no' => 'BL-DETAIL',
+            'shipping_line' => 'MSC',
+        ];
+
+        $created = $this->postJson('/e-pms/api/v1/ship-containers', $payload, $this->authHeaders())->assertCreated();
+        $id = $created->json('data.id');
+        $created->assertJsonPath('data.container_numbers.0', 'DETAIL-1')
+            ->assertJsonPath('data.container_number_details.0.size_unit', 'cm');
+
+        $this->putJson("/e-pms/api/v1/ship-containers/{$id}", [
+            'container_numbers' => [
+                ['container_no' => 'DETAIL-1', 'size' => 40, 'size_unit' => 'feet', 'goods_description' => 'Updated', 'entry_number' => 'ENTRY-45'],
+            ],
+        ], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('data.container_number_details.0.size', 40)
+            ->assertJsonPath('data.container_number_details.0.goods_description', 'Updated');
+
+        $bad = $payload;
+        $bad['container_numbers'][0]['size_unit'] = 'yards';
+        $this->postJson('/e-pms/api/v1/ship-containers', $bad, $this->authHeaders())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['container_numbers.0.size_unit']);
+    }
+
+    public function test_project_links_containers_by_bl_or_bol_and_can_update_number_entry(): void
+    {
+        $sharedBol = 'PROJECT-LINK-2026';
+        $import = $this->postJson('/e-pms/api/v1/ship-containers', [
+            'container_type' => ShipContainer::TYPE_CONTAINER_IMPORT,
+            'customer_id' => $this->customer->id,
+            'project_owner_id' => $this->owner->id,
+            'eta' => '2026-10-02',
+            'bl_no' => $sharedBol,
+            'container_numbers' => [
+                ['container_no' => 'PROJECT-BL-1', 'size' => 40, 'goods_description' => 'Machinery'],
+            ],
+            'shipping_line' => 'MSC',
+        ], $this->authHeaders())->assertCreated();
+
+        $transit = $this->postJson('/e-pms/api/v1/ship-containers', [
+            'container_type' => ShipContainer::TYPE_CONTAINER_TRANSIT,
+            'customer_id' => $this->customer->id,
+            'project_owner_id' => $this->owner->id,
+            'eta' => '2026-10-02',
+            'bol_no' => $sharedBol,
+            'container_numbers' => [
+                ['container_no' => 'PROJECT-BOL-1', 'size' => 20, 'goods_description' => 'Bonded cargo'],
+            ],
+            'shipping_agent' => 'Transit Agent',
+            'destination' => 'Kampala',
+        ], $this->authHeaders())->assertCreated();
+
+        $project = new Project(['bol_number' => $sharedBol]);
+        $linked = $project->linkedShipContainers();
+
+        $this->assertEqualsCanonicalizing(
+            [$import->json('data.id'), $transit->json('data.id')],
+            $linked->pluck('id')->all()
+        );
+        $this->assertSame('Machinery', $linked->firstWhere('id', $import->json('data.id'))->numbers[0]->goods_description);
+
+        $numberId = $import->json('data.container_number_details.0.id');
+        $this->patchJson("/e-pms/api/v1/ship-container-numbers/{$numberId}/entry-number", [
+            'entry_number' => 'ENTRY-PROJECT-001',
+        ], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('data.id', $numberId)
+            ->assertJsonPath('data.entry_number', 'ENTRY-PROJECT-001');
+
+        $this->assertSame('ENTRY-PROJECT-001', $linked->firstWhere('id', $import->json('data.id'))->numbers[0]->fresh()->entry_number);
     }
 }

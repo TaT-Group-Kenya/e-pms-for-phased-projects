@@ -10,7 +10,7 @@ import ProjectPhases from "./ProjectPhases";
 import ProjectEditComponent from "./ProjectEditComponent";
 import ProjectPhasesComponent from "./ProjectPhasesComponent";
 import ProjectTransactionsComponent from "./ProjectTransactionsComponent";
-import LinkedShipContainerCard from "../../shipContainers/LinkedShipContainerCard";
+import ProjectShipContainerNumbersCard from "./ProjectShipContainerNumbersCard";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
@@ -35,7 +35,20 @@ interface ProjectDetailsData {
   status: string;
   priority: string;
   progress?: number;
-  container_numbers?: string | null;
+  ship_containers?: Array<{
+    id: number;
+    reference_number?: string | null;
+    bl_no?: string | null;
+    bol_no?: string | null;
+    container_number_details?: Array<{
+      id: number;
+      container_no: string;
+      size?: number | null;
+      size_unit?: string | null;
+      goods_description?: string | null;
+      entry_number?: string | null;
+    }>;
+  }>;
   currency?: string;
   customer?: { id: number; name: string };
   category?: { id: number; name: string };
@@ -343,18 +356,6 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
                       <p className="leading-[1.7]">
                         {project?.project_owner?.name || "No Consignee available"}
                       </p>
-                      <span className="block text-black dark:text-white mb-[8px] mt-[20px] font-bold">
-                        Container Numbers
-                      </span>
-                      {project?.container_numbers && (
-                        <ul className="list-disc ltr:pl-[22px] rtl:pr-[22px] mt-[15px]">
-                          {project.container_numbers.split(',').map((number, index) => (
-                            <li key={index} className="leading-[1.7] mb-[4px] last:mb-0">
-                              {number.trim()}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
                     </div>
                   </div>
 
@@ -367,10 +368,10 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
 
                   <ProjectOverview project={project} />
 
-                  <LinkedShipContainerCard container={project?.order?.ship_container} title="Shipment at a glance" />
-
                 </div>
               </div>
+
+              <ProjectShipContainerNumbersCard containers={project?.ship_containers ?? []} />
 
               <div className="mt-[25px]">
                 <ProjectPhases 
@@ -399,7 +400,6 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
           {/* Project Phases Tab */}
           {activeTab === 2 && (
             <>
-              <LinkedShipContainerCard container={project?.order?.ship_container} />
               <ProjectPhasesComponent
                 projectId={projectId}
                 initialPhases={project?.phases}

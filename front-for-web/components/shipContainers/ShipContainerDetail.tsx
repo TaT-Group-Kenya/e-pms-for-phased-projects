@@ -17,6 +17,15 @@ import {
   type ShipContainerType,
 } from "../../constants/shipContainers"
 
+type ContainerNumberDetail = {
+  id?: number
+  container_no: string
+  size?: number | null
+  size_unit?: string | null
+  goods_description?: string | null
+  entry_number?: string | null
+}
+
 export type ContainerDetail = {
   id: number
   reference_number?: string | null
@@ -38,6 +47,7 @@ export type ContainerDetail = {
     created_at?: string | null
   } | null
   container_numbers?: string[] | null
+  container_number_details?: ContainerNumberDetail[] | null
   status?: string | null
   eta?: string | null
   etd?: string | null
@@ -101,6 +111,9 @@ const ShipContainerDetail: React.FC<{ container: ContainerDetail }> = ({ contain
 
   const config = SHIP_CONTAINER_TYPE_CONFIGS[container.container_type]
   const isTransit = !!container.transit
+  const numberDetails: ContainerNumberDetail[] =
+    container.container_number_details ??
+    (container.container_numbers ?? []).map((container_no) => ({ container_no }))
 
   const [getIn, setGetIn] = useState(container.get_in?.slice(0, 10) ?? "")
   const [exitDate, setExitDate] = useState(container.exit_date?.slice(0, 16) ?? "")
@@ -217,34 +230,22 @@ const ShipContainerDetail: React.FC<{ container: ContainerDetail }> = ({ contain
                   : "—"}
               </dd>
             </div>
-            <div className="flex flex-col items-start sm:items-end gap-[8px] sm:flex-row sm:justify-end sm:gap-3">
+            <div className="flex justify-between gap-3">
               <dt className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {container.container_numbers && container.container_numbers.length > 1 ? "Container Numbers" : "Container No"}
               </dt>
-              <dd className="flex flex-wrap justify-end gap-[6px]">
-                {container.container_numbers?.length ? (
-                  <>
-                    {container.container_numbers.map((number) => (
-                      <span
-                        key={number}
-                        className="inline-block bg-primary-50 dark:bg-[#15203c] border border-primary-100 dark:border-[#1c2a4a] text-primary-700 dark:text-gray-200 rounded-md px-[8px] py-[3px] text-[12px] font-medium tracking-wide"
-                        title={number}
-                      >
-                        {number}
-                      </span>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => copyNumbers(container.container_numbers!)}
-                      title="Copy all container numbers"
-                      className="inline-flex items-center gap-[4px] bg-gray-50 dark:bg-[#15203c] border border-gray-100 dark:border-[#15203c] text-gray-600 dark:text-gray-300 rounded-md px-[8px] py-[3px] text-[12px] hover:text-primary-500 hover:border-primary-300 transition-all"
-                    >
-                      <i className="material-symbols-outlined !text-[14px]">content_copy</i>
-                      Copy
-                    </button>
-                  </>
-                ) : (
-                  <span className="text-black dark:text-white">—</span>
+              <dd className="flex items-center gap-2 text-black dark:text-white">
+                <span>{container.container_numbers?.length ? `${container.container_numbers.length} container(s)` : "—"}</span>
+                {!!container.container_numbers?.length && (
+                  <button
+                    type="button"
+                    onClick={() => copyNumbers(container.container_numbers!)}
+                    title="Copy container numbers only"
+                    className="inline-flex items-center gap-[4px] bg-gray-50 dark:bg-[#15203c] border border-gray-100 dark:border-[#15203c] text-gray-600 dark:text-gray-300 rounded-md px-[8px] py-[3px] text-[12px] hover:text-primary-500 hover:border-primary-300 transition-all"
+                  >
+                    <i className="material-symbols-outlined !text-[14px]">content_copy</i>
+                    Copy numbers
+                  </button>
                 )}
               </dd>
             </div>
@@ -434,26 +435,29 @@ const ShipContainerDetail: React.FC<{ container: ContainerDetail }> = ({ contain
                     </td>
                     <td className="py-[10px] px-[14px] text-black dark:text-white">
                       {field.type === "numbers" && Array.isArray(field.value) ? (
-                        <div className="flex flex-wrap gap-[6px]">
-                          {field.value.map((number) => (
-                            <span
-                              key={number}
-                              className="inline-block bg-primary-50 dark:bg-[#15203c] border border-primary-100 dark:border-[#1c2a4a] text-primary-700 dark:text-gray-200 rounded-md px-[8px] py-[3px] text-[12px] font-medium tracking-wide"
-                            >
-                              {number}
-                            </span>
-                          ))}
-                          {field.value.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => copyNumbers(field.value)}
-                              title="Copy all container numbers"
-                              className="inline-flex items-center gap-[4px] bg-gray-50 dark:bg-[#15203c] border border-gray-100 dark:border-[#15203c] text-gray-600 dark:text-gray-300 rounded-md px-[8px] py-[3px] text-[12px] hover:text-primary-500 hover:border-primary-300 transition-all"
-                            >
-                              <i className="material-symbols-outlined !text-[14px]">content_copy</i>
-                              Copy
-                            </button>
-                          )}
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[560px] text-left text-[12px]">
+                            <thead className="bg-gray-50 dark:bg-[#15203c] text-gray-500 dark:text-gray-400">
+                              <tr>
+                                <th className="p-2 font-medium">Container No</th>
+                                <th className="p-2 font-medium">Size</th>
+                                <th className="p-2 font-medium">Goods Description</th>
+                                <th className="p-2 font-medium">Entry Number</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-[#15203c]">
+                              {numberDetails.map((number, index) => (
+                                <tr key={number.id ?? `${number.container_no}-${index}`}>
+                                  <td className="p-2 font-medium">{number.container_no}</td>
+                                  <td className="p-2">
+                                    {number.size != null ? `${number.size} ${number.size_unit || "feet"}` : "—"}
+                                  </td>
+                                  <td className="p-2">{number.goods_description || "—"}</td>
+                                  <td className="p-2">{number.entry_number || "—"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       ) : (
                         <span className="whitespace-nowrap">{displayValue(field.value, field.type)}</span>

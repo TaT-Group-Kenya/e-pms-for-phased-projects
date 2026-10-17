@@ -99,14 +99,37 @@ class ShipContainerSeeder extends Seeder
             'port_in' => 'Mombasa Port',
             'get_in' => '2026-09-28 06:15:00',
             'bl_no' => 'MAEU221098345',
-            '_numbers' => ['MSCU4801902', 'MSCU4801903', 'MSCU4801904'],
+            '_numbers' => [
+                [
+                    'container_no' => 'MSCU4801902',
+                    'size' => 40,
+                    'size_unit' => 'feet',
+                    'goods_description' => 'Industrial machine parts in wooden crates',
+                    'entry_number' => 'IM/2026/10421',
+                ],
+                [
+                    'container_no' => 'MSCU4801903',
+                    'size' => 40,
+                    'size_unit' => 'feet',
+                    'goods_description' => 'Industrial machine parts in wooden crates',
+                    'entry_number' => 'IM/2026/10422',
+                ],
+                [
+                    'container_no' => 'MSCU4801904',
+                    'size' => 20,
+                    'size_unit' => 'feet',
+                    'goods_description' => 'Replacement control panels',
+                    'entry_number' => 'IM/2026/10423',
+                ],
+            ],
             'description' => 'Industrial machine parts in wooden crates',
             'entry_status' => 'registered',
             'person_incharge' => 'Joseph Maina',
             'shipping_line' => 'MSC',
             'do_status' => 'pending_invoice',
             'allocation' => $locationId(),
-            'guarantee_status' => 'released',
+            'guarantee_status' => 'Received',
+            'gt_expiry_date' => '2026-12-31',
             'empty_status' => 'loaded',
         ]);
 
@@ -125,7 +148,7 @@ class ShipContainerSeeder extends Seeder
             'shipping_line' => 'Maersk',
             'do_status' => 'under_process',
             'allocation' => $locationId(),
-            'guarantee_status' => 'active',
+            'guarantee_status' => 'Received',
             'empty_status' => 'not_loaded_out',
         ]);
 
@@ -143,7 +166,7 @@ class ShipContainerSeeder extends Seeder
             'shipping_line' => 'ONE',
             'do_status' => 'ready',
             'allocation' => $locationId(),
-            'guarantee_status' => 'pending',
+            'guarantee_status' => 'Pending',
             'empty_status' => 'empty_returned',
         ]);
 
@@ -158,7 +181,24 @@ class ShipContainerSeeder extends Seeder
             'project_owner_id' => $ownerId('Highland Coffee Growers'),
             'etd' => '2026-10-14',
             'goods_description' => 'Roasted Arabica coffee in 60kg jute bags',
-            '_numbers' => ['CAIU6672103', 'CAIU6672104', 'CAIU6672105', 'CAIU6672106'],
+            '_numbers' => [
+                [
+                    'container_no' => 'CAIU6672103',
+                    'size' => 40,
+                    'size_unit' => 'feet',
+                    'goods_description' => 'Roasted Arabica coffee in 60kg jute bags',
+                    'entry_number' => 'EXP/2026/0917',
+                ],
+                [
+                    'container_no' => 'CAIU6672104',
+                    'size' => 40,
+                    'size_unit' => 'feet',
+                    'goods_description' => 'Roasted Arabica coffee in 60kg jute bags',
+                    'entry_number' => 'EXP/2026/0917',
+                ],
+                'CAIU6672105',
+                'CAIU6672106',
+            ],
             'entry_number' => 'EXP/2026/0917',
             'booking_no' => 'BKNG-204-8801',
             'bl_no' => 'CMAC220046712',
@@ -220,7 +260,22 @@ class ShipContainerSeeder extends Seeder
             'get_in' => '2026-10-02 05:40:00',
             'last_free_day' => '2026-10-12',
             'cfs' => $locationId(),
-            '_numbers' => ['TRANS7734108', 'TRANS7734109'],
+            '_numbers' => [
+                [
+                    'container_no' => 'TRANS7734108',
+                    'size' => 40,
+                    'size_unit' => 'feet',
+                    'goods_description' => 'Bonded solar panels',
+                    'entry_number' => 'TR/10/2026/00814',
+                ],
+                [
+                    'container_no' => 'TRANS7734109',
+                    'size' => 40,
+                    'size_unit' => 'feet',
+                    'goods_description' => 'Bonded solar panels',
+                    'entry_number' => 'TR/10/2026/00814',
+                ],
+            ],
             'description' => 'Bonded solar panels bound for Kampala',
             'tr10_entry_status' => 'registered',
             'tr12_entry_status' => 't1',
@@ -296,7 +351,13 @@ class ShipContainerSeeder extends Seeder
             'port_out' => 'Malaba Border',
             'get_in' => '2026-10-05 12:30:00',
             'vessel' => 'MV Kota Nabil',
-            '_numbers' => ['UTR-RO-RO-1182'],
+            '_numbers' => [[
+                'container_no' => 'UTR-RO-RO-1182',
+                'size' => 12,
+                'size_unit' => 'm',
+                'goods_description' => 'Heavy excavator on low-loader trailer',
+                'entry_number' => 'UNIT/2026/0468',
+            ]],
             'description' => 'Heavy excavator on low-loader trailer',
             'chassis_no' => 'CHS-TR-889124',
             'remarks' => 'Out-of-gauge cargo; escort vehicle required',
@@ -420,8 +481,13 @@ class ShipContainerSeeder extends Seeder
             ]));
 
             foreach ($numbers as $number) {
+                $number = is_string($number) ? ['container_no' => $number] : $number;
                 $container->numbers()->create([
-                    'container_no' => $number,
+                    'container_no' => $number['container_no'],
+                    'size' => $number['size'] ?? null,
+                    'size_unit' => $number['size_unit'] ?? 'feet',
+                    'goods_description' => $number['goods_description'] ?? null,
+                    'entry_number' => $number['entry_number'] ?? null,
                     'created_by' => $adminId,
                 ]);
             }
