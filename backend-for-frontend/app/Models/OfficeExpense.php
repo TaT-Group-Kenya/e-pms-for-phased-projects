@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
-
+use Illuminate\Database\Eloquent\Model;
 
 class OfficeExpense extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'office_expenses';
 
     protected $fillable = [
@@ -51,7 +51,7 @@ class OfficeExpense extends Model
     {
         return $this->belongsTo(Department::class, 'cost_center_id');
     }
-    
+
     public function payments()
     {
         // Payments are stored in office_expense_payments with an expense_id foreign key

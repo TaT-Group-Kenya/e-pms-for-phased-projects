@@ -43,7 +43,7 @@
         <thead>
             <tr>
                 <th>Invoice #</th>
-                <th>Customer/Company</th>
+                <th>Customer/Service Provider</th>
                 <th>Status</th>
                 <th>Amount</th>
                 <th>Currency</th>

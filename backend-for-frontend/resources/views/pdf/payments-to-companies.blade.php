@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Payments to Companies Report</title>
+    <title>Payments to Service Providers Report</title>
     <style>
         @page { margin: 40px 40px 60px 40px; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111827; }
@@ -34,7 +34,7 @@
 
 <div class="header">
     <div style="text-align: right;">
-        <h1>Payments to Companies Report</h1>
+        <h1>Payments to Service Providers Report</h1>
         <div class="muted">Generated on {{ $generatedAt->format('d M Y H:i') }}</div>
     </div>
 </div>

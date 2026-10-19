@@ -44,7 +44,7 @@
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Job Ref</th>
+                <th>BOL Number</th>
                 <th>Customer</th>
                 <th>Title</th>
                 <th>Currency</th>
@@ -61,7 +61,7 @@
                         {{ \Carbon\Carbon::parse($order['created_at'])->format('M d, Y h:i A') }}
                     @endif
                 </td>
-                <td>{{ $order['job_reference_id'] ?? '' }}</td>
+                <td>{{ $order['bol_number'] ?? '' }}</td>
                 <td>{{ $order['customer_name'] ?? '' }}</td>
                 <td>{{ $order['title'] ?? '' }}</td>
                 <td>{{ $order['currency'] ?? '' }}</td>

@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
-use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Notifications\Notifiable;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasLogicalDeletion;
+    use HasApiTokens, HasFactory, HasLogicalDeletion, Notifiable;
 
     protected $table = 'users';
 
@@ -25,7 +25,7 @@ class User extends Authenticatable
         'created_by',
         'remember_token',
         'avatar_pic',
-        'category', //internal, company, customer
+        'category', // internal, company, customer
         'is_active',
         'company_id',
         'customer_id',
@@ -46,7 +46,8 @@ class User extends Authenticatable
 
     public function sessionMaxLimit()
     {
-        $limit = \App\Models\SysConfig::where('name', 'SESSION_MAX_LIMIT_IN_MINUTES')->first();
+        $limit = SysConfig::where('name', 'SESSION_MAX_LIMIT_IN_MINUTES')->first();
+
         return $limit ? (int) $limit->value : 0;
     }
 
@@ -77,6 +78,7 @@ class User extends Authenticatable
                 return true;
             }
         }
+
         return false;
     }
 }

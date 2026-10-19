@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
-use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
 class ProjectOwner extends Model
 {
     use HasLogicalDeletion;
-    
+
     protected $table = 'project_owners';
 
     protected $fillable = [

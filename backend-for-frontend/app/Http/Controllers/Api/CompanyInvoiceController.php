@@ -1,38 +1,43 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\CompanyInvoiceStoreRequest;
+use App\Http\Requests\CompanyInvoiceUpdateRequest;
+use App\Http\Resources\CompanyInvoiceResource;
+use App\Models\Account;
+use App\Models\CompanyBank;
 use App\Models\CompanyInvoice;
 use App\Models\CompanyPayment;
-use App\Models\PdcIssuedCompany;
-use App\Models\CompanyTransactionsLedger;
-use App\Models\CompanyBank;
-use App\Models\Account;
 use App\Models\CompanyProject;
-use App\Models\ProjectPhase;
+use App\Models\CompanyTransactionsLedger;
 use App\Models\Download;
+use App\Models\PdcIssuedCompany;
+use App\Models\ProjectPhase;
 use App\Models\SysConfig;
 use App\Services\CommonService;
 use App\Services\CompanyInvoiceService;
 use App\Services\TransactionCostManagerService;
+use Carbon\Carbon;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use App\Http\Resources\CompanyInvoiceResource;
-use App\Http\Requests\CompanyInvoiceStoreRequest;
-use App\Http\Requests\CompanyInvoiceUpdateRequest;
 
 class CompanyInvoiceController extends Controller
 {
     protected $service;
+
     protected $transactionCostManager;
 
     public function __construct(
-        CompanyInvoiceService $service, 
+        CompanyInvoiceService $service,
         TransactionCostManagerService $transactionCostManager
     ) {
         $this->service = $service;
@@ -41,18 +46,19 @@ class CompanyInvoiceController extends Controller
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\CompanyInvoice::class);
+        $this->authorize('viewAny', CompanyInvoice::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
         $data->load(['company', 'payments', 'project.projectOwner']);
+
         return CompanyInvoiceResource::collection($data);
     }
 
     public function store(CompanyInvoiceStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\CompanyInvoice::class);
+        $this->authorize('create', CompanyInvoice::class);
         $validated = $request->validated();
         $validated['created_at'] = $validated['created_at'] ?? now();
 
@@ -65,7 +71,7 @@ class CompanyInvoiceController extends Controller
             if (! $hasBankAccount) {
                 return response()->json([
                     'message' => 'The selected company does not have any bank/payment details configured. Please add at least one company bank account before creating an invoice.',
-                    'errors'  => [
+                    'errors' => [
                         'company_id' => ['Company must have at least one bank/payment method configured.'],
                     ],
                 ], 422);
@@ -74,6 +80,7 @@ class CompanyInvoiceController extends Controller
 
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
+
         return new CompanyInvoiceResource($model);
     }
 
@@ -89,12 +96,12 @@ class CompanyInvoiceController extends Controller
         $this->authorize('create', CompanyInvoice::class);
 
         $data = $request->validate([
-            'company_id'       => ['required', 'integer', 'exists:companies,id'],
+            'company_id' => ['required', 'integer', 'exists:companies,id'],
             'project_phase_id' => ['required', 'integer', 'exists:project_phases,id'],
-            'title'            => ['nullable', 'string'],
-            'description'      => ['nullable', 'string'],
-            'payment_terms'    => ['nullable', 'string'],
-            'notes_to_customer'=> ['nullable', 'string'],
+            'title' => ['nullable', 'string'],
+            'description' => ['nullable', 'string'],
+            'payment_terms' => ['nullable', 'string'],
+            'notes_to_customer' => ['nullable', 'string'],
         ]);
 
         // Company invoices require at least one bank/payment method so that
@@ -106,7 +113,7 @@ class CompanyInvoiceController extends Controller
         if (! $hasBankAccount) {
             return response()->json([
                 'message' => 'The selected company does not have any bank/payment details configured. Please add at least one company bank account before creating an invoice.',
-                'errors'  => [
+                'errors' => [
                     'company_id' => ['Company must have at least one bank/payment method configured.'],
                 ],
             ], 422);
@@ -123,7 +130,7 @@ class CompanyInvoiceController extends Controller
         if (! $assignment) {
             return response()->json([
                 'message' => 'Selected phase is not a completed assignment for this company.',
-                'errors'  => [
+                'errors' => [
                     'project_phase_id' => ['Phase must be assigned to the selected company and marked complete.'],
                 ],
             ], 422);
@@ -138,42 +145,42 @@ class CompanyInvoiceController extends Controller
         if ($existingInvoice) {
             return response()->json([
                 'message' => 'An invoice already exists for this company and project phase.',
-                'errors'  => [
+                'errors' => [
                     'project_phase_id' => ['Only one company invoice is allowed per company and project phase.'],
                 ],
             ], 422);
         }
 
-        $commonService = new CommonService();
+        $commonService = new CommonService;
 
         // Generate a unique invoice number for the company invoice.
-       $invoiceNumber = $commonService->getNextCompanyInvoiceNumber();
+        $invoiceNumber = $commonService->getNextCompanyInvoiceNumber();
 
         $project = $phase->project;
 
         $invoice = DB::transaction(function () use ($data, $phase, $project, $invoiceNumber) {
             return CompanyInvoice::create([
-                'invoice_number'      => $invoiceNumber,
-                'project_id'          => $project ? $project->id : null,
-                'company_id'          => $data['company_id'],
-                'project_phase_id'    => $phase->id,
-                'title'               => $data['title'] ?? $phase->name,
-                'description'         => $data['description'] ?? ($phase->description ?? ''),
-                'status'              => 'draft',
-                'subtotal_amount'     => 0,
-                'tax_amount'          => 0,
+                'invoice_number' => $invoiceNumber,
+                'project_id' => $project ? $project->id : null,
+                'company_id' => $data['company_id'],
+                'project_phase_id' => $phase->id,
+                'title' => $data['title'] ?? $phase->name,
+                'description' => $data['description'] ?? ($phase->description ?? ''),
+                'status' => 'draft',
+                'subtotal_amount' => 0,
+                'tax_amount' => 0,
                 'discount_percentage' => '0',
-                'discount_amount'     => 0,
-                'total_amount'        => 0,
-                'currency'            => 'KES',
-                'payment_terms'       => $data['payment_terms'] ?? '',
-                'notes_to_customer'   => $data['notes_to_customer'] ?? '',
-                'valid_until'         => now()->addDays(30),
-                'created_at'          => now(),
-                'updated_at'          => now(),
-                'created_by'          => Auth::id(),
-                'updated_by'          => Auth::id(),
-                'is_deleted'          => false,
+                'discount_amount' => 0,
+                'total_amount' => 0,
+                'currency' => 'KES',
+                'payment_terms' => $data['payment_terms'] ?? '',
+                'notes_to_customer' => $data['notes_to_customer'] ?? '',
+                'valid_until' => now()->addDays(30),
+                'created_at' => now(),
+                'updated_at' => now(),
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
+                'is_deleted' => false,
             ]);
         });
 
@@ -217,7 +224,7 @@ class CompanyInvoiceController extends Controller
         if (! in_array($companyInvoice->status, ['sent', 'partially-paid'], true)) {
             return response()->json([
                 'message' => 'Payments can only be added when the invoice status is sent or partially-paid.',
-                'errors'  => [
+                'errors' => [
                     'status' => ['Invoice must be in sent or partially-paid status to add payments.'],
                 ],
             ], 422);
@@ -240,14 +247,14 @@ class CompanyInvoiceController extends Controller
         ]);
 
         // Ensure payment_date is not older than invoice creation date
-        $paymentDate = \Carbon\Carbon::parse($validated['payment_date'])->toDateString();
-        $invoiceCreatedAt = $companyInvoice->created_at instanceof \Carbon\Carbon
+        $paymentDate = Carbon::parse($validated['payment_date'])->toDateString();
+        $invoiceCreatedAt = $companyInvoice->created_at instanceof Carbon
             ? $companyInvoice->created_at->toDateString()
-            : \Carbon\Carbon::parse($companyInvoice->created_at)->toDateString();
+            : Carbon::parse($companyInvoice->created_at)->toDateString();
         if ($paymentDate < $invoiceCreatedAt) {
             return response()->json([
-                'message' => 'Payment date cannot be earlier than the invoice creation date (' . $invoiceCreatedAt . ').',
-                'errors'  => [
+                'message' => 'Payment date cannot be earlier than the invoice creation date ('.$invoiceCreatedAt.').',
+                'errors' => [
                     'payment_date' => ['Payment date must not be before the invoice creation date.'],
                 ],
             ], 422);
@@ -257,8 +264,7 @@ class CompanyInvoiceController extends Controller
 
         $settlementAccRate = $validated['settlement_account_forex_rate'] ?? 1;
 
-
-        $commonService = new CommonService();
+        $commonService = new CommonService;
 
         $invoice = DB::transaction(function () use ($invoice, $validated, $commonService, $settlementAccRate) {
             $amountPaid = (float) $validated['amount_paid'];
@@ -274,7 +280,7 @@ class CompanyInvoiceController extends Controller
                 ->where('direction', 'outgoing')
                 ->where('payment_type', 'normal')
                 ->sum('amount_paid');
-            $pdcReserved = (float) \App\Models\PdcIssuedCompany::where('invoice_id', $invoice->id)
+            $pdcReserved = (float) PdcIssuedCompany::where('invoice_id', $invoice->id)
                 ->where('is_deleted', false)
                 ->whereIn('status', ['issued', 'pending'])
                 ->sum('amount');
@@ -286,7 +292,7 @@ class CompanyInvoiceController extends Controller
 
                 throw ValidationException::withMessages([
                     'amount_paid' => [
-                        'Payment amount exceeds the outstanding invoice balance by ' . number_format($excess, 2, '.', '') . '.',
+                        'Payment amount exceeds the outstanding invoice balance by '.number_format($excess, 2, '.', '').'.',
                     ],
                 ]);
             }
@@ -316,20 +322,20 @@ class CompanyInvoiceController extends Controller
             if ($accountCurrencyCode !== $invoiceCurrencyCode && $settlementAccRate === 1) {
                 throw ValidationException::withMessages([
                     'account_id' => [
-                        'Selected account currency (' . $accountCurrencyCode . ') must match the invoice currency (' . $invoiceCurrencyCode . ').',
+                        'Selected account currency ('.$accountCurrencyCode.') must match the invoice currency ('.$invoiceCurrencyCode.').',
                     ],
                 ]);
             }
 
             $exchangeRate = 1;
             $convertedAmount = $amountPaid;
-            
+
             // Amount to debit the account is the amount paid divided by the settlement account forex rate
-            $amountToDebitAccount = round($amountPaid/$settlementAccRate, 2);
+            $amountToDebitAccount = round($amountPaid / $settlementAccRate, 2);
 
             // Compute forex_rate and project currency value for margin-per-project reporting
             // forex_rate represents KES to project currency when project currency is not KES.
-            $forexRate = null; //the rate of changing KES to invoice currency
+            $forexRate = null; // the rate of changing KES to invoice currency
             $projectCurrencyValue = null;
 
             if ($projectCurrencyCode) {
@@ -359,7 +365,7 @@ class CompanyInvoiceController extends Controller
             // If this is a cheque that matures in the future, persist a PDC
             if (strtolower($validated['payment_method']) === 'check') {
                 $chequeDate = isset($validated['cheque_date']) && $validated['cheque_date']
-                    ? \Carbon\Carbon::parse($validated['cheque_date'])->toDateString()
+                    ? Carbon::parse($validated['cheque_date'])->toDateString()
                     : $validated['payment_date'];
 
                 if ($chequeDate > now()->toDateString()) {
@@ -463,7 +469,7 @@ class CompanyInvoiceController extends Controller
                 'check_number' => $validated['check_number'] ?? null,
                 'transaction_status' => 'cleared',
                 'related_transaction_id' => $validated['related_transaction_id'] ?? null,
-                'narration' => 'Payment for company invoice ' . $invoice->invoice_number,
+                'narration' => 'Payment for company invoice '.$invoice->invoice_number,
                 'is_recurring' => false,
                 'fiscal_year' => now()->year,
                 'accounting_period' => now()->format('Ym'),
@@ -479,10 +485,10 @@ class CompanyInvoiceController extends Controller
             // Update accounts account balance: debit decreases balance
             $balanceAfterThis = $currentBalance - $amountToDebitAccount;
             $unconvertedtrxnCost = $validated['transaction_cost'] ?? 0;
-            $transactionCost = ($unconvertedtrxnCost/$settlementAccRate);
+            $transactionCost = ($unconvertedtrxnCost / $settlementAccRate);
             if ($transactionCost > 0) {
                 $balanceAfterThis -= $transactionCost;
-                if($balanceAfterThis < 0 ) {
+                if ($balanceAfterThis < 0) {
                     throw ValidationException::withMessages([
                         'account_balance' => ['Selected account does not have sufficient balance and overdraft is not allowed.'],
                     ]);
@@ -492,12 +498,12 @@ class CompanyInvoiceController extends Controller
                     'transaction_cost' => $unconvertedtrxnCost,
                     'currency' => $invoiceCurrencyCode,
                     'funding_account_id' => $account->id,
-                    'narration' => 'Transaction cost for company invoice ' . $invoice->invoice_number,
+                    'narration' => 'Transaction cost for company invoice '.$invoice->invoice_number,
                     'exchangeRate' => $settlementAccRate,
                     'user_id' => Auth::id(),
                 ], $shouldApplyForex);
             }
-            
+
             $account->balance = round($balanceAfterThis, 4);
             $account->updated_at = now();
             $account->updated_by = Auth::id();
@@ -508,7 +514,6 @@ class CompanyInvoiceController extends Controller
             $paidTotal = $existingPaymentsTotal + $amountPaid;
             $remaining = max((float) $invoice->total_amount - $paidTotal, 0.0);
 
-
             if ($remaining <= 0.0) {
                 $invoice->status = 'paid';
                 // Mark all project phases on this invoice as billed
@@ -517,8 +522,8 @@ class CompanyInvoiceController extends Controller
                     ->pluck('project_phase_id')
                     ->unique()
                     ->toArray();
-                if (!empty($phaseIds)) {
-                    \App\Models\ProjectPhase::whereIn('id', $phaseIds)->update(['is_billed' => true]);
+                if (! empty($phaseIds)) {
+                    ProjectPhase::whereIn('id', $phaseIds)->update(['is_billed' => true]);
                 }
             } else {
                 $invoice->status = 'partially-paid';
@@ -568,7 +573,7 @@ class CompanyInvoiceController extends Controller
         if ($companyPayment->reconciled) {
             return response()->json([
                 'message' => 'Reconciled payments cannot be deleted.',
-                'errors'  => [
+                'errors' => [
                     'payment_id' => ['Reverse the reconciliation before deleting this payment.'],
                 ],
             ], 422);
@@ -680,7 +685,7 @@ class CompanyInvoiceController extends Controller
         if ($companyPayment->reconciled) {
             return response()->json([
                 'message' => 'Reconciled payments cannot be edited.',
-                'errors'  => [
+                'errors' => [
                     'payment_id' => ['Reverse the reconciliation before editing this payment.'],
                 ],
             ], 422);
@@ -800,18 +805,18 @@ class CompanyInvoiceController extends Controller
             }
         }
 
-                    // If cheque and receipt not provided, default receipt to chk-{check_number}
-                    if (strtolower($validated['payment_method'] ?? '') === 'check' && empty($validated['receipt_number'])) {
-                        $validated['receipt_number'] = isset($validated['check_number']) ? 'chk-' . $validated['check_number'] : null;
-                    }
+        // If cheque and receipt not provided, default receipt to chk-{check_number}
+        if (strtolower($validated['payment_method'] ?? '') === 'check' && empty($validated['receipt_number'])) {
+            $validated['receipt_number'] = isset($validated['check_number']) ? 'chk-'.$validated['check_number'] : null;
+        }
         // When marking the invoice as sent, ensure it has line items and
         // create a corresponding company ledger entry if one does not exist yet.
         if ($hasStatusInPayload && $validated['status'] === 'sent') {
             $hasLineItems = $companyInvoice->invoiceItems()->exists();
-            if (!$hasLineItems) {
+            if (! $hasLineItems) {
                 return response()->json([
                     'message' => 'Cannot mark invoice as sent without any line items.',
-                    'errors'  => [
+                    'errors' => [
                         'status' => ['Add at least one invoice line item before marking as sent.'],
                     ],
                 ], 422);
@@ -828,50 +833,50 @@ class CompanyInvoiceController extends Controller
                     ->where('is_deleted', false)
                     ->exists();
 
-                if (!$hasInvoiceLedger) {
-                    $invoiceTotal   = (float) $updatedInvoice->total_amount;
-                    $invoiceTax     = (float) $updatedInvoice->tax_amount;
+                if (! $hasInvoiceLedger) {
+                    $invoiceTotal = (float) $updatedInvoice->total_amount;
+                    $invoiceTax = (float) $updatedInvoice->tax_amount;
                     $invoiceSubtotal = (float) $updatedInvoice->subtotal_amount;
                     $invoiceDiscount = (float) $updatedInvoice->discount_amount;
-                    $netAmount      = $invoiceSubtotal - $invoiceDiscount;
+                    $netAmount = $invoiceSubtotal - $invoiceDiscount;
 
                     $currencyCode = $updatedInvoice->currency;
 
                     CompanyTransactionsLedger::create([
-                        'company_payment_id'     => null,
-                        'transaction_number'     => $updatedInvoice->invoice_number,
-                        'transaction_type'       => 'invoice',
-                        'transaction_date'       => $updatedInvoice->created_at ?? now(),
-                        'posted_date'            => now(),
-                        'amount'                 => $invoiceTotal,
-                        'transaction_currency'   => $currencyCode,
-                        'base_currency'          => 'KES',
-                        'exchange_rate'          => 1.0,
-                        'converted_amount'       => 0.0,
-                        'converted_tax_amount'   => 0.0,
-                        'converted_net_amount'   => 0.0,
-                        'tax_amount'             => $invoiceTax,
-                        'net_amount'             => $netAmount,
-                        'company_id'             => $updatedInvoice->company_id,
-                        'customer_id'            => null,
-                        'source_type'            => 'company_invoice',
-                        'source_id'              => $updatedInvoice->id,
-                        'account_debit'          => null,
-                        'account_credit'         => null,
-                        'category'               => 'expense',
-                        'payment_method'         => null,
-                        'bank_account'           => null,
-                        'check_number'           => null,
-                        'transaction_status'     => 'cleared',
+                        'company_payment_id' => null,
+                        'transaction_number' => $updatedInvoice->invoice_number,
+                        'transaction_type' => 'invoice',
+                        'transaction_date' => $updatedInvoice->created_at ?? now(),
+                        'posted_date' => now(),
+                        'amount' => $invoiceTotal,
+                        'transaction_currency' => $currencyCode,
+                        'base_currency' => 'KES',
+                        'exchange_rate' => 1.0,
+                        'converted_amount' => 0.0,
+                        'converted_tax_amount' => 0.0,
+                        'converted_net_amount' => 0.0,
+                        'tax_amount' => $invoiceTax,
+                        'net_amount' => $netAmount,
+                        'company_id' => $updatedInvoice->company_id,
+                        'customer_id' => null,
+                        'source_type' => 'company_invoice',
+                        'source_id' => $updatedInvoice->id,
+                        'account_debit' => null,
+                        'account_credit' => null,
+                        'category' => 'expense',
+                        'payment_method' => null,
+                        'bank_account' => null,
+                        'check_number' => null,
+                        'transaction_status' => 'cleared',
                         'related_transaction_id' => null,
-                        'narration'              => 'Company invoice ' . $updatedInvoice->invoice_number . ' posted to ledger.',
-                        'is_recurring'           => false,
-                        'fiscal_year'            => now()->year,
-                        'accounting_period'      => now()->format('Ym'),
-                        'is_adjusting_entry'     => false,
-                        'cost_center_id'         => null,
-                        'created_by'             => $userId,
-                        'updated_by'             => $userId,
+                        'narration' => 'Company invoice '.$updatedInvoice->invoice_number.' posted to ledger.',
+                        'is_recurring' => false,
+                        'fiscal_year' => now()->year,
+                        'accounting_period' => now()->format('Ym'),
+                        'is_adjusting_entry' => false,
+                        'cost_center_id' => null,
+                        'created_by' => $userId,
+                        'updated_by' => $userId,
                     ]);
                 }
 
@@ -883,6 +888,7 @@ class CompanyInvoiceController extends Controller
 
         // For all other updates, fall back to the standard update flow
         $updated = $this->service->update($companyInvoice->id, $validated);
+
         return new CompanyInvoiceResource($updated);
     }
 
@@ -897,6 +903,7 @@ class CompanyInvoiceController extends Controller
         }
 
         $this->service->delete($companyInvoice->id);
+
         return response()->noContent();
     }
 
@@ -958,14 +965,14 @@ class CompanyInvoiceController extends Controller
         $subject = sprintf(
             'Company Invoice %s%s',
             $companyInvoice->invoice_number,
-            $projectName ? ' - ' . $projectName : ''
+            $projectName ? ' - '.$projectName : ''
         );
 
         $mailData = [
-            'invoice'       => $companyInvoice,
+            'invoice' => $companyInvoice,
             'recipientName' => $recipientName,
-            'projectName'   => $projectName,
-            'fromName'      => $fromName,
+            'projectName' => $projectName,
+            'fromName' => $fromName,
         ];
 
         try {
@@ -973,14 +980,14 @@ class CompanyInvoiceController extends Controller
                 $message->to($recipientEmail, $recipientName)
                     ->subject($subject)
                     ->attach($fullPath, [
-                        'as'   => $fileName,
+                        'as' => $fileName,
                         'mime' => 'application/pdf',
                     ]);
             });
         } catch (\Throwable $e) {
             \Log::error('Failed to send company invoice email', [
                 'company_invoice_id' => $companyInvoice->id,
-                'error'              => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -1037,36 +1044,36 @@ class CompanyInvoiceController extends Controller
         $outstandingBalance = max($invoiceTotal - $paymentsTotal, 0.0);
 
         $data = [
-            'invoice'            => $companyInvoice,
-            'payments'           => $payments,
-            'paymentsTotal'      => $paymentsTotal,
+            'invoice' => $companyInvoice,
+            'payments' => $payments,
+            'paymentsTotal' => $paymentsTotal,
             'outstandingBalance' => $outstandingBalance,
-            'senderName'         => $senderName,
-            'senderEmail'        => $senderEmail,
-            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
-            'senderPhone'        => $configValues['PHONE']   ?? null,
-            'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $configValues['INSTANCE_LOGO'] ?? null,
+            'senderPhone' => $configValues['PHONE'] ?? null,
+            'senderWebsite' => $configValues['WEBSITE'] ?? config('app.url'),
             'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'         => $configValues['CITY']    ?? null,
-            'senderState'        => $configValues['STATE']   ?? null,
-            'senderCountry'      => $configValues['COUNTRY'] ?? null,
-            'generatedAt'        => $generatedAt,
+            'senderCity' => $configValues['CITY'] ?? null,
+            'senderState' => $configValues['STATE'] ?? null,
+            'senderCountry' => $configValues['COUNTRY'] ?? null,
+            'generatedAt' => $generatedAt,
         ];
 
         $html = view('pdf.company-invoice', $data)->render();
 
-        $options = new \Dompdf\Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
 
-        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
         $output = $dompdf->output();
 
-        $fileName = $companyInvoice->invoice_number . '.pdf';
-        $relativePath = 'company-invoices/' . $fileName;
+        $fileName = $companyInvoice->invoice_number.'.pdf';
+        $relativePath = 'company-invoices/'.$fileName;
 
         Storage::disk('public')->put($relativePath, $output);
 
@@ -1081,9 +1088,9 @@ class CompanyInvoiceController extends Controller
         $download->save();
 
         return [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
     }
 }

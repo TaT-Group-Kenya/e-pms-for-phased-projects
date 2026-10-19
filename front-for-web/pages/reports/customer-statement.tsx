@@ -147,10 +147,10 @@ export default function CustomerStatementReportPage() {
       addToast('No data to export', 'warning');
       return;
     }
-    const columns = ['Date', 'Job Ref', 'Document #', 'Customer', 'Description', 'Debit', 'Credit', 'Balance'];
+    const columns = ['Date', 'BOL Number', 'Document #', 'Customer', 'Description', 'Debit', 'Credit', 'Balance'];
     const rows = data.map(row => [
       row.date || row.created_at || '',
-      row.job_reference || '',
+      row.bol_number || '',
       row.document_number || '',
       row.customer_name || '',
       row.description || '',
@@ -296,7 +296,7 @@ export default function CustomerStatementReportPage() {
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="px-4 py-3 text-left font-semibold text-gray-600">Date</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-600">Job Ref</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">BOL Number</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-600">Document #</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-600">Customer</th>
                       <th className="px-4 py-3 text-left font-semibold text-gray-600">Description</th>
@@ -314,7 +314,7 @@ export default function CustomerStatementReportPage() {
                     {data.map((row, index) => (
                       <tr key={`${row.document_number || row.transaction_number || index}-${index}`}>
                         <td className="px-4 py-3">{formatDateTime(row.date || row.created_at)}</td>
-                        <td className="px-4 py-3">{row.job_reference || '-'}</td>
+                        <td className="px-4 py-3">{row.bol_number || '-'}</td>
                         <td className="px-4 py-3">{row.document_number || '-'}</td>
                         <td className="px-4 py-3">{row.customer_name || '-'}</td>
                         <td className="px-4 py-3">{row.description || '-'}</td>

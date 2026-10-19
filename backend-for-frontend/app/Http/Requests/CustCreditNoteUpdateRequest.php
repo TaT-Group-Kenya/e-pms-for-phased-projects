@@ -18,7 +18,7 @@ class CustCreditNoteUpdateRequest extends FormRequest
             'invoice_id' => ['nullable', 'exists:cust_invoices,id'],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'status' => ['sometimes', 'required', Rule::in(['draft','raised','refunded'])],
+            'status' => ['sometimes', 'required', Rule::in(['draft', 'raised', 'refunded'])],
             'subtotal_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'tax_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
             'total_amount' => ['sometimes', 'required', 'numeric', 'min:0'],

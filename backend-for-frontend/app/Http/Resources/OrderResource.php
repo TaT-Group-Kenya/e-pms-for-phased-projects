@@ -9,7 +9,9 @@ class OrderResource extends BaseResource
         return [
             'id' => $this->id,
             'order_number' => $this->order_number,
-            'job_reference_id' => $this->job_reference_id,
+            'bol_number' => $this->bol_number,
+            'ship_container_id' => $this->ship_container_id,
+            'ship_container' => new ShipContainerResource($this->whenLoaded('shipContainer')),
             'quotation_id' => $this->quotation_id,
             'project_id' => $this->project_id,
             'customer_id' => $this->customer_id,
@@ -43,7 +45,7 @@ class OrderResource extends BaseResource
             'created_by_user' => new UserResource($this->whenLoaded('creator')),
 
             'updated_by_user' => new UserResource($this->whenLoaded('updater')),
-            
+
             'project_owner' => new ProjectOwnerResource($this->whenLoaded('projectOwner')),
 
         ];

@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-
 class AccountGroupResource extends BaseResource
 {
     public function toArray($request): array

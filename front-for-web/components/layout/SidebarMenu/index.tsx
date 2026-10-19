@@ -36,6 +36,25 @@ interface SidebarSection {
 
 const SECTIONS: SidebarSection[] = [
   {
+    id: "shipContainers",
+    label: "Container List",
+    icon: "sailing",
+    group: "main",
+    items: [
+      {
+        label: "All Containers",
+        href: "/ship-containers",
+        matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_SHIP_CONTAINER"],
+      },
+      {
+        label: "Register Shipment",
+        href: "/ship-containers/create",
+        requiredRoles: ["ROLE_ADD_SHIP_CONTAINER"],
+      },
+    ],
+  },
+  {
     id: "customers",
     label: "Customers",
     icon: "family_group",
@@ -61,18 +80,18 @@ const SECTIONS: SidebarSection[] = [
   },
   {
     id: "companies",
-    label: "Companies",
+    label: "Service Providers",
     icon: "corporate_fare",
     group: "main",
     items: [
       {
-        label: "All Companies",
+        label: "All Service Providers",
         href: "/company/company-list",
         matchStrategy: "entity",
         requiredRoles: ["ROLE_VIEW_COMPANY"],
       },
       {
-        label: "Add Company",
+        label: "Add Service Provider",
         href: "/company/create-company",
         requiredRoles: ["ROLE_ADD_COMPANY"],
       },
@@ -123,18 +142,18 @@ const SECTIONS: SidebarSection[] = [
   },
   {
     id: "projects",
-    label: "Projects",
+    label: "Consignments",
     icon: "description",
     group: "main",
     items: [
       {
-        label: "All Projects",
+        label: "All Consignments",
         href: "/project/project-list",
         matchStrategy: "entity",
         requiredRoles: ["ROLE_VIEW_PROJECT"],
       },
       {
-        label: "Add Project",
+        label: "Add Consignment",
         href: "/project/create-project",
         requiredRoles: ["ROLE_ADD_PROJECT"],
       },
@@ -149,12 +168,12 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_PROJECT_CATEGORY"],
       },
       {
-        label: "Sources",
+        label: "Destinations",
         href: "/project/source-origins",
         requiredRoles: ["ROLE_VIEW_PROJECT_SOURCE_ORIGIN"],
       },
       {
-        label: "Locations",
+        label: "CFSs",
         href: "/project/locations",
         requiredRoles: ["ROLE_VIEW_PROJECT_LOCATION"],
       },
@@ -173,6 +192,12 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_CUST_INVOICE"],
       },
       {
+        label: "Debit Notes",
+        href: "/cust-invoices/debit-notes",
+        matchStrategy: "entity",
+        requiredRoles: ["ROLE_VIEW_CUST_DEBIT_NOTE"],
+      },
+      {
         label: "Credit Notes",
         href: "/cust-invoices/credit-notes",
         matchStrategy: "entity",
@@ -188,7 +213,7 @@ const SECTIONS: SidebarSection[] = [
   },
   {
     id: "company-invoices",
-    label: "Company Invoices",
+    label: "Service Provider Invoices",
     icon: "domain",
     group: "main",
     items: [
@@ -225,6 +250,12 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_ACCOUNT"],
       },
       {
+        label: "Loans",
+        href: "/finance/loans/",
+        matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_ACCOUNT"],
+      },
+      {
         label: "Receiving Methods",
         href: "/finance/payment-receiving-methods/",
         matchStrategy: "startsWith",
@@ -255,7 +286,7 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_CUSTOMER_TRANSACTIONS_LEDGER"],
       },
       {
-        label: "Company Trxns Ledger",
+        label: "Service Provider Trxns Ledger",
         href: "/finance/company-ledger/",
         matchStrategy: "startsWith",
         requiredRoles: ["ROLE_VIEW_COMPANY_TRANSACTIONS_LEDGER"],
@@ -281,7 +312,7 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_ORDER"],
       },
       {
-        label: "Projects Summary",
+        label: "Consignments Summary",
         href: "/reports/projects-summary",
         matchStrategy: "exact",
         requiredRoles: ["ROLE_VIEW_PROJECT"],
@@ -299,7 +330,7 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_CUSTOMER_TRANSACTIONS_LEDGER"],
       },
       {
-        label: "Company Statement",
+        label: "Service Provider Statement",
         href: "/reports/company-statement",
         matchStrategy: "exact",
         requiredRoles: ["ROLE_VIEW_COMPANY_TRANSACTIONS_LEDGER"],
@@ -323,13 +354,13 @@ const SECTIONS: SidebarSection[] = [
       //   requiredRoles: ["ROLE_VIEW_CUST_PAYMENT", "ROLE_VIEW_TAX"],
       // },
       {
-        label: "Invoice Payments Cust",
+        label: "Invoice Payments Customer",
         href: "/reports/invoice-payments-customer",
         matchStrategy: "exact",
         requiredRoles: ["ROLE_VIEW_CUST_INVOICE", "ROLE_VIEW_CUST_PAYMENT"],
       },
       {
-        label: "Invoice Payments Co",
+        label: "Invoice Payments Service Provider",
         href: "/reports/invoice-payments-company",
         matchStrategy: "exact",
         requiredRoles: ["ROLE_VIEW_COMPANY_INVOICE", "ROLE_VIEW_COMPANY_PAYMENT"],
@@ -347,7 +378,7 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_OFFICE_EXPENSE"],
       },
       {
-        label: "Margin Per Project",
+        label: "Margin Per Consignment",
         href: "/reports/margin-per-project",
         matchStrategy: "exact",
         requiredRoles: ["ROLE_VIEW_PROJECT", "ROLE_VIEW_COMPANY_PAYMENT", "ROLE_VIEW_CUST_PAYMENT"],
@@ -365,7 +396,7 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_CUST_INVOICE"],
       },
       {
-        label: "Invoices Report Company",
+        label: "Invoices Report Service Provider",
         href: "/reports/invoices-report-company",
         matchStrategy: "exact",
         requiredRoles: ["ROLE_VIEW_COMPANY_INVOICE"],

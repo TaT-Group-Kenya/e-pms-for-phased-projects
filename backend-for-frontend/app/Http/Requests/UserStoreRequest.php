@@ -23,7 +23,7 @@ class UserStoreRequest extends FormRequest
             'email_verified_at' => ['nullable', 'date'],
             'remember_token' => ['nullable', 'string', 'max:255'],
             'avatar_pic' => ['nullable', 'string', 'max:255'],
-            'category' => ['required', Rule::in(['internal','company','customer'])],
+            'category' => ['required', Rule::in(['internal', 'company', 'customer'])],
             'is_active' => ['required', 'boolean'],
             'company_id' => ['nullable', 'exists:companies,id'],
             'customer_id' => ['nullable', 'exists:customers,id'],

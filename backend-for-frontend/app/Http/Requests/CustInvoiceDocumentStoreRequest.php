@@ -17,7 +17,7 @@ class CustInvoiceDocumentStoreRequest extends FormRequest
         return [
             'invoice_id' => ['nullable', 'exists:invoices,id'],
             'document_path' => ['required', 'string', 'max:255'],
-            'document_type' => ['required', Rule::in(['proposal','terms','attachments'])],
+            'document_type' => ['required', Rule::in(['proposal', 'terms', 'attachments'])],
         ];
     }
 

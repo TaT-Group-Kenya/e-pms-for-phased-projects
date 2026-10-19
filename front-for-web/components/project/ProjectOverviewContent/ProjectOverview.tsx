@@ -80,7 +80,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {
       <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
         <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-center justify-between">
           <div className="trezo-card-title">
-            <h5 className="!mb-0">Project Overview</h5>
+            <h5 className="!mb-0">Consignment Overview</h5>
           </div>
         </div>
 
@@ -100,7 +100,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {
                   </div>
                 </div>
                 <div className="mt-[15px] sm:mt-[25px] flex items-center justify-between">
-                  <span className="block text-sm">Number of project phases</span>
+                  <span className="block text-sm">Number of Consignment phases</span>
                 </div>
               </div>
             </div>
@@ -119,7 +119,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {
                   </div>
                 </div>
                 <div className="mt-[15px] sm:mt-[25px] flex items-center justify-between">
-                  <span className="block text-sm">Project duration in days</span>
+                  <span className="block text-sm">Consignment duration in days</span>
                 </div>
               </div>
             </div>
@@ -149,13 +149,13 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ project }) => {
                     <i className="material-symbols-outlined !text-5xl">business</i>
                   </div>
                   <div>
-                    <span className="block">Company Invoices</span>
+                    <span className="block">Service Provider Invoices</span>
                     <h5 className="!mb-0 !text-[20px] mt-[2px]">{overviewData.companyInvoices}</h5>
                   </div>
                 </div>
                 
                 <div className="mt-[14px] flex items-center justify-between">
-                  <span className="block text-sm">From vendors/suppliers</span>
+                  <span className="block text-sm">From Service Providers</span>
                 </div>
               </div>
             </div>

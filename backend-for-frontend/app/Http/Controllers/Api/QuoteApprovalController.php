@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\QuoteApproval;
-use App\Models\Quotation;
-use App\Services\QuoteApprovalService;
-use App\Http\Resources\QuoteApprovalResource;
 use App\Http\Requests\QuoteApprovalStoreRequest;
 use App\Http\Requests\QuoteApprovalUpdateRequest;
+use App\Http\Resources\QuoteApprovalResource;
+use App\Models\Quotation;
+use App\Models\QuoteApproval;
+use App\Services\QuoteApprovalService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class QuoteApprovalController extends Controller
 {
@@ -28,20 +28,21 @@ class QuoteApprovalController extends Controller
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return QuoteApprovalResource::collection($data);
     }
 
     public function store(QuoteApprovalStoreRequest $request)
     {
         $this->authorize('create', QuoteApproval::class);
-        
+
         $validated = $request->validated();
         $validated['user_id'] = Auth::id();
         $validated['created_by'] = Auth::id();
 
         // Ensure approvals are only recorded for quotations in sent status
         $quotation = Quotation::with('approvals')->find($validated['quote_id']);
-        if (!$quotation) {
+        if (! $quotation) {
             return response()->json([
                 'message' => 'Quotation not found for approval.',
                 'errors' => [
@@ -108,6 +109,7 @@ class QuoteApprovalController extends Controller
         $validated['updated_by'] = Auth::id();
         $validated['user_id'] = Auth::id();
         $updated = $this->service->update($quoteApproval->id, $validated);
+
         return new QuoteApprovalResource($updated);
     }
 
@@ -116,6 +118,7 @@ class QuoteApprovalController extends Controller
         $this->authorize('delete', $quoteApproval);
 
         $this->service->delete($quoteApproval->id);
+
         return response()->noContent();
     }
 }

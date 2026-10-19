@@ -1,54 +1,59 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use App\Models\CustCreditNote;
-use App\Models\CustInvoice;
-use App\Services\CustCreditNoteService;
-use App\Models\CustPayment;
-use App\Models\CustomerTransactionsLedger;
-use App\Models\Account;
-use App\Services\CommonService;
-use App\Services\CurrencyConversionService;
-use App\Services\TransactionCostManagerService;
-use App\Http\Resources\CustCreditNoteResource;
 use App\Http\Requests\CustCreditNoteStoreRequest;
 use App\Http\Requests\CustCreditNoteUpdateRequest;
-
-use Illuminate\Support\Facades\Storage;
+use App\Http\Resources\CustCreditNoteResource;
+use App\Models\Account;
+use App\Models\CustCreditNote;
+use App\Models\CustInvoice;
+use App\Models\CustomerTransactionsLedger;
+use App\Models\CustPayment;
 use App\Models\Download;
+use App\Models\SysConfig;
+use App\Services\CommonService;
+use App\Services\CurrencyConversionService;
+use App\Services\CustCreditNoteService;
+use App\Services\TransactionCostManagerService;
+use Carbon\Carbon;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use App\Http\Resources\CustInvoiceResource;
+use Illuminate\Support\Facades\Storage;
 
 class CustCreditNoteController extends Controller
 {
     protected $service;
 
-    public function __construct(CustCreditNoteService $service) {
+    public function __construct(CustCreditNoteService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\CustCreditNote::class);
+        $this->authorize('viewAny', CustCreditNote::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return CustCreditNoteResource::collection($data);
     }
 
     public function store(CustCreditNoteStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\CustCreditNote::class);
+        $this->authorize('create', CustCreditNote::class);
         $validated = $request->validated();
-        if (!empty($validated['invoice_id'])) {
+        if (! empty($validated['invoice_id'])) {
             $invoice = CustInvoice::find($validated['invoice_id']);
 
-            if (!$invoice) {
+            if (! $invoice) {
                 return response()->json([
                     'message' => 'The selected invoice is invalid.',
                 ], 422);
@@ -62,14 +67,15 @@ class CustCreditNoteController extends Controller
         }
         $validated['created_by'] = Auth::id();
         $validated['description'] = $validated['description'] ?? $validated['title'];
-        $validated['notes_to_customer'] = $validated['notes_to_customer'] ?? 'Correction for invoice ' . ($invoice->invoice_number);
+        $validated['notes_to_customer'] = $validated['notes_to_customer'] ?? 'Correction for invoice '.($invoice->invoice_number);
         // Generate credit_note_number if not provided
         if (empty($validated['credit_note_number'])) {
-            $commonService = new CommonService();
+            $commonService = new CommonService;
             $creditNoteNumber = $commonService->getNextCustCreditNoteNumber();
             $validated['credit_note_number'] = $creditNoteNumber;
         }
         $model = $this->service->create($validated);
+
         return new CustCreditNoteResource($model);
     }
 
@@ -96,6 +102,7 @@ class CustCreditNoteController extends Controller
             'invoice',
             'items',
         ]);
+
         return new CustCreditNoteResource($updated);
     }
 
@@ -115,18 +122,18 @@ class CustCreditNoteController extends Controller
         $settlementAccRate = $validated['forex_rate'] ?? 1.0;
 
         // Ensure refund date is not older than credit note creation date
-        $refundDate = \Carbon\Carbon::parse($validated['date'])->toDateString();
-        $creditNoteCreatedAt = $custCreditNote->created_at instanceof \Carbon\Carbon
+        $refundDate = Carbon::parse($validated['date'])->toDateString();
+        $creditNoteCreatedAt = $custCreditNote->created_at instanceof Carbon
             ? $custCreditNote->created_at->toDateString()
-            : \Carbon\Carbon::parse($custCreditNote->created_at)->toDateString();
+            : Carbon::parse($custCreditNote->created_at)->toDateString();
         if ($refundDate < $creditNoteCreatedAt) {
             return response()->json([
-                'message' => 'Refund date cannot be earlier than the credit note creation date (' . $creditNoteCreatedAt . ').',
+                'message' => 'Refund date cannot be earlier than the credit note creation date ('.$creditNoteCreatedAt.').',
             ], 422);
         }
 
         $validated['payment_method'] = 'bank_transfer';
-        
+
         if (strtolower($custCreditNote->status) !== 'raised') {
             return response()->json([
                 'message' => 'Only raised credit notes can be refunded.',
@@ -158,7 +165,6 @@ class CustCreditNoteController extends Controller
 
         $userId = $request->user()?->id;
 
-
         $account = Account::findOrFail($validated['financing_account']);
 
         if ($account->currency !== $custCreditNote->currency) {
@@ -180,7 +186,7 @@ class CustCreditNoteController extends Controller
         $invoiceCurrencyCode = $custCreditNote->currency;
         $baseCurrencyForLocalTaxationCode = 'KES';
 
-        $conversionService = new CurrencyConversionService();
+        $conversionService = new CurrencyConversionService;
         $conversion = $conversionService->convertToBaseFromInvoice(
             $amount,
             $invoiceCurrencyCode,
@@ -205,7 +211,7 @@ class CustCreditNoteController extends Controller
             $settlementAccRate,
             $baseCurrencyForLocalTaxationCode
         ) {
-            $commonService = new CommonService();
+            $commonService = new CommonService;
 
             // Generate a unique transaction number for the refund payment
             do {
@@ -252,7 +258,7 @@ class CustCreditNoteController extends Controller
                 'reconciliation_date' => null,
                 'created_at' => now(),
                 'updated_by' => $userId,
-                'created_by' => $userId
+                'created_by' => $userId,
             ]);
 
             // Create corresponding customer ledger entry (refund against the credit note).
@@ -285,7 +291,7 @@ class CustCreditNoteController extends Controller
                 'check_number' => null,
                 'transaction_status' => 'cleared',
                 'related_transaction_id' => null,
-                'narration' => 'Refund for Credit Note ' . $custCreditNote->credit_note_number,
+                'narration' => 'Refund for Credit Note '.$custCreditNote->credit_note_number,
                 'is_recurring' => false,
                 'fiscal_year' => now()->year,
                 'accounting_period' => now()->format('Ym'),
@@ -298,15 +304,15 @@ class CustCreditNoteController extends Controller
             $payment->transaction_id = $ledger->id;
             $payment->save();
 
-            //If transaction cost is provided, scafold expense entries.
-            if($transactionCost > 0 ){
-                $transactionCostManager = new TransactionCostManagerService();
+            // If transaction cost is provided, scafold expense entries.
+            if ($transactionCost > 0) {
+                $transactionCostManager = new TransactionCostManagerService;
                 $shouldApplyForex = $invoiceCurrencyCode !== $baseCurrencyForLocalTaxationCode;
                 $transactionCostManager->processTransactionCost([
                     'transaction_cost' => $transactionCost * $settlementAccRate, // Convert to KES
                     'currency' => 'KES',
                     'funding_account_id' => $account->id,
-                    'narration' => 'Transaction cost for a refund on credit note ' . $custCreditNote->credit_note_number,
+                    'narration' => 'Transaction cost for a refund on credit note '.$custCreditNote->credit_note_number,
                     'exchangeRate' => $settlementAccRate,
                     'user_id' => $userId,
                 ], $shouldApplyForex);
@@ -394,14 +400,14 @@ class CustCreditNoteController extends Controller
         $subject = sprintf(
             'Credit Note %s%s',
             $custCreditNote->credit_note_number,
-            $projectName ? ' - ' . $projectName : ''
+            $projectName ? ' - '.$projectName : ''
         );
 
         $mailData = [
-            'creditNote'    => $custCreditNote,
+            'creditNote' => $custCreditNote,
             'recipientName' => $recipientName,
-            'projectName'   => $projectName,
-            'fromName'      => $fromName,
+            'projectName' => $projectName,
+            'fromName' => $fromName,
         ];
 
         try {
@@ -409,14 +415,14 @@ class CustCreditNoteController extends Controller
                 $message->to($customer->email, $recipientName)
                     ->subject($subject)
                     ->attach($fullPath, [
-                        'as'   => $fileName,
+                        'as' => $fileName,
                         'mime' => 'application/pdf',
                     ]);
             });
         } catch (\Throwable $e) {
             \Log::error('Failed to send customer credit note email', [
                 'credit_note_id' => $custCreditNote->id,
-                'error'      => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -444,14 +450,14 @@ class CustCreditNoteController extends Controller
         ]);
 
         // Fetch ledger rows for this credit note (refunds)
-        $ledgerRows = \App\Models\CustomerTransactionsLedger::where('source_type', 'customer_credit_note')
+        $ledgerRows = CustomerTransactionsLedger::where('source_type', 'customer_credit_note')
             ->where('source_id', $custCreditNote->id)
             ->where('transaction_type', 'refund')
             ->where('is_deleted', false)
             ->get();
         $custCreditNote->ledgerRows = $ledgerRows;
 
-        $configValues = \App\Models\SysConfig::whereIn('name', [
+        $configValues = SysConfig::whereIn('name', [
             'NAME',
             'EMAIL',
             'INSTANCE_LOGO',
@@ -468,33 +474,33 @@ class CustCreditNoteController extends Controller
         $generatedAt = now();
 
         $data = [
-            'creditNote'         => $custCreditNote,
-            'senderName'         => $senderName,
-            'senderEmail'        => $senderEmail,
-            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
-            'senderPhone'        => $configValues['PHONE']   ?? null,
-            'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
+            'creditNote' => $custCreditNote,
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $configValues['INSTANCE_LOGO'] ?? null,
+            'senderPhone' => $configValues['PHONE'] ?? null,
+            'senderWebsite' => $configValues['WEBSITE'] ?? config('app.url'),
             'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'         => $configValues['CITY']    ?? null,
-            'senderState'        => $configValues['STATE']   ?? null,
-            'senderCountry'      => $configValues['COUNTRY'] ?? null,
-            'generatedAt'        => $generatedAt,
+            'senderCity' => $configValues['CITY'] ?? null,
+            'senderState' => $configValues['STATE'] ?? null,
+            'senderCountry' => $configValues['COUNTRY'] ?? null,
+            'generatedAt' => $generatedAt,
         ];
 
         $html = view('pdf.cust-credit-note', $data)->render();
 
-        $options = new \Dompdf\Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
 
-        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf = new Dompdf($options);
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
         $output = $dompdf->output();
 
-        $fileName = $custCreditNote->credit_note_number . '.pdf';
-        $relativePath = 'cust-credit-notes/' . $fileName;
+        $fileName = $custCreditNote->credit_note_number.'.pdf';
+        $relativePath = 'cust-credit-notes/'.$fileName;
 
         Storage::disk('public')->put($relativePath, $output);
 
@@ -509,9 +515,9 @@ class CustCreditNoteController extends Controller
         $download->save();
 
         return [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
     }
 
@@ -520,6 +526,7 @@ class CustCreditNoteController extends Controller
         $this->authorize('delete', $custCreditNote);
 
         $this->service->delete($custCreditNote->id, Auth::id());
+
         return response()->noContent();
     }
 }

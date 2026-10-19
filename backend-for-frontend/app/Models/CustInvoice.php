@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class CustInvoice extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'cust_invoices';
 
     protected $fillable = [
@@ -16,7 +17,7 @@ class CustInvoice extends Model
         'project_id',
         'customer_id',
         'project_owner_id',
-        'job_reference_id',
+        'bol_number',
         'title',
         'description',
         'status',
@@ -38,10 +39,10 @@ class CustInvoice extends Model
         'deleted_at',
         'deleted_by',
     ];
-    
+
     public function receivingPaymentMethod()
     {
-        return $this->belongsTo(\App\Models\PaymentReceivingMethod::class, 'payment_receiving_method_id');
+        return $this->belongsTo(PaymentReceivingMethod::class, 'payment_receiving_method_id');
     }
 
     public function order()
@@ -81,12 +82,17 @@ class CustInvoice extends Model
 
     public function pdcsReceived()
     {
-        return $this->hasMany(\App\Models\PdcReceivedCustomer::class, 'invoice_id');
+        return $this->hasMany(PdcReceivedCustomer::class, 'invoice_id');
     }
 
     public function creditnotes()
     {
         return $this->hasMany(CustCreditNote::class, 'invoice_id');
+    }
+
+    public function debitnotes()
+    {
+        return $this->hasMany(CustDebitNote::class, 'invoice_id');
     }
 
     public function documents()
@@ -96,6 +102,7 @@ class CustInvoice extends Model
 
     /**
      * Get the total amount paid to this invoice so far.
+     *
      * @return float
      */
     public function getTotalPaidAttribute()
@@ -105,6 +112,7 @@ class CustInvoice extends Model
         if ($payments && $payments->count() > 0) {
             return (float) $payments->sum('amount_paid');
         }
+
         return 0.0;
     }
 
@@ -120,5 +128,4 @@ class CustInvoice extends Model
 
         return $statusLabels[$this->status] ?? ucfirst($this->status);
     }
-    
 }

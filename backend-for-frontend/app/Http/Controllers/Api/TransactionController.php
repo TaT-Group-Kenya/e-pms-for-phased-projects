@@ -3,24 +3,25 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\TransactionStoreRequest;
+use App\Http\Requests\TransactionUpdateRequest;
+use App\Http\Resources\TransactionResource;
+use App\Models\Download;
+use App\Models\SysConfig;
+use App\Models\Transaction;
+use App\Services\TransactionService;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Dompdf\Dompdf;
-use Dompdf\Options;
-use App\Models\Transaction;
-use App\Models\Download;
-use App\Models\SysConfig;
-use App\Services\TransactionService;
-use App\Http\Resources\TransactionResource;
-use App\Http\Requests\TransactionStoreRequest;
-use App\Http\Requests\TransactionUpdateRequest;
 
 class TransactionController extends Controller
 {
     protected $service;
 
-    public function __construct(TransactionService $service) {
+    public function __construct(TransactionService $service)
+    {
         $this->service = $service;
     }
 
@@ -31,16 +32,18 @@ class TransactionController extends Controller
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return TransactionResource::collection($data);
     }
 
     public function store(TransactionStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\Transaction::class);
-        
+        $this->authorize('create', Transaction::class);
+
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
+
         return new TransactionResource($model);
     }
 
@@ -58,6 +61,7 @@ class TransactionController extends Controller
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($transaction->id, $validated);
+
         return new TransactionResource($updated);
     }
 
@@ -66,6 +70,7 @@ class TransactionController extends Controller
         $this->authorize('delete', $transaction);
 
         $this->service->delete($transaction->id, Auth::id());
+
         return response()->noContent();
     }
 
@@ -118,22 +123,22 @@ class TransactionController extends Controller
         $generatedAt = now();
 
         $data = [
-            'transaction'        => $transaction,
-            'senderName'         => $senderName,
-            'senderEmail'        => $senderEmail,
-            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
-            'senderPhone'        => $configValues['PHONE']   ?? null,
-            'senderWebsite'      => $configValues['WEBSITE'] ?? config('app.url'),
+            'transaction' => $transaction,
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $configValues['INSTANCE_LOGO'] ?? null,
+            'senderPhone' => $configValues['PHONE'] ?? null,
+            'senderWebsite' => $configValues['WEBSITE'] ?? config('app.url'),
             'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'         => $configValues['CITY']    ?? null,
-            'senderState'        => $configValues['STATE']   ?? null,
-            'senderCountry'      => $configValues['COUNTRY'] ?? null,
-            'generatedAt'        => $generatedAt,
+            'senderCity' => $configValues['CITY'] ?? null,
+            'senderState' => $configValues['STATE'] ?? null,
+            'senderCountry' => $configValues['COUNTRY'] ?? null,
+            'generatedAt' => $generatedAt,
         ];
 
         $html = view('pdf.transaction', $data)->render();
 
-        $options = new Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
 
         $dompdf = new Dompdf($options);
@@ -143,13 +148,13 @@ class TransactionController extends Controller
 
         $output = $dompdf->output();
 
-        $number = $transaction->transaction_number ?: ('TXN-' . $transaction->id);
-        $fileName = $number . '.pdf';
-        $relativePath = 'transactions/' . $fileName;
+        $number = $transaction->transaction_number ?: ('TXN-'.$transaction->id);
+        $fileName = $number.'.pdf';
+        $relativePath = 'transactions/'.$fileName;
 
         Storage::disk('public')->put($relativePath, $output);
 
-        $downloadKey = 'transaction:' . $number;
+        $downloadKey = 'transaction:'.$number;
         $download = Download::firstOrNew(['name' => $downloadKey]);
         $download->path = $relativePath;
         $download->updated_at = now();
@@ -161,9 +166,9 @@ class TransactionController extends Controller
         $download->save();
 
         return [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
     }
 }

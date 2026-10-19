@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\CustInvoice;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Models\CustInvoice;
 
 class CustPaymentAllocationUpdateRequest extends FormRequest
 {
@@ -21,12 +21,12 @@ class CustPaymentAllocationUpdateRequest extends FormRequest
                 'nullable',
                 'exists:cust_invoices,id',
                 function ($attribute, $value, $fail) {
-                    if (!$value) {
+                    if (! $value) {
                         return;
                     }
 
                     $invoice = CustInvoice::find($value);
-                    if (!$invoice) {
+                    if (! $invoice) {
                         return;
                     }
 
@@ -40,8 +40,8 @@ class CustPaymentAllocationUpdateRequest extends FormRequest
             'balance_before_payment' => ['sometimes', 'required', 'string', 'max:255'],
             'balance_after_payment' => ['sometimes', 'required', 'string', 'max:255'],
             'installment_number' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('cust_payment_allocations')->ignore(
-                    $this->route('cust_payment_allocation')
-                )],
+                $this->route('cust_payment_allocation')
+            )],
         ];
     }
 

@@ -36,5 +36,4 @@ class CustPaymentAllocation extends Model
     {
         return $this->belongsTo(CustInvoice::class, 'invoice_id');
     }
-
 }

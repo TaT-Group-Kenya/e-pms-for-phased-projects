@@ -24,7 +24,7 @@ export default function ProjectsSummaryReportPage() {
     project_source_origin_id: '',
     project_location_id: '',
     project_owner_id: '',
-    job_reference_id: '',
+    bol_number: '',
     from_date: '',
     to_date: '',
   });
@@ -57,13 +57,13 @@ export default function ProjectsSummaryReportPage() {
         .catch(() => ({ ok: false, data: null, error: 'Error loading categories' })),
       fetch('/api/projects/source-origins/list', { headers: { Authorization: `Bearer ${accessToken}` } })
         .then(res => res.json().then(json => ({ ok: res.ok, data: Array.isArray(json.data) ? json.data : json })))
-        .catch(() => ({ ok: false, data: null, error: 'Error loading origins' })),
+        .catch(() => ({ ok: false, data: null, error: 'Error loading destinations' })),
       fetch('/api/projects/locations/list', { headers: { Authorization: `Bearer ${accessToken}` } })
         .then(res => res.json().then(json => ({ ok: res.ok, data: Array.isArray(json.data) ? json.data : json })))
-        .catch(() => ({ ok: false, data: null, error: 'Error loading locations' })),
+        .catch(() => ({ ok: false, data: null, error: 'Error loading cfs' })),
       fetch('/api/project-owners/list', { headers: { Authorization: `Bearer ${accessToken}` } })
         .then(res => res.json().then(json => ({ ok: res.ok, data: Array.isArray(json.data) ? json.data : json })))
-        .catch(() => ({ ok: false, data: null, error: 'Error loading project owners' })),
+        .catch(() => ({ ok: false, data: null, error: 'Error loading consignees' })),
     ]).then(([currencies, customers, categories, origins, locations, projectOwners]) => {
       if (!isMounted) return;
       if (currencies.ok && Array.isArray(currencies.data)) setCurrencyOptions(currencies.data);
@@ -73,11 +73,11 @@ export default function ProjectsSummaryReportPage() {
       if (categories.ok && Array.isArray(categories.data)) setCategoryOptions(categories.data);
       else addToast('Failed to load categories', 'error');
       if (origins.ok && Array.isArray(origins.data)) setOriginOptions(origins.data);
-      else addToast('Failed to load origins', 'error');
+      else addToast('Failed to load destinations', 'error');
       if (locations.ok && Array.isArray(locations.data)) setLocationOptions(locations.data);
-      else addToast('Failed to load locations', 'error');
+      else addToast('Failed to load cfs', 'error');
       if (projectOwners.ok && Array.isArray(projectOwners.data)) setProjectOwnerOptions(projectOwners.data);
-      else addToast('Failed to load project owners', 'error');
+      else addToast('Failed to load consignees', 'error');
     });
     return () => { isMounted = false; };
   }, [accessToken, addToast]);
@@ -152,7 +152,7 @@ export default function ProjectsSummaryReportPage() {
       const urlObj = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = urlObj;
-      a.download = 'projects-summary.pdf';
+      a.download = 'consignments-summary.pdf';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -165,20 +165,20 @@ export default function ProjectsSummaryReportPage() {
   function exportCsv() {
     const columns = [
       'Date',
-      'Job Reference ID',
+      'BOL Number',
       'Customer',
-      'Project Name',
+      'Consignment',
       'Category',
-      'Source Origin',
-      'Location',
-      'Project Owner',
+      'Destination',
+      'CFS',
+      'Consignee',
       'Currency',
       'Amount',
       'Created By',
     ];
     const rows = data.map(row => [
       row.start_date ? formatDateTime(row.start_date) : '',
-      row.job_reference_id ?? '',
+      row.bol_number ?? '',
       row.customer_name ?? '',
       row.name ?? '',
       row.project_category ?? '',
@@ -194,7 +194,7 @@ export default function ProjectsSummaryReportPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'projects-summary.csv';
+    a.download = 'consignments-summary.csv';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -209,7 +209,7 @@ export default function ProjectsSummaryReportPage() {
           {/* Card 1: Title & Export */}
           <div className="mb-6">
             <div className="bg-white rounded-lg shadow p-5 flex items-center justify-between">
-              <h5 className="!mb-0">Projects Summary Report</h5>
+              <h5 className="!mb-0">Consignments Summary Report</h5>
               <div className="flex gap-2">
                 <button
                   className="rounded-full bg-transparent text-primary-500 px-4 py-2 flex items-center gap-2 hover:bg-primary-50 transition"
@@ -284,7 +284,7 @@ export default function ProjectsSummaryReportPage() {
                 onChange={handleFilterChange}
                 className="form-select rounded-lg h-[42px] border border-gray-300 focus:border-primary-500 focus:ring-primary-500 py-3 px-4 mt-6 md:mt-6"
               >
-                <option value="">All Origins</option>
+                <option value="">All Destinations</option>
                 {originOptions.map((o: any) => (
                   <option key={o.id || o.value} value={o.id || o.value}>
                     {o.name || o.label}
@@ -297,7 +297,7 @@ export default function ProjectsSummaryReportPage() {
                 onChange={handleFilterChange}
                 className="form-select rounded-lg h-[42px] border border-gray-300 focus:border-primary-500 focus:ring-primary-500 py-3 px-4 mt-6 md:mt-6"
               >
-                <option value="">All Locations</option>
+                <option value="">All CFSs</option>
                 {locationOptions.map((l: any) => (
                   <option key={l.id || l.value} value={l.id || l.value}>
                     {l.name || l.label}
@@ -310,7 +310,7 @@ export default function ProjectsSummaryReportPage() {
                 onChange={handleFilterChange}
                 className="form-select rounded-lg h-[42px] border border-gray-300 focus:border-primary-500 focus:ring-primary-500 py-3 px-4 mt-6 md:mt-6"
               >
-                <option value="">All Project Owners</option>
+                <option value="">All Consignees</option>
                 {projectOwnerOptions.map((o: any) => (
                   <option key={o.id || o.value} value={o.id || o.value}>
                     {o.name || o.label}
@@ -319,11 +319,11 @@ export default function ProjectsSummaryReportPage() {
               </select>
               <input
                 type="text"
-                name="job_reference_id"
-                value={filters.job_reference_id}
+                name="bol_number"
+                value={filters.bol_number}
                 onChange={handleFilterChange}
                 className="form-input rounded-lg h-[42px] border border-gray-300 focus:border-primary-500 focus:ring-primary-500 py-3 px-4 mt-6 md:mt-6"
-                placeholder="Job Reference ID"
+                placeholder="BOL Number"
               />
               <div className="flex flex-col">
                 <label htmlFor="from_date" className="mb-1 text-sm text-gray-600">From</label>
@@ -366,7 +366,7 @@ export default function ProjectsSummaryReportPage() {
               <div className="flex flex-col items-center justify-center py-12">
                 <i className="material-symbols-outlined text-6xl text-primary-300 mb-4">hourglass_empty</i>
                 <h3 className="text-xl font-semibold mb-2 text-gray-700">Run report to see data</h3>
-                <p className="text-gray-500 mb-4 text-center">No data has been requested yet.<br />Set your filters and click <span className='font-semibold text-primary-500'>Run Report</span> to generate your projects summary.</p>
+                <p className="text-gray-500 mb-4 text-center">No data has been requested yet.<br />Set your filters and click <span className='font-semibold text-primary-500'>Run Report</span> to generate your consignments summary.</p>
                 <div className="flex items-center gap-2">
                   <i className="material-symbols-outlined text-2xl text-primary-500">play_circle</i>
                   <span className="text-primary-500 font-medium">Ready to run your report?</span>
@@ -378,13 +378,13 @@ export default function ProjectsSummaryReportPage() {
                   <thead>
                     <tr>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Date</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Reference ID</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">BOL Number</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Customer</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Project Name</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Consignment</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Category</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Source Origin</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Location</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Project Owner</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Destination</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">CFS</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Consignee</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Currency</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Amount</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Created By</th>
@@ -399,7 +399,7 @@ export default function ProjectsSummaryReportPage() {
                       data.map((row, idx) => (
                         <tr key={idx} className={idx % 2 === 0 ? "bg-gray-50 border-b border-gray-200" : "bg-white border-b border-gray-200"}>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.start_date ? formatDateTime(row.start_date) : ''}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.job_reference_id ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.bol_number ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.customer_name}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.name}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_category ?? ''}</td>

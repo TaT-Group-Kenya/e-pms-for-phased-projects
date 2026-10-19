@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import AuthenticatedLayout from "../../components/authenticated/AuthenticatedLayout";
 import { ToastContainer } from "../../components/common/Toast";
+import LinkedShipContainerCard, { type LinkedShipContainer } from "../../components/shipContainers/LinkedShipContainerCard";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 import { useToast } from "../../hooks/useToast";
 import { selectAccessToken } from "../../store/auth/selectors";
@@ -85,7 +86,7 @@ interface ProjectOwnerSummary {
 interface OrderDetail {
   id: number;
   order_number: string;
-  job_reference_id?: string;
+  bol_number?: string;
   quotation_id: number | null;
   project_id: number | null;
   customer_id: number | null;
@@ -105,6 +106,7 @@ interface OrderDetail {
   customer?: CustomerSummary;
   project?: ProjectSummary;
   project_owner?: ProjectOwnerSummary;
+  ship_container?: LinkedShipContainer | null;
   orderItems?: OrderItem[];
   taxitems?: OrderTaxItem[];
   documents?: OrderDocument[];
@@ -588,7 +590,7 @@ const OrderDetailPage: React.FC = () => {
         currency: (editData.currency || order.currency || "").toString(),
         payment_terms: (editData.payment_terms ?? order.payment_terms ?? "").toString(),
         notes_to_customer: (editData.notes_to_customer ?? order.notes_to_customer ?? "").toString(),
-        job_reference_id: (editData.job_reference_id ?? order.job_reference_id ?? "").toString(),
+        bol_number: (editData.bol_number ?? order.bol_number ?? "").toString(),
         created_at: editData.created_at ?? order.created_at,
       };
 
@@ -1154,7 +1156,7 @@ const OrderDetailPage: React.FC = () => {
           <h5 className="!mb-1">Order Details</h5>
           <p className="text-sm text-gray-500">Order #{order.order_number}</p>
           <p className="text-sm text-gray-500">
-            Job Ref: <span className="font-semibold">{order.job_reference_id || "-"}</span>
+            BOL Number: <span className="font-semibold">{order.bol_number || "-"}</span>
           </p>
         </div>
 
@@ -1274,7 +1276,7 @@ const OrderDetailPage: React.FC = () => {
                     }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">work</i>
-                  Order Project
+                  Order Consignment
                 </button>
               </li>
             </ul>
@@ -1312,9 +1314,9 @@ const OrderDetailPage: React.FC = () => {
                       </div>
 
                       <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
-                        <span className="text-gray-600 dark:text-gray-400">Job Ref:</span>
+                        <span className="text-gray-600 dark:text-gray-400">BOL Number:</span>
                         <span className="text-black dark:text-white font-semibold">
-                          {order.job_reference_id || "-"}
+                          {order.bol_number || "-"}
                         </span>
                       </div>
 
@@ -1562,6 +1564,8 @@ const OrderDetailPage: React.FC = () => {
                     </div>
                   </div>
 
+                  <LinkedShipContainerCard container={order.ship_container} title="Shipment at a glance" />
+
                   {/* Customer */}
                   {order.customer && (
                     <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
@@ -1618,7 +1622,7 @@ const OrderDetailPage: React.FC = () => {
                   {order.project_owner && (
                     <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                       <h6 className="text-black dark:text-white font-semibold mb-[15px]">
-                        Project Owner
+                        Consignee
                       </h6>
 
                       <div className="space-y-[8px] text-sm">
@@ -1654,7 +1658,7 @@ const OrderDetailPage: React.FC = () => {
                   {order.project && (
                     <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                       <h6 className="text-black dark:text-white font-semibold mb-[15px]">
-                        Project
+                        Consignment
                       </h6>
 
                       <div className="space-y-[8px] text-sm">
@@ -1720,7 +1724,7 @@ const OrderDetailPage: React.FC = () => {
                             </i>
                             {isGeneratingInvoice
                               ? "Generating Invoice..."
-                              : "Approve (Generate Invoice & Project)"}
+                              : "Approve (Generate Invoice & Consignment)"}
                           </button>
                         )}
 
@@ -1771,6 +1775,8 @@ const OrderDetailPage: React.FC = () => {
           {/* Order Items Tab */}
           {activeTab === 1 && (
             <div className="pt-[20px]">
+              <LinkedShipContainerCard container={order.ship_container} />
+
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <h6 className="text-black dark:text-white font-semibold mb-[15px]">
                   Order Items
@@ -1988,7 +1994,7 @@ const OrderDetailPage: React.FC = () => {
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <h6 className="text-black dark:text-white font-semibold mb-[15px]">
-                  Order Project
+                  Order Consignment
                 </h6>
 
                 {order.project ? (
@@ -2059,7 +2065,7 @@ const OrderDetailPage: React.FC = () => {
                   </div>
                 ) : (
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    There is no project setup for this order yet.
+                    There is no Consignment setup for this order yet.
                   </p>
                 )}
               </div>
@@ -2113,15 +2119,15 @@ const OrderDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="mb-[10px] text-black dark:text-white font-medium block">
-                      Job Reference ID
+                      BOL Number
                     </label>
                     <input
                       type="text"
-                      value={editData.job_reference_id ?? order.job_reference_id ?? ""}
-                      onChange={(e) => handleEditFieldChange("job_reference_id", e.target.value)}
+                      value={editData.bol_number ?? order.bol_number ?? ""}
+                      onChange={(e) => handleEditFieldChange("bol_number", e.target.value)}
                       disabled={true}
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      placeholder="E.g. JOB12345"
+                      placeholder="E.g. MEDUM2822382"
                     />
                   </div>
                   <div>

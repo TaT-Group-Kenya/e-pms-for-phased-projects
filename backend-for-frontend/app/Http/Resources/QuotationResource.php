@@ -2,20 +2,35 @@
 
 namespace App\Http\Resources;
 
+use Carbon\Carbon;
+
 class QuotationResource extends BaseResource
 {
     public function toArray($request): array
     {
+        // Container numbers come through the linked ship container entry
+        $numbers = null;
+        if ($this->relationLoaded('shipContainer') && $this->shipContainer) {
+            $numbers = $this->shipContainer->numbers->pluck('container_no')->all();
+        }
+
         return [
             'id' => $this->id,
             'quotation_number' => $this->quotation_number,
-            'job_reference_id' => $this->job_reference_id,
+            'bol_number' => $this->bol_number,
+            'ship_container_id' => $this->ship_container_id,
+            'ship_container' => $this->whenLoaded('shipContainer', new ShipContainerResource($this->shipContainer)),
+            'ship_container_numbers' => $numbers,
             'customer_id' => $this->customer_id,
             'project_owner_id' => $this->project_owner_id,
             'title' => $this->title,
             'description' => $this->description,
             'status' => $this->status,
             'valid_until_date' => $this->formatTimestamp($this->valid_until_date),
+            'clearance_deadline' => $this->formatTimestamp($this->clearance_deadline),
+            'remaining_clearance_days' => $this->clearance_deadline
+                ? (int) Carbon::today()->diffInDays(Carbon::parse($this->clearance_deadline)->startOfDay(), false)
+                : null,
             'subtotal_amount' => (float) $this->subtotal_amount,
             'tax_amount' => (float) $this->tax_amount,
             'discount_percentage' => $this->discount_percentage,
@@ -45,6 +60,8 @@ class QuotationResource extends BaseResource
             'updated_by_user' => new UserResource($this->whenLoaded('updatedByUser')),
 
             'project_owner' => new ProjectOwnerResource($this->whenLoaded('projectOwner')),
+
+            'client_name' => $this->projectOwner?->name ?? $this->project_owner_id,
 
             'receivingPaymentMethod' => new PaymentReceivingMethodResource($this->whenLoaded('receivingPaymentMethod')),
 

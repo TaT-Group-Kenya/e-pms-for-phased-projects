@@ -17,7 +17,7 @@ class QuoteDocumentUpdateRequest extends FormRequest
         return [
             'quotation_id' => ['nullable', 'exists:quotations,id'],
             'document_path' => ['sometimes', 'required', 'string', 'max:255'],
-            'document_type' => ['sometimes', 'required', Rule::in(['proposal','terms','attachments'])],
+            'document_type' => ['sometimes', 'required', Rule::in(['proposal', 'terms', 'attachments'])],
             'attachments' => ['sometimes', 'required', 'string', 'max:255'],
         ];
     }

@@ -29,7 +29,7 @@ class QuoteDocument extends Model
 
     public function getDocumentUrlAttribute()
     {
-        return asset('storage/' . $this->document_path);
+        return asset('storage/'.$this->document_path);
     }
 
     public function getDocumentTypeNameAttribute()

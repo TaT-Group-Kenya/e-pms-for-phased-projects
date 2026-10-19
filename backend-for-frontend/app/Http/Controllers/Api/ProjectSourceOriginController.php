@@ -3,18 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\ProjectSourceOrigin;
-use App\Services\ProjectSourceOriginService;
-use App\Http\Resources\ProjectSourceOriginResource;
 use App\Http\Requests\ProjectSourceOriginStoreRequest;
 use App\Http\Requests\ProjectSourceOriginUpdateRequest;
+use App\Http\Resources\ProjectSourceOriginResource;
+use App\Models\ProjectSourceOrigin;
+use App\Services\ProjectSourceOriginService;
+use Illuminate\Http\Request;
 
 class ProjectSourceOriginController extends Controller
 {
     protected $service;
 
-    public function __construct(ProjectSourceOriginService $service) {
+    public function __construct(ProjectSourceOriginService $service)
+    {
         $this->service = $service;
     }
 
@@ -25,6 +26,7 @@ class ProjectSourceOriginController extends Controller
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return ProjectSourceOriginResource::collection($data);
     }
 
@@ -32,6 +34,7 @@ class ProjectSourceOriginController extends Controller
     {
         $this->authorize('create', ProjectSourceOrigin::class);
         $model = $this->service->create($request->validated());
+
         return new ProjectSourceOriginResource($model);
     }
 
@@ -47,6 +50,7 @@ class ProjectSourceOriginController extends Controller
         $this->authorize('update', $projectSourceOrigin);
 
         $updated = $this->service->update($projectSourceOrigin->id, $request->validated());
+
         return new ProjectSourceOriginResource($updated);
     }
 
@@ -55,6 +59,7 @@ class ProjectSourceOriginController extends Controller
         $this->authorize('delete', $projectSourceOrigin);
 
         $this->service->delete($projectSourceOrigin->id);
+
         return response()->noContent();
     }
 }

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class Account extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'accounts';
 
     public $timestamps = false;
@@ -21,6 +22,7 @@ class Account extends Model
         'currency',
         'balance',
         'overdraft_allowed',
+        'chart_of_account_id',
         'updated_at',
         'updated_by',
         'created_at',
@@ -30,4 +32,13 @@ class Account extends Model
         'deleted_by',
     ];
 
+    public function chartOfAccount()
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account_id');
+    }
+
+    public function loans()
+    {
+        return $this->hasMany(Loan::class, 'account_id');
+    }
 }

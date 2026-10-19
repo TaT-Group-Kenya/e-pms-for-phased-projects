@@ -2,24 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class Quotation extends Model
 {
     use HasLogicalDeletion;
     use HasLogicalDeletion;
+
     protected $table = 'quotations';
 
     protected $fillable = [
         'quotation_number',
-        'job_reference_id',
+        'bol_number',
+        'ship_container_id',
         'customer_id',
         'project_owner_id',
         'title',
         'description',
         'status',
         'valid_until_date',
+        'clearance_deadline',
         'subtotal_amount',
         'tax_amount',
         'discount_percentage',
@@ -39,6 +42,11 @@ class Quotation extends Model
         'deleted_by',
     ];
 
+    public function shipContainer()
+    {
+        return $this->belongsTo(ShipContainer::class, 'ship_container_id');
+    }
+
     public function customer()
     {
         return $this->belongsTo(Customer::class, 'customer_id');
@@ -51,14 +59,14 @@ class Quotation extends Model
 
     public function receivingPaymentMethod()
     {
-        return $this->belongsTo(\App\Models\PaymentReceivingMethod::class, 'payment_receiving_method_id');
+        return $this->belongsTo(PaymentReceivingMethod::class, 'payment_receiving_method_id');
     }
-    
+
     public function quoteItems()
     {
         return $this->hasMany(QuoteLineItem::class, 'quotation_id');
     }
-    
+
     public function documents()
     {
         return $this->hasMany(QuoteDocument::class, 'quotation_id');
@@ -74,11 +82,31 @@ class Quotation extends Model
         return $this->hasOne(Order::class, 'quotation_id');
     }
 
-    public function setJobReferenceIdAttribute($value): void
+    public function setBolNumberAttribute($value): void
     {
-        $this->attributes['job_reference_id'] = $value !== null
+        $this->attributes['bol_number'] = $value !== null
             ? strtoupper((string) $value)
             : null;
+    }
+
+    /**
+     * Keep the historical bol_number column in sync with the linked ship
+     * container's single BOL/BL number so orders/invoices/PDFs that still
+     * read this column keep working. (The container-number list is tracked
+     * on the ship container entry itself, not here.)
+     */
+    public function syncBolNumberFromContainer(): void
+    {
+        if (! $this->ship_container_id) {
+            return;
+        }
+
+        $bolNumber = $this->shipContainer?->documentNumber();
+
+        if ($bolNumber !== $this->bol_number) {
+            $this->bol_number = $bolNumber;
+            $this->save();
+        }
     }
 
     public function createdByUser()

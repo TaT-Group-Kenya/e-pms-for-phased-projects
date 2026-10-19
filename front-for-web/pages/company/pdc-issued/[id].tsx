@@ -306,9 +306,9 @@ export default function PdcIssuedDetailPage() {
                       <span>{item.invoice_number || "-"}</span>
                     )}
                   </div>
-                  {item.invoice?.job_reference_id && (
+                  {item.invoice?.bol_number && (
                     <div className="text-sm text-gray-500 mt-2">
-                      Job Ref: {item.invoice.job_reference_id}
+                      BOL Number: {item.invoice.bol_number}
                     </div>
                   )}
                   {item.invoice?.title && (
@@ -329,7 +329,7 @@ export default function PdcIssuedDetailPage() {
 
                 <div className="p-4 border rounded-md bg-slate-50 dark:bg-[#111827]">
                   <div className="text-sm text-gray-500 font-semibold">
-                    Company
+                    Service Provider
                   </div>
                   <div className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
                     {item.company

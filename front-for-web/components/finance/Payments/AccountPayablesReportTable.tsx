@@ -21,7 +21,7 @@ interface CompanyPaymentSummary {
   projectId?: number | null;
   invoiceNumber?: string | null;
   invoiceId?: number | null;
-  jobReferenceId?: string | null;
+  bolNumber?: string | null;
   transactedBy?: string | null;
 }
 
@@ -66,7 +66,7 @@ const AccountPayablesReportTable: React.FC = () => {
 
         const data: any = await resp.json().catch(() => null);
         if (!resp.ok) {
-          addToast(data?.message || "Failed to load company payments", "error");
+          addToast(data?.message || "Failed to load Service Provider payments", "error");
           setRows([]);
           return;
         }
@@ -86,7 +86,7 @@ const AccountPayablesReportTable: React.FC = () => {
           let projectId: number | null = null;
           let invoiceNumber: string | null = null;
           let invoiceId: number | null = null;
-          let jobReferenceId: string | null = null;
+          let bolNumber: string | null = null;
 
           if (invoice) {
             if (invoice.invoice_number) {
@@ -113,8 +113,8 @@ const AccountPayablesReportTable: React.FC = () => {
               if (invoice.project.id != null) {
                 projectId = Number(invoice.project.id);
               }
-              if (invoice.project.job_reference_id) {
-                jobReferenceId = String(invoice.project.job_reference_id);
+              if (invoice.project.bol_number) {
+                bolNumber = String(invoice.project.bol_number);
               }
             }
           }
@@ -134,7 +134,7 @@ const AccountPayablesReportTable: React.FC = () => {
             projectId,
             invoiceNumber,
             invoiceId,
-            jobReferenceId,
+            bolNumber,
           };
         });
 
@@ -152,8 +152,8 @@ const AccountPayablesReportTable: React.FC = () => {
       } catch (err: any) {
         if (err?.name === "AbortError") return;
         // eslint-disable-next-line no-console
-        console.error("fetch company payments error", err);
-        addToast("Error loading company payments.", "error");
+        console.error("fetch Service Provider payments error", err);
+        addToast("Error loading Service Provider payments.", "error");
         setRows([]);
       } finally {
         setLoading(false);
@@ -319,8 +319,8 @@ const AccountPayablesReportTable: React.FC = () => {
     const headers = [
       "ID",
       "Date",
-      "Company",
-      "Job Reference ID",
+      "Service Provider",
+      "BOL Number",
       "Invoice Number",
       "Amount Paid",
       "Transacted By",
@@ -330,7 +330,7 @@ const AccountPayablesReportTable: React.FC = () => {
       p.id,
       p.payment_date ?? "",
       p.companyName ?? "",
-      p.jobReferenceId ?? "",
+      p.bolNumber ?? "",
       p.invoiceNumber ?? "",
       formatCurrency(p.amount_paid, p.currency) ?? "",
       p.transactedBy ?? "",
@@ -344,7 +344,7 @@ const AccountPayablesReportTable: React.FC = () => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "company-payments.csv");
+    link.setAttribute("download", "service-provider-payments.csv");
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -370,7 +370,7 @@ const AccountPayablesReportTable: React.FC = () => {
                   onChange={(e) => setCompanyFilterId(e.target.value)}
                   className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
                 >
-                  <option value="">All companies</option>
+                  <option value="">All Service Providers</option>
                   {companyOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
@@ -385,7 +385,7 @@ const AccountPayablesReportTable: React.FC = () => {
                   onChange={(e) => setProjectFilterId(e.target.value)}
                   className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
                 >
-                  <option value="">All projects</option>
+                  <option value="">All Consignments</option>
                   {projectOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
@@ -482,8 +482,8 @@ const AccountPayablesReportTable: React.FC = () => {
               <tr>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">ID</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Date</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Company</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Job Reference ID</th>
+                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Service Provider</th>
+                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">BOL Number</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Invoice Number</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Amount Paid</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Transacted By</th>
@@ -494,7 +494,7 @@ const AccountPayablesReportTable: React.FC = () => {
               {loading && (
                 <tr>
                   <td colSpan={8} className="text-center text-sm px-[15px] py-[12px]">
-                    Loading company payments...
+                    Loading Service Provider payments...
                   </td>
                 </tr>
               )}
@@ -502,7 +502,7 @@ const AccountPayablesReportTable: React.FC = () => {
               {!loading && filteredRows.length === 0 && (
                 <tr>
                   <td colSpan={8} className="text-center text-sm px-[15px] py-[12px] text-gray-500">
-                    No company payments found.
+                    No Service Provider payments found.
                   </td>
                 </tr>
               )}
@@ -523,7 +523,7 @@ const AccountPayablesReportTable: React.FC = () => {
                       {p.companyName || "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
-                      {p.jobReferenceId || "-"}
+                      {p.bolNumber || "-"}
                     </td>
                     <td className="text-sm px-[15px] py-[8px] whitespace-nowrap">
                       {p.invoiceNumber || "-"}

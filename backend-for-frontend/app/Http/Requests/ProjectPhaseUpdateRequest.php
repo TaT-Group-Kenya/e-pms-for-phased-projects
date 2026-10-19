@@ -16,8 +16,8 @@ class ProjectPhaseUpdateRequest extends FormRequest
     {
         return [
             'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('project_phases')->ignore(
-                    $this->route('project_phase')
-                )],
+                $this->route('project_phase')
+            )],
             'project_id' => ['nullable', 'exists:projects,id'],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],

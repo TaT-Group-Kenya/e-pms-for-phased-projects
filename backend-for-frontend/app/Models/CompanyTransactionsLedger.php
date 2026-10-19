@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
-use App\Models\CompanyInvoice;
-use App\Models\CompanyCreditNote;
+use Illuminate\Database\Eloquent\Model;
 
 class CompanyTransactionsLedger extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'company_transactions_ledger';
 
     protected $fillable = [
@@ -29,12 +28,12 @@ class CompanyTransactionsLedger extends Model
         'net_amount',
         'company_id',
         'customer_id',
-        /** 
-         * if refund source_type = credit note, 
-         * if payment then source_type = internal 
-         * bank account from Accounts tbl 
+        /**
+         * if refund source_type = credit note,
+         * if payment then source_type = internal
+         * bank account from Accounts tbl
          * */
-        'source_type', 
+        'source_type',
         'source_id',
         'account_debit',
         'account_credit',
@@ -120,5 +119,4 @@ class CompanyTransactionsLedger extends Model
     {
         return $this->belongsTo(Account::class, 'account_credit');
     }
-
 }

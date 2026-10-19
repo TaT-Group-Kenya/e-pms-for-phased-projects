@@ -36,7 +36,7 @@ const ProjectInvoicesComponent: React.FC<ProjectInvoicesComponentProps> = ({
               <i className="material-symbols-outlined text-[48px] text-gray-400">receipt</i>
             </div>
             <p className="text-gray-600 dark:text-gray-400 font-medium">No invoices available</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-[8px]">Invoices will appear here once they are created for this project</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-[8px]">Invoices will appear here once they are created for this Consignment</p>
           </div>
         </div>
       </div>

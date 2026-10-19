@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
+use Illuminate\Database\Eloquent\Model;
 
 class OrderItem extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'order_items';
 
     protected $fillable = [
@@ -44,6 +45,7 @@ class OrderItem extends Model
 
             if (! $isTaxable) {
                 $item->item_amount = 0;
+
                 return;
             }
 
@@ -62,5 +64,4 @@ class OrderItem extends Model
     {
         return $this->belongsTo(Order::class);
     }
-
 }

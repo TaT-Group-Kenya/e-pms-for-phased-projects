@@ -1,39 +1,43 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\CompanyCreditNoteItem;
-use App\Services\CompanyCreditNoteItemService;
-use App\Http\Resources\CompanyCreditNoteItemResource;
 use App\Http\Requests\CompanyCreditNoteItemStoreRequest;
 use App\Http\Requests\CompanyCreditNoteItemUpdateRequest;
+use App\Http\Resources\CompanyCreditNoteItemResource;
+use App\Models\CompanyCreditNoteItem;
+use App\Services\CompanyCreditNoteItemService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CompanyCreditNoteItemController extends Controller
 {
     protected $service;
 
-    public function __construct(CompanyCreditNoteItemService $service) {
+    public function __construct(CompanyCreditNoteItemService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\CompanyCreditNoteItem::class);
+        $this->authorize('viewAny', CompanyCreditNoteItem::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return CompanyCreditNoteItemResource::collection($data);
     }
 
     public function store(CompanyCreditNoteItemStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\CompanyCreditNoteItem::class);
+        $this->authorize('create', CompanyCreditNoteItem::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
+
         return new CompanyCreditNoteItemResource($model);
     }
 
@@ -51,6 +55,7 @@ class CompanyCreditNoteItemController extends Controller
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($companyCreditNoteItem->id, $validated);
+
         return new CompanyCreditNoteItemResource($updated);
     }
 
@@ -59,6 +64,7 @@ class CompanyCreditNoteItemController extends Controller
         $this->authorize('delete', $companyCreditNoteItem);
 
         $this->service->delete($companyCreditNoteItem->id, Auth::id());
+
         return response()->noContent();
     }
 }

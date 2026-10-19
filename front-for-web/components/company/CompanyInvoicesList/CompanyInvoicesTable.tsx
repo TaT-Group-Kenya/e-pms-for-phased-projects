@@ -12,7 +12,7 @@ interface CompanyInvoiceSummary {
   id: number;
   invoice_number: string;
   project: {
-    job_reference_id?: string | null;
+    bol_number?: string | null;
     project_owner?: {
       id: number;
       name: string;
@@ -107,7 +107,7 @@ const CompanyInvoicesTable: React.FC = () => {
 
         if (!resp.ok) {
           addToast(
-            data?.message || "Failed to load company invoices",
+            data?.message || "Failed to load Service Provider invoices",
             "error"
           );
           setInvoices([]);
@@ -140,9 +140,9 @@ const CompanyInvoicesTable: React.FC = () => {
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         // eslint-disable-next-line no-console
-        console.error("fetch company invoices error", err);
+        console.error("fetch Service Provider invoices error", err);
         addToast(
-          "Error loading company invoices. Please try again.",
+          "Error loading Service Provider invoices. Please try again.",
           "error"
         );
         setInvoices([]);
@@ -355,7 +355,7 @@ const CompanyInvoicesTable: React.FC = () => {
       setAssignments(mapped.filter(a => a.billed !== true));
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error("fetch company assignments error", err);
+      console.error("fetch Service Provider assignments error", err);
       addToast("Error loading assigned phases. Please try again.", "error");
       setAssignments([]);
     } finally {
@@ -396,7 +396,7 @@ const CompanyInvoicesTable: React.FC = () => {
     }
 
     if (!selectedCompanyId || !selectedAssignmentId) {
-      addToast("Please select a company and a completed phase.", "error");
+      addToast("Please select a Service Provider and a completed phase.", "error");
       return;
     }
 
@@ -427,14 +427,14 @@ const CompanyInvoicesTable: React.FC = () => {
       const data: any = await resp.json().catch(() => null);
 
       if (!resp.ok) {
-        throw new Error(data?.message || "Failed to create company invoice from phase");
+        throw new Error(data?.message || "Failed to create Service Provider invoice from phase");
       }
 
-      addToast(data?.message || "Company invoice created successfully", "success");
+      addToast(data?.message || "Service Provider invoice created successfully", "success");
       setShowCreateModal(false);
       setReloadKey((prev) => prev + 1);
     } catch (e: any) {
-      addToast(e?.message || "Failed to create company invoice from phase", "error");
+      addToast(e?.message || "Failed to create Service Provider invoice from phase", "error");
     } finally {
       setCreatingInvoice(false);
     }
@@ -446,7 +446,7 @@ const CompanyInvoicesTable: React.FC = () => {
 
       <div className="trezo-card-header bg-white dark:bg-[#0c1427] mb-[20px] md:mb-[25px] flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-md gap-[15px]">
         <div className="trezo-card-title">
-          <h5 className="!mb-0">All Company Invoices</h5>
+          <h5 className="!mb-0">All Service Provider Invoices</h5>
         </div>
 
         <div className="flex items-center gap-[15px] w-full md:w-auto flex-wrap md:flex-nowrap">
@@ -489,7 +489,7 @@ const CompanyInvoicesTable: React.FC = () => {
                 <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
                   add
                 </i>
-                Create Company Invoice
+                Create Service Provider Invoice
               </span>
             </button>
           </Can>
@@ -519,16 +519,16 @@ const CompanyInvoicesTable: React.FC = () => {
                       Invoice #
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Job Ref ID
+                      BOL Number
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       <span style={{ minWidth: 200, display: 'inline-block' }}>Title</span>
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Company
+                      Service Provider
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Project Owner
+                      Consignee
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[15px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Subtotal
@@ -575,7 +575,7 @@ const CompanyInvoicesTable: React.FC = () => {
                           </Link>
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
-                          {inv.project.job_reference_id || ""}
+                          {inv.project.bol_number || ""}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px]">
                           {inv.title ? (
@@ -694,8 +694,8 @@ const CompanyInvoicesTable: React.FC = () => {
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
                         {searchTerm || statusFilter !== "all"
-                          ? "No company invoices match your criteria"
-                          : "No company invoices found"}
+                          ? "No Service Provider invoices match your criteria"
+                          : "No Service Provider invoices found"}
                       </td>
                     </tr>
                   )}
@@ -710,7 +710,7 @@ const CompanyInvoicesTable: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white dark:bg-[#0c1427] rounded-md shadow-lg w-full max-w-2xl p-[20px] md:p-[25px]">
             <div className="flex items-center justify-between mb-[15px]">
-              <h5 className="!mb-0">Create Company Invoice from Project</h5>
+              <h5 className="!mb-0">Create Service Provider Invoice from Consignment</h5>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
@@ -721,15 +721,15 @@ const CompanyInvoicesTable: React.FC = () => {
             </div>
 
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-[10px]">
-              Select a company and one of its completed, assigned project phases to generate a draft
-              company invoice. You can override the invoice header details below; financial amounts
+              Select a Service Provider and one of its completed, assigned consignment phases to generate a draft
+              Service Provider invoice. You can override the invoice header details below; financial amounts
               and line items can be edited later on the invoice detail page.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[15px]">
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-[6px]">
-                  Company
+                  Service Provider
                 </label>
                 <select
                   value={selectedCompanyId ?? ""}
@@ -737,7 +737,7 @@ const CompanyInvoicesTable: React.FC = () => {
                   className="w-full border border-gray-200 dark:border-[#172036] rounded-md px-[10px] py-[7px] text-sm bg-white dark:bg-[#0c1427] text-black dark:text-white outline-none"
                 >
                   <option value="">
-                    {companiesLoading ? "Loading companies..." : "Select company"}
+                    {companiesLoading ? "Loading companies..." : "Select Service Provider"}
                   </option>
                   {companies.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -789,7 +789,7 @@ const CompanyInvoicesTable: React.FC = () => {
                       <thead className="bg-gray-50 dark:bg-[#15203c] text-black dark:text-white">
                         <tr>
                           <th className="px-[12px] py-[8px] text-left">Select</th>
-                          <th className="px-[12px] py-[8px] text-left">Project</th>
+                          <th className="px-[12px] py-[8px] text-left">Consignment</th>
                           <th className="px-[12px] py-[8px] text-left">Phase</th>
                         </tr>
                       </thead>
@@ -808,7 +808,7 @@ const CompanyInvoicesTable: React.FC = () => {
                               />
                             </td>
                             <td className="px-[12px] py-[8px] whitespace-nowrap">
-                              {a.project_name || "(No project)"}
+                              {a.project_name || "(No consignment)"}
                             </td>
                             <td className="px-[12px] py-[8px] whitespace-nowrap">
                               {a.phase_code ? `${a.phase_code} - ${a.phase_name}` : a.phase_name}
@@ -820,8 +820,8 @@ const CompanyInvoicesTable: React.FC = () => {
                   ) : (
                     <div className="p-[12px] text-sm text-gray-500 dark:text-gray-400">
                       {selectedCompanyId
-                        ? "No completed project phases assigned to this company."
-                        : "Select a company to view its completed assigned phases."}
+                        ? "No completed consignment phases assigned to this Service Provider."
+                        : "Select a Service Provider to view its completed assigned phases."}
                     </div>
                   )}
                 </div>
@@ -844,7 +844,7 @@ const CompanyInvoicesTable: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-[6px]">
-                  Notes to Company
+                  Notes to Service Provider
                 </label>
                 <textarea
                   value={invoiceNotes}

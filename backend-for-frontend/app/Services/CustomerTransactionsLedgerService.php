@@ -15,7 +15,7 @@ class CustomerTransactionsLedgerService
     ) {
         $query = CustomerTransactionsLedger::query();
 
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
 
@@ -45,7 +45,7 @@ class CustomerTransactionsLedgerService
     public function find(int $id, array $with = [])
     {
         $query = CustomerTransactionsLedger::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
 

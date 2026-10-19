@@ -145,7 +145,31 @@ interface ReceivingPaymentMethod {
 interface Quotation {
   id: number;
   quotation_number: string;
-  job_reference_id?: string;
+  bol_number?: string;
+  ship_container_id?: number | null;
+  ship_container?: {
+    id: number;
+    reference_number: string;
+    container_type: string;
+    client_name?: string | null;
+    port_in?: string | null;
+    port_out?: string | null;
+    get_in?: string | null;
+    get_out?: string | null;
+    eta?: string | null;
+    etd?: string | null;
+    bl_no?: string | null;
+    container_numbers?: string[];
+    container_number_details?: Array<{
+      id?: number;
+      container_no: string;
+      size?: number | null;
+      size_unit?: string | null;
+      goods_description?: string | null;
+      entry_number?: string | null;
+    }>;
+  } | null;
+  ship_container_numbers?: string[] | null;
   title: string;
   description?: string;
   status: string;
@@ -159,6 +183,8 @@ interface Quotation {
     name: string;
   } | null;
   valid_until_date: string;
+  clearance_deadline?: string | null;
+  remaining_clearance_days?: number | null;
   subtotal_amount: number;
   tax_amount: number;
   discount_percentage: number;
@@ -176,6 +202,8 @@ interface Quotation {
   created_at: string;
   updated_at: string;
 }
+
+type QuotationContainerNumber = NonNullable<NonNullable<Quotation["ship_container"]>["container_number_details"]>[number]
 
 const QuotationDetail: React.FC = () => {
   const router = useRouter();
@@ -209,6 +237,42 @@ const QuotationDetail: React.FC = () => {
   const [deleteItem, setDeleteItem] = useState<QuoteLineItem | null>(null);
   const [isDeletingItem, setIsDeletingItem] = useState(false);
   const [deleteItemError, setDeleteItemError] = useState<string | null>(null);
+
+  /** Container numbers of the linked ship container entry */
+  const containerNumbers = useMemo<string[]>(() => {
+    if (Array.isArray(quotation?.ship_container_numbers)) {
+      return quotation.ship_container_numbers;
+    }
+    if (Array.isArray(quotation?.ship_container?.container_numbers)) {
+      return quotation.ship_container.container_numbers;
+    }
+    return [];
+  }, [quotation]);
+  const containerNumberDetails: QuotationContainerNumber[] =
+    quotation?.ship_container?.container_number_details ??
+    containerNumbers.map((container_no) => ({ container_no }));
+
+  const copyContainerNumbers = async (numbers: string[]) => {
+    const text = numbers.join(", ");
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      addToast("Container numbers copied to clipboard.", "success");
+    } catch {
+      addToast("Could not copy to clipboard. Please copy manually.", "error");
+    }
+  };
 
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [approvalAction, setApprovalAction] = useState<string>("make");
@@ -400,7 +464,7 @@ const QuotationDetail: React.FC = () => {
         if (err instanceof DOMException && err.name === "AbortError") {
           return;
         }
-        console.error("Error fetching project owners:", err);
+        console.error("Error fetching consignees:", err);
       } finally {
         setLoadingProjectOwners(false);
       }
@@ -554,11 +618,16 @@ const QuotationDetail: React.FC = () => {
           typeof editData.valid_until_date === "string" && editData.valid_until_date
             ? editData.valid_until_date
             : quotation.valid_until_date,
+        clearance_deadline:
+          editData.clearance_deadline !== undefined
+            ? editData.clearance_deadline || null
+            : quotation.clearance_deadline ?? null,
         currency: editData.currency ?? quotation.currency,
         payment_terms: (editData.payment_terms ?? quotation.payment_terms ?? "").toString(),
         notes_to_customer: (editData.notes_to_customer ?? quotation.notes_to_customer ?? "").toString(),
-        job_reference_id: (editData.job_reference_id ?? quotation.job_reference_id ?? "").toString(),
         // tax_percentage removed; tax_amount is driven by backend/tax items.
+        // bol_number removed from the edit form: it is derived server-side from
+        // the linked ship container entry.
         discount_percentage:
           typeof editData.discount_percentage === "number"
             ? editData.discount_percentage
@@ -1229,7 +1298,7 @@ const QuotationDetail: React.FC = () => {
               Quote #: <span className="font-semibold">{quotation.quotation_number}</span>
             </p>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              Job Ref: <span className="font-semibold">{quotation.job_reference_id || "-"}</span>
+              BOL Number: <span className="font-semibold">{quotation.bol_number || "-"}</span>
             </p>
           </div>
 
@@ -1342,7 +1411,7 @@ const QuotationDetail: React.FC = () => {
 
                       {quotation.project && (
                         <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
-                          <span className="text-gray-600 dark:text-gray-400">Related Project:</span>
+                          <span className="text-gray-600 dark:text-gray-400">Related Consignment:</span>
                           <span className="text-black dark:text-white font-semibold">
                             {quotation.project.code} - {quotation.project.name}
                           </span>
@@ -1353,6 +1422,22 @@ const QuotationDetail: React.FC = () => {
                         <span className="text-gray-600 dark:text-gray-400">Valid Until:</span>
                         <span className="text-black dark:text-white font-semibold">
                           {new Date(quotation.valid_until_date).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                        <span className="text-gray-600 dark:text-gray-400">Clearance Deadline:</span>
+                        <span className="text-black dark:text-white font-semibold">
+                          {quotation.clearance_deadline
+                            ? new Date(quotation.clearance_deadline).toLocaleDateString()
+                            : "N/A"}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center pb-[15px] border-b border-gray-100 dark:border-[#172036]">
+                        <span className="text-gray-600 dark:text-gray-400">Remaining clearance days(No. of free days):</span>
+                        <span className="text-black dark:text-white font-semibold">
+                          {quotation.remaining_clearance_days ?? "N/A"}
                         </span>
                       </div>
 
@@ -1521,15 +1606,24 @@ const QuotationDetail: React.FC = () => {
                       </div>
 
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Job Ref</span>
+                        <span className="text-gray-600 dark:text-gray-400">BOL Number</span>
                         <span className="text-black dark:text-white font-medium">
-                          {quotation.job_reference_id || "-"}
+                          {quotation.bol_number || "-"}
                         </span>
                       </div>
 
+                      {quotation.ship_container_id && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Ship Container</span>
+                          <Link href={`/ship-containers/${quotation.ship_container_id}`} className="text-primary-500 hover:text-primary-600 font-medium">
+                            {quotation.ship_container?.reference_number || "View"}
+                          </Link>
+                        </div>
+                      )}
+
                       {quotation.project_owner && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600 dark:text-gray-400">Project Owner</span>
+                          <span className="text-gray-600 dark:text-gray-400">Consignee</span>
                           <span className="text-black dark:text-white font-medium">
                             {quotation.project_owner.name}
                           </span>
@@ -1683,6 +1777,88 @@ const QuotationDetail: React.FC = () => {
           {/* Line Items Tab */}
           {activeTab === 1 && (
             <div className="pt-[20px]">
+              {/* Linked ship container info */}
+              {quotation.ship_container_id && (
+                <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md border-l-4 border-primary-500">
+                  <div className="flex items-center justify-between mb-[15px]">
+                    <h6 className="text-black dark:text-white font-semibold flex items-center gap-2">
+                      <i className="material-symbols-outlined !text-[20px] text-primary-500">sailing</i>
+                      Linked Ship Container
+                    </h6>
+                    <Link
+                      href={`/ship-containers/${quotation.ship_container_id}`}
+                      className="text-[13px] text-primary-500 hover:text-primary-600 inline-flex items-center gap-1"
+                    >
+                      Open container entry
+                      <i className="material-symbols-outlined !text-[16px]">arrow_forward</i>
+                    </Link>
+                  </div>
+
+                  <div className="grid gap-[15px] sm:grid-cols-2 lg:grid-cols-4">
+                    <div>
+                      <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-[4px]">Reference</p>
+                      <p className="text-black dark:text-white text-sm font-medium">{quotation.ship_container?.reference_number || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-[4px]">Client / Consignee</p>
+                      <p className="text-black dark:text-white text-sm">{quotation.ship_container?.client_name || quotation.project_owner?.name || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-[4px]">
+                        {quotation.ship_container?.container_type?.includes("export") ? "Port Out" : "Port In"}
+                      </p>
+                      <p className="text-black dark:text-white text-sm">{quotation.ship_container?.port_in || quotation.ship_container?.port_out || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-[4px]">Get In (Arrival)</p>
+                      <p className="text-black dark:text-white text-sm">{quotation.ship_container?.get_in?.replace("T", " ").slice(0, 16) || "—"}</p>
+                    </div>
+                  </div>
+
+                  {containerNumbers.length > 0 && (
+                    <div className="mt-[15px] pt-[15px] border-t border-gray-50 dark:border-[#15203c]">
+                      <div className="flex items-center justify-between mb-[8px]">
+                        <p className="text-[12px] text-gray-500 dark:text-gray-400">
+                          Container Numbers ({containerNumbers.length})
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => copyContainerNumbers(containerNumbers)}
+                          className="inline-flex items-center gap-[4px] bg-gray-50 dark:bg-[#15203c] border border-gray-100 dark:border-[#15203c] text-gray-600 dark:text-gray-300 rounded-md px-[8px] py-[3px] text-[12px] hover:text-primary-500 hover:border-primary-300 transition-all"
+                        >
+                          <i className="material-symbols-outlined !text-[14px]">content_copy</i>
+                          Copy all
+                        </button>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[520px] text-left text-[12px]">
+                          <thead className="text-gray-500 dark:text-gray-400">
+                            <tr>
+                              <th className="py-1 pr-3 font-medium">Container No</th>
+                              <th className="py-1 pr-3 font-medium">Size</th>
+                              <th className="py-1 pr-3 font-medium">Goods Description</th>
+                              <th className="py-1 pr-3 font-medium">Entry Number</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-[#15203c]">
+                            {containerNumberDetails.map((number, index) => (
+                              <tr key={number.id ?? `${number.container_no}-${index}`} className="text-black dark:text-white">
+                                <td className="py-1 pr-3 whitespace-nowrap">{number.container_no}</td>
+                                <td className="py-1 pr-3 whitespace-nowrap">
+                                  {number.size != null ? `${number.size} ${number.size_unit || "feet"}` : "—"}
+                                </td>
+                                <td className="py-1 pr-3">{number.goods_description || "—"}</td>
+                                <td className="py-1 pr-3 whitespace-nowrap">{number.entry_number || "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <div className="flex items-center justify-between mb-[20px]">
                   <h6 className="text-black dark:text-white font-semibold">Quote Line Items</h6>
@@ -2150,7 +2326,7 @@ const QuotationDetail: React.FC = () => {
                     onChange={(e) => handleItemFormChange("item_name", e.target.value)}
                     disabled={isItemSubmitting}
                     className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    placeholder="E.g. Design work for phase"
+                    placeholder="E.g. Clearance and Transport"
                   />
                 </div>
 
@@ -2440,7 +2616,7 @@ const QuotationDetail: React.FC = () => {
                   </div>
                   <div>
                     <label className="mb-[10px] text-black dark:text-white font-medium block">
-                      Project Owner
+                      Consignee
                     </label>
                     <select
                       value={(editData as any).project_owner_id != null ? String((editData as any).project_owner_id) : (quotation as any).project_owner_id ? String((quotation as any).project_owner_id) : ""}
@@ -2453,7 +2629,7 @@ const QuotationDetail: React.FC = () => {
                       disabled={isEditSubmitting || loadingProjectOwners}
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <option value="">{loadingProjectOwners ? "Loading..." : "Select Project Owner"}</option>
+                      <option value="">{loadingProjectOwners ? "Loading..." : "Select Consignee"}</option>
                       {projectOwners.map((owner) => (
                         <option key={owner.id} value={owner.id}>
                           {owner.name}
@@ -2529,6 +2705,18 @@ const QuotationDetail: React.FC = () => {
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
+                  <div>
+                    <label className="mb-[10px] text-black dark:text-white font-medium block">
+                      Clearance Deadline
+                    </label>
+                    <input
+                      type="date"
+                      value={(editData.clearance_deadline ?? quotation.clearance_deadline ?? "").slice(0, 10)}
+                      onChange={(e) => handleEditFieldChange("clearance_deadline", e.target.value || null)}
+                      disabled={isEditSubmitting}
+                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
                 </div>
 
                 <div className="sm:grid sm:grid-cols-3 sm:gap-[15px]">
@@ -2579,19 +2767,6 @@ const QuotationDetail: React.FC = () => {
                       disabled={isEditSubmitting}
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="0.00"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-[10px] text-black dark:text-white font-medium block">
-                      Job Reference ID
-                    </label>
-                    <input
-                      type="text"
-                      value={editData.job_reference_id ?? quotation.job_reference_id ?? ""}
-                      onChange={(e) => handleEditFieldChange("job_reference_id", e.target.value)}
-                      disabled={isEditSubmitting}
-                      className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      placeholder="E.g. JOB12345"
                     />
                   </div>
                 </div>

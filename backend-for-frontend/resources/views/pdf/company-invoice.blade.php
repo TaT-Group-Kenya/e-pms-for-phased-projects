@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Company Invoice {{ $invoice->invoice_number }}</title>
+    <title>Service Provider Invoice {{ $invoice->invoice_number }}</title>
     <style>
         @page { margin: 40px 40px 60px 40px; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111827; }
@@ -57,7 +57,7 @@
     @endif
     <div class="header">
         <div style="text-align: right;">
-            <h1>Company Invoice</h1>
+            <h1>Service Provider Invoice</h1>
             <div class="muted">Invoice #: {{ $invoice->invoice_number }}</div>
             <div class="muted">Date: {{ optional($invoice->created_at)->format('d/m/Y') }}</div>
             <div class="badge badge-status mt-2">{{ ucfirst($invoice->status) }}</div>
@@ -127,7 +127,7 @@
 
     @if($invoice->project)
         <div class="section card">
-            <h2>Project</h2>
+            <h2>Consignment</h2>
             <div class="text-sm"><span class="font-semibold">{{ $invoice->project->code ?? '' }} {{ $invoice->project->name ?? '' }}</span></div>
         </div>
     @endif

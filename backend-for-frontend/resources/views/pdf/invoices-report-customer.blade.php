@@ -43,10 +43,10 @@
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Job Reference ID</th>
+                <th>BOL Number</th>
                 <th>Customer</th>
                 <th>Invoice #</th>
-                <th>Project Name</th>
+                <th>Consignment</th>
                 <th>Currency</th>
                 <th>Amount</th>
                 <th>Paid</th>
@@ -68,7 +68,7 @@
                         -
                     @endif
                 </td>
-                <td>{{ $invoice['job_reference_id'] ?? '-' }}</td>
+                <td>{{ $invoice['bol_number'] ?? '-' }}</td>
                 <td>{{ $invoice['customer'] ?? '-' }}</td>
                 <td>{{ $invoice['invoice_number'] ?? '-' }}</td>
                 <td>{{ $invoice['project_name'] ?? '-' }}</td>

@@ -21,6 +21,9 @@ use App\Policies\{
     CurrencyPolicy,
     CustCreditNotePolicy,
     CustCreditNoteItemPolicy,
+    CustDebitNotePolicy,
+    CustDebitNoteItemPolicy,
+    CustDebitNoteDocumentPolicy,
     CustInvoicePolicy,
     CustInvoiceDocumentPolicy,
     CustInvoiceItemPolicy,
@@ -60,6 +63,7 @@ use App\Policies\{
     CustomerTransactionsLedgerPolicy,
     PdcReceivedCustomerPolicy,
     PdcIssuedCompanyPolicy,
+    ShipContainerPolicy,
 };
 
 class AuthServiceProvider extends ServiceProvider
@@ -86,6 +90,9 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Currency::class => CurrencyPolicy::class,
         \App\Models\CustCreditNote::class => CustCreditNotePolicy::class,
         \App\Models\CustCreditNoteItem::class => CustCreditNoteItemPolicy::class,
+        \App\Models\CustDebitNote::class => CustDebitNotePolicy::class,
+        \App\Models\CustDebitNoteItem::class => CustDebitNoteItemPolicy::class,
+        \App\Models\CustDebitNoteDocument::class => CustDebitNoteDocumentPolicy::class,
         \App\Models\CustInvoice::class => CustInvoicePolicy::class,
         \App\Models\CustInvoiceDocument::class => CustInvoiceDocumentPolicy::class,
         \App\Models\CustInvoiceItem::class => CustInvoiceItemPolicy::class,
@@ -122,6 +129,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\CustomerTransactionsLedger::class => CustomerTransactionsLedgerPolicy::class,
         \App\Models\PdcReceivedCustomer::class => PdcReceivedCustomerPolicy::class,
         \App\Models\PdcIssuedCompany::class => PdcIssuedCompanyPolicy::class,
+        \App\Models\ShipContainer::class => ShipContainerPolicy::class,
     ];
 
     public function register(): void
@@ -134,4 +142,3 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
     }
 }
-

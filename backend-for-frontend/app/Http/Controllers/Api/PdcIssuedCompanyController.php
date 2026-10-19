@@ -3,21 +3,22 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PdcIssuedCompanyStoreRequest;
+use App\Http\Requests\PdcIssuedCompanyUpdateRequest;
+use App\Http\Resources\PdcIssuedCompanyResource;
+use App\Models\Account;
+use App\Models\CompanyInvoice;
+use App\Models\CompanyPayment;
+use App\Models\CompanyTransactionsLedger;
+use App\Models\PdcIssuedCompany;
+use App\Models\ProjectPhase;
+use App\Services\CommonService;
+use App\Services\CurrencyConversionService;
+use App\Services\PdcIssuedCompanyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use App\Services\PdcIssuedCompanyService;
-use App\Http\Resources\PdcIssuedCompanyResource;
-use App\Http\Requests\PdcIssuedCompanyStoreRequest;
-use App\Http\Requests\PdcIssuedCompanyUpdateRequest;
-use App\Models\PdcIssuedCompany;
-use App\Models\CompanyPayment;
-use App\Models\CompanyTransactionsLedger;
-use App\Models\CompanyInvoice;
-use App\Models\Account;
-use App\Services\CommonService;
-use App\Services\CurrencyConversionService;
 
 class PdcIssuedCompanyController extends Controller
 {
@@ -37,6 +38,7 @@ class PdcIssuedCompanyController extends Controller
         $filters = $request->except('per_page', 'page');
 
         $data = $this->service->index($filters, $perPage, $page, 0, ['company', 'invoice', 'bankAccount']);
+
         return PdcIssuedCompanyResource::collection($data);
     }
 
@@ -49,6 +51,7 @@ class PdcIssuedCompanyController extends Controller
         $validated['created_at'] = now();
 
         $model = $this->service->create($validated);
+
         return new PdcIssuedCompanyResource($model);
     }
 
@@ -70,6 +73,7 @@ class PdcIssuedCompanyController extends Controller
 
         $model = $this->service->find($id, ['company', 'invoice', 'bankAccount', 'createdByUser', 'updatedByUser']);
         $this->authorize('view', $model);
+
         return new PdcIssuedCompanyResource($model);
     }
 
@@ -96,7 +100,7 @@ class PdcIssuedCompanyController extends Controller
 
                 $otherPdcReserved = (float) PdcIssuedCompany::where('invoice_id', $invoice->id)
                     ->where('is_deleted', false)
-                    ->whereIn('status', ['issued','pending'])
+                    ->whereIn('status', ['issued', 'pending'])
                     ->where('id', '<>', $model->id)
                     ->sum('amount');
 
@@ -111,6 +115,7 @@ class PdcIssuedCompanyController extends Controller
         $validated['updated_at'] = now();
 
         $updated = $this->service->update($id, $validated);
+
         return new PdcIssuedCompanyResource($updated);
     }
 
@@ -129,6 +134,7 @@ class PdcIssuedCompanyController extends Controller
         }
 
         $this->service->delete($id);
+
         return response()->noContent();
     }
 
@@ -173,7 +179,7 @@ class PdcIssuedCompanyController extends Controller
             return response()->json(['message' => 'PDC not found'], 404);
         }
 
-        if (!in_array($pdcModel->status, ['issued','pending'])) {
+        if (! in_array($pdcModel->status, ['issued', 'pending'])) {
             return response()->json(['message' => 'PDC is not in an issuable state.'], 422);
         }
 
@@ -185,8 +191,8 @@ class PdcIssuedCompanyController extends Controller
         $invoice = $pdcModel->invoice_id ? CompanyInvoice::with('project')->find($pdcModel->invoice_id) : null;
 
         DB::transaction(function () use ($pdcModel, $invoice, $clearDate) {
-            $commonService = new CommonService();
-            $currencyConversionService = new CurrencyConversionService();
+            $commonService = new CommonService;
+            $currencyConversionService = new CurrencyConversionService;
 
             do {
                 $transactionNumber = $commonService->generateUniqueCode('CMPPAY-');
@@ -214,7 +220,7 @@ class PdcIssuedCompanyController extends Controller
                 $amountToAllocate = min($amountToAllocate, max((float) $invoice->total_amount - $previousPaymentsTotal, 0.0));
             }
 
-            $transactionRef = $pdcModel->cheque_number ? ('chk-' . $pdcModel->cheque_number) : ($pdcModel->transaction_number ?? null);
+            $transactionRef = $pdcModel->cheque_number ? ('chk-'.$pdcModel->cheque_number) : ($pdcModel->transaction_number ?? null);
             $receiptRef = $transactionNumber ?: ($transactionRef ?? $pdcModel->transaction_number ?? $transactionNumber);
 
             $taxPortion = 0.0;
@@ -294,7 +300,7 @@ class PdcIssuedCompanyController extends Controller
                 'check_number' => $pdcModel->cheque_number,
                 'transaction_status' => 'cleared',
                 'related_transaction_id' => null,
-                'narration' => 'PDC cleared: ' . ($pdcModel->narration ?? ''),
+                'narration' => 'PDC cleared: '.($pdcModel->narration ?? ''),
                 'is_recurring' => false,
                 'fiscal_year' => now()->year,
                 'accounting_period' => now()->format('Ym'),
@@ -330,8 +336,8 @@ class PdcIssuedCompanyController extends Controller
                         ->pluck('project_phase_id')
                         ->unique()
                         ->toArray();
-                    if (!empty($phaseIds)) {
-                        \App\Models\ProjectPhase::whereIn('id', $phaseIds)->update(['is_billed' => true]);
+                    if (! empty($phaseIds)) {
+                        ProjectPhase::whereIn('id', $phaseIds)->update(['is_billed' => true]);
                     }
                 } else {
                     $invoice->status = 'partially-paid';

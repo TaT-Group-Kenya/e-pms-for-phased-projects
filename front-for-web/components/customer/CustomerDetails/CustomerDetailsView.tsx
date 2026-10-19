@@ -269,7 +269,7 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          const errorMessage = errorData.message || `Failed to load projects (Status: ${response.status})`;
+          const errorMessage = errorData.message || `Failed to load Consignments (Status: ${response.status})`;
           throw new Error(errorMessage);
         }
 
@@ -277,8 +277,8 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
         const projectsList = data.data || data;
         setProjects(Array.isArray(projectsList) ? projectsList : []);
       } catch (err: any) {
-        console.error("Error fetching projects:", err);
-        const errorMessage = err.message || "Error loading projects";
+        console.error("Error fetching Consignments:", err);
+        const errorMessage = err.message || "Error loading Consignements";
         addToast(errorMessage, "error");
         setProjects([]);
       } finally {
@@ -383,7 +383,7 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
       const data = await response.json();
 
       if (!response.ok) {
-        addToast(data.message || "Failed to save project owner", "error");
+        addToast(data.message || "Failed to save Consignee", "error");
         return;
       }
 
@@ -403,10 +403,10 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
 
       setShowProjectOwnerModal(false);
       setEditingProjectOwner(null);
-      addToast(editingProjectOwner ? "Project owner updated successfully" : "Project owner added successfully", "success");
+      addToast(editingProjectOwner ? "Consignee updated successfully" : "Consignee added successfully", "success");
     } catch (err) {
-      console.error("Error saving project owner:", err);
-      addToast("Error saving project owner", "error");
+      console.error("Error saving Consignee:", err);
+      addToast("Error saving Consignee", "error");
     } finally {
       setIsSubmittingProjectOwner(false);
     }
@@ -427,7 +427,7 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
 
       if (!response.ok) {
         const data = await response.json();
-        addToast(data.message || "Failed to delete project owner", "error");
+        addToast(data.message || "Failed to delete Consignee", "error");
         return;
       }
 
@@ -447,10 +447,10 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
 
       setShowDeleteModal(false);
       setProjectOwnerToDelete(null);
-      addToast("Project owner deleted successfully", "success");
+      addToast("Consignee deleted successfully", "success");
     } catch (err) {
-      console.error("Error deleting project owner:", err);
-      addToast("Error deleting project owner", "error");
+      console.error("Error deleting Consignee:", err);
+      addToast("Error deleting Consignee", "error");
     } finally {
       setIsSubmittingProjectOwner(false);
     }
@@ -641,7 +641,7 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
                 <i className="material-symbols-outlined !text-[20px]">
                   assignment
                 </i>
-                Projects
+                Consignments
               </button>
             </li>
 
@@ -705,7 +705,7 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
                 }`}
               >
                 <i className="material-symbols-outlined !text-[20px]">person</i>
-                Project Owners
+                Consignees
               </button>
             </li>
           </ul>
@@ -1082,17 +1082,17 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
         {activeTab === 1 && (
           <div>
             <h6 className="font-semibold text-black dark:text-white mb-[15px]">
-              Projects
+              Consignements
             </h6>
             {loadingProjects ? (
               <div className="text-center py-[40px]">
-                <p className="text-gray-600 dark:text-gray-400">Loading projects...</p>
+                <p className="text-gray-600 dark:text-gray-400">Loading Consignments...</p>
               </div>
             ) : projects.length > 0 ? (
               <TableSearchable
                 data={projects}
                 columns={[
-                  { key: "name", label: "Project Name" },
+                  { key: "name", label: "Consignment Name" },
                   { key: "status", label: "Status" },
                   { key: "budget", label: "Budget" },
                   { key: "start_date", label: "Start Date" },
@@ -1101,7 +1101,7 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
               />
             ) : (
               <div className="text-center py-[40px]">
-                <p className="text-gray-600 dark:text-gray-400">No projects found for this customer</p>
+                <p className="text-gray-600 dark:text-gray-400">No Consignments found for this customer</p>
               </div>
             )}
           </div>
@@ -1138,7 +1138,7 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
           <div>
             <div className="flex items-center justify-between mb-[20px]">
               <h6 className="font-semibold text-black dark:text-white">
-                Project Owners
+                Consignees
               </h6>
               <Can any={["ROLE_ADD_CUSTOMER", "ROLE_EDIT_CUSTOMER"]}>
                 <button
@@ -1150,7 +1150,7 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
                   disabled={isSubmittingProjectOwner}
                 >
                   <i className="material-symbols-outlined !text-[18px]">add</i>
-                  Add Project Owner
+                  Add Consignee
                 </button>
               </Can>
             </div>
@@ -1162,7 +1162,7 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
                   { key: "name", label: "Name" },
                   { key: "email", label: "Email" },
                   { key: "phone", label: "Phone" },
-                  { key: "projects_count", label: "Projects" },
+                  { key: "projects_count", label: "Consignments" },
                 ]}
                 additionalActions={(item: ProjectOwner) => (
                   <div className="flex gap-[8px]">
@@ -1173,7 +1173,7 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
                           setShowProjectOwnerModal(true);
                         }}
                         className="inline-flex items-center justify-center w-[36px] h-[36px] rounded-md border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Edit project owner"
+                        title="Edit Consignee"
                         disabled={isSubmittingProjectOwner}
                       >
                         <i className="material-symbols-outlined !text-[18px]">edit</i>
@@ -1186,7 +1186,7 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
                           setShowDeleteModal(true);
                         }}
                         className="inline-flex items-center justify-center w-[36px] h-[36px] rounded-md border border-danger-500 text-danger-500 hover:bg-danger-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Delete project owner"
+                        title="Delete Consignee"
                         disabled={isSubmittingProjectOwner}
                       >
                         <i className="material-symbols-outlined !text-[18px] text-danger-500">delete</i>
@@ -1197,7 +1197,7 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
               />
             ) : (
               <div className="text-center py-[40px]">
-                <p className="text-gray-600 dark:text-gray-400">No project owners found for this customer</p>
+                <p className="text-gray-600 dark:text-gray-400">No Consignees found for this customer</p>
               </div>
             )}
           </div>
@@ -1222,8 +1222,8 @@ const CustomerDetailsView: React.FC<CustomerDetailsViewProps> = ({
       {showDeleteModal && (
         <DeleteConfirmationModal
           isOpen={showDeleteModal}
-          title="Delete Project Owner"
-          message="Are you sure you want to delete this project owner? This action cannot be undone."
+          title="Delete Consignee"
+          message="Are you sure you want to delete this Consignee? This action cannot be undone."
           itemName={editingProjectOwner ? editingProjectOwner.name : undefined}
           onConfirm={handleDeleteProjectOwner}
           onCancel={() => {

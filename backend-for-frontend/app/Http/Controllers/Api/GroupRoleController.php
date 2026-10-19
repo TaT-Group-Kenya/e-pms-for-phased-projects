@@ -1,26 +1,28 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\GroupRole;
-use App\Services\GroupRoleService;
-use App\Http\Resources\GroupRoleResource;
 use App\Http\Requests\GroupRoleStoreRequest;
 use App\Http\Requests\GroupRoleUpdateRequest;
+use App\Http\Resources\GroupRoleResource;
+use App\Models\GroupRole;
+use App\Services\GroupRoleService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class GroupRoleController extends Controller
 {
     protected $service;
 
-    public function __construct(GroupRoleService $service) {
+    public function __construct(GroupRoleService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\GroupRole::class);
+        $this->authorize('viewAny', GroupRole::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page', 'with');
@@ -32,15 +34,17 @@ class GroupRoleController extends Controller
         }
 
         $data = $this->service->index($filters, $perPage, $page, 0, $with);
+
         return GroupRoleResource::collection($data);
     }
 
     public function store(GroupRoleStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\GroupRole::class);
+        $this->authorize('create', GroupRole::class);
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
+
         return new GroupRoleResource($model);
     }
 
@@ -61,6 +65,7 @@ class GroupRoleController extends Controller
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($groupRole->id, $validated);
+
         return new GroupRoleResource($updated);
     }
 
@@ -69,6 +74,7 @@ class GroupRoleController extends Controller
         $this->authorize('delete', $groupRole);
 
         $this->service->delete($groupRole->id, Auth::id());
+
         return response()->noContent();
     }
 }

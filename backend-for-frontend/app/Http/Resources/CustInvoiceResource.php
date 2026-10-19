@@ -9,7 +9,7 @@ class CustInvoiceResource extends BaseResource
         return [
             'id' => $this->id,
             'invoice_number' => $this->invoice_number,
-            'job_reference_id' => $this->job_reference_id,
+            'bol_number' => $this->bol_number,
             'order_id' => $this->order_id,
             'order_number' => optional($this->order)->order_number,
             'quotation_number' => optional(optional($this->order)->quotation)->quotation_number,
@@ -40,8 +40,9 @@ class CustInvoiceResource extends BaseResource
             'invoiceItems' => CustInvoiceItemResource::collection($this->whenLoaded('invoiceItems')),
             'payments' => CustPaymentResource::collection($this->whenLoaded('payments')),
             'creditnotes' => CustCreditNoteResource::collection($this->whenLoaded('creditnotes')),
+            'debitnotes' => CustDebitNoteResource::collection($this->whenLoaded('debitnotes')),
             'documents' => CustInvoiceDocumentResource::collection($this->whenLoaded('documents')),
-            'pdcs' => \App\Http\Resources\PdcReceivedCustomerResource::collection($this->whenLoaded('pdcsReceived')),
+            'pdcs' => PdcReceivedCustomerResource::collection($this->whenLoaded('pdcsReceived')),
             'upcoming_pdc_total' => (float) (
                 $this->whenLoaded('pdcsReceived')
                     ? collect($this->pdcsReceived)->where('is_deleted', false)->whereIn('status', ['received', 'pending'])->sum('amount')

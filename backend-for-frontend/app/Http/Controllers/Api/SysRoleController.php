@@ -1,19 +1,21 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\SysRole;
-use App\Services\SysRoleService;
-use App\Http\Resources\SysRoleResource;
 use App\Http\Requests\SysRoleStoreRequest;
 use App\Http\Requests\SysRoleUpdateRequest;
+use App\Http\Resources\SysRoleResource;
+use App\Models\SysRole;
+use App\Services\SysRoleService;
+use Illuminate\Http\Request;
 
 class SysRoleController extends Controller
 {
     protected $service;
 
-    public function __construct(SysRoleService $service) {
+    public function __construct(SysRoleService $service)
+    {
         $this->service = $service;
     }
 
@@ -30,14 +32,16 @@ class SysRoleController extends Controller
         }
 
         $data = $this->service->index($filters, $perPage, $page, 0, $with);
+
         return SysRoleResource::collection($data);
     }
 
     public function store(SysRoleStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\SysRole::class);
-        
+        $this->authorize('create', SysRole::class);
+
         $model = $this->service->create($request->validated());
+
         return new SysRoleResource($model);
     }
 
@@ -56,6 +60,7 @@ class SysRoleController extends Controller
         $this->authorize('update', $sysRole);
 
         $updated = $this->service->update($sysRole->id, $request->validated());
+
         return new SysRoleResource($updated);
     }
 
@@ -64,6 +69,7 @@ class SysRoleController extends Controller
         $this->authorize('delete', $sysRole);
 
         $this->service->delete($sysRole->id);
+
         return response()->noContent();
     }
 }

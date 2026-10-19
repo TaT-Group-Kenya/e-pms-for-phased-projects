@@ -11,7 +11,7 @@ import { formatApiError } from "../../../utils/errorHandler";
 
 const sourceOriginSchema = z.object({
   code: z.string().optional(),
-  name: z.string().min(1, "Source name is required").max(255, "Name must not exceed 255 characters"),
+  name: z.string().min(1, "Destination is required").max(255, "Name must not exceed 255 characters"),
   description: z.string().optional(),
 });
 
@@ -59,15 +59,15 @@ const AddSourceOriginModal: React.FC<AddSourceOriginModalProps> = ({ onClose, on
 
       if (!response.ok) {
         const formattedError = formatApiError(responseData);
-        setError(`Failed to create project source: ${formattedError}`);
+        setError(`Failed to create destination: ${formattedError}`);
         return;
       }
 
-      addToast("Project source created successfully", "success");
+      addToast("Destination created successfully", "success");
       onSuccess();
     } catch (err) {
-      console.error("Error creating project source:", err);
-      setError("Failed to create the project source. Please check your connection and try again.");
+      console.error("Error creating destination:", err);
+      setError("Failed to create the destination. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -77,7 +77,7 @@ const AddSourceOriginModal: React.FC<AddSourceOriginModalProps> = ({ onClose, on
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-[20px]">
       <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-full max-w-[500px]">
         <div className="mb-[20px]">
-          <h6 className="!mb-0">Add Project Source</h6>
+          <h6 className="!mb-0">Add Destination</h6>
         </div>
 
         {error && (
@@ -99,7 +99,7 @@ const AddSourceOriginModal: React.FC<AddSourceOriginModalProps> = ({ onClose, on
 
           <div className="mb-[20px]">
             <label className="mb-[10px] text-black dark:text-white font-medium block">
-              Source Name <span className="text-danger-500">*</span>
+              Name <span className="text-danger-500">*</span>
             </label>
             <input
               type="text"
@@ -107,7 +107,7 @@ const AddSourceOriginModal: React.FC<AddSourceOriginModalProps> = ({ onClose, on
               className={`h-[44px] rounded-md text-black dark:text-white border ${
                 errors.name ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
               } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-              placeholder="E.g. Referral, Tender, Direct"
+              placeholder="E.g. Juba"
             />
             {errors.name && <p className="text-danger-500 text-sm mt-1">{errors.name.message}</p>}
           </div>
@@ -135,7 +135,7 @@ const AddSourceOriginModal: React.FC<AddSourceOriginModalProps> = ({ onClose, on
               disabled={isSubmitting}
               className="px-[25px] py-[10px] rounded-md bg-primary-500 text-white hover:bg-primary-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? "Creating..." : "Create Source"}
+              {isSubmitting ? "Creating..." : "Create Destination"}
             </button>
           </div>
         </form>

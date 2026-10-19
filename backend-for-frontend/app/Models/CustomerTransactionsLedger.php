@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
-use App\Models\CustInvoice;
-use App\Models\CustCreditNote;
+use Illuminate\Database\Eloquent\Model;
 
 class CustomerTransactionsLedger extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'customer_transactions_ledger';
 
     protected $fillable = [
@@ -91,6 +90,12 @@ class CustomerTransactionsLedger extends Model
                     $query->where('cust_credit_notes.id', $this->source_id);
                 })
                 ->first();
+        }
+
+        if ($this->source_type === 'customer_debit_note') {
+            $debitNote = CustDebitNote::with('invoice.project')->find($this->source_id);
+
+            return $debitNote?->invoice;
         }
 
         if (in_array($this->source_type, ['cust_invoice'], true)) {

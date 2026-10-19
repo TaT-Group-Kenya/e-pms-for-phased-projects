@@ -14,7 +14,7 @@ interface Project {
   code: string;
   name: string;
   description?: string;
-  job_reference_id?: string;
+  bol_number?: string;
   customer_id?: number;
   project_category_id?: number;
   no_of_phases?: number;
@@ -24,7 +24,6 @@ interface Project {
   status: string;
   priority: string;
   progress?: number;
-  tags?: string;
   currency?: string;
   customer?: { name: string };
   created_at?: string;
@@ -118,7 +117,7 @@ const ProjectsList: React.FC = () => {
         const data: PaginationData = await response.json();
 
         if (!response.ok) {
-          addToast("Failed to load projects", "error");
+          addToast("Failed to load Consignments", "error");
           setProjects([]);
           return;
         }
@@ -133,8 +132,8 @@ const ProjectsList: React.FC = () => {
         if (err instanceof DOMException && err.name === "AbortError") {
           return;
         }
-        console.error("Error fetching projects:", err);
-        addToast("Error loading projects. Please refresh the page.", "error");
+        console.error("Error fetching Consignments:", err);
+        addToast("Error loading Consignments. Please refresh the page.", "error");
         setProjects([]);
       } finally {
         setLoading(false);
@@ -169,12 +168,12 @@ const ProjectsList: React.FC = () => {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || "Failed to delete project");
+        throw new Error(data.message || "Failed to delete Consignment");
       }
 
-      return { message: "Project deleted successfully" };
+      return { message: "Consignment deleted successfully" };
     } catch (error: any) {
-      throw new Error(error.message || "Failed to delete project");
+      throw new Error(error.message || "Failed to delete Consignment");
     }
   };
 
@@ -201,7 +200,7 @@ const ProjectsList: React.FC = () => {
     setDeleteError(null);
     try {
       await deleteProject(deleteProjectId, accessToken as string);
-      addToast("Project deleted successfully", "success");
+      addToast("Consignment deleted successfully", "success");
       closeDeleteModal();
       // Refetch projects on current page in the background
       // Trigger a refetch by resetting to page 1 if needed
@@ -211,7 +210,7 @@ const ProjectsList: React.FC = () => {
         setCurrentPage(currentPage);
       }
     } catch (error: any) {
-      const errorMessage = error.message || "Failed to delete project";
+      const errorMessage = error.message || "Failed to delete Consignment";
       setDeleteError(errorMessage);
       addToast(errorMessage, "error");
     } finally {
@@ -227,8 +226,7 @@ const ProjectsList: React.FC = () => {
     (project.customer?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (project.project_owner?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (project.order?.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.tags?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (project.job_reference_id || "").toLowerCase().includes(searchTerm.toLowerCase())
+    (project.bol_number || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Calculate pagination display values
@@ -240,8 +238,8 @@ const ProjectsList: React.FC = () => {
       <ToastContainer toasts={toasts} onClose={removeToast} />
       <DeleteConfirmationModal
         isOpen={deleteModalOpen}
-        title="Delete Project"
-        message="Are you sure you want to delete this project? This action cannot be undone."
+        title="Delete Consignment"
+        message="Are you sure you want to delete this Consignment? This action cannot be undone."
         itemName={deleteProjectName}
         isDeleting={isDeleting}
         error={deleteError}
@@ -251,7 +249,7 @@ const ProjectsList: React.FC = () => {
       
       <div className="trezo-card-header bg-white dark:bg-[#0c1427] mb-[20px] md:mb-[25px] flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-md gap-[15px]">
         <div className="trezo-card-title">
-          <h5 className="!mb-0">All Projects</h5>
+          <h5 className="!mb-0">All Consignments</h5>
         </div>
 
         <div className="flex items-center gap-[15px] w-full md:w-auto">
@@ -262,7 +260,7 @@ const ProjectsList: React.FC = () => {
             </label>
             <input
               type="text"
-              placeholder="Search projects..."
+              placeholder="Search Consignments..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -280,7 +278,7 @@ const ProjectsList: React.FC = () => {
                 <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
                   add
                 </i>
-                Create Project
+                Create Consignment
               </span>
             </Link>
           </Can>
@@ -312,22 +310,19 @@ const ProjectsList: React.FC = () => {
                       Date
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Job Ref ID
+                      BOL Number
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Order
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Project Name
+                      Consignment
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Customer
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Project Owner
-                    </th>
-                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Tags
+                      Consignee
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Currency
@@ -360,7 +355,7 @@ const ProjectsList: React.FC = () => {
                           {project.created_at ? new Date(project.created_at).toLocaleDateString() : ""}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
-                          {project.job_reference_id || ""}
+                          {project.bol_number || ""}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {project.order?.title || "-"}
@@ -378,9 +373,6 @@ const ProjectsList: React.FC = () => {
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {project.project_owner?.name || "-"}
-                        </td>
-                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
-                          {project.tags || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {project.currency || "-"}
@@ -422,7 +414,7 @@ const ProjectsList: React.FC = () => {
                               <button
                                 onClick={() => openDeleteModal(project.id, project.name)}
                                 className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-danger-500 hover:text-white hover:border-danger-500 transition-all"
-                                title="Delete Project"
+                                title="Delete Consignment"
                               >
                                 <i className="material-symbols-outlined !text-[18px]">delete</i>
                               </button>
@@ -437,7 +429,7 @@ const ProjectsList: React.FC = () => {
                         colSpan={14}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
-                        {searchTerm ? "No projects match your search" : "No projects found"}
+                        {searchTerm ? "No Consignments match your search" : "No Consignments found"}
                       </td>
                     </tr>
                   )}

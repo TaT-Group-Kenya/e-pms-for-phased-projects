@@ -14,6 +14,7 @@ class OfficeExpensePaymentService
         }
         $query->orderByDesc('id');
         $query->with(['transaction']);
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
@@ -31,12 +32,14 @@ class OfficeExpensePaymentService
     {
         $model = OfficeExpensePayment::with(['transaction'])->findOrFail($id);
         $model->update($data);
+
         return $model;
     }
 
     public function delete(int $id)
     {
         $model = OfficeExpensePayment::with(['transaction'])->findOrFail($id);
+
         return $model->delete();
     }
 }

@@ -32,7 +32,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         typeof data === 'string'
           ? data
           : data?.message || 'Failed to top up account'
-      return res.status(resp.status).json({ message, details: data })
+      // Preserve field-level validation errors at the top level so the
+      // frontend can render them (message + errors).
+      return res.status(resp.status).json({ ...(data || {}), message })
     }
 
     return res.status(resp.status).json(data)

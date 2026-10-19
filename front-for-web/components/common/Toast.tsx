@@ -63,7 +63,7 @@ const Toast: React.FC<ToastProps> = ({ id, message, type, onClose, duration = 50
       className={`${bgColor[type]} ${borderColor[type]} border rounded-md p-[15px] flex items-start gap-[10px] animate-in slide-in-from-top`}
     >
       <span className={`${iconColor[type]} text-lg font-bold flex-shrink-0`}>{icons[type]}</span>
-      <p className={`${textColor[type]} text-sm flex-1`}>{message}</p>
+      <p className={`${textColor[type]} text-sm flex-1 whitespace-pre-line`}>{message}</p>
       <button
         onClick={() => onClose(id)}
         className={`${textColor[type]} hover:opacity-70 flex-shrink-0 text-lg font-bold`}

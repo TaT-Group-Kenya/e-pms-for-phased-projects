@@ -23,7 +23,7 @@ class CompanyCreditNoteStoreRequest extends FormRequest
             'total_amount' => ['required', 'numeric', 'min:0'],
             'currency' => ['required', 'string', 'max:255'],
             'notes_to_customer' => ['nullable', 'string'],
-            'status' => ['required', Rule::in(['draft','raised','refunded'])],
+            'status' => ['required', Rule::in(['draft', 'raised', 'refunded'])],
         ];
     }
 

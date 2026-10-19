@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Project;
 use App\Models\Quotation;
 
 class QuotationService
@@ -15,17 +16,17 @@ class QuotationService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = Quotation::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
         $query->orderByDesc('id');
-        
+
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-        
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
@@ -33,36 +34,48 @@ class QuotationService
     {
         $with = array_merge($with, ['customer', 'createdByUser', 'updatedByUser', 'projectOwner', 'receivingPaymentMethod']);
         $query = Quotation::query();
-        if (!empty($with)) $query->with($with);
+        if (! empty($with)) {
+            $query->with($with);
+        }
+
         return $query->findOrFail($id);
     }
 
     public function create(array $data)
     {
         // If project_id is provided and currency is not, get currency from project
-        if (!empty($data['project_id']) && empty($data['currency'])) {
-            $project = \App\Models\Project::find($data['project_id']);
-            if ($project && !empty($project->currency)) {
+        if (! empty($data['project_id']) && empty($data['currency'])) {
+            $project = Project::find($data['project_id']);
+            if ($project && ! empty($project->currency)) {
                 $data['currency'] = $project->currency;
             }
         }
-        
-        return Quotation::create($data);
+
+        $quotation = Quotation::create($data);
+        if (! empty($quotation->ship_container_id)) {
+            $quotation->shipContainer()->update(['quoted' => true]);
+        }
+
+        return $quotation;
     }
 
     public function update(int $id, array $data)
     {
         $model = Quotation::findOrFail($id);
-        
+
         // If project_id is provided and currency is not, get currency from project
-        if (!empty($data['project_id']) && empty($data['currency'])) {
-            $project = \App\Models\Project::find($data['project_id']);
-            if ($project && !empty($project->currency)) {
+        if (! empty($data['project_id']) && empty($data['currency'])) {
+            $project = Project::find($data['project_id']);
+            if ($project && ! empty($project->currency)) {
                 $data['currency'] = $project->currency;
             }
         }
-        
+
         $model->update($data);
+        if (! empty($model->ship_container_id)) {
+            $model->shipContainer()->update(['quoted' => true]);
+        }
+
         return $model;
     }
 

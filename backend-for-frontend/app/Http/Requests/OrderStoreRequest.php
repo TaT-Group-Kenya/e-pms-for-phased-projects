@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class OrderStoreRequest extends FormRequest
 {
@@ -16,12 +15,9 @@ class OrderStoreRequest extends FormRequest
     {
         return [
             'quotation_id' => ['required', 'exists:quotations,id'],
-            'job_reference_id' => [
-                'required',
-                'string',
-                'max:32',
-                Rule::unique('orders', 'job_reference_id')->where(fn ($q) => $q->where('is_deleted', false)),
-            ],
+            // bol_number is derived from the quotation's linked ship container
+            'bol_number' => ['nullable', 'string', 'max:255'],
+            'ship_container_id' => ['nullable', 'exists:ship_containers,id'],
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'payment_terms' => ['nullable', 'string', 'max:255'],

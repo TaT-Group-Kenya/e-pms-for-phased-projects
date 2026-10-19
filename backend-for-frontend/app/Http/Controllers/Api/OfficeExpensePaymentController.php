@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\OfficeExpensePayment;
-use App\Services\OfficeExpensePaymentService;
-use App\Http\Resources\OfficeExpensePaymentResource;
 use App\Http\Requests\OfficeExpensePaymentStoreRequest;
 use App\Http\Requests\OfficeExpensePaymentUpdateRequest;
+use App\Http\Resources\OfficeExpensePaymentResource;
+use App\Models\OfficeExpensePayment;
+use App\Services\OfficeExpensePaymentService;
+use Illuminate\Http\Request;
 
 class OfficeExpensePaymentController extends Controller
 {
@@ -26,6 +26,7 @@ class OfficeExpensePaymentController extends Controller
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return OfficeExpensePaymentResource::collection($data);
     }
 
@@ -35,6 +36,7 @@ class OfficeExpensePaymentController extends Controller
         $data = $request->validated();
         $data['created_by'] = auth()->id();
         $payment = $this->service->create($data);
+
         return new OfficeExpensePaymentResource($payment);
     }
 
@@ -42,6 +44,7 @@ class OfficeExpensePaymentController extends Controller
     {
         $payment = $this->service->find($id);
         $this->authorize('view', $payment);
+
         return new OfficeExpensePaymentResource($payment);
     }
 
@@ -52,6 +55,7 @@ class OfficeExpensePaymentController extends Controller
         $data = $request->validated();
         $data['updated_by'] = auth()->id();
         $payment = $this->service->update($id, $data);
+
         return new OfficeExpensePaymentResource($payment);
     }
 
@@ -60,6 +64,7 @@ class OfficeExpensePaymentController extends Controller
         $payment = $this->service->find($id);
         $this->authorize('delete', $payment);
         $this->service->delete($id);
+
         return response()->json(['message' => 'Deleted successfully']);
     }
 }

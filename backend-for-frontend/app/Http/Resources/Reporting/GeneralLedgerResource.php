@@ -11,7 +11,7 @@ class GeneralLedgerResource extends JsonResource
         return [
             'forex' => $this['forex'],
             'totals' => $this['totals'],
-            'receivables' => collect($this['receivables'])->map(function($item) {
+            'receivables' => collect($this['receivables'])->map(function ($item) {
                 return [
                     'payment_id' => $item->id,
                     'transaction_number' => $item->transaction_number,
@@ -29,7 +29,7 @@ class GeneralLedgerResource extends JsonResource
                     'created_at' => $item->created_at,
                 ];
             }),
-            'payables' => collect($this['payables'])->map(function($item) {
+            'payables' => collect($this['payables'])->map(function ($item) {
                 return [
                     'payment_id' => $item->id,
                     'transaction_number' => $item->transaction_number,

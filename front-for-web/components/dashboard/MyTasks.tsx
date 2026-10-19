@@ -8,7 +8,7 @@ import { formatDateTime } from "../../utils/format";
 type RecentUpdate = {
   id: number;
   project_id?: number | null;
-  job_reference_id?: string | null;
+  bol_number?: string | null;
   project_name: string;
   phase_name?: string | null;
   comment?: string | null;
@@ -104,10 +104,10 @@ const MyTasks: React.FC = () => {
               <thead className="text-black dark:text-white">
                 <tr>
                   <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] md:ltr:first:pl-[25px] md:rtl:first:pr-[25px] ltr:first:pr-0 rtl:first:pl-0 bg-primary-50 dark:bg-[#15203c] whitespace-nowrap">
-                    Project
+                    Consignment
                   </th>
                   <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] md:ltr:first:pl-[25px] md:rtl:first:pr-[25px] ltr:first:pr-0 rtl:first:pl-0 bg-primary-50 dark:bg-[#15203c] whitespace-nowrap">
-                    Job Reference ID
+                    BOL Number
                   </th>
                   <th className="font-medium ltr:text-left rtl:text-right px-[20px] py-[11px] md:ltr:first:pl-[25px] md:rtl:first:pr-[25px] ltr:first:pr-0 rtl:first:pl-0 bg-primary-50 dark:bg-[#15203c] whitespace-nowrap">
                     Phase
@@ -130,7 +130,7 @@ const MyTasks: React.FC = () => {
                       {update.project_name}
                     </td>
                     <td className="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] md:ltr:first:pl-[25px] md:rtl:first:pr-[25px] ltr:first:pr-0 rtl:first:pl-0 border-b border-gray-100 dark:border-[#172036]">
-                      {update.job_reference_id || "-"}
+                      {update.bol_number || "-"}
                     </td>
                     <td className="ltr:text-left rtl:text-right whitespace-nowrap px-[20px] py-[15px] md:ltr:first:pl-[25px] md:rtl:first:pr-[25px] ltr:first:pr-0 rtl:first:pl-0 border-b border-gray-100 dark:border-[#172036]">
                       {update.phase_name || "-"}

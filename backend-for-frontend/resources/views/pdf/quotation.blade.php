@@ -37,6 +37,7 @@
         .footer { position: fixed; bottom: 20px; left: 40px; right: 40px; font-size: 10px; color: #9ca3af; text-align: center; }
         .header-image { width: 100%; margin-bottom: 20px; }
         .header-image img { width: 100%; height: auto; display: block; }
+        .tables { border: 1px solid #e5e7eb; page-break-inside: auto; }
     </style>
 </head>
 <body>
@@ -51,50 +52,9 @@
     <div class="header">
         <table>
             <tr>
-                <td class="logo"></td>
-                <td style="text-align: right;">
-                    <h1>Quotation</h1>
-                    <div class="muted">Quote #: {{ $quotation->quotation_number }}</div>
-                    <div class="muted">Date: {{ $quotation->created_at->format('d/m/Y') }}</div>
-                    <div class="badge badge-status mt-2">{{ ucfirst($quotation->status) }}</div>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <div class="section">
-        <table width="100%" cellspacing="0" cellpadding="0">
-            <tr>
-                <td style="width: 50%; vertical-align: top; padding-right: 8px;">
-                    <div class="card" style="margin-top: 16px; border-radius: 0; padding: 0; border: none;">
-                        <h2>Quote Sender</h2>
-                        <div class="text-sm"><span class="font-semibold">{{ $senderName }}</span></div>
-                        @if(!empty($senderAddressLine1))
-                            <div class="text-sm mt-1">{{ $senderAddressLine1 }}</div>
-                        @endif
-                        @if(!empty($senderCity) || !empty($senderState) || !empty($senderCountry))
-                            <div class="text-sm">
-                                {{ trim(($senderCity ?? '') . (isset($senderCity, $senderState) ? ', ' : '') . ($senderState ?? '')) }}
-                                @if(!empty($senderCountry))
-                                    {{ isset($senderCity) || isset($senderState) ? ', ' : '' }}{{ $senderCountry }}
-                                @endif
-                            </div>
-                        @endif
-                        @if(!empty($senderPhone))
-                            <div class="text-sm mt-1">Phone: {{ $senderPhone }}</div>
-                        @endif
-                        @if(!empty($senderEmail))
-                            <div class="text-sm mt-1">Email: {{ $senderEmail }}</div>
-                        @endif
-                        @if(!empty($senderWebsite))
-                            <div class="text-sm mt-1">Website: {{ $senderWebsite }}</div>
-                        @endif
-                        <div class="text-sm mt-1">Generated: {{ $generatedAt->format('d M Y H:i') }}</div>
-                    </div>
-                </td>
-                <td style="width: 50%; vertical-align: top; padding-left: 8px;">
-                    <div class="card" style="margin-top: 16px; border-radius: 0; padding: 0; border: none; text-align: right;">
-                        <h2>Quote Recipient</h2>
+                <td style="width: 50%; vertical-align: top;">
+                    <div class="card" style="border-radius: 0; padding: 0; border: none; text-align: left;">
+                        <h2>Customer Details</h2>
                         <div class="text-sm">
                             @if($quotation->customer)
                                 <span class="font-semibold">{{ $quotation->customer->name }}</span>
@@ -113,24 +73,38 @@
                                         {{ isset($quotation->customer->city) || isset($quotation->customer->state) ? ', ' : '' }}{{ $quotation->customer->country }}
                                     @endif
                                 </div>
-                            @endif
-                            @if(!empty($quotation->customer->phone))
-                                <div class="text-sm mt-1">Phone: {{ $quotation->customer->phone }}</div>
-                            @endif
-                            @if(!empty($quotation->customer->email))
-                                <div class="text-sm mt-1">Email: {{ $quotation->customer->email }}</div>
-                            @endif
+                            @endif        
                         @endif
-                    </div>
+                    </div>  
+                </td>
+                <td style="width: 50%; text-align: right;">
+                    <h2>Quotation</h2>
+                    <div>Quote #: {{ $quotation->quotation_number }}</div>
+                    <div>Date: {{ $quotation->created_at->format('d/m/Y') }}</div>
+                    <div class="badge badge-status mt-2">{{ ucfirst($quotation->status) }}</div>
                 </td>
             </tr>
         </table>
     </div>
 
-    @if($quotation->description)
+    @if($quotation->description || $clearanceDeadline)
         <div class="section card">
             <h2>Summary</h2>
-            <div class="text-sm">{{ $quotation->description }}</div>
+            @if($quotation->description)
+                <div class="text-sm">{{ $quotation->description }}</div>
+            @endif
+            @if($clearanceDeadline)
+                <div class="mt-2">
+                    <div class="summary-row text-sm">
+                        <span class="summary-label">Clearance deadline:</span>
+                        <span class="summary-label" style="float: right;">{{ $clearanceDeadline }}</span>
+                    </div>
+                    <div class="summary-row text-sm">
+                        <span class="summary-label">Remaining clearance days (No. of free days):</span>
+                        <span class="summary-label" style="float: right;">{{ $remainingClearanceDays }}</span>
+                    </div>
+                </div>
+            @endif
         </div>
     @endif
 
@@ -159,9 +133,9 @@
                     @endphp
                     <tr>
                         <td>
-                            <div class="font-semibold">{{ $item->item_name }}</div>
+                            <div>{{ $item->item_name }}</div>
                             @if($item->description)
-                                <div class="text-sm muted">{{ $item->description }}</div>
+                                <div>{{ $item->description }}</div>
                             @endif
                         </td>
                         <td class="text-right">{{ number_format($quantity, 0) }}</td>
@@ -220,43 +194,47 @@
             </div>
         </div>
     </div>
-
-    @if(isset($receivingPaymentMethod) && $receivingPaymentMethod !== null)
-        <div class="section card" style="margin-top: 8px;">
-            <h3>Payment Details</h3>
-            <div class="mb-2">
-                @if(!empty($receivingPaymentMethod->currency))
-                    <div class="text-sm mt-1"><strong>Currency:</strong> {{ $receivingPaymentMethod->currency }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->paybill))
-                    <div class="text-sm mt-1"><strong>Paybill:</strong> {{ $receivingPaymentMethod->paybill }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->account_holder_name))
-                    <div class="text-sm mt-1"><strong>Account Holder Name:</strong> {{ $receivingPaymentMethod->account_holder_name }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->account_number))
-                    <div class="text-sm mt-1"><strong>Account Number:</strong> {{ $receivingPaymentMethod->account_number }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->bank))
-                    <div class="text-sm mt-1"><strong>Bank:</strong> {{ $receivingPaymentMethod->bank }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->branch))
-                    <div class="text-sm mt-1"><strong>Branch:</strong> {{ $receivingPaymentMethod->branch }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->swift_code))
-                    <div class="text-sm mt-1"><strong>SWIFT Code:</strong> {{ $receivingPaymentMethod->swift_code }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->iban))
-                    <div class="text-sm mt-1"><strong>IBAN:</strong> {{ $receivingPaymentMethod->iban }}</div>
-                @endif
-                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 8px 0;">
-                @if(!empty($receivingPaymentMethod->instruction))
-                    <div class="text-sm mt-1"><strong>Instruction:</strong> {{ $receivingPaymentMethod->instruction }}</div>
-                @endif
-            </div>
-        </div>
-    @endif
-
+    <div class="section">
+        <table class="tables">
+            <thead>
+                <tr>
+                    <th style="width: 33.33%;" class="tables">Bank Details</th>
+                    <th style="width: 33.33%;" class="tables">Bank Details</th>
+                    <th style="width: 33.33%;">Bank Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                    <tr>
+                        <td class="tables">
+                            <div class="text-sm mt-1">BANK: EQUITY BANK (K) LTD</div>
+                            <div class="text-sm mt-1">ACC NAME: PAMU SERVICES LIMITED</div>
+                            <div class="text-sm mt-1">ACC NO: 1560285840960 (USD)</div>
+                            <div class="text-sm mt-1">ACC NO: 1560285840950 (KES)</div>
+                            <div class="text-sm mt-1">BRANCH: MOMBASA SUPREME CENTRE</div>
+                            <div class="text-sm mt-1">BRANCH CODE: 156</div>
+                            <div class="text-sm mt-1">BANK CODE: 68</div>
+                            <div class="text-sm mt-1">SWIFT CODE: EQBLKENAXXX</div>  
+                        </td>
+                        <td class="tables"><div class="text-sm mt-1">BANK: KENYA COMMERCIAL BANK</div>
+                            <div class="text-sm mt-1">ACC NAME: PAMU SERVICES LIMITED</div>
+                            <div class="text-sm mt-1">ACC NO: 1349372668 (USD)</div>
+                            <div class="text-sm mt-1">ACC NO: 1349372749 (KES)</div>
+                            <div class="text-sm mt-1">BRANCH: SAHL CENTRE, EASTLEIGH</div>
+                            <div class="text-sm mt-1">BRANCH CODE: 355</div>
+                            <div class="text-sm mt-1">BANK CODE: 01</div>
+                            <div class="text-sm mt-1">SWIFT CODE: KCBLKENX</div>
+                        </td>
+                        <td><div class="text-sm mt-1">BANK: ABSA BANK</div>
+                            <div class="text-sm mt-1">ACC NAME: PAMU SERVICES LIMITED</div>
+                            <div class="text-sm mt-1">ACC NO: 2044111376 (USD)</div>
+                            <div class="text-sm mt-1">ACC NO: 2044111414 (KES)</div>
+                            <div class="text-sm mt-1">BRANCH: NKRUMAH ROAD, MOMBASA</div>
+                            
+                        </td> 
+                    </tr>
+            </tbody>
+        </table>
+    </div>
     @if($quotation->payment_terms || $quotation->notes_to_customer)
         <div class="section">
             <h3>Additional Information</h3>

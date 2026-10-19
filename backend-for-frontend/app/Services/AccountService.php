@@ -14,9 +14,10 @@ class AccountService
         array $with = []
     ) {
         $query = Account::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
+        $query->with('chartOfAccount');
         // Handle soft-delete visibility flags
         $withDeleted = filter_var($filters['with_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
         $onlyDeleted = filter_var($filters['only_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
@@ -33,17 +34,21 @@ class AccountService
             $query->where($key, $value);
         }
         $query->orderByDesc('id');
-        
+
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-        
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
     {
         $query = Account::query();
-        if (!empty($with)) $query->with($with);
+        if (! empty($with)) {
+            $query->with($with);
+        }
+        $query->with('chartOfAccount');
+
         return $query->findOrFail($id);
     }
 
@@ -56,6 +61,7 @@ class AccountService
     {
         $model = Account::findOrFail($id);
         $model->update($data);
+
         return $model;
     }
 

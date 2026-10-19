@@ -37,6 +37,7 @@
         .footer { position: fixed; bottom: 20px; left: 40px; right: 40px; font-size: 10px; color: #9ca3af; text-align: center; }
         .header-image { width: 100%; margin-bottom: 20px; }
         .header-image img { width: 100%; height: auto; display: block; }
+        .tables { border: 1px solid #e5e7eb; page-break-inside: auto; }
     </style>
 </head>
 <body>
@@ -56,90 +57,30 @@
     @endif
 
     <div class="header">
-        <div style="text-align: right;">
-            <h1>Invoice</h1>
-            <div class="muted">Invoice #: {{ $invoice->invoice_number }}</div>
-            <div class="muted">Date: {{ optional($invoice->created_at)->format('d/m/Y') }}</div>
-            <div class="badge badge-status mt-2">{{ $invoice->status_label ?? ucfirst($invoice->status) }}</div>
-        </div>
-    </div>
-
-    <div class="section">
         <table width="100%" cellspacing="0" cellpadding="0">
             <tr>
                 <!-- Sender on the left, without card borders/padding -->
-                <td style="width: 50%; vertical-align: top; padding-right: 8px;">
-                    <div style="margin-top: 16px;">
-                        <h2>Invoice Sender</h2>
-                        <div class="text-sm"><span class="font-semibold">{{ $senderName }}</span></div>
-                        @if(!empty($senderAddressLine1))
-                            <div class="text-sm mt-1">{{ $senderAddressLine1 }}</div>
-                        @endif
-                        @if(!empty($senderCity) || !empty($senderState) || !empty($senderCountry))
-                            <div class="text-sm">
-                                {{ trim(($senderCity ?? '') . (isset($senderCity, $senderState) ? ', ' : '') . ($senderState ?? '')) }}
-                                @if(!empty($senderCountry))
-                                    {{ isset($senderCity) || isset($senderState) ? ', ' : '' }}{{ $senderCountry }}
-                                @endif
-                            </div>
-                        @endif
-                        @if(!empty($senderPhone))
-                            <div class="text-sm mt-1">Phone: {{ $senderPhone }}</div>
-                        @endif
-                        @if(!empty($senderEmail))
-                            <div class="text-sm mt-1">Email: {{ $senderEmail }}</div>
-                        @endif
-                        @if(!empty($senderWebsite))
-                            <div class="text-sm mt-1">Website: {{ $senderWebsite }}</div>
-                        @endif
-                        <div class="text-sm mt-1">Generated: {{ $generatedAt->format('d M Y H:i') }}</div>
+                <td style="width: 50%; vertical-align: top;">
+                    <div style="text-align: left; width: 50%; vertical-align: top;">
+                        <h2>Customer Details</h2>
+                        <div>{{ $invoice->customer->name }}</div>
+                        <div>{{ $invoice->customer->address }}</div>
+                        <div></div>
                     </div>
                 </td>
 
-                <!-- Bill To on the far right, text left-aligned inside -->
-                <td style="width: 50%; vertical-align: top; padding-left: 8px; text-align: right;">
-                    <div style="margin-top: 16px; display: inline-block; text-align: left;">
-                        <h2>Bill To</h2>
-                        <div class="text-sm">
-                            @if($invoice->customer)
-                                <span class="font-semibold">{{ $invoice->customer->name }}</span>
-                            @else
-                                N/A
-                            @endif
-                        </div>
-                        @if($invoice->customer)
-                            @if(!empty($invoice->customer->address))
-                                <div class="text-sm mt-1">{{ $invoice->customer->address }}</div>
-                            @endif
-                            @if(!empty($invoice->customer->city) || !empty($invoice->customer->state) || !empty($invoice->customer->country))
-                                <div class="text-sm mt-1">
-                                    {{ trim(($invoice->customer->city ?? '') . (isset($invoice->customer->city, $invoice->customer->state) ? ', ' : '') . ($invoice->customer->state ?? '')) }}
-                                    @if(!empty($invoice->customer->country))
-                                        {{ isset($invoice->customer->city) || isset($invoice->customer->state) ? ', ' : '' }}{{ $invoice->customer->country }}
-                                    @endif
-                                </div>
-                            @endif
-                            @if(!empty($invoice->customer->phone))
-                                <div class="text-sm mt-1">Phone: {{ $invoice->customer->phone }}</div>
-                            @endif
-                            @if(!empty($invoice->customer->email))
-                                <div class="text-sm mt-1">Email: {{ $invoice->customer->email }}</div>
-                            @endif
-                        @endif
+                
+                <td style="width: 50%; vertical-align: top;">
+                    <div style="text-align: right;">
+                        <h2>Invoice</h2>
+                        <div>Invoice #: {{ $invoice->invoice_number }}</div>
+                        <div>Date: {{ optional($invoice->created_at)->format('d/m/Y') }}</div>
+                        <div class="badge badge-status mt-2">{{ $invoice->status_label ?? ucfirst($invoice->status) }}</div>
                     </div>
                 </td>
             </tr>
         </table>
     </div>
-
-    @if($invoice->project)
-        <div class="section card">
-            <h2>Project</h2>
-            <div class="text-sm"> <span class="font-semibold">{{ $invoice->project->code ?? '' }} {{ $invoice->project->name ?? '' }}</span></div>
-        </div>
-    @endif
-
-
     @if($invoice->description)
         <div class="section card">
             <h2>Summary</h2>
@@ -172,9 +113,9 @@
                     @endphp
                     <tr>
                         <td>
-                            <div class="font-semibold">{{ $item->item_name }}</div>
+                            <div>{{ $item->item_name }}</div>
                             @if($item->item_description)
-                                <div class="text-sm muted">{{ $item->item_description }}</div>
+                                <div>{{ $item->item_description }}</div>
                             @endif
                         </td>
                         <td class="text-right">{{ number_format($quantity, 0) }}</td>
@@ -360,41 +301,47 @@
         </div>
     @endif
 
-    @if(isset($receivingPaymentMethod) && $receivingPaymentMethod !== null)
-        <div class="section card" style="margin-top: 8px;">
-            <h3>Payment Details</h3>
-            <div class="mb-2">
-                @if(!empty($receivingPaymentMethod->currency))
-                    <div class="text-sm mt-1"><strong>Currency:</strong> {{ $receivingPaymentMethod->currency }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->paybill))
-                    <div class="text-sm mt-1"><strong>Paybill:</strong> {{ $receivingPaymentMethod->paybill }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->account_holder_name))
-                    <div class="text-sm mt-1"><strong>Account Holder Name:</strong> {{ $receivingPaymentMethod->account_holder_name }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->account_number))
-                    <div class="text-sm mt-1"><strong>Account Number:</strong> {{ $receivingPaymentMethod->account_number }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->bank))
-                    <div class="text-sm mt-1"><strong>Bank:</strong> {{ $receivingPaymentMethod->bank }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->branch))
-                    <div class="text-sm mt-1"><strong>Branch:</strong> {{ $receivingPaymentMethod->branch }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->swift_code))
-                    <div class="text-sm mt-1"><strong>SWIFT Code:</strong> {{ $receivingPaymentMethod->swift_code }}</div>
-                @endif
-                @if(!empty($receivingPaymentMethod->iban))
-                    <div class="text-sm mt-1"><strong>IBAN:</strong> {{ $receivingPaymentMethod->iban }}</div>
-                @endif
-                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 8px 0;">
-                @if(!empty($receivingPaymentMethod->instruction))
-                    <div class="text-sm mt-1"><strong>Instruction:</strong> {{ $receivingPaymentMethod->instruction }}</div>
-                @endif
-            </div>
-        </div>
-    @endif
+    <div class="section">
+            <table class="tables">
+            <thead>
+                <tr>
+                    <th style="width: 33.33%;" class="tables">Bank Details</th>
+                    <th style="width: 33.33%;" class="tables">Bank Details</th>
+                    <th style="width: 33.33%;">Bank Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                    <tr>
+                        <td class="tables">
+                            <div class="text-sm mt-1">BANK: EQUITY BANK (K) LTD</div>
+                            <div class="text-sm mt-1">ACC NAME: PAMU SERVICES LIMITED</div>
+                            <div class="text-sm mt-1">ACC NO: 1560285840960 (USD)</div>
+                            <div class="text-sm mt-1">ACC NO: 1560285840950 (KES)</div>
+                            <div class="text-sm mt-1">BRANCH: MOMBASA SUPREME CENTRE</div>
+                            <div class="text-sm mt-1">BRANCH CODE: 156</div>
+                            <div class="text-sm mt-1">BANK CODE: 68</div>
+                            <div class="text-sm mt-1">SWIFT CODE: EQBLKENAXXX</div>  
+                        </td>
+                        <td class="tables"><div class="text-sm mt-1">BANK: KENYA COMMERCIAL BANK</div>
+                            <div class="text-sm mt-1">ACC NAME: PAMU SERVICES LIMITED</div>
+                            <div class="text-sm mt-1">ACC NO: 1349372668 (USD)</div>
+                            <div class="text-sm mt-1">ACC NO: 1349372749 (KES)</div>
+                            <div class="text-sm mt-1">BRANCH: SAHL CENTRE, EASTLEIGH</div>
+                            <div class="text-sm mt-1">BRANCH CODE: 355</div>
+                            <div class="text-sm mt-1">BANK CODE: 01</div>
+                            <div class="text-sm mt-1">SWIFT CODE: KCBLKENX</div>
+                        </td>
+                        <td><div class="text-sm mt-1">BANK: ABSA BANK</div>
+                            <div class="text-sm mt-1">ACC NAME: PAMU SERVICES LIMITED</div>
+                            <div class="text-sm mt-1">ACC NO: 2044111376 (USD)</div>
+                            <div class="text-sm mt-1">ACC NO: 2044111414 (KES)</div>
+                            <div class="text-sm mt-1">BRANCH: NKRUMAH ROAD, MOMBASA</div>
+                            
+                        </td> 
+                    </tr>
+            </tbody>
+        </table>
+    </div>
 
     @if($invoice->payment_terms || $invoice->notes_to_customer)
         <div class="section card" style="margin-top: 8px;">

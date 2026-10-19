@@ -12,7 +12,7 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 type RoadmapItem = {
   id: number;
-  job_reference_id: string;
+  bol_number: string;
   name: string;
   progress: number;
 };
@@ -52,7 +52,7 @@ const ProjectsRoadmap: React.FC = () => {
         if (controller.signal.aborted) return;
 
         if (!response.ok) {
-          addToast("Failed to load projects roadmap", "error");
+          addToast("Failed to load Consignments roadmap", "error");
           setItems([]);
           return;
         }
@@ -64,8 +64,8 @@ const ProjectsRoadmap: React.FC = () => {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
         }
-        console.error("Error loading projects roadmap", error);
-        addToast("Error loading projects roadmap", "error");
+        console.error("Error loading Consignments roadmap", error);
+        addToast("Error loading Consignments roadmap", "error");
         setItems([]);
       } finally {
         setLoading(false);
@@ -104,7 +104,7 @@ const ProjectsRoadmap: React.FC = () => {
       enabled: false,
     },
     xaxis: {
-      categories: items.map((item) => item.job_reference_id ?? ""),
+      categories: items.map((item) => item.bol_number ?? ""),
       axisTicks: {
         show: true,
         color: "#ECEEF2",
@@ -145,7 +145,7 @@ const ProjectsRoadmap: React.FC = () => {
       <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md h-[500px] flex flex-col">
         <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-center justify-between">
           <div className="trezo-card-title">
-            <h5 className="!mb-0">Projects Roadmap</h5>
+            <h5 className="!mb-0">Consignments Roadmap</h5>
           </div>
         </div>
 

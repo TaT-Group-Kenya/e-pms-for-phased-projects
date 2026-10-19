@@ -3,18 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\CustomerTransactionsLedgerStoreRequest;
+use App\Http\Requests\CustomerTransactionsLedgerUpdateRequest;
+use App\Http\Resources\CustomerTransactionsLedgerResource;
 use App\Models\CustomerTransactionsLedger;
 use App\Models\Download;
 use App\Models\SysConfig;
+use App\Services\CustomerTransactionsLedgerService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use App\Services\CustomerTransactionsLedgerService;
-use App\Http\Resources\CustomerTransactionsLedgerResource;
-use App\Http\Requests\CustomerTransactionsLedgerStoreRequest;
-use App\Http\Requests\CustomerTransactionsLedgerUpdateRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class CustomerTransactionsLedgerController extends Controller
 {
@@ -147,22 +147,22 @@ class CustomerTransactionsLedgerController extends Controller
         $generatedAt = now();
 
         $data = [
-            'entry'             => $entry,
-            'senderName'        => $senderName,
-            'senderEmail'       => $senderEmail,
-            'instanceLogo'      => $configValues['INSTANCE_LOGO'] ?? null,
-            'senderPhone'       => $configValues['PHONE']   ?? null,
-            'senderWebsite'     => $configValues['WEBSITE'] ?? config('app.url'),
-            'senderAddressLine1'=> $configValues['ADDRESS_LINE_1'] ?? null,
-            'senderCity'        => $configValues['CITY']    ?? null,
-            'senderState'       => $configValues['STATE']   ?? null,
-            'senderCountry'     => $configValues['COUNTRY'] ?? null,
-            'generatedAt'       => $generatedAt,
+            'entry' => $entry,
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $configValues['INSTANCE_LOGO'] ?? null,
+            'senderPhone' => $configValues['PHONE'] ?? null,
+            'senderWebsite' => $configValues['WEBSITE'] ?? config('app.url'),
+            'senderAddressLine1' => $configValues['ADDRESS_LINE_1'] ?? null,
+            'senderCity' => $configValues['CITY'] ?? null,
+            'senderState' => $configValues['STATE'] ?? null,
+            'senderCountry' => $configValues['COUNTRY'] ?? null,
+            'generatedAt' => $generatedAt,
         ];
 
         $html = view('pdf.customer-ledger-entry', $data)->render();
 
-        $options = new Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
 
         $dompdf = new Dompdf($options);
@@ -172,13 +172,13 @@ class CustomerTransactionsLedgerController extends Controller
 
         $output = $dompdf->output();
 
-        $number = $entry->transaction_number ?: ('CUST-LEDGER-' . $entry->id);
-        $fileName = $number . '.pdf';
-        $relativePath = 'customer-ledger/' . $fileName;
+        $number = $entry->transaction_number ?: ('CUST-LEDGER-'.$entry->id);
+        $fileName = $number.'.pdf';
+        $relativePath = 'customer-ledger/'.$fileName;
 
         Storage::disk('public')->put($relativePath, $output);
 
-        $downloadKey = 'customer-ledger:' . $number;
+        $downloadKey = 'customer-ledger:'.$number;
         $download = Download::firstOrNew(['name' => $downloadKey]);
         $download->path = $relativePath;
         $download->updated_at = now();
@@ -190,9 +190,9 @@ class CustomerTransactionsLedgerController extends Controller
         $download->save();
 
         return [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
     }
 }

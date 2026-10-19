@@ -1,51 +1,54 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
+use App\Http\Requests\OrderDocumentStoreRequest;
+use App\Http\Requests\OrderDocumentUpdateRequest;
+use App\Http\Resources\OrderDocumentResource;
+use App\Models\Order;
+use App\Models\OrderDocument;
+use App\Services\OrderDocumentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Models\OrderDocument;
-use App\Models\Order;
-use App\Services\OrderDocumentService;
-use App\Http\Resources\OrderDocumentResource;
-use App\Http\Requests\OrderDocumentStoreRequest;
-use App\Http\Requests\OrderDocumentUpdateRequest;
 
 class OrderDocumentController extends Controller
 {
     protected $service;
 
-    public function __construct(OrderDocumentService $service) {
+    public function __construct(OrderDocumentService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\OrderDocument::class);
+        $this->authorize('viewAny', OrderDocument::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return OrderDocumentResource::collection($data);
     }
 
     public function store(OrderDocumentStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\OrderDocument::class);
-        
+        $this->authorize('create', OrderDocument::class);
+
         $validated = $request->validated();
 
-        if (!empty($validated['order_id'])) {
-          $order = Order::findOrFail($validated['order_id']);
-          if ($order->status === 'approved') {
-              return response()->json([
-                  'message' => 'Documents cannot be added to an approved order. Unapprove the order first.',
-                  'errors'  => [
-                      'order_id' => ['This order is approved and locked for changes.'],
-                  ],
-              ], 422);
-          }
+        if (! empty($validated['order_id'])) {
+            $order = Order::findOrFail($validated['order_id']);
+            if ($order->status === 'approved') {
+                return response()->json([
+                    'message' => 'Documents cannot be added to an approved order. Unapprove the order first.',
+                    'errors' => [
+                        'order_id' => ['This order is approved and locked for changes.'],
+                    ],
+                ], 422);
+            }
         }
 
         if ($request->hasFile('document_file')) {
@@ -57,7 +60,7 @@ class OrderDocumentController extends Controller
 
             $originalName = $file->getClientOriginalName();
             $prefix = $order ? $order->order_number : 'order';
-            $fileName = $prefix . '-' . $originalName;
+            $fileName = $prefix.'-'.$originalName;
 
             $path = $file->storeAs('order-documents', $fileName, 'public');
             $validated['document_path'] = $path;
@@ -65,6 +68,7 @@ class OrderDocumentController extends Controller
 
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
+
         return new OrderDocumentResource($model);
     }
 
@@ -83,7 +87,7 @@ class OrderDocumentController extends Controller
         if ($order && $order->status === 'approved') {
             return response()->json([
                 'message' => 'Documents on an approved order cannot be edited. Unapprove the order first.',
-                'errors'  => [
+                'errors' => [
                     'order_id' => ['This order is approved and locked for changes.'],
                 ],
             ], 422);
@@ -103,13 +107,14 @@ class OrderDocumentController extends Controller
 
             $originalName = $file->getClientOriginalName();
             $prefix = $order ? $order->order_number : 'order';
-            $fileName = $prefix . '-' . $originalName;
+            $fileName = $prefix.'-'.$originalName;
 
             $path = $file->storeAs('order-documents', $fileName, 'public');
             $validated['document_path'] = $path;
         }
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($orderDocument->id, $validated);
+
         return new OrderDocumentResource($updated);
     }
 
@@ -121,13 +126,14 @@ class OrderDocumentController extends Controller
         if ($order && $order->status === 'approved') {
             return response()->json([
                 'message' => 'Documents on an approved order cannot be deleted. Unapprove the order first.',
-                'errors'  => [
+                'errors' => [
                     'order_id' => ['This order is approved and locked for changes.'],
                 ],
             ], 422);
         }
 
         $this->service->delete($orderDocument->id);
+
         return response()->noContent();
     }
 
@@ -135,13 +141,13 @@ class OrderDocumentController extends Controller
     {
         $this->authorize('view', $orderDocument);
 
-        if (!$orderDocument->document_path) {
+        if (! $orderDocument->document_path) {
             return response()->json(['message' => 'Document file not found'], 404);
         }
 
-        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+        $disk = Storage::disk('public');
 
-        if (!$disk->exists($orderDocument->document_path)) {
+        if (! $disk->exists($orderDocument->document_path)) {
             return response()->json(['message' => 'Document file missing on server'], 404);
         }
 

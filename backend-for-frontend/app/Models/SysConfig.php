@@ -33,6 +33,7 @@ class SysConfig extends Model
         $values = $this->whereIn('name', [
             'INSTANCE_LOGO',
         ])->pluck('value', 'name');
+
         return $values['INSTANCE_LOGO'] ?? null;
     }
 }

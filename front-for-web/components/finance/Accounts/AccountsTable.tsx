@@ -8,6 +8,7 @@ import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal/DeleteConfirmationModal";
 import Can from "../../auth/Can";
+import { formatApiError } from "../../../utils/errorHandler";
 
 interface AccountSummary {
   id: number;
@@ -19,9 +20,17 @@ interface AccountSummary {
   balance: string;
   overdraft_allowed: number;
   currency?: string;
+  chart_of_account_id?: number | null;
+  chart_of_account?: { id: number; code: string; name: string } | null;
 }
 
 interface CurrencyOption {
+  id: number;
+  code: string;
+  name: string;
+}
+
+interface ChartOfAccountOption {
   id: number;
   code: string;
   name: string;
@@ -34,6 +43,8 @@ const AccountsTable: React.FC = () => {
 
   const [accounts, setAccounts] = useState<AccountSummary[]>([]);
   const [currencies, setCurrencies] = useState<CurrencyOption[]>([]);
+  const [chartOfAccounts, setChartOfAccounts] = useState<ChartOfAccountOption[]>([]);
+  const [formChartOfAccountId, setFormChartOfAccountId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
@@ -44,7 +55,7 @@ const AccountsTable: React.FC = () => {
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formType, setFormType] = useState<"cash" | "mpesa" | "bank">("cash");
-  const [formGroup, setFormGroup] = useState<"Petty" | "Checking" | "Savings">("Petty");
+  const [formGroup, setFormGroup] = useState<"Petty" | "Checking" | "Savings" | "Loans">("Petty");
   const [formCurrency, setFormCurrency] = useState("");
   const [formBalance, setFormBalance] = useState("0.00");
   const [formOverdraft, setFormOverdraft] = useState("0");
@@ -98,6 +109,17 @@ const AccountsTable: React.FC = () => {
           balance: String(acc.balance ?? "0"),
           overdraft_allowed: Number(acc.overdraft_allowed ?? 0),
           currency: String(acc.currency ?? acc.currency_code ?? acc.currency?.code ?? ""),
+          chart_of_account_id:
+            acc.chart_of_account_id === null || acc.chart_of_account_id === undefined
+              ? null
+              : Number(acc.chart_of_account_id),
+          chart_of_account: acc.chart_of_account
+            ? {
+                id: Number(acc.chart_of_account.id),
+                code: String(acc.chart_of_account.code ?? ""),
+                name: String(acc.chart_of_account.name ?? ""),
+              }
+            : null,
         }));
 
         setAccounts(mapped);
@@ -172,6 +194,60 @@ const AccountsTable: React.FC = () => {
     return () => controller.abort();
   }, [accessToken, addToast]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchChartOfAccounts = async () => {
+      if (!accessToken) {
+        setChartOfAccounts([]);
+        return;
+      }
+
+      try {
+        const url = "/api/chart-of-accounts/list?page=1&per_page=100";
+        const resp = await fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
+        });
+
+        const data: any = await resp.json().catch(() => null);
+
+        if (!resp.ok) {
+          addToast(data?.message || "Failed to load chart of accounts", "error");
+          setChartOfAccounts([]);
+          return;
+        }
+
+        const items = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data)
+          ? data
+          : [];
+
+        const mapped: ChartOfAccountOption[] = (items || []).map((c: any) => ({
+          id: Number(c.id),
+          code: String(c.code ?? ""),
+          name: String(c.name ?? ""),
+        }));
+
+        setChartOfAccounts(mapped);
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+        // eslint-disable-next-line no-console
+        console.error("fetch chart of accounts error", err);
+        addToast("Error loading chart of accounts. Please try again.", "error");
+        setChartOfAccounts([]);
+      }
+    };
+
+    fetchChartOfAccounts();
+
+    return () => controller.abort();
+  }, [accessToken, addToast]);
+
   const filteredAccounts = useMemo(() => {
     const term = searchTerm.toLowerCase();
     return accounts.filter((acc) => {
@@ -200,6 +276,7 @@ const AccountsTable: React.FC = () => {
     setFormCurrency("");
     setFormBalance("0.00");
     setFormOverdraft("0");
+    setFormChartOfAccountId("");
   };
 
   const handleOpenCreate = () => {
@@ -220,6 +297,11 @@ const AccountsTable: React.FC = () => {
     const value = overdraft === 1 ? "1" : "0";
     setFormOverdraft(value);
     setFormCurrency(acc.currency || "");
+    setFormChartOfAccountId(
+      acc.chart_of_account_id !== null && acc.chart_of_account_id !== undefined
+        ? String(acc.chart_of_account_id)
+        : "",
+    );
     setShowModal(true);
   };
 
@@ -239,6 +321,11 @@ const AccountsTable: React.FC = () => {
       return;
     }
 
+    if (!formChartOfAccountId) {
+      addToast("Chart of account is required.", "error");
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -249,6 +336,7 @@ const AccountsTable: React.FC = () => {
         currency: formCurrency,
         overdraft_allowed: Number(formOverdraft),
         balance: Number(formBalance) || 0,
+        chart_of_account_id: Number(formChartOfAccountId),
       };
 
       const isEdit = !!editingAccount;
@@ -267,11 +355,7 @@ const AccountsTable: React.FC = () => {
 
       const data: any = await resp.json().catch(() => null);
       if (!resp.ok) {
-        const message =
-          typeof data === "string"
-            ? data
-            : data?.message || "Failed to save account";
-        addToast(message, "error");
+        addToast(formatApiError(data), "error");
         return;
       }
 
@@ -315,7 +399,7 @@ const AccountsTable: React.FC = () => {
 
       const data: any = await resp.json().catch(() => null);
       if (!resp.ok) {
-        addToast(data?.message || "Failed to delete account", "error");
+        addToast(formatApiError(data), "error");
         return;
       }
 
@@ -346,6 +430,7 @@ const AccountsTable: React.FC = () => {
       "Type",
       "Group",
       "Currency",
+      "Chart of Account",
       "Balance",
       "OverdraftAllowed",
     ];
@@ -358,6 +443,7 @@ const AccountsTable: React.FC = () => {
       acc.type,
       acc.group,
       acc.currency ?? "",
+      acc.chart_of_account ? `${acc.chart_of_account.code} - ${acc.chart_of_account.name}` : "",
       acc.balance,
       acc.overdraft_allowed,
     ]);
@@ -434,6 +520,7 @@ const AccountsTable: React.FC = () => {
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Type</th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Group</th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Currency</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Chart of Account</th>
                 <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Balance</th>
                 <th className="font-medium text-center px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Overdraft</th>
                 <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Actions</th>
@@ -443,7 +530,7 @@ const AccountsTable: React.FC = () => {
               {loading && (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="text-center text-sm px-[10px] py-[8px] text-gray-500 dark:text-gray-400"
                   >
                     Loading accounts...
@@ -454,7 +541,7 @@ const AccountsTable: React.FC = () => {
               {!loading && filteredAccounts.length === 0 && (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="text-center text-sm px-[10px] py-[16px] text-gray-500 dark:text-gray-400"
                   >
                     No accounts found.
@@ -475,6 +562,11 @@ const AccountsTable: React.FC = () => {
                     <td className="text-sm px-[10px] py-[6px] capitalize whitespace-nowrap">{acc.type}</td>
                     <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">{acc.group}</td>
                     <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">{acc.currency || "-"}</td>
+                    <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
+                      {acc.chart_of_account
+                        ? `${acc.chart_of_account.code} - ${acc.chart_of_account.name}`
+                        : "-"}
+                    </td>
                     <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
                       {Number(acc.balance ?? 0).toLocaleString(undefined, {
                         minimumFractionDigits: 2,
@@ -570,6 +662,7 @@ const AccountsTable: React.FC = () => {
                     <option value="Petty">Petty</option>
                     <option value="Checking">Checking</option>
                     <option value="Savings">Savings</option>
+                    <option value="Loans">Loans</option>
                   </select>
                 </div>
 
@@ -588,6 +681,27 @@ const AccountsTable: React.FC = () => {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-[5px]">Chart of Account</label>
+                  <select
+                    value={formChartOfAccountId}
+                    onChange={(e) => setFormChartOfAccountId(e.target.value)}
+                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="">Select chart of account</option>
+                    {chartOfAccounts.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.code} - {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  {chartOfAccounts.length === 0 && (
+                    <p className="mt-[4px] text-[11px] text-yellow-600 dark:text-yellow-400">
+                      No chart of accounts available.
+                    </p>
+                  )}
                 </div>
 
                 <div>

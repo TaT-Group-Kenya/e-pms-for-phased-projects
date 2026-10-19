@@ -55,7 +55,7 @@ const ProjectPhases: React.FC<ProjectPhasesProps> = ({ project, onNavigateToPhas
       <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
         <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-center justify-between">
           <div className="trezo-card-title">
-            <h5 className="!mb-0">Project Phases</h5>
+            <h5 className="!mb-0">Consignment Phases</h5>
           </div>
         </div>
 
@@ -65,7 +65,7 @@ const ProjectPhases: React.FC<ProjectPhasesProps> = ({ project, onNavigateToPhas
               layers
             </i>
             <p className="text-gray-600 dark:text-gray-400 mb-[20px]">
-              No phases have been created yet for this project.
+              No phases have been created yet for this consignment.
             </p>
             <button
               onClick={onNavigateToPhases}
@@ -84,7 +84,7 @@ const ProjectPhases: React.FC<ProjectPhasesProps> = ({ project, onNavigateToPhas
       <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
         <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-center justify-between">
           <div className="trezo-card-title">
-            <h5 className="!mb-0">Project Phases</h5>
+            <h5 className="!mb-0">Consignment Phases</h5>
           </div>
         </div>
 

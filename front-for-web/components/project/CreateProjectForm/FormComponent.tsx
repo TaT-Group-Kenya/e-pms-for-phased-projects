@@ -13,11 +13,11 @@ import { formatApiError } from "../../../utils/errorHandler";
 
 // Zod schema for form validation - based on ProjectStoreRequest
 const projectSchema = z.object({
-  name: z.string().min(1, "Project name is required").max(255, "Project name must not exceed 255 characters"),
+  name: z.string().min(1, "Consignment name is required").max(255, "Consignment name must not exceed 255 characters"),
   creationDate: z.string().min(1, "Creation date is required"),
   description: z.string().min(1, "Description is required").max(255, "Description must not exceed 255 characters"),
   customer_id: z.string().min(1, "Customer is required"),
-  project_category_id: z.string().min(1, "Project category is required"),
+  project_category_id: z.string().min(1, "Consignment category is required"),
   project_source_origin_id: z.string().optional(),
   project_location_id: z.string().optional(),
   no_of_phases: z.string().min(1, "Number of phases is required"),
@@ -27,7 +27,6 @@ const projectSchema = z.object({
   status: z.enum(["new", "progress", "draft", "complete"]).optional(),
   priority: z.string().min(1, "Priority is required"),
   progress: z.string().min(1, "Progress is required"),
-  tags: z.string().optional(),
   currency: z.string().min(1, "Currency is required"),
   updated_by: z.string().optional().nullable(),
   created_by: z.string().optional().nullable(),
@@ -74,7 +73,6 @@ const CreateProjectForm: React.FC = () => {
   const [projectSources, setProjectSources] = useState<ProjectSourceOrigin[]>([]);
   const [projectLocations, setProjectLocations] = useState<ProjectLocation[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   const {
@@ -207,7 +205,6 @@ const CreateProjectForm: React.FC = () => {
         status: data.status,
         priority: data.priority,
         progress: data.progress,
-        tags: tags.join(","),
         currency: data.currency,
         created_at,
       };
@@ -228,16 +225,15 @@ const CreateProjectForm: React.FC = () => {
         return;
       }
 
-      setSuccessMessage("Project created successfully!");
+      setSuccessMessage("Consignment created successfully!");
       reset();
-      setTags([]);
 
       setTimeout(() => {
         router.push("/project/project-list");
       }, 2000);
     } catch (err) {
-      console.error("Error creating project:", err);
-      setFormError("An error occurred while creating the project");
+      console.error("Error creating Consignment:", err);
+      setFormError("An error occurred while creating the Consignment");
     } finally {
       setIsSubmitting(false);
     }
@@ -282,7 +278,7 @@ const CreateProjectForm: React.FC = () => {
               <div className="mb-[20px] sm:mb-0 flex gap-4">
                 <div className="flex-1">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Project Name <span className="text-danger-500">*</span>
+                    Consignment Name <span className="text-danger-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -290,7 +286,7 @@ const CreateProjectForm: React.FC = () => {
                     className={`h-[44px] rounded-md text-black dark:text-white border ${
                       errors.name ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
                     } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                    placeholder="E.g. Website Redesign"
+                    placeholder="E.g. Clearance and Transport"
                   />
                   {renderFieldError("name")}
                 </div>
@@ -319,7 +315,7 @@ const CreateProjectForm: React.FC = () => {
                   className={`rounded-md text-black dark:text-white border ${
                     errors.description ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
                   } bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                  placeholder="Enter project description"
+                  placeholder="Enter Consignment description"
                   rows={3}
                 />
                 {renderFieldError("description")}
@@ -350,7 +346,7 @@ const CreateProjectForm: React.FC = () => {
               {/* Project Category - Required */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Category <span className="text-danger-500">*</span>
+                  Consignment Category <span className="text-danger-500">*</span>
                 </label>
                 <select
                   {...register("project_category_id")}
@@ -372,14 +368,14 @@ const CreateProjectForm: React.FC = () => {
               {/* Project Source - Optional */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Source
+                  Destination
                 </label>
                 <select
                   {...register("project_source_origin_id")}
                   disabled={loadingData}
                   className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
                 >
-                  <option value="">{loadingData ? "Loading sources..." : "Select a source (optional)"}</option>
+                  <option value="">{loadingData ? "Loading destinations..." : "Select a destination (optional)"}</option>
                   {projectSources.map((source) => (
                     <option key={source.id} value={source.id.toString()}>
                       {source.name}
@@ -391,14 +387,14 @@ const CreateProjectForm: React.FC = () => {
               {/* Project Location - Optional */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Location
+                  CFS
                 </label>
                 <select
                   {...register("project_location_id")}
                   disabled={loadingData}
                   className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
                 >
-                  <option value="">{loadingData ? "Loading locations..." : "Select a location (optional)"}</option>
+                  <option value="">{loadingData ? "Loading cfss..." : "Select a CFS (optional)"}</option>
                   {projectLocations.map((location) => (
                     <option key={location.id} value={location.id.toString()}>
                       {location.name}
@@ -523,7 +519,7 @@ const CreateProjectForm: React.FC = () => {
                   } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer`}
                 >
                   <option value="">Select priority</option>
-                  <option value="Low">Low</option>
+                  <option value="Normal">Normal</option>
                   <option value="Medium">Medium</option>
                   <option value="High">High</option>
                 </select>
@@ -548,50 +544,6 @@ const CreateProjectForm: React.FC = () => {
                 {renderFieldError("progress")}
               </div>
 
-              {/* Tags - Optional */}
-              <div className="mb-[20px] sm:mb-0">
-                <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Tags
-                </label>
-                <div className={`rounded-md border ${
-                  tags.length === 0 && !errors.tags ? "border-gray-200 dark:border-[#172036]" : 
-                  tags.length === 0 ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
-                } bg-white dark:bg-[#0c1427] px-[12px] py-[8px] block w-full outline-0 transition-all focus:border-primary-500`}>
-                  <div className="flex flex-wrap gap-[8px] mb-[8px]">
-                    {tags.map((tag, index) => (
-                      <div
-                        key={index}
-                        className="inline-flex items-center gap-[6px] px-[10px] py-[4px] bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium"
-                      >
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => setTags(tags.filter((_, i) => i !== index))}
-                          className="hover:text-primary-900 dark:hover:text-primary-100 cursor-pointer font-bold"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <input
-                    type="text"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        const value = (e.target as HTMLInputElement).value.trim();
-                        if (value && !tags.includes(value)) {
-                          setTags([...tags, value]);
-                          (e.target as HTMLInputElement).value = "";
-                        }
-                      }
-                    }}
-                    className="w-full outline-0 bg-transparent text-black dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
-                    placeholder={tags.length === 0 ? "E.g. web, frontend, api (Press Enter to add)" : "Press Enter to add"}
-                  />
-                </div>
-                {renderFieldError("tags")}
-              </div>
             </div>
 
             {/* Form Actions */}
@@ -608,7 +560,7 @@ const CreateProjectForm: React.FC = () => {
                 disabled={isSubmitting}
                 className="px-[25px] py-[10px] rounded-md bg-primary-500 text-white hover:bg-primary-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? "Creating..." : "Create Project"}
+                {isSubmitting ? "Creating..." : "Create Consignment"}
               </button>
             </div>
           </div>

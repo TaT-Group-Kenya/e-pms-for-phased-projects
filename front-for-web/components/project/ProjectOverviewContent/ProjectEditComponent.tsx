@@ -22,12 +22,18 @@ interface ProjectDetailsData {
   status: string;
   priority: string;
   progress?: number;
-  tags?: string;
   currency?: string;
   customer?: { id: number; name: string };
   category?: { id: number; name: string };
   source_origin?: { id: number; name: string };
   location?: { id: number; name: string };
+  ship_containers?: Array<{
+    container_type: string;
+    cfs?: number | string | null;
+    allocation?: number | string | null;
+    cfs_location?: { id: number; name: string } | null;
+    allocation_location?: { id: number; name: string } | null;
+  }>;
   phases?: any[];
   order?: any;
   quotation?: any;
@@ -46,6 +52,27 @@ interface ProjectEditComponentProps {
   projectId?: string;
   onProjectDeleted?: () => void;
   onProjectUpdated?: () => void;
+}
+
+function linkedContainerLocation(project: Pick<ProjectDetailsData, "ship_containers">) {
+  for (const container of project.ship_containers ?? []) {
+    const isTransit = container.container_type === "container_transit" || container.container_type === "unit_transit";
+    const candidates = isTransit
+      ? [container.cfs_location, container.allocation_location]
+      : [container.allocation_location, container.cfs_location];
+    const location = candidates.find((candidate) => candidate?.id);
+    if (location) return location;
+
+    const rawLocationId = isTransit
+      ? container.cfs ?? container.allocation
+      : container.allocation ?? container.cfs;
+    if (rawLocationId != null && String(rawLocationId).trim() !== "") {
+      const id = Number(rawLocationId);
+      if (Number.isInteger(id) && id > 0) return { id, name: "" };
+    }
+  }
+
+  return null;
 }
 
 const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
@@ -67,7 +94,6 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
   const [projectSources, setProjectSources] = useState<Array<{ id: number; name: string }>>([]);
   const [projectLocations, setProjectLocations] = useState<Array<{ id: number; name: string }>>([]);
   const [currencies, setCurrencies] = useState<Array<{ id: number; code: string; symbol: string; name: string }>>([]);
-  const [tags, setTags] = useState<string[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   // Auto-dismiss update message after 5 seconds
@@ -166,19 +192,29 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
   // Initialize form data when project changes
   useEffect(() => {
     if (project) {
-      setEditFormData(project);
+      const linkedLocation = linkedContainerLocation(project);
+      setEditFormData({
+        ...project,
+        project_location_id: linkedLocation?.id ?? project.project_location_id ?? undefined,
+      });
     }
   }, [project]);
 
   const handleEdit = () => {
     setIsEditMode(true);
-    setTags(project?.tags ? project.tags.split(',').map(tag => tag.trim()) : []);
   };
 
   const handleCancel = () => {
     setIsEditMode(false);
-    setEditFormData(project);
-    setTags([]);
+    if (project) {
+      const linkedLocation = linkedContainerLocation(project);
+      setEditFormData({
+        ...project,
+        project_location_id: linkedLocation?.id ?? project.project_location_id ?? undefined,
+      });
+    } else {
+      setEditFormData(null);
+    }
   };
 
   const handleUpdateProject = async () => {
@@ -187,7 +223,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
     const missingFields: string[] = [];
 
     if (!editFormData.name || !editFormData.name.trim()) {
-      missingFields.push("Project Name");
+      missingFields.push("Consignment Name");
     }
 
     if (!editFormData.created_at || !editFormData.created_at.toString().trim()) {
@@ -199,7 +235,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
     }
 
     if (!editFormData.project_category_id) {
-      missingFields.push("Project Category");
+      missingFields.push("Consignment Category");
     }
 
     if (!editFormData.priority || !editFormData.priority.toString().trim()) {
@@ -208,10 +244,6 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
 
     if (!editFormData.currency || !editFormData.currency.toString().trim()) {
       missingFields.push("Currency");
-    }
-
-    if (!tags || tags.length === 0) {
-      missingFields.push("Tags");
     }
 
     if (missingFields.length > 0) {
@@ -240,14 +272,13 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
         body: JSON.stringify({
           ...editFormData,
           created_at: createdAtToSend,
-          tags: tags.join(","),
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setUpdateMessage({ type: 'error', text: data.message || "Failed to update project" });
+        setUpdateMessage({ type: 'error', text: data.message || "Failed to update Consignment" });
         return;
       }
 
@@ -255,20 +286,20 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
       const updatedProject = data.data || editFormData;
       setEditFormData(updatedProject);
       setIsEditMode(false);
-      setUpdateMessage({ type: 'success', text: 'Project updated successfully' });
+      setUpdateMessage({ type: 'success', text: 'Consignment updated successfully' });
 
       // Trigger parent refresh
       onProjectUpdated?.();
     } catch (err) {
-      console.error("Error updating project:", err);
-      setUpdateMessage({ type: 'error', text: 'Error updating project' });
+      console.error("Error updating Consignment:", err);
+      setUpdateMessage({ type: 'error', text: 'Error updating Consignment' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteProject = async () => {
-    if (!window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
+    if (!window.confirm("Are you sure you want to delete this Consignment? This action cannot be undone.")) {
       return;
     }
 
@@ -283,18 +314,18 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
 
       if (!response.ok) {
         const data = await response.json();
-        addToast(data.message || "Failed to delete project", "error");
+        addToast(data.message || "Failed to delete Consignment", "error");
         return;
       }
 
-      addToast("Project deleted successfully", "success");
+      addToast("Consignment deleted successfully", "success");
       onProjectDeleted?.();
       setTimeout(() => {
         router.push("/project/project-list");
       }, 1500);
     } catch (err) {
-      console.error("Error deleting project:", err);
-      addToast("Error deleting project", "error");
+      console.error("Error deleting Consignment:", err);
+      addToast("Error deleting Consignment", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -309,14 +340,14 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
       <div className="pt-[20px]">
         <div className="flex items-center justify-between mb-[20px]">
           <h6 className="font-semibold text-black dark:text-white">
-            Edit Project
+            Edit Consignment
           </h6>
           {!isEditMode && (
             <div className="flex gap-[8px]">
               <button
                 onClick={handleEdit}
                 className="inline-flex items-center justify-center w-[36px] h-[36px] rounded-md border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Edit project"
+                title="Edit Consignment"
                 disabled={isSubmitting}
               >
                 <i className="material-symbols-outlined !text-[18px]">edit</i>
@@ -324,7 +355,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               <button
                 onClick={handleDeleteProject}
                 className="inline-flex items-center justify-center w-[36px] h-[36px] rounded-md border border-danger-500 text-danger-500 hover:bg-danger-50 dark:hover:bg-[#172036] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Delete project"
+                title="Delete Consignment"
                 disabled={isSubmitting}
               >
                 <i className="material-symbols-outlined !text-[18px] text-danger-500">delete</i>
@@ -367,7 +398,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
             <div className="sm:grid sm:grid-cols-3 sm:gap-[25px]">
                 <div className="flex-1">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Project Name <span className="text-danger-500">*</span>
+                    Consignment Name <span className="text-danger-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -392,7 +423,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               {/* Project Code */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Code
+                  Consignment Code
                 </label>
                 <input
                   type="text"
@@ -426,7 +457,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               {/* Project Category */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Category <span className="text-danger-500">*</span>
+                  Consignment Category <span className="text-danger-500">*</span>
                 </label>
                 <select
                   value={editFormData.project_category_id || ""}
@@ -446,7 +477,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               {/* Project Source */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Source
+                  Destination
                 </label>
                 <select
                   value={editFormData.project_source_origin_id || ""}
@@ -459,7 +490,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                   disabled={loadingData}
                   className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
                 >
-                  <option value="">Select a source (optional)</option>
+                  <option value="">Select a Destination (optional)</option>
                   {projectSources.map((source) => (
                     <option key={source.id} value={source.id.toString()}>
                       {source.name}
@@ -471,20 +502,23 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
               {/* Project Location */}
               <div className="mb-[20px] sm:mb-0">
                 <label className="mb-[10px] text-black dark:text-white font-medium block">
-                  Project Location
+                  CFS <span className="text-gray-500 dark:text-gray-400">(optional)</span>
                 </label>
                 <select
                   value={editFormData.project_location_id || ""}
-                  onChange={(e) =>
-                    handleFormChange(
-                      "project_location_id",
-                      e.target.value ? parseInt(e.target.value) : null
-                    )
-                  }
-                  disabled={loadingData}
-                  className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50"
+                  disabled
+                  aria-readonly="true"
+                  className="h-[55px] rounded-md text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-[#172036] bg-gray-100 dark:bg-[#111827] px-[17px] block w-full outline-0 cursor-not-allowed"
                 >
-                  <option value="">Select a location (optional)</option>
+                  <option value="">
+                    {loadingData ? "Loading CFS..." : "No linked CFS"}
+                  </option>
+                  {editFormData.project_location_id &&
+                    !projectLocations.some((location) => location.id === editFormData.project_location_id) && (
+                      <option value={editFormData.project_location_id}>
+                        {linkedContainerLocation(project ?? {})?.name || project?.location?.name || "Linked CFS"}
+                      </option>
+                    )}
                   {projectLocations.map((location) => (
                     <option key={location.id} value={location.id.toString()}>
                       {location.name}
@@ -522,7 +556,7 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                   className="h-[55px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer"
                 >
                   <option value="">Select priority</option>
-                  <option value="Low">Low</option>
+                  <option value="Normal">Normal</option>
                   <option value="Medium">Medium</option>
                   <option value="High">High</option>
                 </select>
@@ -629,50 +663,8 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                 onChange={(e) => handleFormChange("description", e.target.value)}
                 rows={4}
                 className="rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] py-[12px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500"
-                placeholder="Enter project description"
+                placeholder="Enter Consignment description"
               />
-            </div>
-
-            {/* Tags */}
-            <div>
-              <label className="mb-[10px] text-black dark:text-white font-medium block">
-                Tags <span className="text-danger-500">*</span>
-              </label>
-              <div className="rounded-md border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[12px] py-[8px] block w-full outline-0 transition-all focus:border-primary-500">
-                <div className="flex flex-wrap gap-[8px] mb-[8px]">
-                  {tags.map((tag, index) => (
-                    <div
-                      key={index}
-                      className="inline-flex items-center gap-[6px] px-[10px] py-[4px] bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => setTags(tags.filter((_, i) => i !== index))}
-                        className="hover:text-primary-900 dark:hover:text-primary-100 cursor-pointer font-bold"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const value = (e.target as HTMLInputElement).value.trim();
-                      if (value && !tags.includes(value)) {
-                        setTags([...tags, value]);
-                        (e.target as HTMLInputElement).value = "";
-                      }
-                    }
-                  }}
-                  required
-                  className="w-full outline-0 bg-transparent text-black dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
-                  placeholder={tags.length === 0 ? "E.g. web, frontend, api (Press Enter to add)" : "Press Enter to add"}
-                />
-              </div>
             </div>
 
             {/* Action Buttons */}
@@ -697,11 +689,11 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
           <div className="space-y-[15px]">
             <div className="sm:grid sm:grid-cols-2 sm:gap-[25px]">
               <div>
-                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Project Name</span>
+                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Consignment Name</span>
                 <p className="text-black dark:text-white font-medium">{project?.name || "N/A"}</p>
               </div>
               <div>
-                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Project Code</span>
+                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Consignment Code</span>
                 <p className="text-black dark:text-white font-medium">{project?.code || "N/A"}</p>
               </div>
               <div>
@@ -723,11 +715,11 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
                 <p className="text-black dark:text-white font-medium">{project?.progress || 0}%</p>
               </div>
               <div>
-                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Source</span>
+                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Destination</span>
                 <p className="text-black dark:text-white font-medium">{project?.source_origin?.name || "N/A"}</p>
               </div>
               <div>
-                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">Location</span>
+                <span className="text-gray-600 dark:text-gray-400 block mb-[5px]">CFS</span>
                 <p className="text-black dark:text-white font-medium">{project?.location?.name || "N/A"}</p>
               </div>
             </div>

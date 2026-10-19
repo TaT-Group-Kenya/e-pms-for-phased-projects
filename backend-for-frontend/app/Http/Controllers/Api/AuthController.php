@@ -3,19 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Http\Resources\UserResource;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
+use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Carbon;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\Rule;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use PDOException;
 
 class AuthController extends Controller
@@ -24,9 +24,9 @@ class AuthController extends Controller
     {
         try {
             $data = $request->validate([
-                'email' => ['required','email'],
+                'email' => ['required', 'email'],
                 'password' => ['required'],
-                'device_name' => ['nullable','string']
+                'device_name' => ['nullable', 'string'],
             ]);
 
             $user = User::where('email', $data['email'])
@@ -47,22 +47,22 @@ class AuthController extends Controller
                 ->where('is_deleted', false)
                 ->pluck('sys_group_id')
                 ->toArray();
-            
+
             // Step 2: Fetch group_roles where group_id IN list and is_deleted=false
             $groupRoles = DB::table('group_roles')
                 ->whereIn('group_id', $userGroups)
                 ->where('is_deleted', false)
                 ->get();
 
-            \Log::debug("group roles: ", ['ids' => $groupRoles]);
-            
+            \Log::debug('group roles: ', ['ids' => $groupRoles]);
+
             // Step 3: Collect role_ids and fetch role names from sys_roles
             $roleIds = $groupRoles->pluck('role_id')->toArray();
             $roles = DB::table('sys_roles')
                 ->whereIn('id', $roleIds)
                 ->where('is_deleted', false)
                 ->get();
-            
+
             // Attach a synthetic "roles" relation based on the user's groups
             $user->setRelation('roles', $roles);
 
@@ -93,9 +93,9 @@ class AuthController extends Controller
         if ($e->getCode() == 2002) {
             return true;
         }
-        
+
         $message = $e->getMessage();
-        
+
         // Check for common connection error indicators
         $connectionErrors = [
             'Connection refused',
@@ -106,13 +106,13 @@ class AuthController extends Controller
             'No route to host',
             'Network is unreachable',
         ];
-        
+
         foreach ($connectionErrors as $error) {
             if (strpos($message, $error) !== false) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -129,6 +129,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user()->load('groups.roles');
+
         return response()->json($user);
     }
 
@@ -137,7 +138,7 @@ class AuthController extends Controller
      */
     public function forgot(Request $request): JsonResponse
     {
-        \Log::info('Password reset requested for email: ' . $request->input('email'));
+        \Log::info('Password reset requested for email: '.$request->input('email'));
         $request->validate([
             'email' => ['required', 'email'],
         ]);
@@ -171,11 +172,13 @@ class AuthController extends Controller
             \Log::info("Sending password reset email to: {$email}");
             Mail::raw("Your password reset code is: {$code}", function ($message) use ($email, $from) {
                 $message->to($email)->subject('Password reset code');
-                if ($from) $message->from($from);
+                if ($from) {
+                    $message->from($from);
+                }
             });
         } catch (\Throwable $e) {
             // Log the error but don't reveal email sending issues to the client
-            \Log::error("Failed to send password reset email to {$email}: " . $e->getMessage());
+            \Log::error("Failed to send password reset email to {$email}: ".$e->getMessage());
         }
 
         return response()->json(['message' => 'Reset code sent to email if it exists in our system']);
@@ -206,6 +209,7 @@ class AuthController extends Controller
         $expireMinutes = config("auth.passwords.{$broker}.expire", 60);
         if ($created->addMinutes($expireMinutes)->isPast()) {
             DB::table($table)->where('email', $email)->delete();
+
             return response()->json(['message' => 'Code expired'], 400);
         }
 
@@ -236,20 +240,20 @@ class AuthController extends Controller
             ->where('is_deleted', false)
             ->pluck('id')
             ->toArray();
-        
+
         // Step 2: Fetch group_roles where group_id IN list and is_deleted=false
         $groupRoles = DB::table('group_roles')
             ->whereIn('group_id', $userGroups)
             ->where('is_deleted', false)
             ->get();
-        
+
         // Step 3: Collect role_ids and fetch role names from sys_roles
         $roleIds = $groupRoles->pluck('role_id')->toArray();
         $roles = DB::table('sys_roles')
             ->whereIn('id', $roleIds)
             ->where('is_deleted', false)
             ->get();
-        
+
         $user->setRelation('roles', $roles);
 
         return response()->json([
@@ -286,20 +290,20 @@ class AuthController extends Controller
             ->where('is_deleted', false)
             ->pluck('id')
             ->toArray();
-        
+
         // Step 2: Fetch group_roles where group_id IN list and is_deleted=false
         $groupRoles = DB::table('group_roles')
             ->whereIn('group_id', $userGroups)
             ->where('is_deleted', false)
             ->get();
-        
+
         // Step 3: Collect role_ids and fetch role names from sys_roles
         $roleIds = $groupRoles->pluck('role_id')->toArray();
         $roles = DB::table('sys_roles')
             ->whereIn('id', $roleIds)
             ->where('is_deleted', false)
             ->get();
-        
+
         $user->setRelation('roles', $roles);
 
         return response()->json([

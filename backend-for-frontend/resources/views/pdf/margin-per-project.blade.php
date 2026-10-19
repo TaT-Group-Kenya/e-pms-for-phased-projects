@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Margin Per Project Report</title>
+    <title>Margin Per Consignment Report</title>
     <style>
         @page { margin: 40px 40px 60px 40px; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111827; }
@@ -34,7 +34,7 @@
 
 <div class="header">
     <div style="text-align: right;">
-        <h1>Margin Per Project Report</h1>
+        <h1>Margin Per Consignment Report</h1>
         <div class="muted">Generated on {{ $generatedAt->format('d M Y H:i') }}</div>
     </div>
 </div>
@@ -43,9 +43,9 @@
         <thead>
             <tr>
                 <th>Date</th>
-                <th>Job Reference ID</th>
+                <th>BOL Number</th>
                 <th>Customer</th>
-                <th>Project Name</th>
+                <th>Consignment</th>
                 <th>Revenue ({{ $filters['currency_code'] ?? '' }})</th>
                 <th>Cost ({{ $filters['currency_code'] ?? '' }})</th>
                 <th>Margin ({{ $filters['currency_code'] ?? '' }})</th>
@@ -59,7 +59,7 @@
         @foreach($rows as $row)
             <tr>
                 <td>{{ \Carbon\Carbon::parse($row['date'] ?? '')->format('d/m/Y') }}</td>
-                <td>{{ $row['job_reference_id'] ?? '' }}</td>
+                <td>{{ $row['bol_number'] ?? '' }}</td>
                 <td>{{ $row['customer'] ?? '' }}</td>
                 <td>{{ $row['project_name'] ?? '' }}</td>
                 <td>{{ number_format((float) ($row['revenue'] ?? 0), 2) }}</td>

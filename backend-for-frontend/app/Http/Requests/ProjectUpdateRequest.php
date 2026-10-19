@@ -16,8 +16,8 @@ class ProjectUpdateRequest extends FormRequest
     {
         return [
             'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('projects')->ignore(
-                    $this->route('project')
-                )],
+                $this->route('project')
+            )],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'required', 'string', 'max:255'],
             'customer_id' => ['nullable', 'exists:customers,id'],
@@ -31,7 +31,6 @@ class ProjectUpdateRequest extends FormRequest
             'status' => ['sometimes', 'required', 'string', 'max:255'],
             'priority' => ['sometimes', 'required', 'string', 'max:255'],
             'progress' => ['sometimes', 'required', 'string', 'max:255'],
-            'tags' => ['sometimes', 'required', 'string', 'max:255'],
             'currency' => ['sometimes', 'required', 'string', 'max:255'],
             'created_at' => ['sometimes', 'nullable', 'date'],
         ];

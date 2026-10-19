@@ -2,46 +2,46 @@
 
 namespace App\Services;
 
-use App\Models\OfficeExpenseCategory;
 use App\Models\Department;
 use App\Models\OfficeExpense;
+use App\Models\OfficeExpenseCategory;
 use App\Models\OfficeExpensePayment;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class TransactionCostManagerService
 {
     /**
      * Process transaction cost by creating office expense and payment entries.
      *
-     * @param array $data {
-     *     @var float $transactionCost The transaction cost amount
-     *     @var string $currency The invoice/currency code
-     *     @var int $fundingAccountId The account ID to fund the expense
-     *     @var string $narration The narration for the transaction
-     *     @var float $exchangeRate The exchange rate for currency conversion
-     *     @var int $userId The user ID creating the entries
-     * }
-     * @param $applyForex whether to apply forex when building acc statement later on
-     * @return OfficeExpense|null
+     * @param  array  $data  {
+     *
+     * @var float $transactionCost The transaction cost amount
+     * @var string $currency The invoice/currency code
+     * @var int $fundingAccountId The account ID to fund the expense
+     * @var string $narration The narration for the transaction
+     * @var float $exchangeRate The exchange rate for currency conversion
+     * @var int $userId The user ID creating the entries
+     *          }
+     *
+     * @param  $applyForex  whether to apply forex when building acc statement later on
      */
     public function processTransactionCost(array $data, bool $applyForex = true): ?OfficeExpense
     {
         $transactionCost = $data['transaction_cost'] ?? 0;
-        
+
         // Skip if transaction cost is zero or not provided
-        if (empty($transactionCost) || (float)$transactionCost <= 0) {
+        if (empty($transactionCost) || (float) $transactionCost <= 0) {
             return null;
         }
 
         return DB::transaction(function () use ($data, $transactionCost, $applyForex) {
             // Step 1: Get or create "Transaction charges" category
             $category = $this->getOrCreateTransactionChargesCategory();
-            
+
             // Step 2: Get or create "Accounts" cost center
             $costCenter = $this->getOrCreateAccountsCostCenter();
-            
+
             // Step 3: Create OfficeExpense
             $expense = $this->createOfficeExpense(
                 $category->id,
@@ -50,18 +50,18 @@ class TransactionCostManagerService
                 $data['currency'] ?? 'KES',
                 $data['user_id'] ?? null
             );
-            
+
             // Step 4: Create OfficeExpensePayment (settle the expense)
             $this->settleOfficeExpense(
                 $expense->id,
                 $transactionCost,
                 $data['funding_account_id'],
                 $data['narration'] ?? '',
-                $data['exchangeRate'] ??  1,
+                $data['exchangeRate'] ?? 1,
                 $data['user_id'] ?? null,
                 $applyForex
             );
-            
+
             return $expense;
         });
     }
@@ -72,14 +72,14 @@ class TransactionCostManagerService
     protected function getOrCreateTransactionChargesCategory(): OfficeExpenseCategory
     {
         $category = OfficeExpenseCategory::whereRaw('LOWER(name) = ?', ['transaction charges'])->first();
-        
-        if (!$category) {
+
+        if (! $category) {
             $category = OfficeExpenseCategory::create([
                 'name' => 'Transaction charges',
                 'created_by' => auth()->id(),
             ]);
         }
-        
+
         return $category;
     }
 
@@ -89,14 +89,14 @@ class TransactionCostManagerService
     protected function getOrCreateAccountsCostCenter(): Department
     {
         $costCenter = Department::whereRaw('LOWER(name) = ?', ['accounts'])->first();
-        
-        if (!$costCenter) {
+
+        if (! $costCenter) {
             $costCenter = Department::create([
                 'name' => 'Accounts',
                 'created_by' => auth()->id(),
             ]);
         }
-        
+
         return $costCenter;
     }
 
@@ -123,9 +123,9 @@ class TransactionCostManagerService
     protected function settleOfficeExpense(int $expenseId, float $amount, int $fundingAccountId, string $narration, float $exchangeRate, ?int $userId, bool $applyForex = true): void
     {
         $expense = OfficeExpense::findOrFail($expenseId);
-        
+
         // Generate unique transaction number
-        $commonService = new CommonService();
+        $commonService = new CommonService;
         do {
             $transactionNumber = $commonService->generateUniqueCode('EXPPAY-');
         } while (OfficeExpensePayment::where('transaction_number', $transactionNumber)->exists());
@@ -159,7 +159,7 @@ class TransactionCostManagerService
             'transaction_currency' => $expense->currency,
             'base_currency' => $expense->currency,
             'exchange_rate' => $exchangeRate,
-            'converted_amount' => round($amount/$exchangeRate, 3),
+            'converted_amount' => round($amount / $exchangeRate, 3),
             'tax_amount' => 0,
             'converted_tax_amount' => 0,
             'net_amount' => $amount,

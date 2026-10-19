@@ -10,7 +10,7 @@ class ProjectResource extends BaseResource
             'id' => $this->id,
             'code' => $this->code,
             'name' => $this->name,
-            'job_reference_id' => $this->job_reference_id,
+            'bol_number' => $this->bol_number,
             'description' => $this->description,
             'order_id' => $this->order_id,
             'customer_id' => $this->customer_id,
@@ -24,7 +24,6 @@ class ProjectResource extends BaseResource
             'status' => $this->status,
             'priority' => $this->priority,
             'progress' => $this->progress,
-            'tags' => $this->tags,
             'currency' => $this->currency,
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
@@ -40,6 +39,10 @@ class ProjectResource extends BaseResource
             'location' => new ProjectLocationResource($this->whenLoaded('location')),
 
             'phases' => ProjectPhaseResource::collection($this->whenLoaded('phases')),
+            'ship_containers' => $this->when(
+                $this->relationLoaded('linkedShipContainers'),
+                fn () => ShipContainerResource::collection($this->linkedShipContainers)
+            ),
 
             'order' => new OrderResource($this->whenLoaded('order')),
 
@@ -51,9 +54,9 @@ class ProjectResource extends BaseResource
             ),
 
             'customer_invoices' => CustInvoiceResource::collection($this->whenLoaded('customer_invoices')),
-            
+
             'company_invoices' => CompanyInvoiceResource::collection($this->whenLoaded('company_invoices')),
-            
+
             'in_coming_payments' => CustPaymentResource::collection(collect($this->in_coming_payments ?? [])),
 
             'out_going_payments' => CompanyPaymentResource::collection(collect($this->out_going_payments ?? [])),

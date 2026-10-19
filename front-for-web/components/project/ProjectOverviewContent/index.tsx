@@ -10,6 +10,7 @@ import ProjectPhases from "./ProjectPhases";
 import ProjectEditComponent from "./ProjectEditComponent";
 import ProjectPhasesComponent from "./ProjectPhasesComponent";
 import ProjectTransactionsComponent from "./ProjectTransactionsComponent";
+import ProjectShipContainerNumbersCard from "./ProjectShipContainerNumbersCard";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
@@ -34,7 +35,20 @@ interface ProjectDetailsData {
   status: string;
   priority: string;
   progress?: number;
-  tags?: string;
+  ship_containers?: Array<{
+    id: number;
+    reference_number?: string | null;
+    bl_no?: string | null;
+    bol_no?: string | null;
+    container_number_details?: Array<{
+      id: number;
+      container_no: string;
+      size?: number | null;
+      size_unit?: string | null;
+      goods_description?: string | null;
+      entry_number?: string | null;
+    }>;
+  }>;
   currency?: string;
   customer?: { id: number; name: string };
   category?: { id: number; name: string };
@@ -96,7 +110,7 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
       const data = await response.json();
 
       if (!response.ok) {
-        addToast("Failed to load project details", "error");
+        addToast("Failed to load Consignment details", "error");
         return;
       }
 
@@ -106,8 +120,8 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
       if (err instanceof DOMException && err.name === "AbortError") {
         return;
       }
-      console.error("Error fetching project details:", err);
-      addToast("Error loading project details. Please refresh the page.", "error");
+      console.error("Error fetching Consignment details:", err);
+      addToast("Error loading Consignment details. Please refresh the page.", "error");
     } finally {
       if (showLoading) {
         setTimeout(() => {
@@ -136,7 +150,7 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
   if (loading) {
     return (
       <div className="text-center py-[40px]">
-        <p className="text-gray-600 dark:text-gray-400">Loading project details...</p>
+        <p className="text-gray-600 dark:text-gray-400">Loading Consignment details...</p>
       </div>
     );
   }
@@ -144,7 +158,7 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
   if (!project && projectId) {
     return (
       <div className="text-center py-[40px]">
-        <p className="text-gray-600 dark:text-gray-400">Project not found</p>
+        <p className="text-gray-600 dark:text-gray-400">Consignment not found</p>
       </div>
     );
   }
@@ -161,7 +175,7 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
               className="inline-flex items-center gap-[6px] text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500"
             >
               <i className="material-symbols-outlined !text-[18px]">arrow_back</i>
-              <span>Back to Projects</span>
+              <span>Back to Consignments</span>
             </Link>
           </div>
 
@@ -194,7 +208,7 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
                   }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">edit</i>
-                  Edit Project
+                  Edit Consignment
                 </button>
               </li>
 
@@ -209,7 +223,7 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
                   }`}
                 >
                   <i className="material-symbols-outlined !text-[20px]">task_alt</i>
-                  Project Phases
+                  Consignment Phases
                 </button>
               </li>
 
@@ -256,7 +270,7 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
                   <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                     <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-center justify-between">
                       <div className="trezo-card-title">
-                        <h5 className="!mb-0">{project?.name || "Project Details"}</h5>
+                        <h5 className="!mb-0">{project?.name || "Consignment Details"}</h5>
                       </div>
                     </div>
 
@@ -320,15 +334,15 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
 
                       <div className="flex items-center justify-between">
                         <span className="block">
-                          Project Started: {project?.start_date ? new Date(project.start_date).toLocaleDateString() : "N/A"}
+                          Started: {project?.start_date ? new Date(project.start_date).toLocaleDateString() : "N/A"}
                         </span>
                         <span className="block">
-                          Project Deadline: {project?.end_date ? new Date(project.end_date).toLocaleDateString() : "N/A"}
+                          Deadline: {project?.end_date ? new Date(project.end_date).toLocaleDateString() : "N/A"}
                         </span>
                       </div>
 
                       <span className="block text-black dark:text-white mb-[8px] mt-[20px] font-bold">
-                        Project Details
+                        Consignment Details
                       </span>
 
                       <p className="leading-[1.7]">
@@ -336,22 +350,12 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
                       </p>
 
                       <span className="block text-black dark:text-white mb-[8px] mt-[20px] font-bold">
-                        Project Owner
+                        Consignee
                       </span>
 
                       <p className="leading-[1.7]">
-                        {project?.project_owner?.name || "No project owner available"}
+                        {project?.project_owner?.name || "No Consignee available"}
                       </p>
-
-                      {project?.tags && (
-                        <ul className="list-disc ltr:pl-[22px] rtl:pr-[22px] mt-[15px]">
-                          {project.tags.split(',').map((tag, index) => (
-                            <li key={index} className="leading-[1.7] mb-[4px] last:mb-0">
-                              {tag.trim()}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
                     </div>
                   </div>
 
@@ -363,8 +367,11 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
                   <ProjectRoadmap project={project} />
 
                   <ProjectOverview project={project} />
+
                 </div>
               </div>
+
+              <ProjectShipContainerNumbersCard containers={project?.ship_containers ?? []} />
 
               <div className="mt-[25px]">
                 <ProjectPhases 
@@ -392,10 +399,12 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
 
           {/* Project Phases Tab */}
           {activeTab === 2 && (
-            <ProjectPhasesComponent
-              projectId={projectId}
-              initialPhases={project?.phases}
-            />
+            <>
+              <ProjectPhasesComponent
+                projectId={projectId}
+                initialPhases={project?.phases}
+              />
+            </>
           )}
 
           {/* Orders Tab */}
@@ -404,7 +413,7 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
               <div className="pt-[20px]">
                 <h6 className="font-semibold text-black dark:text-white mb-[20px] flex items-center gap-[8px]">
                   <i className="material-symbols-outlined text-[20px]">shopping_cart</i>
-                  Project Order
+                  Consignment Order
                 </h6>
 
                 {!project?.order || Object.keys(project.order).length === 0 ? (
@@ -414,7 +423,7 @@ const ProjectOverviewContent: React.FC<ProjectOverviewContentProps> = ({ project
                     </div>
                     <p className="text-gray-600 dark:text-gray-400 font-medium">No order available</p>
                     <p className="text-sm text-gray-500 dark:text-gray-500 mt-[8px]">
-                      An order will appear here once one is created for this project
+                      An order will appear here once one is created for this Consignment
                     </p>
                   </div>
                 ) : (

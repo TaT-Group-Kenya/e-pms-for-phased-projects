@@ -3,22 +3,22 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PdcReceivedCustomerStoreRequest;
+use App\Http\Requests\PdcReceivedCustomerUpdateRequest;
+use App\Http\Resources\PdcReceivedCustomerResource;
+use App\Models\Account;
+use App\Models\CustInvoice;
+use App\Models\CustomerTransactionsLedger;
+use App\Models\CustPayment;
+use App\Models\CustPaymentAllocation;
+use App\Models\PdcReceivedCustomer;
+use App\Services\CommonService;
+use App\Services\CurrencyConversionService;
+use App\Services\PdcReceivedCustomerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use App\Services\PdcReceivedCustomerService;
-use App\Http\Resources\PdcReceivedCustomerResource;
-use App\Http\Requests\PdcReceivedCustomerStoreRequest;
-use App\Http\Requests\PdcReceivedCustomerUpdateRequest;
-use App\Models\PdcReceivedCustomer;
-use App\Models\CustPayment;
-use App\Models\CustPaymentAllocation;
-use App\Models\CustomerTransactionsLedger;
-use App\Models\CustInvoice;
-use App\Models\Account;
-use App\Services\CommonService;
-use App\Services\CurrencyConversionService;
 
 class PdcReceivedCustomerController extends Controller
 {
@@ -38,6 +38,7 @@ class PdcReceivedCustomerController extends Controller
         $filters = $request->except('per_page', 'page');
 
         $data = $this->service->index($filters, $perPage, $page, 0, ['customer', 'invoice', 'bankAccount']);
+
         return PdcReceivedCustomerResource::collection($data);
     }
 
@@ -50,6 +51,7 @@ class PdcReceivedCustomerController extends Controller
         $validated['created_at'] = now();
 
         $model = $this->service->create($validated);
+
         return new PdcReceivedCustomerResource($model);
     }
 
@@ -72,6 +74,7 @@ class PdcReceivedCustomerController extends Controller
 
         $model = $this->service->find($id, ['customer', 'invoice', 'bankAccount', 'createdByUser', 'updatedByUser']);
         $this->authorize('view', $model);
+
         return new PdcReceivedCustomerResource($model);
     }
 
@@ -100,7 +103,7 @@ class PdcReceivedCustomerController extends Controller
                 // Sum of other PDCs (excluding this one) that are reserved against the invoice
                 $otherPdcReserved = (float) PdcReceivedCustomer::where('invoice_id', $invoice->id)
                     ->where('is_deleted', false)
-                    ->whereIn('status', ['received','pending'])
+                    ->whereIn('status', ['received', 'pending'])
                     ->where('id', '<>', $model->id)
                     ->sum('amount');
 
@@ -117,6 +120,7 @@ class PdcReceivedCustomerController extends Controller
         $validated['updated_at'] = now();
 
         $updated = $this->service->update($id, $validated);
+
         return new PdcReceivedCustomerResource($updated);
     }
 
@@ -135,6 +139,7 @@ class PdcReceivedCustomerController extends Controller
         }
 
         $this->service->delete($id);
+
         return response()->noContent();
     }
 
@@ -180,7 +185,7 @@ class PdcReceivedCustomerController extends Controller
             return response()->json(['message' => 'PDC not found'], 404);
         }
 
-        if (! in_array($pdcModel->status, ['received','pending'])) {
+        if (! in_array($pdcModel->status, ['received', 'pending'])) {
             return response()->json(['message' => 'PDC is not in a receivable state.'], 422);
         }
 
@@ -192,8 +197,8 @@ class PdcReceivedCustomerController extends Controller
         $invoice = $pdcModel->invoice_id ? CustInvoice::with('order', 'project')->find($pdcModel->invoice_id) : null;
 
         DB::transaction(function () use ($pdcModel, $invoice, $clearDate) {
-            $commonService = new CommonService();
-            $conversionService = new CurrencyConversionService();
+            $commonService = new CommonService;
+            $conversionService = new CurrencyConversionService;
 
             do {
                 $transactionNumber = $commonService->generateUniqueCode('CUSTPM-');
@@ -206,7 +211,7 @@ class PdcReceivedCustomerController extends Controller
             if ($account && $account->currency !== $invoiceCurrencyCode) {
                 throw ValidationException::withMessages([
                     'bank_account_id' => [
-                        'Benefiting bank account currency (' . $account->currency . ') must match the invoice currency (' . $invoiceCurrencyCode . ').',
+                        'Benefiting bank account currency ('.$account->currency.') must match the invoice currency ('.$invoiceCurrencyCode.').',
                     ],
                 ]);
             }
@@ -240,7 +245,7 @@ class PdcReceivedCustomerController extends Controller
                 $amountToAllocate = (float) $pdcModel->amount;
             }
 
-            $transactionRef = $pdcModel->cheque_number ? ('chk-' . $pdcModel->cheque_number) : ($pdcModel->transaction_number ?? null);
+            $transactionRef = $pdcModel->cheque_number ? ('chk-'.$pdcModel->cheque_number) : ($pdcModel->transaction_number ?? null);
             $receiptRef = $transactionNumber ?: ($transactionRef ?? $pdcModel->transaction_number ?? $transactionNumber);
 
             $taxPortion = 0.0;
@@ -331,7 +336,7 @@ class PdcReceivedCustomerController extends Controller
                 'check_number' => $pdcModel->cheque_number,
                 'transaction_status' => 'cleared',
                 'related_transaction_id' => null,
-                'narration' => 'PDC cleared: ' . ($pdcModel->narration ?? ''),
+                'narration' => 'PDC cleared: '.($pdcModel->narration ?? ''),
                 'is_recurring' => false,
                 'fiscal_year' => now()->year,
                 'accounting_period' => now()->format('Ym'),

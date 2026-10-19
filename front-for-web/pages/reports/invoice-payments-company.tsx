@@ -13,7 +13,7 @@ export default function InvoicePaymentsCompanyReportPage() {
     company_id: '',
     from: '',
     to: '',
-    job_reference_id: '',
+    bol_number: '',
     invoice_number: '',
   });
   const [data, setData] = useState<any[]>([]);
@@ -52,7 +52,7 @@ export default function InvoicePaymentsCompanyReportPage() {
         addToast('Failed to load currencies', 'error');
       }
       if (companies.ok && Array.isArray(companies.data)) setCompanyOptions(companies.data);
-      else addToast('Failed to load companies', 'error');
+      else addToast('Failed to load Service Providers', 'error');
     });
     return () => { isMounted = false; };
   }, [accessToken, addToast]);
@@ -136,7 +136,7 @@ export default function InvoicePaymentsCompanyReportPage() {
       const urlObj = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = urlObj;
-      a.download = 'invoice-payments-company.pdf';
+      a.download = 'invoice-payments-service-srovider.pdf';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -151,7 +151,7 @@ export default function InvoicePaymentsCompanyReportPage() {
       'ID',
       'Date',
       'Company',
-      'Job Reference ID',
+      'BOL Number',
       'Invoice #',
       'Currency',
       'Amount',
@@ -161,7 +161,7 @@ export default function InvoicePaymentsCompanyReportPage() {
       row.id,
       formatDateTime(row.created_at || row.date || ''),
       row.company_name ?? '',
-      row.job_reference_id ?? '',
+      row.bol_number ?? '',
       row.invoice_number ?? '',
       row.currency ?? '',
       formatCurrency(row.amount, row.currency) ?? '',
@@ -189,7 +189,7 @@ export default function InvoicePaymentsCompanyReportPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'invoice-payments-company.csv';
+    a.download = 'invoice-payments-service-provider.csv';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -204,7 +204,7 @@ export default function InvoicePaymentsCompanyReportPage() {
           {/* Card 1: Title & Export */}
           <div className="mb-6">
             <div className="bg-white rounded-lg shadow p-5 flex items-center justify-between">
-              <h5 className="!mb-0">Invoice Payments Company Report</h5>
+              <h5 className="!mb-0">Invoice Payments Service Provider Report</h5>
               <div className="flex gap-2">
                 <button
                   className="rounded-full bg-transparent text-primary-500 px-4 py-2 flex items-center gap-2 hover:bg-primary-50 transition"
@@ -242,7 +242,7 @@ export default function InvoicePaymentsCompanyReportPage() {
                 </select>
               </div>
               <div className="flex flex-col">
-                <label htmlFor="company_id" className="mb-1 text-sm text-gray-600">Company</label>
+                <label htmlFor="company_id" className="mb-1 text-sm text-gray-600">Service Provider</label>
                 <select
                   id="company_id"
                   name="company_id"
@@ -259,15 +259,15 @@ export default function InvoicePaymentsCompanyReportPage() {
                 </select>
               </div>
               <div className="flex flex-col">
-                <label htmlFor="job_reference_id" className="mb-1 text-sm text-gray-600">Job Reference ID</label>
+                <label htmlFor="bol_number" className="mb-1 text-sm text-gray-600">BOL Number</label>
                 <input
-                  id="job_reference_id"
+                  id="bol_number"
                   type="text"
-                  name="job_reference_id"
-                  value={filters.job_reference_id}
+                  name="bol_number"
+                  value={filters.bol_number}
                   onChange={handleFilterChange}
                   className="form-input rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 px-4 h-[42px]"
-                  placeholder="Job Reference ID"
+                  placeholder="BOL Number"
                 />
               </div>
               <div className="flex flex-col">
@@ -325,7 +325,7 @@ export default function InvoicePaymentsCompanyReportPage() {
               <div className="flex flex-col items-center justify-center py-12">
                 <i className="material-symbols-outlined text-6xl text-primary-300 mb-4">hourglass_empty</i>
                 <h3 className="text-xl font-semibold mb-2 text-gray-700">Run report to see data</h3>
-                <p className="text-gray-500 mb-4 text-center">No data has been requested yet.<br />Set your filters and click <span className='font-semibold text-primary-500'>Run Report</span> to generate your invoice payments company report.</p>
+                <p className="text-gray-500 mb-4 text-center">No data has been requested yet.<br />Set your filters and click <span className='font-semibold text-primary-500'>Run Report</span> to generate your invoice payments Service Provider report.</p>
                 <div className="flex items-center gap-2">
                   <i className="material-symbols-outlined text-2xl text-primary-500">play_circle</i>
                   <span className="text-primary-500 font-medium">Ready to run your report?</span>
@@ -339,7 +339,7 @@ export default function InvoicePaymentsCompanyReportPage() {
                       <th className="whitespace-nowrap min-w-[80px] text-left px-4 py-2">ID</th>
                       <th className="whitespace-nowrap min-w-[140px] text-left px-4 py-2">Date</th>
                       <th className="whitespace-nowrap min-w-[160px] text-left px-4 py-2">Company</th>
-                      <th className="whitespace-nowrap min-w-[160px] text-left px-4 py-2">Job Reference ID</th>
+                      <th className="whitespace-nowrap min-w-[160px] text-left px-4 py-2">BOL Number</th>
                       <th className="whitespace-nowrap min-w-[140px] text-left px-4 py-2">Invoice #</th>
                       <th className="whitespace-nowrap min-w-[100px] text-left px-4 py-2">Currency</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Amount</th>
@@ -357,7 +357,7 @@ export default function InvoicePaymentsCompanyReportPage() {
                           <td className="whitespace-nowrap text-left px-4 py-2">{row.id}</td>
                           <td className="whitespace-nowrap text-left px-4 py-2">{formatDateTime(row.created_at || row.date || '')}</td>
                           <td className="whitespace-nowrap text-left px-4 py-2">{row.company_name ?? ''}</td>
-                          <td className="whitespace-nowrap text-left px-4 py-2">{row.job_reference_id ?? ''}</td>
+                          <td className="whitespace-nowrap text-left px-4 py-2">{row.bol_number ?? ''}</td>
                           <td className="whitespace-nowrap text-left px-4 py-2">{row.invoice_number ?? ''}</td>
                           <td className="whitespace-nowrap text-left px-4 py-2">{row.currency ?? ''}</td>
                           <td className="whitespace-nowrap text-left px-4 py-2">{formatCurrency(row.amount, row.currency) ?? ''}</td>

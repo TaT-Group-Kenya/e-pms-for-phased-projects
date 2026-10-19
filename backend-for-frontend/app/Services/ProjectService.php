@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Project;
 use App\Models\ProjectPhase;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
 class ProjectService
@@ -18,7 +17,7 @@ class ProjectService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = Project::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
         // Handle soft-delete visibility flags
@@ -37,31 +36,34 @@ class ProjectService
             $query->where($key, $value);
         }
         $query->orderByDesc('id');
-        
+
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-        
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
     {
         $query = Project::query();
-        if (!empty($with)) $query->with($with);
+        if (! empty($with)) {
+            $query->with($with);
+        }
+
         return $query->findOrFail($id);
     }
 
     public function create(array $data)
     {
         return DB::transaction(function () use ($data) {
-            $project = Project::create($data);
-            
             // Handle automatic phase creation based on no_of_phases
             $noOfPhases = (int) $data['no_of_phases'];
+
+            $project = Project::create($data);
             if ($noOfPhases === 1) {
                 $this->createPhaseFromProject($project);
             }
-            
+
             return $project;
         });
     }
@@ -72,13 +74,13 @@ class ProjectService
             $model = Project::findOrFail($id);
             $oldNoOfPhases = (int) $model->no_of_phases;
             $newNoOfPhases = (int) ($data['no_of_phases'] ?? $oldNoOfPhases);
-            
+
             $model->update($data);
-            
+
             // Handle phase operations based on no_of_phases changes
             if ($newNoOfPhases === 1) {
                 $existingPhases = $model->phases()->count();
-                
+
                 if ($existingPhases === 0) {
                     // No phases exist, create one
                     $this->createPhaseFromProject($model);
@@ -99,7 +101,7 @@ class ProjectService
             } elseif ($newNoOfPhases > 1) {
                 // If phases are more than 1, don't manage phases automatically
             }
-            
+
             return $model;
         });
     }
@@ -120,7 +122,7 @@ class ProjectService
     {
         // Generate unique project phase code
         $code = $this->generateUniquePhaseCode();
-        
+
         ProjectPhase::create([
             'project_id' => $project->id,
             'code' => $code,
@@ -159,10 +161,11 @@ class ProjectService
 
     private function generateUniquePhaseCode($prefix = 'PRP-')
     {
-        $commonService = new CommonService();
+        $commonService = new CommonService;
         do {
             $code = $commonService->generateUniqueCode($prefix);
         } while (ProjectPhase::where('code', $code)->exists());
+
         return $code;
     }
 }

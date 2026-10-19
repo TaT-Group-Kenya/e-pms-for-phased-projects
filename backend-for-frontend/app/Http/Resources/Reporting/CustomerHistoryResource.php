@@ -14,7 +14,7 @@ class CustomerHistoryResource extends JsonResource
         $createdByName = null;
         if ($customer && $customer->creator) {
             $creator = $customer->creator;
-            $fullName = trim(($creator->first_name ?? '') . ' ' . ($creator->last_name ?? ''));
+            $fullName = trim(($creator->first_name ?? '').' '.($creator->last_name ?? ''));
             if ($fullName !== '') {
                 $createdByName = $fullName;
             } else {
@@ -25,7 +25,7 @@ class CustomerHistoryResource extends JsonResource
         return [
             'project_id' => $project->id,
             'created_at' => $project->created_at,
-            'job_reference_id' => $project->job_reference_id,
+            'bol_number' => $project->bol_number,
             'customer_id' => $customer ? $customer->id : null,
             'customer_name' => $customer ? $customer->name : null,
             'title' => $project->name,

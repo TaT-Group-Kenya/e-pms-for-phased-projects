@@ -38,8 +38,12 @@ Route::prefix('/')->group(function () {
 		Route::get('accounts/{account}/statement-pdf', [App\Http\Controllers\Api\AccountController::class, 'downloadStatementPdf']);
 		Route::post('accounts/{account}/topup', [App\Http\Controllers\Api\AccountController::class, 'topup']);
 		Route::apiResource('accounts', App\Http\Controllers\Api\AccountController::class);
+		Route::apiResource('loans', App\Http\Controllers\Api\LoanController::class);
+		Route::post('loans/{loan}/repay', [App\Http\Controllers\Api\LoanController::class, 'repay']);
+		Route::get('loans/{loan}/statement-pdf', [App\Http\Controllers\Api\LoanController::class, 'statementPdf']);
 		Route::apiResource('account-types', App\Http\Controllers\Api\AccountTypeController::class);
 		Route::apiResource('account-groups', App\Http\Controllers\Api\AccountGroupController::class);
+		Route::apiResource('chart-of-accounts', App\Http\Controllers\Api\ChartOfAccountController::class);
 		Route::apiResource('companies', App\Http\Controllers\Api\CompanyController::class);
 		Route::apiResource('company-banks', App\Http\Controllers\Api\CompanyBankController::class);
 		Route::apiResource('company-credit-notes', App\Http\Controllers\Api\CompanyCreditNoteController::class);
@@ -66,6 +70,13 @@ Route::prefix('/')->group(function () {
 		Route::post('cust-credit-notes/{custCreditNote}/send-email', [App\Http\Controllers\Api\CustCreditNoteController::class, 'sendEmail']);
 		Route::post('cust-credit-notes/{custCreditNote}/refund', [App\Http\Controllers\Api\CustCreditNoteController::class, 'refund']);
 		Route::apiResource('cust-credit-note-items', App\Http\Controllers\Api\CustCreditNoteItemController::class);
+		Route::apiResource('cust-debit-notes', App\Http\Controllers\Api\CustDebitNoteController::class);
+		Route::get('cust-debit-notes/{custDebitNote}/download-pdf', [App\Http\Controllers\Api\CustDebitNoteController::class, 'downloadPdf']);
+		Route::post('cust-debit-notes/{custDebitNote}/send-email', [App\Http\Controllers\Api\CustDebitNoteController::class, 'sendEmail']);
+		Route::apiResource('cust-debit-note-items', App\Http\Controllers\Api\CustDebitNoteItemController::class);
+		Route::get('cust-debit-note-documents/{custDebitNoteDocument}/download', [App\Http\Controllers\Api\CustDebitNoteDocumentController::class, 'download'])
+			->name('cust-debit-note-documents.download');
+		Route::apiResource('cust-debit-note-documents', App\Http\Controllers\Api\CustDebitNoteDocumentController::class);
 		Route::get('cust-invoices/{custInvoice}/download-pdf', [App\Http\Controllers\Api\CustInvoiceController::class, 'downloadPdf']);
 		Route::post('cust-invoices/{custInvoice}/send-email', [App\Http\Controllers\Api\CustInvoiceController::class, 'sendEmail']);
 		Route::post('cust-invoices/{custInvoice}/mark-sent', [App\Http\Controllers\Api\CustInvoiceController::class, 'markSent']);
@@ -150,6 +161,13 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('office-expense-payments', App\Http\Controllers\Api\OfficeExpensePaymentController::class);
 		Route::get('office-expense-documents/{officeExpenseDocument}/download', [App\Http\Controllers\Api\OfficeExpenseDocumentController::class, 'download']);
 		Route::apiResource('office-expense-documents', App\Http\Controllers\Api\OfficeExpenseDocumentController::class);
+		// Shipping containers (imports/exports/transit containers and loose units)
+		Route::apiResource('ship-containers', App\Http\Controllers\Api\ShipContainerController::class);
+		Route::patch('ship-container-numbers/{shipContainerNumber}/entry-number', [App\Http\Controllers\Api\ShipContainerController::class, 'updateNumberEntry']);
+		Route::post('ship-containers/{ship_container}/get-in', [App\Http\Controllers\Api\ShipContainerController::class, 'getIn']);
+		Route::post('ship-containers/{ship_container}/record-exit', [App\Http\Controllers\Api\ShipContainerController::class, 'recordExit']);
+		Route::get('ship-containers-transit-notifications', [App\Http\Controllers\Api\ShipContainerController::class, 'transitNotifications']);
+		Route::get('ship-containers-statistics', [App\Http\Controllers\Api\ShipContainerController::class, 'statistics']);
 		// Reporting Endpoints
 		Route::prefix('reports')->group(function () {
 			Route::get('orders-summary', [App\Http\Controllers\ReportingController::class, 'ordersSummary']);

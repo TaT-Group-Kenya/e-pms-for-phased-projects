@@ -1,42 +1,45 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CompanyInvoiceDocumentStoreRequest;
+use App\Http\Requests\CompanyInvoiceDocumentUpdateRequest;
+use App\Http\Resources\CompanyInvoiceDocumentResource;
+use App\Models\CompanyInvoice;
+use App\Models\CompanyInvoiceDocument;
+use App\Services\CompanyInvoiceDocumentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Models\CompanyInvoiceDocument;
-use App\Models\CompanyInvoice;
-use App\Services\CompanyInvoiceDocumentService;
-use App\Http\Resources\CompanyInvoiceDocumentResource;
-use App\Http\Requests\CompanyInvoiceDocumentStoreRequest;
-use App\Http\Requests\CompanyInvoiceDocumentUpdateRequest;
 
 class CompanyInvoiceDocumentController extends Controller
 {
     protected $service;
 
-    public function __construct(CompanyInvoiceDocumentService $service) {
+    public function __construct(CompanyInvoiceDocumentService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\CompanyInvoiceDocument::class);
+        $this->authorize('viewAny', CompanyInvoiceDocument::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
         $data = $this->service->index($filters, $perPage, $page);
+
         return CompanyInvoiceDocumentResource::collection($data);
     }
 
     public function store(CompanyInvoiceDocumentStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\CompanyInvoiceDocument::class);
+        $this->authorize('create', CompanyInvoiceDocument::class);
 
         $validated = $request->validated();
 
-        if (!empty($validated['invoice_id'])) {
+        if (! empty($validated['invoice_id'])) {
             $invoice = CompanyInvoice::findOrFail($validated['invoice_id']);
             // No special lock behavior here; adjust if needed
         } else {
@@ -48,7 +51,7 @@ class CompanyInvoiceDocumentController extends Controller
 
             $originalName = $file->getClientOriginalName();
             $prefix = $invoice ? $invoice->invoice_number : 'invoice';
-            $fileName = $prefix . '-' . $originalName;
+            $fileName = $prefix.'-'.$originalName;
 
             $path = $file->storeAs('company-invoice-documents', $fileName, 'public');
             $validated['document_path'] = $path;
@@ -56,6 +59,7 @@ class CompanyInvoiceDocumentController extends Controller
 
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
+
         return new CompanyInvoiceDocumentResource($model);
     }
 
@@ -82,7 +86,7 @@ class CompanyInvoiceDocumentController extends Controller
             $invoice = $companyInvoiceDocument->invoice ?? CompanyInvoice::find($companyInvoiceDocument->invoice_id);
             $originalName = $file->getClientOriginalName();
             $prefix = $invoice ? ($invoice->invoice_number ?? 'invoice') : 'invoice';
-            $fileName = $prefix . '-' . $originalName;
+            $fileName = $prefix.'-'.$originalName;
 
             $path = $file->storeAs('company-invoice-documents', $fileName, 'public');
             $validated['document_path'] = $path;
@@ -90,6 +94,7 @@ class CompanyInvoiceDocumentController extends Controller
 
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($companyInvoiceDocument->id, $validated);
+
         return new CompanyInvoiceDocumentResource($updated);
     }
 
@@ -103,6 +108,7 @@ class CompanyInvoiceDocumentController extends Controller
         }
 
         $this->service->delete($companyInvoiceDocument->id);
+
         return response()->noContent();
     }
 
@@ -110,13 +116,13 @@ class CompanyInvoiceDocumentController extends Controller
     {
         $this->authorize('view', $companyInvoiceDocument);
 
-        if (!$companyInvoiceDocument->document_path) {
+        if (! $companyInvoiceDocument->document_path) {
             return response()->json(['message' => 'Document file not found'], 404);
         }
 
         $disk = Storage::disk('public');
 
-        if (!$disk->exists($companyInvoiceDocument->document_path)) {
+        if (! $disk->exists($companyInvoiceDocument->document_path)) {
             return response()->json(['message' => 'Document file missing on server'], 404);
         }
 

@@ -14,7 +14,7 @@ class ProjectSourceOriginService
         array $with = []
     ) {
         $query = ProjectSourceOrigin::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
         // Handle soft-delete visibility flags
@@ -38,7 +38,10 @@ class ProjectSourceOriginService
     public function find(int $id, array $with = [])
     {
         $query = ProjectSourceOrigin::query();
-        if (!empty($with)) $query->with($with);
+        if (! empty($with)) {
+            $query->with($with);
+        }
+
         return $query->findOrFail($id);
     }
 
@@ -51,6 +54,7 @@ class ProjectSourceOriginService
     {
         $model = ProjectSourceOrigin::findOrFail($id);
         $model->update($data);
+
         return $model;
     }
 

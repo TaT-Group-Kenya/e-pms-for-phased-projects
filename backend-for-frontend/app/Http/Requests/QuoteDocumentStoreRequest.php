@@ -17,7 +17,7 @@ class QuoteDocumentStoreRequest extends FormRequest
         return [
             'quotation_id' => ['nullable', 'exists:quotations,id'],
             'document_path' => ['required', 'string', 'max:255'],
-            'document_type' => ['required', Rule::in(['proposal','terms','attachments'])],
+            'document_type' => ['required', Rule::in(['proposal', 'terms', 'attachments'])],
             'attachments' => ['required', 'string', 'max:255'],
         ];
     }

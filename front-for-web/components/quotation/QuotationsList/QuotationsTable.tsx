@@ -13,12 +13,13 @@ import { formatCurrency } from "../../../utils/format";
 interface Quotation {
   id: number;
   quotation_number: string;
-  job_reference_id?: string;
+  bol_number?: string;
   title: string;
   description?: string;
   customer_id?: number;
   status: string;
   valid_until_date: string;
+  remaining_clearance_days?: number | null;
   subtotal_amount: number;
   tax_amount: number;
   discount_amount: number;
@@ -210,7 +211,7 @@ const QuotationsList: React.FC = () => {
   // Filter quotations based on search term
   const filteredQuotations = quotations.filter((quotation) =>
     quotation.quotation_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (quotation.job_reference_id || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (quotation.bol_number || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (quotation.customer?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (quotation.project_owner?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     quotation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -265,7 +266,7 @@ const QuotationsList: React.FC = () => {
             </label>
             <input
               type="text"
-              placeholder="Search quotations (number, job ref, title, status)..."
+              placeholder="Search quotations (number, BOL Number, title, status)..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -319,13 +320,13 @@ const QuotationsList: React.FC = () => {
                       Quotation #
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Job Ref
+                      BOL Number
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Customer
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
-                      Project Owner
+                      Consignee
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       <span style={{ minWidth: 200, display: 'inline-block' }}>Title</span>
@@ -344,6 +345,9 @@ const QuotationsList: React.FC = () => {
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Valid Until
+                    </th>
+                    <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                      Remaining clearance days
                     </th>
                     <th className="font-medium ltr:text-left rtl:text-right px-[12px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
                       Created By
@@ -369,7 +373,7 @@ const QuotationsList: React.FC = () => {
                           </Link>
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
-                          {quotation.job_reference_id || "-"}
+                          {quotation.bol_number || "-"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {quotation.customer?.name || "-"}
@@ -414,6 +418,9 @@ const QuotationsList: React.FC = () => {
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {quotation.valid_until_date ? new Date(quotation.valid_until_date).toLocaleDateString() : "N/A"}
+                        </td>
+                        <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
+                          {quotation.remaining_clearance_days ?? "N/A"}
                         </td>
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap">
                           {[

@@ -92,12 +92,12 @@ const CategoryList: React.FC = () => {
       }
 
       setCategories(categories.filter((cat) => cat.id !== deleteTargetId));
-      addToast("Project category deleted successfully", "success");
+      addToast("Category deleted successfully", "success");
       setShowDeleteModal(false);
       setDeleteTargetId(null);
     } catch (err) {
       console.error("Error deleting category:", err);
-      addToast("Error deleting project category", "error");
+      addToast("Error deleting category", "error");
     } finally {
       setDeleting(null);
     }
@@ -120,7 +120,7 @@ const CategoryList: React.FC = () => {
 
       <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md p-[20px] md:p-[25px]">
         <div className="flex items-center justify-between mb-[25px]">
-          <h6 className="!mb-0">Project Categories</h6>
+          <h6 className="!mb-0">Categories</h6>
           <button
             onClick={() => setShowModal(true)}
             className="px-[20px] py-[8px] rounded-md bg-primary-500 text-white hover:bg-primary-600 transition-all font-medium text-sm"
@@ -224,8 +224,8 @@ const CategoryList: React.FC = () => {
 
       <DeleteConfirmationModal
         isOpen={showDeleteModal}
-        title="Delete Project Category"
-        message="Are you sure you want to delete this project category? This action cannot be undone."
+        title="Delete Category"
+        message="Are you sure you want to delete this category? This action cannot be undone."
         onConfirm={handleConfirmDelete}
         onCancel={() => {
           setShowDeleteModal(false);

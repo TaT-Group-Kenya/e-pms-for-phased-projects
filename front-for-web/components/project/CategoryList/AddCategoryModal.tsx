@@ -61,7 +61,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onSuccess 
         return;
       }
 
-      addToast("Project category created successfully", "success");
+      addToast("Category created successfully", "success");
       onSuccess();
     } catch (err) {
       console.error("Error creating category:", err);
@@ -75,7 +75,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onSuccess 
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-[20px]">
       <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-full max-w-[500px]">
         <div className="mb-[20px]">
-          <h6 className="!mb-0">Add Project Category</h6>
+          <h6 className="!mb-0">Add Category</h6>
         </div>
 
         {error && (
@@ -97,7 +97,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, onSuccess 
               className={`h-[44px] rounded-md text-black dark:text-white border ${
                 errors.name ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
               } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-              placeholder="E.g. Web Development"
+              placeholder="E.g. Export"
             />
             {errors.name && (
               <p className="text-danger-500 text-sm mt-1">{errors.name.message}</p>

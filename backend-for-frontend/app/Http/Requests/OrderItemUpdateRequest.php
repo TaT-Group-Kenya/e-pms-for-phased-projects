@@ -24,7 +24,7 @@ class OrderItemUpdateRequest extends FormRequest
             'is_taxable' => ['sometimes', 'required', 'boolean'],
             'tax_id' => ['sometimes', 'nullable', 'integer', 'exists:taxes,id'],
             'tax_item_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'item_type' => ['sometimes', 'nullable', 'string', 'max:255', \Illuminate\Validation\Rule::in(['fixed', 'percent'])],
+            'item_type' => ['sometimes', 'nullable', 'string', 'max:255', Rule::in(['fixed', 'percent'])],
             'item_value' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'item_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ];

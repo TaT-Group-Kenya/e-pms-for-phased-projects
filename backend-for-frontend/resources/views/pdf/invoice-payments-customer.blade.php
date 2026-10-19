@@ -45,7 +45,7 @@
                 <th>ID</th>
                 <th>Date</th>
                 <th>Customer</th>
-                <th>Job Reference ID</th>
+                <th>BOL Number</th>
                 <th>Invoice #</th>
                 <th>Currency</th>
                 <th>Amount</th>
@@ -58,7 +58,7 @@
                 <td><strong>{{ $payment->id }}</strong></td>
                 <td>{{ optional($payment->created_at)->format('d/m/Y') }}</td>
                 <td>{{ $payment->customer_name ?? '-' }}</td>
-                <td>{{ $payment->job_reference_id ?? '-' }}</td>
+                <td>{{ $payment->bol_number ?? '-' }}</td>
                 <td>{{ $payment->invoice_number ?? '-' }}</td>
                 <td>{{ $payment->currency ?? '-' }}</td>
                 <td><strong>{{ number_format((float) ($payment->amount ?? 0), 2) }}</strong></td>

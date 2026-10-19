@@ -1,26 +1,28 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\UserGroup;
-use App\Services\UserGroupService;
-use App\Http\Resources\UserGroupResource;
 use App\Http\Requests\UserGroupStoreRequest;
 use App\Http\Requests\UserGroupUpdateRequest;
+use App\Http\Resources\UserGroupResource;
+use App\Models\UserGroup;
+use App\Services\UserGroupService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserGroupController extends Controller
 {
     protected $service;
 
-    public function __construct(UserGroupService $service) {
+    public function __construct(UserGroupService $service)
+    {
         $this->service = $service;
     }
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', \App\Models\UserGroup::class);
+        $this->authorize('viewAny', UserGroup::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page', 'with');
@@ -32,16 +34,18 @@ class UserGroupController extends Controller
         }
 
         $data = $this->service->index($filters, $perPage, $page, 0, $with);
+
         return UserGroupResource::collection($data);
     }
 
     public function store(UserGroupStoreRequest $request)
     {
-        $this->authorize('create', \App\Models\UserGroup::class);
-        
+        $this->authorize('create', UserGroup::class);
+
         $validated = $request->validated();
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
+
         return new UserGroupResource($model);
     }
 
@@ -61,6 +65,7 @@ class UserGroupController extends Controller
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($userGroup->id, $validated);
+
         return new UserGroupResource($updated);
     }
 
@@ -69,6 +74,7 @@ class UserGroupController extends Controller
         $this->authorize('delete', $userGroup);
 
         $this->service->delete($userGroup->id, Auth::id());
+
         return response()->noContent();
     }
 }

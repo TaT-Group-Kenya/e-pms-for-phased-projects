@@ -15,7 +15,7 @@ class GroupRoleService
     ) {
         // optimized query: apply eager loading and simple filters
         $query = GroupRole::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
         // Handle soft-delete visibility flags
@@ -33,17 +33,20 @@ class GroupRoleService
             $query->where($key, $value);
         }
         $query->orderByDesc('id');
-        
+
         // Calculate offset if page is provided, otherwise use explicit offset
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-        
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
     {
         $query = GroupRole::query();
-        if (!empty($with)) $query->with($with);
+        if (! empty($with)) {
+            $query->with($with);
+        }
+
         return $query->findOrFail($id);
     }
 
@@ -56,6 +59,7 @@ class GroupRoleService
     {
         $model = GroupRole::findOrFail($id);
         $model->update($data);
+
         return $model;
     }
 

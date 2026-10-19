@@ -24,7 +24,7 @@ class OrderItemStoreRequest extends FormRequest
             'is_taxable' => ['required', 'boolean'],
             'tax_id' => ['nullable', 'integer', 'exists:taxes,id'],
             'tax_item_name' => ['nullable', 'string', 'max:255'],
-            'item_type' => ['nullable', 'string', 'max:255', \Illuminate\Validation\Rule::in(['fixed', 'percent'])],
+            'item_type' => ['nullable', 'string', 'max:255', Rule::in(['fixed', 'percent'])],
             'item_value' => ['nullable', 'numeric', 'min:0'],
             'item_amount' => ['nullable', 'numeric', 'min:0'],
         ];

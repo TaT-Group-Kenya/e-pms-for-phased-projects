@@ -2,19 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
-use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class Project extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'projects';
 
     protected $fillable = [
         'code',
         'name',
-        'job_reference_id',
+        'bol_number',
         'description',
         'order_id',
         'customer_id',
@@ -29,7 +30,6 @@ class Project extends Model
         'status',
         'priority',
         'progress',
-        'tags',
         'currency',
         'updated_at',
         'updated_by',
@@ -68,6 +68,31 @@ class Project extends Model
     public function phases()
     {
         return $this->hasMany(ProjectPhase::class);
+    }
+
+    public function linkedShipContainers(): Collection
+    {
+        $bolNumbers = collect(explode(',', (string) $this->bol_number))
+            ->map(fn (string $number) => strtoupper(trim($number)))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($bolNumbers === []) {
+            return ShipContainer::query()->whereRaw('1 = 0')->with('numbers')->get();
+        }
+
+        return ShipContainer::query()
+            ->with(['numbers', 'allocationLocation', 'cfsLocation'])
+            ->where(function ($query) use ($bolNumbers) {
+                foreach ($bolNumbers as $bolNumber) {
+                    $query->orWhereRaw('UPPER(TRIM(bl_no)) = ?', [$bolNumber])
+                        ->orWhereRaw('UPPER(TRIM(bol_no)) = ?', [$bolNumber]);
+                }
+            })
+            ->orderBy('id')
+            ->get();
     }
 
     public function order()

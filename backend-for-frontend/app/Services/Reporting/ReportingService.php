@@ -2,13 +2,41 @@
 
 namespace App\Services\Reporting;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\Reporting\CustomerHistoryResource;
+use App\Http\Resources\Reporting\ExpensePaymentsResource;
+use App\Http\Resources\Reporting\ExpenseReportResource;
+use App\Http\Resources\Reporting\InvoicePaymentsResource;
+use App\Http\Resources\Reporting\InvoicesReportCompanyResource;
+use App\Http\Resources\Reporting\InvoicesReportCustomerResource;
+use App\Http\Resources\Reporting\InvoicesReportResource;
+use App\Http\Resources\Reporting\MarginPerProjectResource;
+use App\Http\Resources\Reporting\OrdersSummaryResource;
+use App\Http\Resources\Reporting\PaymentsToCompaniesResource;
+use App\Http\Resources\Reporting\ProjectsSummaryResource;
+use App\Http\Resources\Reporting\RevenueSnapshotResource;
+use App\Http\Resources\Reporting\TaxPaymentsCompanyResource;
+use App\Http\Resources\Reporting\TaxPaymentsCustomerResource;
+use App\Models\Company;
+use App\Models\CompanyInvoice;
+use App\Models\CompanyPayment;
+use App\Models\CompanyProject;
+use App\Models\CompanyTransactionsLedger;
 use App\Models\Currency;
+use App\Models\CustInvoice;
+use App\Models\Customer;
+use App\Models\CustomerTransactionsLedger;
+use App\Models\CustPayment;
+use App\Models\Download;
+use App\Models\OfficeExpense;
+use App\Models\Order;
+use App\Models\Project;
+use App\Models\SysConfig;
+use App\Models\Transaction;
+use App\Models\User;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Models\Download;
 
 class ReportingService
 {
@@ -20,12 +48,14 @@ class ReportingService
         if ($currencyCode) {
             $query->where('currency', $currencyCode);
         }
+
         return $query;
     }
 
     // Placeholder methods for each report
-    public function ordersSummary($filters) {
-        $query = \App\Models\Order::with(['customer', 'creator']);
+    public function ordersSummary($filters)
+    {
+        $query = Order::with(['customer', 'creator']);
         // Authorization: Only show orders user is allowed to view
         // (Assume policy is set up for Order model)
         // Apply currency filter
@@ -47,11 +77,13 @@ class ReportingService
         }
         // Return paginated or full collection
         $rawData = $query->get();
+
         return $rawData;
     }
 
-    public function projectsSummary($filters) {
-        $projectQuery = \App\Models\Project::with([
+    public function projectsSummary($filters)
+    {
+        $projectQuery = Project::with([
             'order',
             'customer',
             'category',
@@ -63,7 +95,7 @@ class ReportingService
         if (isset($filters['currency_code'])) {
             $projectQuery = $this->filterByCurrency($projectQuery, $filters['currency_code']);
         }
-        // Additional filters (status, customer, date range, category, origin, location, job_reference_id)
+        // Additional filters (status, customer, date range, category, origin, location, bol_number)
         if (isset($filters['status'])) {
             $projectQuery->where('status', $filters['status']);
         }
@@ -82,31 +114,33 @@ class ReportingService
         if (isset($filters['project_owner_id'])) {
             $projectQuery->where('project_owner_id', $filters['project_owner_id']);
         }
-        if (isset($filters['job_reference_id'])) {
-            $projectQuery->where('job_reference_id', $filters['job_reference_id']);
+        if (isset($filters['bol_number'])) {
+            $projectQuery->where('bol_number', $filters['bol_number']);
         }
         if (isset($filters['from_date'])) {
             $projectQuery->whereDate('created_at', '>=', $filters['from_date']);
-            \Log::info("Filtering projects from date: " . $filters['from_date'], ['data' => $projectQuery->toSql()]);
+            \Log::info('Filtering projects from date: '.$filters['from_date'], ['data' => $projectQuery->toSql()]);
         }
         if (isset($filters['to_date'])) {
             $projectQuery->whereDate('created_at', '<=', $filters['to_date']);
-            \Log::info("Filtering projects to date: " . $filters['to_date'], ['data' => $projectQuery->toSql()]);
+            \Log::info('Filtering projects to date: '.$filters['to_date'], ['data' => $projectQuery->toSql()]);
         }
         $projects = $projectQuery->get();
 
         // Attach assigned companies/vendors from CompanyProject
-        $companyProjects = \App\Models\CompanyProject::with('company')->get()->groupBy('project_id');
+        $companyProjects = CompanyProject::with('company')->get()->groupBy('project_id');
         foreach ($projects as $project) {
-            $project->assigned_companies = $companyProjects->get($project->id) ? $companyProjects->get($project->id)->map(function($cp) {
+            $project->assigned_companies = $companyProjects->get($project->id) ? $companyProjects->get($project->id)->map(function ($cp) {
                 return $cp->company;
             }) : collect();
         }
+
         return $projects;
     }
 
-    public function customerHistory($filters) {
-        $query = \App\Models\Project::with([
+    public function customerHistory($filters)
+    {
+        $query = Project::with([
             'customer.creator',
             'category',
             'sourceOrigin',
@@ -122,25 +156,26 @@ class ReportingService
 
         return $query->get();
     }
-    
-    public function revenueSnapshot($filters) {
+
+    public function revenueSnapshot($filters)
+    {
         // Payments received
-        $paymentsQuery = \App\Models\CustPayment::query();
+        $paymentsQuery = CustPayment::query();
         // Invoices issued
-        $invoicesQuery = \App\Models\CustInvoice::query();
+        $invoicesQuery = CustInvoice::query();
         if (empty($filters['currency_code'])) {
             return [
-                'error' => 'currency_code is required for revenue report.'
+                'error' => 'currency_code is required for revenue report.',
             ];
         }
         $paymentsQuery->where('currency', $filters['currency_code']);
         $invoicesQuery->where('currency', $filters['currency_code']);
         // Date range filter - skip empty strings so behaviour matches UI
-        if (!empty($filters['from'])) {
+        if (! empty($filters['from'])) {
             $paymentsQuery->whereDate('created_at', '>=', $filters['from']);
             $invoicesQuery->whereDate('created_at', '>=', $filters['from']);
         }
-        if (!empty($filters['to'])) {
+        if (! empty($filters['to'])) {
             $paymentsQuery->whereDate('created_at', '<=', $filters['to']);
             $invoicesQuery->whereDate('created_at', '<=', $filters['to']);
         }
@@ -148,7 +183,7 @@ class ReportingService
         $totalRefunds = $paymentsQuery->where('transaction_type', '!=', 'receipt')->sum('amount_paid');
         $totalInvoices = $invoicesQuery->sum('total_amount');
         $outstandingInvoices = $totalInvoices - $totalPayments;
-        
+
         return [
             'total_payments_received' => $totalPayments,
             'total_invoices_issued' => $totalInvoices,
@@ -157,8 +192,9 @@ class ReportingService
             'total_refunds' => $totalRefunds,
         ];
     }
-    
-    public function invoicesReport($filters) {
+
+    public function invoicesReport($filters)
+    {
         // Always default type to 'customer' and ensure it is sent
         $type = isset($filters['type']) && in_array($filters['type'], ['customer', 'company']) ? $filters['type'] : 'customer';
         $filters['type'] = $type;
@@ -167,7 +203,7 @@ class ReportingService
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
-        $model = $type === 'company' ? \App\Models\CompanyInvoice::class : \App\Models\CustInvoice::class;
+        $model = $type === 'company' ? CompanyInvoice::class : CustInvoice::class;
         $query = $model::query();
         if ($status) {
             $query->where('status', $status);
@@ -181,25 +217,27 @@ class ReportingService
         if ($to) {
             $query->whereDate('created_at', '<=', $to);
         }
+
         return $query->get();
     }
 
-    public function invoicesReportCustomer($filters) {
+    public function invoicesReportCustomer($filters)
+    {
         $currency = $filters['currency_code'] ?? null;
         $status = $filters['status'] ?? null;
         $customerId = $filters['customer_id'] ?? null;
-        $jobReferenceId = $filters['job_reference_id'] ?? null;
+        $bolNumber = $filters['bol_number'] ?? null;
         $invoiceNumber = $filters['invoice_number'] ?? null;
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
-        if (!$currency) {
+        if (! $currency) {
             return [
-                'error' => 'currency is required for invoices report customer.'
+                'error' => 'currency is required for invoices report customer.',
             ];
         }
 
-        $query = \App\Models\CustInvoice::with(['customer', 'project', 'payments']);
+        $query = CustInvoice::with(['customer', 'project', 'payments']);
 
         $query->where('currency', $currency);
 
@@ -209,8 +247,8 @@ class ReportingService
         if ($customerId) {
             $query->where('customer_id', $customerId);
         }
-        if ($jobReferenceId) {
-            $query->where('job_reference_id', 'like', "%{$jobReferenceId}%");
+        if ($bolNumber) {
+            $query->where('bol_number', 'like', "%{$bolNumber}%");
         }
         if ($invoiceNumber) {
             $query->where('invoice_number', 'like', "%{$invoiceNumber}%");
@@ -226,8 +264,8 @@ class ReportingService
 
         // Resolve created by names in bulk
         $userIds = $invoices->pluck('created_by')->filter()->unique()->all();
-        $usersById = !empty($userIds)
-            ? \App\Models\User::whereIn('id', $userIds)->get()->keyBy('id')
+        $usersById = ! empty($userIds)
+            ? User::whereIn('id', $userIds)->get()->keyBy('id')
             : collect();
 
         foreach ($invoices as $invoice) {
@@ -247,7 +285,7 @@ class ReportingService
             $createdByName = null;
             if ($invoice->created_by && $usersById->has($invoice->created_by)) {
                 $user = $usersById->get($invoice->created_by);
-                $fullName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+                $fullName = trim(($user->first_name ?? '').' '.($user->last_name ?? ''));
                 if ($fullName !== '') {
                     $createdByName = $fullName;
                 } else {
@@ -271,22 +309,23 @@ class ReportingService
         ];
     }
 
-    public function invoicesReportCompany($filters) {
+    public function invoicesReportCompany($filters)
+    {
         $currency = $filters['currency_code'] ?? null;
         $status = $filters['status'] ?? null;
         $companyId = $filters['company_id'] ?? null;
-        $jobReferenceId = $filters['job_reference_id'] ?? null;
+        $bolNumber = $filters['bol_number'] ?? null;
         $invoiceNumber = $filters['invoice_number'] ?? null;
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
-        if (!$currency) {
+        if (! $currency) {
             return [
-                'error' => 'currency is required for invoices report company.'
+                'error' => 'currency is required for invoices report company.',
             ];
         }
 
-        $query = \App\Models\CompanyInvoice::with(['company', 'project', 'payments']);
+        $query = CompanyInvoice::with(['company', 'project', 'payments']);
 
         $query->where('currency', $currency);
 
@@ -296,9 +335,9 @@ class ReportingService
         if ($companyId) {
             $query->where('company_id', $companyId);
         }
-        if ($jobReferenceId) {
-            $query->whereHas('project', function ($q) use ($jobReferenceId) {
-                $q->where('job_reference_id', 'like', "%{$jobReferenceId}%");
+        if ($bolNumber) {
+            $query->whereHas('project', function ($q) use ($bolNumber) {
+                $q->where('bol_number', 'like', "%{$bolNumber}%");
             });
         }
         if ($invoiceNumber) {
@@ -314,8 +353,8 @@ class ReportingService
         $invoices = $query->get();
 
         $userIds = $invoices->pluck('created_by')->filter()->unique()->all();
-        $usersById = !empty($userIds)
-            ? \App\Models\User::whereIn('id', $userIds)->get()->keyBy('id')
+        $usersById = ! empty($userIds)
+            ? User::whereIn('id', $userIds)->get()->keyBy('id')
             : collect();
 
         foreach ($invoices as $invoice) {
@@ -327,8 +366,8 @@ class ReportingService
             // Calculate paid and balance directly (filter out deleted payments)
             $paid = 0.0;
             if ($invoice->payments) {
-                $paid = $invoice->payments->filter(function($payment) {
-                    return !$payment->is_deleted;
+                $paid = $invoice->payments->filter(function ($payment) {
+                    return ! $payment->is_deleted;
                 })->sum('amount_paid');
             }
             $invoice->paid = $paid;
@@ -337,7 +376,7 @@ class ReportingService
             $createdByName = null;
             if ($invoice->created_by && $usersById->has($invoice->created_by)) {
                 $user = $usersById->get($invoice->created_by);
-                $fullName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+                $fullName = trim(($user->first_name ?? '').' '.($user->last_name ?? ''));
                 if ($fullName !== '') {
                     $createdByName = $fullName;
                 } else {
@@ -360,14 +399,15 @@ class ReportingService
             ],
         ];
     }
-    
-    public function paymentsToCompanies($filters) {
+
+    public function paymentsToCompanies($filters)
+    {
         $companyId = $filters['company_id'] ?? null;
         $currency = $filters['currency_code'] ?? null;
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
-        $query = \App\Models\CompanyPayment::with(['invoice', 'invoice.company']);
+        $query = CompanyPayment::with(['invoice', 'invoice.company']);
         $query->where('direction', 'outgoing'); // Only payments to companies
         if ($companyId) {
             $query->whereHas('invoice', function ($q) use ($companyId) {
@@ -399,23 +439,25 @@ class ReportingService
             $payment->company_id = $company ? $company->id : null;
             $payment->company_name = $company ? $company->name : null;
         }
+
         return $payments;
     }
-    
-    public function marginPerProject($filters) {
+
+    public function marginPerProject($filters)
+    {
         $projectId = $filters['project_id'] ?? null;
         $customerId = $filters['customer_id'] ?? null;
         $currency = $filters['currency_code'] ?? null;
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
-        if (!$currency) {
+        if (! $currency) {
             return [
-                'error' => 'currency is required for margin per project report.'
+                'error' => 'currency is required for margin per project report.',
             ];
         }
 
-        $projectsQuery = \App\Models\Project::with(['customer']);
+        $projectsQuery = Project::with(['customer']);
 
         // Filter by project currency
         $projectsQuery = $this->filterByCurrency($projectsQuery, $currency);
@@ -439,8 +481,8 @@ class ReportingService
 
         // Pre-compute cost per project using project currency value from company payments
         $costsByProject = [];
-        if (!empty($projectIds)) {
-            $costsByProject = \App\Models\CompanyPayment::query()
+        if (! empty($projectIds)) {
+            $costsByProject = CompanyPayment::query()
                 ->join('company_invoices', 'company_invoices.id', '=', 'company_payments.invoice_id')
                 ->where('company_payments.direction', 'outgoing')
                 ->whereNotNull('company_payments.project_currency_value')
@@ -470,7 +512,7 @@ class ReportingService
             $rows[] = [
                 'project_id' => $project->id,
                 'date' => optional($project->created_at)->toDateTimeString(),
-                'job_reference_id' => $project->job_reference_id,
+                'bol_number' => $project->bol_number,
                 'customer' => optional($project->customer)->name,
                 'project_name' => $project->name,
                 'revenue' => $revenue,
@@ -492,8 +534,9 @@ class ReportingService
             ],
         ];
     }
-    
-    public function generalLedger($filters) {
+
+    public function generalLedger($filters)
+    {
         $currency = $filters['currency_code'] ?? null;
         $forex = $filters['forex'] ?? null;
         $projectId = $filters['project_id'] ?? null;
@@ -502,15 +545,15 @@ class ReportingService
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
-        if (!$currency) {
+        if (! $currency) {
             return [
-                'error' => 'currency is required for general ledger report.'
+                'error' => 'currency is required for general ledger report.',
             ];
         }
 
-        if ($currency !== 'KES' && !$forex) {
+        if ($currency !== 'KES' && ! $forex) {
             return [
-                'error' => 'forex to KES is required for general ledger report.'
+                'error' => 'forex to KES is required for general ledger report.',
             ];
         }
 
@@ -519,7 +562,7 @@ class ReportingService
         }
 
         // Receivables (CustPayment)
-        $receivablesQuery = \App\Models\CustPayment::with(['allocations.invoice.project', 'allocations.invoice.customer'])->where('transaction_type', 'receipt')->where('payment_type', 'normal');
+        $receivablesQuery = CustPayment::with(['allocations.invoice.project', 'allocations.invoice.customer'])->where('transaction_type', 'receipt')->where('payment_type', 'normal');
         if ($currency) {
             $receivablesQuery->where('currency', $currency);
         }
@@ -561,7 +604,7 @@ class ReportingService
         }
 
         // Payables (CompanyPayment)
-        $payablesQuery = \App\Models\CompanyPayment::with(['invoice', 'invoice.company', 'invoice.project'])->where('direction', 'outgoing')->where('payment_type', 'normal');
+        $payablesQuery = CompanyPayment::with(['invoice', 'invoice.company', 'invoice.project'])->where('direction', 'outgoing')->where('payment_type', 'normal');
         if ($projectId) {
             $payablesQuery->whereHas('invoice', function ($q) use ($projectId) {
                 $q->where('project_id', $projectId);
@@ -640,24 +683,25 @@ class ReportingService
         ];
     }
 
-    public function invoicePaymentsCustomer($filters) {
+    public function invoicePaymentsCustomer($filters)
+    {
         \Log::info('Generating Invoice Payments Customer Report', ['filters' => $filters]);
 
         $currency = $filters['currency_code'] ?? null;
         $customerId = $filters['customer_id'] ?? null;
-        $jobReferenceId = $filters['job_reference_id'] ?? null;
+        $bolNumber = $filters['bol_number'] ?? null;
         $invoiceNumber = $filters['invoice_number'] ?? null;
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
         // Mandatory filter
-        if (!$currency) {
+        if (! $currency) {
             return [
-                'error' => 'currency is required for invoice payments customer report.'
+                'error' => 'currency is required for invoice payments customer report.',
             ];
         }
 
-        $query = \App\Models\CustPayment::with(['invoices.customer', 'createdByUser'])
+        $query = CustPayment::with(['invoices.customer', 'createdByUser'])
             ->where('transaction_type', 'receipt')
             ->where('payment_type', 'normal');
 
@@ -675,9 +719,9 @@ class ReportingService
                 $q->where('customer_id', $customerId);
             });
         }
-        if ($jobReferenceId) {
-            $query->whereHas('invoices', function ($q) use ($jobReferenceId) {
-                $q->where('job_reference_id', 'like', "%{$jobReferenceId}%");
+        if ($bolNumber) {
+            $query->whereHas('invoices', function ($q) use ($bolNumber) {
+                $q->where('bol_number', 'like', "%{$bolNumber}%");
             });
         }
         if ($invoiceNumber) {
@@ -693,7 +737,7 @@ class ReportingService
             $customer = $invoice ? $invoice->customer : null;
 
             $payment->customer_name = $customer ? $customer->name : null;
-            $payment->job_reference_id = $invoice ? $invoice->job_reference_id : null;
+            $payment->bol_number = $invoice ? $invoice->bol_number : null;
             $payment->invoice_number = $invoice ? $invoice->invoice_number : null;
 
             $payment->amount = $payment->amount_paid;
@@ -701,7 +745,7 @@ class ReportingService
             $createdBy = $payment->createdByUser;
             $transactedByName = null;
             if ($createdBy) {
-                $fullName = trim(($createdBy->first_name ?? '') . ' ' . ($createdBy->last_name ?? ''));
+                $fullName = trim(($createdBy->first_name ?? '').' '.($createdBy->last_name ?? ''));
                 if ($fullName !== '') {
                     $transactedByName = $fullName;
                 } else {
@@ -725,24 +769,25 @@ class ReportingService
         ];
     }
 
-    public function invoicePaymentsCompany($filters) {
+    public function invoicePaymentsCompany($filters)
+    {
         \Log::info('Generating Invoice Payments Company Report', ['filters' => $filters]);
 
         $currency = $filters['currency_code'] ?? null;
         $companyId = $filters['company_id'] ?? null;
-        $jobReferenceId = $filters['job_reference_id'] ?? null;
+        $bolNumber = $filters['bol_number'] ?? null;
         $invoiceNumber = $filters['invoice_number'] ?? null;
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
         // Mandatory filter
-        if (!$currency) {
+        if (! $currency) {
             return [
-                'error' => 'currency is required for invoice payments company report.'
+                'error' => 'currency is required for invoice payments company report.',
             ];
         }
 
-        $query = \App\Models\CompanyPayment::with(['invoice.company', 'invoice.project', 'createdByUser'])
+        $query = CompanyPayment::with(['invoice.company', 'invoice.project', 'createdByUser'])
             ->where('transaction_type', 'receipt')
             ->where('payment_type', 'normal');
 
@@ -760,9 +805,9 @@ class ReportingService
                 $q->where('company_id', $companyId);
             });
         }
-        if ($jobReferenceId) {
-            $query->whereHas('invoice.project', function ($q) use ($jobReferenceId) {
-                $q->where('job_reference_id', 'like', "%{$jobReferenceId}%");
+        if ($bolNumber) {
+            $query->whereHas('invoice.project', function ($q) use ($bolNumber) {
+                $q->where('bol_number', 'like', "%{$bolNumber}%");
             });
         }
         if ($invoiceNumber) {
@@ -779,7 +824,7 @@ class ReportingService
             $project = $invoice ? $invoice->project : null;
 
             $payment->company_name = $company ? $company->name : null;
-            $payment->job_reference_id = $project ? $project->job_reference_id : null;
+            $payment->bol_number = $project ? $project->bol_number : null;
             $payment->invoice_number = $invoice ? $invoice->invoice_number : null;
 
             $payment->amount = $payment->amount_paid;
@@ -787,7 +832,7 @@ class ReportingService
             $createdBy = $payment->createdByUser;
             $transactedByName = null;
             if ($createdBy) {
-                $fullName = trim(($createdBy->first_name ?? '') . ' ' . ($createdBy->last_name ?? ''));
+                $fullName = trim(($createdBy->first_name ?? '').' '.($createdBy->last_name ?? ''));
                 if ($fullName !== '') {
                     $transactedByName = $fullName;
                 } else {
@@ -810,8 +855,9 @@ class ReportingService
             ],
         ];
     }
-    
-    public function invoicePayments($filters) {
+
+    public function invoicePayments($filters)
+    {
         \Log::info('Generating Invoice Payments Report', ['filters' => $filters]);
         $type = $filters['type'] ?? null; // 'customer' or 'company'
         $currency = $filters['currency_code'] ?? null;
@@ -822,23 +868,23 @@ class ReportingService
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
 
-        if (!$currency) {
+        if (! $currency) {
             return [
-                'error' => 'currency is required for invoice payments report.'
+                'error' => 'currency is required for invoice payments report.',
             ];
         }
 
-        if (!$type || !in_array($type, ['customer', 'company'])) {
+        if (! $type || ! in_array($type, ['customer', 'company'])) {
             return [
-                'error' => 'type is required for invoice payments report.'
+                'error' => 'type is required for invoice payments report.',
             ];
         }
 
         // Select model and eager load relations
         if ($type === 'company') {
-            $query = \App\Models\CompanyPayment::with('invoice.company')->where('transaction_type', 'receipt')->where('payment_type', 'normal');
+            $query = CompanyPayment::with('invoice.company')->where('transaction_type', 'receipt')->where('payment_type', 'normal');
         } else {
-            $query = \App\Models\CustPayment::with('allocations.invoice.customer')->where('transaction_type', 'receipt')->where('payment_type', 'normal');
+            $query = CustPayment::with('allocations.invoice.customer')->where('transaction_type', 'receipt')->where('payment_type', 'normal');
         }
         if ($currency) {
             $query->where('currency', $currency);
@@ -895,21 +941,22 @@ class ReportingService
             ],
         ];
     }
-    
-    public function taxPaymentsCustomer($filters) {
+
+    public function taxPaymentsCustomer($filters)
+    {
         $currency = $filters['currency_code'] ?? null;
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
         $customerId = $filters['customer_id'] ?? null;
 
         // Mandatory filter
-        if (!$currency) {
+        if (! $currency) {
             return [
-                'error' => 'currency is required for tax payments customer report.'
+                'error' => 'currency is required for tax payments customer report.',
             ];
         }
 
-        $query = \App\Models\CustomerTransactionsLedger::with(['payment','payment.invoices']);
+        $query = CustomerTransactionsLedger::with(['payment', 'payment.invoices']);
         $query->where('transaction_type', 'receipt');
         $query->where('source_type', 'cust_invoice');
         $query->where('transaction_currency', $currency);
@@ -928,7 +975,7 @@ class ReportingService
         foreach ($transactions as $txn) {
             $invoice = $txn->payment && $txn->payment->invoices ? $txn->payment->invoices->first() : null;
             $txn->invoice_number = $invoice ? $invoice->invoice_number : null;
-            $customer = \App\Models\Customer::find($txn->customer_id);
+            $customer = Customer::find($txn->customer_id);
             $txn->customer_name = $customer ? $customer->name : null;
         }
 
@@ -944,21 +991,22 @@ class ReportingService
             ],
         ];
     }
-    
-    public function taxPaymentsCompany($filters) {
+
+    public function taxPaymentsCompany($filters)
+    {
         $currency = $filters['currency_code'] ?? 'KES';
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
         $companyId = $filters['company_id'] ?? null;
 
         // Mandatory filter
-        if (!$currency) {
+        if (! $currency) {
             return [
-                'error' => 'currency_code is required for tax payments company report.'
+                'error' => 'currency_code is required for tax payments company report.',
             ];
         }
 
-        $query = \App\Models\CompanyTransactionsLedger::with(['payment','payment.invoice']);
+        $query = CompanyTransactionsLedger::with(['payment', 'payment.invoice']);
         $query->where('transaction_type', 'payment');
         $query->where('source_type', 'company_invoice');
         $query->where('base_currency', $currency);
@@ -978,7 +1026,7 @@ class ReportingService
             $payment = $txn->payment ?? null;
             $invoice = $payment ? $payment->invoice : null;
             $txn->invoice_number = $invoice ? $invoice->invoice_number : null;
-            $company = \App\Models\Company::find($txn->company_id);
+            $company = Company::find($txn->company_id);
             $txn->company_name = $company ? $company->name : null;
         }
 
@@ -1010,7 +1058,7 @@ class ReportingService
         $to = $filters['to'];
         $customerId = $filters['customer_id'];
 
-        $query = \App\Models\CustomerTransactionsLedger::with([
+        $query = CustomerTransactionsLedger::with([
             'customer',
             'payment',
             'createdByUser',
@@ -1038,7 +1086,7 @@ class ReportingService
                 $documentNumber = $txn->payment?->transaction_number ?? $txn->transaction_number;
             }
 
-            $jobReference = $invoice?->job_reference_id ?? $invoice?->project?->job_reference_id ?? null;
+            $bolNumber = $invoice?->bol_number ?? $invoice?->project?->bol_number ?? null;
             $debit = $txn->transaction_type !== 'receipt' ? (float) $txn->amount : 0.0;
             $credit = $txn->transaction_type === 'receipt' ? (float) $txn->amount : 0.0;
             $runningBalance += $debit - $credit;
@@ -1050,7 +1098,7 @@ class ReportingService
                 'transaction_date' => $txn->transaction_date,
                 'posted_date' => $txn->posted_date,
                 'created_at' => $txn->created_at,
-                'job_reference' => $jobReference,
+                'bol_number' => $bolNumber,
                 'document_number' => $documentNumber,
                 'transaction_number' => $txn->transaction_number,
                 'customer_name' => $txn->customer?->name ?? null,
@@ -1093,7 +1141,7 @@ class ReportingService
         $to = $filters['to'];
         $companyId = $filters['company_id'];
 
-        $query = \App\Models\CompanyTransactionsLedger::with([
+        $query = CompanyTransactionsLedger::with([
             'company',
             'payment',
             'createdByUser',
@@ -1121,7 +1169,7 @@ class ReportingService
                 $documentNumber = $txn->payment?->transaction_number;
             }
 
-            $jobReference = $invoice?->job_reference_id ?? null;
+            $bolNumber = $invoice?->bol_number ?? null;
             $debit = $txn->transaction_type === 'invoice' ? (float) $txn->amount : 0.0;
             $credit = $txn->transaction_type === 'payment' ? (float) $txn->amount : 0.0;
             $runningBalance += $debit - $credit;
@@ -1133,7 +1181,7 @@ class ReportingService
                 'transaction_date' => $txn->transaction_date,
                 'posted_date' => $txn->posted_date,
                 'created_at' => $txn->created_at,
-                'job_reference' => $jobReference,
+                'bol_number' => $bolNumber,
                 'document_number' => $documentNumber,
                 'transaction_number' => $txn->transaction_number,
                 'company_name' => $txn->company?->name ?? null,
@@ -1158,8 +1206,9 @@ class ReportingService
             ],
         ];
     }
-    
-    public function expenseReport($filters) {
+
+    public function expenseReport($filters)
+    {
         $currency = $filters['currency_code'] ?? 'KES';
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
@@ -1167,13 +1216,13 @@ class ReportingService
         $costCenterId = $filters['cost_center'] ?? null;
 
         // Mandatory filter
-        if (!$currency) {
+        if (! $currency) {
             return [
-                'error' => 'currency_code is required for expense report.'
+                'error' => 'currency_code is required for expense report.',
             ];
         }
 
-        $query = \App\Models\Transaction::query();
+        $query = Transaction::query();
         $query->where('source_type', 'office_expense');
         $query->where('base_currency', $currency);
         $query->where('transaction_type', 'expense');
@@ -1187,17 +1236,18 @@ class ReportingService
         $transactions = $query->get();
 
         // Filter by cost center and category on OfficeExpense
-        $filtered = $transactions->filter(function($txn) use ($categoryId, $costCenterId) {
-            $officeExpense = \App\Models\OfficeExpense::find($txn->source_id);
+        $filtered = $transactions->filter(function ($txn) use ($categoryId, $costCenterId) {
+            $officeExpense = OfficeExpense::find($txn->source_id);
             $txn->expense = $officeExpense ? $officeExpense->description : null;
             $txn->category = $officeExpense && isset($officeExpense->category) ? $officeExpense->category->name : null;
             $txn->cost_center = $officeExpense && isset($officeExpense->costCenter) ? $officeExpense->costCenter->name : null;
-            if ($categoryId && (!isset($officeExpense->category) || $officeExpense->category->id != $categoryId)) {
+            if ($categoryId && (! isset($officeExpense->category) || $officeExpense->category->id != $categoryId)) {
                 return false;
             }
-            if ($costCenterId && (!isset($officeExpense->costCenter) || $officeExpense->costCenter->id != $costCenterId)) {
+            if ($costCenterId && (! isset($officeExpense->costCenter) || $officeExpense->costCenter->id != $costCenterId)) {
                 return false;
             }
+
             return true;
         })->values();
 
@@ -1215,8 +1265,9 @@ class ReportingService
             ],
         ];
     }
-    
-    public function expensePayments($filters) {
+
+    public function expensePayments($filters)
+    {
         \Log::info('Generating Expenses Payment Report', ['filters' => $filters]);
 
         $currency = $filters['currency_code'] ?? null;
@@ -1227,14 +1278,14 @@ class ReportingService
         $to = $filters['to'] ?? null;
 
         // Mandatory filter
-        if (!$currency) {
+        if (! $currency) {
             return [
-                'error' => 'currency_code is required for expenses payment report.'
+                'error' => 'currency_code is required for expenses payment report.',
             ];
         }
 
         // Start from OfficeExpense to include all expenses (with or without payments)
-        $query = \App\Models\OfficeExpense::with(['category', 'costCenter', 'payments.transaction.debitAccount']);
+        $query = OfficeExpense::with(['category', 'costCenter', 'payments.transaction.debitAccount']);
 
         // Filter by currency from office_expenses table
         $query->where('currency', $currency);
@@ -1308,9 +1359,9 @@ class ReportingService
                     // Get narration from Transaction where source_type=office_expense and source_id=expense.id
                     $actualPayment->narration = $transaction ? $transaction->narration : '-';
                     $actualPayment->amount = $actualPayment->amount_paid;
-                    
-                    if(isset($sourceAccount) && $sourceAccount !== null) {
-                        if($transaction->debitAccount->id == $sourceAccount) {
+
+                    if (isset($sourceAccount) && $sourceAccount !== null) {
+                        if ($transaction->debitAccount->id == $sourceAccount) {
                             $payments->push($actualPayment);
                         }
                     } else {
@@ -1336,7 +1387,7 @@ class ReportingService
             ],
         ];
     }
-    
+
     public function exportPdf($reportType, $filters)
     {
         switch ($reportType) {
@@ -1380,22 +1431,24 @@ class ReportingService
                 return $this->exportExpensePaymentsPdf($filters);
             default:
                 return [
-                    'error' => 'Invalid report type.'
+                    'error' => 'Invalid report type.',
                 ];
         }
     }
+
     // Private export methods for each report
-    private function exportOrdersSummaryPdf($filters) {
+    private function exportOrdersSummaryPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->ordersSummary($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\OrdersSummaryResource::collection($rawData);
+        $resourceCollection = OrdersSummaryResource::collection($rawData);
         $data = [];
         foreach ($resourceCollection as $item) {
             $arr = $item->toArray(null);
-            if (!isset($arr['customer_name']) || !$arr['customer_name']) {
+            if (! isset($arr['customer_name']) || ! $arr['customer_name']) {
                 $arr['customer_name'] = optional($item->resource->customer)->name ?? '';
             }
-            if (!isset($arr['quotation_title']) || !$arr['quotation_title']) {
+            if (! isset($arr['quotation_title']) || ! $arr['quotation_title']) {
                 $arr['quotation_title'] = optional($item->resource->quotation)->title ?? '';
             }
             if (isset($arr['project']) && is_object($arr['project']) && isset($arr['project']->name)) {
@@ -1403,59 +1456,68 @@ class ReportingService
             }
             $data[] = $arr;
         }
+
         return $this->renderPdf('pdf.orders-summary', $data, $filters, $userId, 'ordersSummary');
     }
 
-    private function exportProjectsSummaryPdf($filters) {
+    private function exportProjectsSummaryPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->projectsSummary($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\ProjectsSummaryResource::collection($rawData);
+        $resourceCollection = ProjectsSummaryResource::collection($rawData);
         $data = [];
         foreach ($resourceCollection as $item) {
             $data[] = $item->toArray(null);
         }
+
         return $this->renderPdf('pdf.projects-summary', $data, $filters, $userId, 'projectsSummary');
     }
 
-    private function exportCustomerHistoryPdf($filters) {
+    private function exportCustomerHistoryPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->customerHistory($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\CustomerHistoryResource::collection($rawData);
+        $resourceCollection = CustomerHistoryResource::collection($rawData);
         $data = [];
         foreach ($resourceCollection as $item) {
             $data[] = $item->toArray(null);
         }
+
         return $this->renderPdf('pdf.customer-history', $data, $filters, $userId, 'customerHistory');
     }
 
-    private function exportRevenueSnapshotPdf($filters) {
+    private function exportRevenueSnapshotPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->revenueSnapshot($filters);
         if (isset($rawData['error'])) {
             return $rawData;
         }
 
-        $resource = new \App\Http\Resources\Reporting\RevenueSnapshotResource($rawData);
+        $resource = new RevenueSnapshotResource($rawData);
         $data = $resource->toArray(null);
 
         return $this->renderPdf('pdf.revenue-snapshot', $data, $filters, $userId, 'revenueSnapshot');
     }
 
-    private function exportInvoicesReportPdf($filters) {
+    private function exportInvoicesReportPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->invoicesReport($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\InvoicesReportResource::collection($rawData);
+        $resourceCollection = InvoicesReportResource::collection($rawData);
+
         return $this->renderPdf('pdf.invoices-report', $resourceCollection, $filters, $userId, 'invoicesReport');
     }
 
-    private function exportInvoicesReportCustomerPdf($filters) {
+    private function exportInvoicesReportCustomerPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->invoicesReportCustomer($filters);
         if (isset($rawData['error'])) {
             return $rawData;
         }
 
-        $resourceCollection = \App\Http\Resources\Reporting\InvoicesReportCustomerResource::collection($rawData['invoices']);
+        $resourceCollection = InvoicesReportCustomerResource::collection($rawData['invoices']);
         $invoicesArray = [];
         foreach ($resourceCollection as $item) {
             $invoicesArray[] = $item->toArray(null);
@@ -1469,14 +1531,15 @@ class ReportingService
         return $this->renderPdf('pdf.invoices-report-customer', $data, $filters, $userId, 'invoicesReportCustomer');
     }
 
-    private function exportInvoicesReportCompanyPdf($filters) {
+    private function exportInvoicesReportCompanyPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->invoicesReportCompany($filters);
         if (isset($rawData['error'])) {
             return $rawData;
         }
 
-        $resourceCollection = \App\Http\Resources\Reporting\InvoicesReportCompanyResource::collection($rawData['invoices']);
+        $resourceCollection = InvoicesReportCompanyResource::collection($rawData['invoices']);
         $invoicesArray = [];
         foreach ($resourceCollection as $item) {
             $invoicesArray[] = $item->toArray(null);
@@ -1490,18 +1553,21 @@ class ReportingService
         return $this->renderPdf('pdf.invoices-report-company', $data, $filters, $userId, 'invoicesReportCompany');
     }
 
-    private function exportPaymentsToCompaniesPdf($filters) {
+    private function exportPaymentsToCompaniesPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->paymentsToCompanies($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\PaymentsToCompaniesResource::collection($rawData['transactions'] ?? $rawData);
+        $resourceCollection = PaymentsToCompaniesResource::collection($rawData['transactions'] ?? $rawData);
         $transactionsArray = [];
         foreach ($resourceCollection as $item) {
             $transactionsArray[] = $item->toArray(null);
         }
+
         return $this->renderPdf('pdf.payments-to-companies', $transactionsArray, $filters, $userId, 'paymentsToCompanies');
     }
 
-    private function exportMarginPerProjectPdf($filters) {
+    private function exportMarginPerProjectPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->marginPerProject($filters);
         if (isset($rawData['error'])) {
@@ -1515,7 +1581,7 @@ class ReportingService
             'margin' => 0,
         ];
 
-        $resourceCollection = \App\Http\Resources\Reporting\MarginPerProjectResource::collection($rows);
+        $resourceCollection = MarginPerProjectResource::collection($rows);
         $rowsArray = [];
         foreach ($resourceCollection as $item) {
             $rowsArray[] = $item->toArray(null);
@@ -1529,56 +1595,67 @@ class ReportingService
         return $this->renderPdf('pdf.margin-per-project', $data, $filters, $userId, 'marginPerProject');
     }
 
-    private function exportGeneralLedgerPdf($filters) {
+    private function exportGeneralLedgerPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $data = $this->generalLedger($filters);
         \Log::info('General Ledger raw data', ['data' => $data]);
+
         return $this->renderPdf('pdf.general-ledger', $data, $filters, $userId, 'generalLedger');
     }
 
-    private function exportInvoicePaymentsPdf($filters) {
+    private function exportInvoicePaymentsPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->invoicePayments($filters);
+
         return $this->renderPdf('pdf.invoice-payments', $rawData, $filters, $userId, 'invoicePayments');
     }
 
-    private function exportInvoicePaymentsCustomerPdf($filters) {
+    private function exportInvoicePaymentsCustomerPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->invoicePaymentsCustomer($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\InvoicePaymentsResource::collection($rawData['payments']);
+        $resourceCollection = InvoicePaymentsResource::collection($rawData['payments']);
         $data = [
             'payments' => $resourceCollection,
             'totals' => $rawData['totals'],
         ];
+
         return $this->renderPdf('pdf.invoice-payments-customer', $data, $filters, $userId, 'invoicePaymentsCustomer');
     }
 
-    private function exportInvoicePaymentsCompanyPdf($filters) {
+    private function exportInvoicePaymentsCompanyPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->invoicePaymentsCompany($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\InvoicePaymentsResource::collection($rawData['payments']);
+        $resourceCollection = InvoicePaymentsResource::collection($rawData['payments']);
         $data = [
             'payments' => $resourceCollection,
             'totals' => $rawData['totals'],
         ];
+
         return $this->renderPdf('pdf.invoice-payments-company', $data, $filters, $userId, 'invoicePaymentsCompany');
     }
 
-    private function exportTaxPaymentsCustomerPdf($filters) {
+    private function exportTaxPaymentsCustomerPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->taxPaymentsCustomer($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\TaxPaymentsCustomerResource::collection($rawData['transactions'] ?? $rawData);
+        $resourceCollection = TaxPaymentsCustomerResource::collection($rawData['transactions'] ?? $rawData);
         $data = [
             'transactions' => $resourceCollection,
             'totals' => $rawData['totals'],
         ];
+
         return $this->renderPdf('pdf.tax-payments-customer', $data, $filters, $userId, 'taxPaymentsCustomer');
     }
 
-    private function exportTaxPaymentsCompanyPdf($filters) {
+    private function exportTaxPaymentsCompanyPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->taxPaymentsCompany($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\TaxPaymentsCompanyResource::collection($rawData['transactions'] ?? $rawData);
+        $resourceCollection = TaxPaymentsCompanyResource::collection($rawData['transactions'] ?? $rawData);
         $transactionsArray = [];
         foreach ($resourceCollection as $item) {
             $transactionsArray[] = $item->toArray(null);
@@ -1587,15 +1664,17 @@ class ReportingService
             'transactions' => $transactionsArray,
             'totals' => isset($rawData['totals']) ? $rawData['totals'] : [],
         ];
+
         return $this->renderPdf('pdf.tax-payments-company', $data, $filters, $userId, 'taxPaymentsCompany');
     }
 
-    private function exportCustomerStatementPdf($filters) {
+    private function exportCustomerStatementPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->customerStatement($filters);
         $customer = null;
-        if (!empty($filters['customer_id'])) {
-            $customer = \App\Models\Customer::find($filters['customer_id']);
+        if (! empty($filters['customer_id'])) {
+            $customer = Customer::find($filters['customer_id']);
         }
         $account = (object) [
             'name' => $customer?->name ?? 'Customer Statement',
@@ -1619,15 +1698,17 @@ class ReportingService
                 'closing_balance_base' => $rawData['totals']['closing_balance_base'] ?? 0,
             ],
         ];
+
         return $this->renderStatementPdf('pdf.customer-statement', $data, $filters, $userId, 'customerStatement');
     }
 
-    private function exportCompanyStatementPdf($filters) {
+    private function exportCompanyStatementPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->companyStatement($filters);
         $company = null;
-        if (!empty($filters['company_id'])) {
-            $company = \App\Models\Company::find($filters['company_id']);
+        if (! empty($filters['company_id'])) {
+            $company = Company::find($filters['company_id']);
         }
         $account = (object) [
             'name' => $company?->name ?? 'Company Statement',
@@ -1651,13 +1732,15 @@ class ReportingService
                 'closing_balance_base' => $rawData['totals']['closing_balance_base'] ?? 0,
             ],
         ];
+
         return $this->renderStatementPdf('pdf.company-statement', $data, $filters, $userId, 'companyStatement');
     }
 
-    private function exportExpenseReportPdf($filters) {
+    private function exportExpenseReportPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->expenseReport($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\ExpenseReportResource::collection($rawData['transactions'] ?? $rawData);
+        $resourceCollection = ExpenseReportResource::collection($rawData['transactions'] ?? $rawData);
         $transactionsArray = $resourceCollection->resolve();
         $data = [
             'transactions' => $transactionsArray,
@@ -1667,12 +1750,14 @@ class ReportingService
                 'net' => 0,
             ],
         ];
+
         return $this->renderPdf('pdf.expense-report', $data, $filters, $userId, 'expenseReport');
     }
 
     // Helper method to render and store PDF
-    private function renderPdf($view, $data, $filters, $userId, $reportType) {
-        $configValues = \App\Models\SysConfig::whereIn('name', [
+    private function renderPdf($view, $data, $filters, $userId, $reportType)
+    {
+        $configValues = SysConfig::whereIn('name', [
             'NAME',
             'EMAIL',
             'ADDRESS_LINE_1',
@@ -1687,7 +1772,7 @@ class ReportingService
         $senderEmail = $configValues['EMAIL'] ?? config('mail.from.address');
         $instanceLogo = $configValues['INSTANCE_LOGO'] ?? null;
         $generatedAt = now();
-        $options = new Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
         $dompdf = new Dompdf($options);
         $html = view($view, [
@@ -1703,23 +1788,24 @@ class ReportingService
         $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();
         $output = $dompdf->output();
-        $fileName = $reportType . '-' . now()->format('Y-m-d') . '_report.pdf';
-        $relativePath = 'reports/' . $fileName;
+        $fileName = $reportType.'-'.now()->format('Y-m-d').'_report.pdf';
+        $relativePath = 'reports/'.$fileName;
         Storage::disk('public')->put($relativePath, $output);
         $download = Download::firstOrNew(['name' => $fileName]);
         $download->path = $relativePath;
         $download->updated_at = now();
         $download->updated_by = $userId;
-        if (!$download->exists) {
+        if (! $download->exists) {
             $download->created_at = now();
             $download->created_by = $userId;
         }
         $download->save();
         $pdf = [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
+
         return response()->streamDownload(
             function () use ($pdf) {
                 echo $pdf['output'];
@@ -1731,8 +1817,9 @@ class ReportingService
         );
     }
 
-    private function renderStatementPdf($view, $data, $filters, $userId, $reportType) {
-        $configValues = \App\Models\SysConfig::whereIn('name', [
+    private function renderStatementPdf($view, $data, $filters, $userId, $reportType)
+    {
+        $configValues = SysConfig::whereIn('name', [
             'NAME',
             'EMAIL',
             'ADDRESS_LINE_1',
@@ -1754,46 +1841,47 @@ class ReportingService
         $senderCountry = $configValues['COUNTRY'] ?? null;
         $instanceLogo = $configValues['INSTANCE_LOGO'] ?? null;
         $generatedAt = now();
-        $options = new Options();
+        $options = new Options;
         $options->set('isRemoteEnabled', true);
         $dompdf = new Dompdf($options);
         $viewData = array_merge($data, [
-                'reportType' => $reportType,
-                'filters' => $filters,
-                'senderName' => $senderName,
-                'senderEmail' => $senderEmail,
-                'instanceLogo' => $instanceLogo,
-                'senderPhone' => $senderPhone,
-                'senderWebsite' => $senderWebsite,
-                'senderAddressLine1' => $senderAddressLine1,
-                'senderCity' => $senderCity,
-                'senderState' => $senderState,
-                'senderCountry' => $senderCountry,
-                'generatedAt' => $generatedAt,
-            ]);
+            'reportType' => $reportType,
+            'filters' => $filters,
+            'senderName' => $senderName,
+            'senderEmail' => $senderEmail,
+            'instanceLogo' => $instanceLogo,
+            'senderPhone' => $senderPhone,
+            'senderWebsite' => $senderWebsite,
+            'senderAddressLine1' => $senderAddressLine1,
+            'senderCity' => $senderCity,
+            'senderState' => $senderState,
+            'senderCountry' => $senderCountry,
+            'generatedAt' => $generatedAt,
+        ]);
 
         $html = view($view, $viewData)->render();
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();
         $output = $dompdf->output();
-        $fileName = $reportType . '-' . now()->format('Y-m-d') . '_report.pdf';
-        $relativePath = 'reports/' . $fileName;
+        $fileName = $reportType.'-'.now()->format('Y-m-d').'_report.pdf';
+        $relativePath = 'reports/'.$fileName;
         Storage::disk('public')->put($relativePath, $output);
         $download = Download::firstOrNew(['name' => $fileName]);
         $download->path = $relativePath;
         $download->updated_at = now();
         $download->updated_by = $userId;
-        if (!$download->exists) {
+        if (! $download->exists) {
             $download->created_at = now();
             $download->created_by = $userId;
         }
         $download->save();
         $pdf = [
-            'fileName'     => $fileName,
+            'fileName' => $fileName,
             'relativePath' => $relativePath,
-            'output'       => $output,
+            'output' => $output,
         ];
+
         return response()->streamDownload(
             function () use ($pdf) {
                 echo $pdf['output'];
@@ -1805,10 +1893,11 @@ class ReportingService
         );
     }
 
-    private function exportExpensePaymentsPdf($filters) {
+    private function exportExpensePaymentsPdf($filters)
+    {
         $userId = Auth::id() ?? null;
         $rawData = $this->expensePayments($filters);
-        $resourceCollection = \App\Http\Resources\Reporting\ExpensePaymentsResource::collection($rawData['payments'] ?? []);
+        $resourceCollection = ExpensePaymentsResource::collection($rawData['payments'] ?? []);
         $paymentsArray = $resourceCollection->resolve();
         $data = [
             'payments' => $paymentsArray,
@@ -1818,6 +1907,7 @@ class ReportingService
                 'net' => 0,
             ],
         ];
+
         return $this->renderPdf('pdf.expense-payments', $data, $filters, $userId, 'expensePayments');
     }
 }

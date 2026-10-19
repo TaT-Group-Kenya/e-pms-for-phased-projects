@@ -28,7 +28,7 @@ const FinishedProjects: React.FC<FinishedProjectsProps> = ({ value }) => {
             </i>
           </div>
           <div>
-            <span className="block">Finished Projects</span>
+            <span className="block">Finished Consignments</span>
             <h5 className="!mb-0 !text-[20px] mt-[2px]">{current}</h5>
           </div>
         </div>

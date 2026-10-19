@@ -32,7 +32,7 @@ const ProjectQuotationsComponent: React.FC<ProjectQuotationsComponentProps> = ({
               <i className="material-symbols-outlined text-[48px] text-gray-400">description</i>
             </div>
             <p className="text-gray-600 dark:text-gray-400 font-medium">No quotation available</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-[8px]">A quotation will appear here once one is created for this project</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-[8px]">A quotation will appear here once one is created for this consignment</p>
           </div>
         </div>
       </div>

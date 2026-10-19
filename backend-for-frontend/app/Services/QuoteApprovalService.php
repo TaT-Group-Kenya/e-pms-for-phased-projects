@@ -14,7 +14,7 @@ class QuoteApprovalService
         array $with = []
     ) {
         $query = QuoteApproval::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
         // Handle soft-delete visibility flags
@@ -31,18 +31,19 @@ class QuoteApprovalService
         foreach ($filters as $key => $value) {
             $query->where($key, $value);
         }
-        
+
         $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-        
+
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function find(int $id, array $with = [])
     {
         $query = QuoteApproval::query();
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
+
         return $query->findOrFail($id);
     }
 
@@ -55,6 +56,7 @@ class QuoteApprovalService
     {
         $model = QuoteApproval::findOrFail($id);
         $model->update($data);
+
         return $model;
     }
 

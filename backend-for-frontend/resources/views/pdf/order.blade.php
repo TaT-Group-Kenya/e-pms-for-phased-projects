@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <title>Order {{ $order->order_number }}</title>
     <style>
-        @page { margin: 40px 40px 60px 40px; }
+        @page { margin: 40px 40px 40px 40px; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111827; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .logo { flex: 0 0 auto; }
         .logo img { height: 48px; width: auto; }
         .brand-name { font-size: 20px; font-weight: 700; color: #111827; }
-        .muted { color: #6b7280; }
+        .muted { color: #4d525c; }
         .badge { display: inline-block; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 600; }
         .badge-status { background-color: #dbeafe; color: #1d4ed8; }
         h1 { font-size: 22px; margin: 0 0 4px 0; }
@@ -56,47 +56,10 @@
     @endif
 
     <div class="header">
-        <div style="text-align: right;">
-            <h1>Order</h1>
-            <div class="muted">Order #: {{ $order->order_number }}</div>
-            <div class="muted">Date: {{ optional($order->created_at)->format('d/m/Y') }}</div>
-            <div class="badge badge-status mt-2">{{ ucfirst($order->status) }}</div>
-        </div>
-    </div>
-
-    <div class="section">
         <table width="100%" cellspacing="0" cellpadding="0">
             <tr>
                 <td style="width: 50%; vertical-align: top; padding-right: 8px;">
-                    <div class="card" style="margin-top: 16px; border-radius: 0; padding: 0; border: none;">
-                        <h2>Order Sender</h2>
-                        <div class="text-sm"><span class="font-semibold">{{ $senderName }}</span></div>
-                        @if(!empty($senderAddressLine1))
-                            <div class="text-sm mt-1">{{ $senderAddressLine1 }}</div>
-                        @endif
-                        @if(!empty($senderCity) || !empty($senderState) || !empty($senderCountry))
-                            <div class="text-sm">
-                                {{ trim(($senderCity ?? '') . (isset($senderCity, $senderState) ? ', ' : '') . ($senderState ?? '')) }}
-                                @if(!empty($senderCountry))
-                                    {{ isset($senderCity) || isset($senderState) ? ', ' : '' }}{{ $senderCountry }}
-                                @endif
-                            </div>
-                        @endif
-                        @if(!empty($senderPhone))
-                            <div class="text-sm mt-1">Phone: {{ $senderPhone }}</div>
-                        @endif
-                        @if(!empty($senderEmail))
-                            <div class="text-sm mt-1">Email: {{ $senderEmail }}</div>
-                        @endif
-                        @if(!empty($senderWebsite))
-                            <div class="text-sm mt-1">Website: {{ $senderWebsite }}</div>
-                        @endif
-                        <div class="text-sm mt-1">Generated: {{ $generatedAt->format('d M Y H:i') }}</div>
-                    </div>
-                </td>
-                <td style="width: 50%; vertical-align: top; padding-left: 8px; text-align: right;">
-                    <div class="card" style="margin-top: 16px; border-radius: 0; padding: 0; border: none; display: inline-block; text-align: left;">
-                        <h2>Bill To</h2>
+                    <h2>Customer Details</h2>
                         <div class="text-sm">
                             @if($order->customer)
                                 <span class="font-semibold">{{ $order->customer->name }}</span>
@@ -116,14 +79,13 @@
                                     @endif
                                 </div>
                             @endif
-                            @if(!empty($order->customer->phone))
-                                <div class="text-sm mt-1">Phone: {{ $order->customer->phone }}</div>
-                            @endif
-                            @if(!empty($order->customer->email))
-                                <div class="text-sm mt-1">Email: {{ $order->customer->email }}</div>
-                            @endif
                         @endif
-                    </div>
+                </td>
+                <td style="width: 50%; vertical-align: top; padding-left: 8px; text-align: right;">
+                        <h2>Order</h2>
+                        <div class="muted">Order #: {{ $order->order_number }}</div>
+                        <div class="muted">Date: {{ optional($order->created_at)->format('d/m/Y') }}</div>
+                        <div class="badge badge-status mt-2">{{ ucfirst($order->status) }}</div>
                 </td>
             </tr>
         </table>
@@ -131,7 +93,7 @@
 
     @if($order->project)
         <div class="section card">
-            <h2>Project</h2>
+            <h2>Consignment</h2>
             <div class="text-sm"> <span class="font-semibold">{{ $order->project->code ?? '' }} {{ $order->project->name ?? '' }}</span></div>
         </div>
     @endif

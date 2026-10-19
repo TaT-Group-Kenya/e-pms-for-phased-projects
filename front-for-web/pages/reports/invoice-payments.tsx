@@ -249,7 +249,7 @@ export default function InvoicePaymentsReportPage() {
                   className="form-select rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 px-4 h-[42px]"
                 >
                   <option value="customer">Customer</option>
-                  <option value="company">Company</option>
+                  <option value="company">Service Provider</option>
                 </select>
               </div>
               <div className="flex flex-col">
@@ -290,7 +290,7 @@ export default function InvoicePaymentsReportPage() {
               )}
               {type === 'company' && (
                 <div className="flex flex-col">
-                  <label htmlFor="company_id" className="mb-1 text-sm text-gray-600">Company</label>
+                  <label htmlFor="company_id" className="mb-1 text-sm text-gray-600">Service Provider</label>
                   <select
                     id="company_id"
                     name="company_id"
@@ -298,7 +298,7 @@ export default function InvoicePaymentsReportPage() {
                     onChange={handleFilterChange}
                     className="form-select rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 px-4 h-[42px]"
                   >
-                    <option value="">All Companies</option>
+                    <option value="">All Service Providers</option>
                     {companyOptions.map((c: any) => (
                       <option key={c.id || c.value} value={c.id || c.value}>
                         {c.name || c.label}

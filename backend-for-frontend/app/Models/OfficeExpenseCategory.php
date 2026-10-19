@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasLogicalDeletion;
-
+use Illuminate\Database\Eloquent\Model;
 
 class OfficeExpenseCategory extends Model
 {
     use HasLogicalDeletion;
+
     protected $table = 'office_expense_categories';
 
     protected $fillable = [

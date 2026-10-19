@@ -16,11 +16,11 @@ class CountryUpdateRequest extends FormRequest
     {
         return [
             'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('countrys')->ignore(
-                    $this->route('country')
-                )],
+                $this->route('country')
+            )],
             'dial_code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('countrys')->ignore(
-                    $this->route('country')
-                )],
+                $this->route('country')
+            )],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
         ];
     }

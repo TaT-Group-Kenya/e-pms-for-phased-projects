@@ -17,15 +17,15 @@ const quotationSchema = z.object({
     .string()
     .min(1, "Quotation title is required")
     .max(255, "Title must not exceed 255 characters"),
-  job_reference_id: z
+  ship_container_id: z
     .string()
-    .min(1, "Job reference ID is required")
-    .max(32, "Job reference ID must not exceed 32 characters"),
+    .min(1, "Please assign a ship container entry to this quotation"),
   // status is hidden, set in API call
   description: z.string().optional(),
   customer_id: z.string().min(1, "Customer is required"),
   project_owner_id: z.string().nullable(),
   valid_until_date: z.string().min(1, "Valid until date is required"),
+  clearance_deadline: z.string().optional(),
   currency: z.string().min(1, "Currency is required"),
   payment_receiving_method_id: z.string().nullable().optional(),
   payment_terms: z.string().optional(),
@@ -62,6 +62,21 @@ const CreateQuotationForm: React.FC = () => {
   const [paymentReceivingMethods, setPaymentReceivingMethods] = useState<Array<{ id: number; name: string; currency: string }>>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
+  const [selectedConsignee, setSelectedConsignee] = useState<string>("");
+  const [containers, setContainers] = useState<Array<{
+    id: number;
+    reference_number: string;
+    container_numbers: string[];
+    container_number_details: Array<{
+      container_no: string;
+      size?: number | null;
+      size_unit?: string | null;
+      goods_description?: string | null;
+      entry_number?: string | null;
+    }>;
+    container_type: string;
+  }>>([]);
+  const [containersLoading, setContainersLoading] = useState(false);
 
   const {
     register,
@@ -69,6 +84,7 @@ const CreateQuotationForm: React.FC = () => {
     formState: { errors },
     reset,
     setValue,
+    watch,
   } = useForm<QuotationFormData>({
     resolver: zodResolver(quotationSchema),
     mode: "onBlur",
@@ -82,9 +98,42 @@ const CreateQuotationForm: React.FC = () => {
   // Handle customer change and clear project selection
   const handleCustomerChange = (customerId: string) => {
     setSelectedCustomer(customerId);
-    // Reset project owner when customer changes
+    setSelectedConsignee("");
+    setContainers([]);
+    // Reset project owner and container when customer changes
     setValue("project_owner_id", null);
+    setValue("ship_container_id", "");
   };
+
+  const handleConsigneeChange = (ownerId: string) => {
+    setSelectedConsignee(ownerId);
+    setContainers([]);
+    setValue("ship_container_id", "");
+    // Load containers assigned to this consignee (client relationship)
+    if (!ownerId || !accessToken) return;
+    setContainersLoading(true);
+    fetch(`/api/ship-containers/list?per_page=500&project_owner_id=${ownerId}&quoted=0`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+      .then((resp) => resp.json())
+      .then((json) => {
+        const rows = json?.data?.data ?? json?.data ?? [];
+        setContainers(
+          (Array.isArray(rows) ? rows : []).map((c: any) => ({
+            id: c.id,
+            reference_number: c.reference_number ?? `#${c.id}`,
+            container_numbers: Array.isArray(c.container_numbers) ? c.container_numbers : [],
+            container_number_details: Array.isArray(c.container_number_details) ? c.container_number_details : [],
+            container_type: c.container_type ?? "",
+          }))
+        );
+      })
+      .catch(() => setContainers([]))
+      .finally(() => setContainersLoading(false));
+  };
+
+  const selectedContainerId = watch("ship_container_id");
+  const selectedContainer = containers.find((container) => String(container.id) === String(selectedContainerId ?? ""));
 
   // Fetch project owners when customer is selected
   useEffect(() => {
@@ -201,12 +250,13 @@ const CreateQuotationForm: React.FC = () => {
 
       const bodyData = {
         title: data.title,
-        job_reference_id: data.job_reference_id,
+        ship_container_id: data.ship_container_id ? parseInt(data.ship_container_id) : null,
         status: "draft", // always set to draft
         description: data.description || "",
         customer_id: data.customer_id ? parseInt(data.customer_id) : null,
         project_owner_id: data.project_owner_id ? parseInt(data.project_owner_id) : null,
         valid_until_date: data.valid_until_date,
+        clearance_deadline: data.clearance_deadline || null,
         currency: data.currency,
         payment_receiving_method_id: data.payment_receiving_method_id ? parseInt(data.payment_receiving_method_id) : null,
         payment_terms: data.payment_terms || "",
@@ -300,27 +350,9 @@ const CreateQuotationForm: React.FC = () => {
                     className={`h-[44px] rounded-md text-black dark:text-white border ${
                       errors.title ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
                     } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                    placeholder="E.g. Website Development Quote"
+                    placeholder="E.g. Clearing and Transport"
                   />
                   {renderFieldError("title")}
-                </div>
-
-                {/* Job Reference ID - Required */}
-                <div className="mb-[20px] sm:mb-0">
-                  <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Job Reference ID <span className="text-danger-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    {...register("job_reference_id")}
-                    className={`h-[44px] rounded-md text-black dark:text-white border ${
-                      errors.job_reference_id
-                        ? "border-danger-500"
-                        : "border-gray-200 dark:border-[#172036]"
-                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-                    placeholder="E.g. JOB12345"
-                  />
-                  {renderFieldError("job_reference_id")}
                 </div>
 
                 {/* Customer - Required */}
@@ -329,8 +361,9 @@ const CreateQuotationForm: React.FC = () => {
                     Customer <span className="text-danger-500">*</span>
                   </label>
                   <select
-                    {...register("customer_id")}
-                    onChange={(e) => handleCustomerChange(e.target.value)}
+                    {...register("customer_id", {
+                      onChange: (e) => handleCustomerChange(e.target.value),
+                    })}
                     className={`h-[44px] rounded-md text-black dark:text-white border ${
                       errors.customer_id ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
                     } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500`}
@@ -345,23 +378,86 @@ const CreateQuotationForm: React.FC = () => {
                   {renderFieldError("customer_id")}
                 </div>
 
-                {/* Project Owner - Optional */}
+                {/* Consignee - Required (activated after customer) */}
                 <div className="mb-[20px] sm:mb-0">
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Project Owner
+                    Consignee <span className="text-danger-500">*</span>
                   </label>
                   <select
-                    {...register("project_owner_id")}
+                    {...register("project_owner_id", {
+                      onChange: (e) => handleConsigneeChange(e.target.value),
+                    })}
                     disabled={!selectedCustomer}
-                    className={`h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${
+                      errors.project_owner_id ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
+                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    <option value="">{!selectedCustomer ? "Select a customer first" : "Select Project Owner"}</option>
+                    <option value="">{!selectedCustomer ? "Select a customer first" : projectOwners.length ? "Select Consignee" : "No consignees for this customer"}</option>
                     {projectOwners.map((owner) => (
                       <option key={owner.id} value={owner.id}>
                         {owner.name}
                       </option>
                     ))}
                   </select>
+                  {renderFieldError("project_owner_id")}
+                </div>
+
+                {/* Ship Container - Required (activated after consignee) */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Ship Container <span className="text-danger-500">*</span>
+                  </label>
+                  <select
+                    {...register("ship_container_id")}
+                    disabled={!selectedConsignee || containersLoading}
+                    className={`h-[44px] rounded-md text-black dark:text-white border ${
+                      errors.ship_container_id
+                        ? "border-danger-500"
+                        : "border-gray-200 dark:border-[#172036]"
+                    } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <option value="">
+                      {!selectedConsignee
+                        ? "Select a consignee first"
+                        : containersLoading
+                          ? "Loading containers..."
+                          : containers.length
+                            ? "Select Ship Container"
+                            : "No containers for this consignee"}
+                    </option>
+                    {containers.map((container) => (
+                      <option key={container.id} value={container.id}>
+                        {container.reference_number}
+                      </option>
+                    ))}
+                  </select>
+                  {renderFieldError("ship_container_id")}
+                  {selectedContainer && selectedContainer.container_number_details.length > 0 && (
+                    <div className="overflow-x-auto mt-3">
+                      <table className="w-full min-w-[460px] text-left text-[12px]">
+                        <thead className="text-gray-500 dark:text-gray-400">
+                          <tr>
+                            <th className="py-1 pr-3 font-medium">Container No</th>
+                            <th className="py-1 pr-3 font-medium">Size</th>
+                            <th className="py-1 pr-3 font-medium">Goods Description</th>
+                            <th className="py-1 pr-3 font-medium">Entry Number</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-[#15203c]">
+                          {selectedContainer.container_number_details.map((number, index) => (
+                            <tr key={`${number.container_no}-${index}`} className="text-black dark:text-white">
+                              <td className="py-1 pr-3 whitespace-nowrap">{number.container_no}</td>
+                              <td className="py-1 pr-3 whitespace-nowrap">
+                                {number.size != null ? `${number.size} ${number.size_unit || "feet"}` : "—"}
+                              </td>
+                              <td className="py-1 pr-3">{number.goods_description || "—"}</td>
+                              <td className="py-1 pr-3 whitespace-nowrap">{number.entry_number || "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
 
                 {/* Creation Date - Required */}
@@ -430,6 +526,18 @@ const CreateQuotationForm: React.FC = () => {
                     } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500`}
                   />
                   {renderFieldError("valid_until_date")}
+                </div>
+
+                {/* Clearance Deadline */}
+                <div className="mb-[20px] sm:mb-0">
+                  <label className="mb-[10px] text-black dark:text-white font-medium block">
+                    Clearance Deadline
+                  </label>
+                  <input
+                    type="date"
+                    {...register("clearance_deadline")}
+                    className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500"
+                  />
                 </div>
 
                 {/* Currency - Required */}

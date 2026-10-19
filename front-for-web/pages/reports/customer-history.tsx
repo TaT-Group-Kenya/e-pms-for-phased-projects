@@ -103,19 +103,19 @@ export default function CustomerHistoryReportPage() {
   function exportCsv() {
     const columns = [
       'Date',
-      'Job Reference ID',
+      'BOL Number',
       'Customer',
       'Title',
       'Category',
-      'Source Origin',
-      'Location',
+      'Destination',
+      'CFS',
       'Currency',
       'Amount',
       'Created By',
     ];
     const rows = data.map(row => [
       row.created_at ? formatDateTime(row.created_at) : '',
-      row.job_reference_id ?? '',
+      row.bol_number ?? '',
       row.customer_name ?? '',
       row.title ?? '',
       row.project_category ?? '',
@@ -220,12 +220,12 @@ export default function CustomerHistoryReportPage() {
                   <thead>
                     <tr>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Date</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Reference ID</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">BOL Number</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Customer</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Title</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Category</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Source Origin</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Location</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Destination</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">CFS</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Currency</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Amount</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Created By</th>
@@ -240,7 +240,7 @@ export default function CustomerHistoryReportPage() {
                       data.map((row, idx) => (
                         <tr key={idx} className={idx % 2 === 0 ? "bg-gray-50 border-b border-gray-200" : "bg-white border-b border-gray-200"}>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.created_at ? formatDateTime(row.created_at) : ''}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.job_reference_id ?? ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.bol_number ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.customer_name ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.title ?? ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_category ?? ''}</td>

@@ -152,8 +152,8 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
     setAssignmentError("");
 
     if (!selectedCompanyId || !assigningPhaseId) {
-      setAssignmentError("Please select a company");
-      addToast("Please select a company", "error");
+      setAssignmentError("Please select a Service Provider");
+      addToast("Please select a Service Provider", "error");
       return;
     }
 
@@ -176,7 +176,7 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMsg = data.error || data.message || "Failed to assign company to phase";
+        const errorMsg = data.error || data.message || "Failed to assign Service Provider to phase";
         setAssignmentError(errorMsg);
         addToast(errorMsg, "error");
         return;
@@ -189,11 +189,11 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
       setAssigningPhaseId(null);
       setSelectedCompanyId(null);
       setAssignmentError("");
-      addToast("Company assigned to phase successfully", "success");
+      addToast("Service Provider assigned to phase successfully", "success");
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Error assigning company to phase";
+      const errorMsg = err instanceof Error ? err.message : "Error assigning Service Provider to phase";
       setAssignmentError(errorMsg);
-      console.error("Error assigning company:", err);
+      console.error("Error assigning Service Provider:", err);
       addToast(errorMsg, "error");
     } finally {
       setIsPhaseSubmitting(false);
@@ -377,7 +377,7 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
               <tr className="border-b border-gray-200 dark:border-[#172036]">
                 <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm"></th>
                 <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm">Phase Name</th>
-                <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm">Company</th>
+                <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm">Service Provider</th>
                 <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm">Status</th>
                 <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm">Progress</th>
                 <th className="px-[15px] py-[12px] text-left text-black dark:text-white font-semibold text-sm">Start Date</th>
@@ -425,7 +425,7 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
                           <button
                             onClick={() => handleOpenAssignCompanyModal(phase)}
                             className="inline-flex items-center justify-center px-[8px] py-[4px] rounded text-xs font-medium border border-primary-200 dark:border-primary-900 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-[#172036] transition-all"
-                            title="Change assigned company"
+                            title="Change assigned Service Provider"
                           >
                             Change
                           </button>
@@ -434,10 +434,10 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
                         <button
                           onClick={() => handleOpenAssignCompanyModal(phase)}
                           className="inline-flex items-center gap-[6px] px-[12px] py-[6px] rounded-md border border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-primary-500 hover:text-primary-500 dark:hover:border-primary-500 dark:hover:text-primary-400 transition-all font-medium text-sm"
-                          title="Assign a company to this phase"
+                          title="Assign a Service Provider to this phase"
                         >
                           <i className="material-symbols-outlined !text-[16px]">add</i>
-                          Assign Company
+                          Assign Service Provider
                         </button>
                       )}
                     </td>
@@ -830,7 +830,7 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-[90%] max-w-[500px] max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-[20px]">
-                <h6 className="font-semibold text-black dark:text-white">Assign Company to Phase</h6>
+                <h6 className="font-semibold text-black dark:text-white">Assign Service Provider to Phase</h6>
                 {isPhaseSubmitting && (
                   <div className="flex items-center gap-[8px]">
                     <div className="w-[16px] h-[16px] border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
@@ -854,7 +854,7 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
               <div className="space-y-[15px]">
                 <div>
                   <label className="mb-[10px] text-black dark:text-white font-medium block">
-                    Select Company <span className="text-danger-500">*</span>
+                    Select Service Provider <span className="text-danger-500">*</span>
                   </label>
                   {isLoadingCompanies ? (
                     <div className="flex items-center justify-center h-[44px]">
@@ -862,7 +862,7 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
                     </div>
                   ) : companies.length === 0 ? (
                     <div className="h-[44px] rounded-md border border-gray-200 dark:border-[#172036] bg-gray-50 dark:bg-[#0f1621] flex items-center px-[17px]">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">No companies available</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">No Service Providers available</p>
                     </div>
                   ) : (
                     <select
@@ -871,7 +871,7 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
                       disabled={isPhaseSubmitting}
                       className="h-[44px] rounded-md text-black dark:text-white border border-gray-200 dark:border-[#172036] bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all focus:border-primary-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <option value="">-- Select a company --</option>
+                      <option value="">-- Select a Service Provider --</option>
                       {companies.map((company) => (
                         <option key={company.id} value={company.id}>
                           {company.name}
@@ -886,7 +886,7 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
                     <i className="material-symbols-outlined text-blue-600 dark:text-blue-400 !text-[18px] flex-shrink-0 mt-[2px]">info</i>
                     <div>
                       <p className="text-sm text-blue-800 dark:text-blue-300">
-                        A phase can only be assigned to one company. Assigning a new company will replace the previous assignment.
+                        A phase can only be assigned to one Service Provider. Assigning a new Service Provider will replace the previous assignment.
                       </p>
                     </div>
                   </div>
@@ -917,7 +917,7 @@ const ProjectPhasesComponent: React.FC<ProjectPhasesComponentProps> = ({ project
                       Assigning...
                     </>
                   ) : (
-                    "Assign Company"
+                    "Assign Service Provider"
                   )}
                 </button>
               </div>

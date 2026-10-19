@@ -131,8 +131,8 @@ const AccountReceivablesReportTable: React.FC = () => {
               invoiceNumbers.push(String(inv.invoice_number));
             }
 
-            if (inv.job_reference_id) {
-              jobRefIds.push(String(inv.job_reference_id));
+            if (inv.bol_number) {
+              jobRefIds.push(String(inv.bol_number));
             }
 
             if (inv.id != null) {
@@ -363,7 +363,7 @@ const AccountReceivablesReportTable: React.FC = () => {
       "ID",
       "Date",
       "Customer",
-      "Job Reference ID",
+      "BOL Number",
       "Invoice Number",
       "Amount Paid",
       "Transacted By",
@@ -428,7 +428,7 @@ const AccountReceivablesReportTable: React.FC = () => {
                 onChange={(e) => setProjectFilterId(e.target.value)}
                 className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
               >
-                <option value="">All projects</option>
+                <option value="">All Consignments</option>
                 {projectOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
@@ -526,7 +526,7 @@ const AccountReceivablesReportTable: React.FC = () => {
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">ID</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Date</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Customer</th>
-                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Job Reference ID</th>
+                <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">BOL Number</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Invoice Number</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Amount Paid</th>
                 <th className="text-xs font-semibold text-left px-[15px] py-[8px] whitespace-nowrap">Transacted By</th>

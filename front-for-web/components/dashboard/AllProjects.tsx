@@ -88,8 +88,8 @@ const AllProjects: React.FC = () => {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
         }
-        console.error("Error loading latest projects", error);
-        addToast("Error loading projects", "error");
+        console.error("Error loading latest Consignments", error);
+        addToast("Error loading Consignments", "error");
         setProjects([]);
       } finally {
         setLoading(false);
@@ -119,7 +119,7 @@ const AllProjects: React.FC = () => {
       <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
         <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-center justify-between">
           <div className="trezo-card-title">
-            <h5 className="!mb-0">All Projects</h5>
+            <h5 className="!mb-0">All Consignments</h5>
           </div>
 
           <div className="trezo-card-subtitle">
@@ -161,7 +161,7 @@ const AllProjects: React.FC = () => {
                 <tr>
                   {[
                     "Code",
-                    "Project Name",
+                    "Consignment Name",
                     "Customer",
                     "Assignees",
                     "Budget",
@@ -246,7 +246,7 @@ const AllProjects: React.FC = () => {
                       colSpan={8}
                       className="text-center px-[20px] py-[15px] text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-[#172036]"
                     >
-                      No projects found.
+                      No Consignments found.
                     </td>
                   </tr>
                 )}
@@ -307,7 +307,7 @@ const AllProjects: React.FC = () => {
         </div>
         {loading && (
           <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-            Loading projects...
+            Loading Consignments...
           </p>
         )}
       </div>

@@ -142,10 +142,10 @@ export default function InvoicesReportCustomerPage() {
     }
     const columns = [
       'Date',
-      'Job Reference ID',
+      'BOL Number ',
       'Customer',
       'Invoice #',
-      'Project Name',
+      'Consignment',
       'Currency',
       'Amount',
       'Paid',
@@ -155,7 +155,7 @@ export default function InvoicesReportCustomerPage() {
     ];
     const rows = data.map((row: any) => [
       formatDate(row.date || row.created_at || ''),
-      row.job_reference_id || '',
+      row.bol_number || '',
       row.customer || row.customer_name || '',
       row.invoice_number || row.id || '',
       row.project_name || row.project || '',
@@ -318,10 +318,10 @@ export default function InvoicesReportCustomerPage() {
                   <thead>
                     <tr>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Date</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Job Reference ID</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">BOL Number</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Customer</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Invoice #</th>
-                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Project Name</th>
+                      <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Consignment</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Currency</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Amount</th>
                       <th className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">Paid</th>
@@ -339,7 +339,7 @@ export default function InvoicesReportCustomerPage() {
                       data.map((row: any, idx: number) => (
                         <tr key={row.id || row.invoice_number || idx} className={idx % 2 === 0 ? 'bg-gray-50 border-b border-gray-200' : 'bg-white border-b border-gray-200'}>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{formatDate(row.date || row.created_at || '')}</td>
-                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.job_reference_id || ''}</td>
+                          <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.bol_number || ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.customer || row.customer_name || ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.invoice_number || row.id || ''}</td>
                           <td className="whitespace-nowrap min-w-[120px] text-left px-4 py-2">{row.project_name || row.project || ''}</td>

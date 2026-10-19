@@ -59,15 +59,15 @@ const AddLocationModal: React.FC<AddLocationModalProps> = ({ onClose, onSuccess 
 
       if (!response.ok) {
         const formattedError = formatApiError(responseData);
-        setError(`Failed to create project location: ${formattedError}`);
+        setError(`Failed to create CFS: ${formattedError}`);
         return;
       }
 
-      addToast("Project location created successfully", "success");
+      addToast("CFS created successfully", "success");
       onSuccess();
     } catch (err) {
-      console.error("Error creating project location:", err);
-      setError("Failed to create the project location. Please check your connection and try again.");
+      console.error("Error creating CFS:", err);
+      setError("Failed to create the CFS. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -77,7 +77,7 @@ const AddLocationModal: React.FC<AddLocationModalProps> = ({ onClose, onSuccess 
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-[20px]">
       <div className="bg-white dark:bg-[#0c1427] rounded-md p-[25px] w-full max-w-[500px]">
         <div className="mb-[20px]">
-          <h6 className="!mb-0">Add Project Location</h6>
+          <h6 className="!mb-0">Add CFS</h6>
         </div>
 
         {error && (
@@ -99,7 +99,7 @@ const AddLocationModal: React.FC<AddLocationModalProps> = ({ onClose, onSuccess 
 
           <div className="mb-[20px]">
             <label className="mb-[10px] text-black dark:text-white font-medium block">
-              Location Name <span className="text-danger-500">*</span>
+              Name <span className="text-danger-500">*</span>
             </label>
             <input
               type="text"
@@ -107,7 +107,7 @@ const AddLocationModal: React.FC<AddLocationModalProps> = ({ onClose, onSuccess 
               className={`h-[44px] rounded-md text-black dark:text-white border ${
                 errors.name ? "border-danger-500" : "border-gray-200 dark:border-[#172036]"
               } bg-white dark:bg-[#0c1427] px-[17px] block w-full outline-0 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-primary-500`}
-              placeholder="E.g. Nairobi, Mombasa, Remote"
+              placeholder="E.g. Compact Freight"
             />
             {errors.name && <p className="text-danger-500 text-sm mt-1">{errors.name.message}</p>}
           </div>
@@ -135,7 +135,7 @@ const AddLocationModal: React.FC<AddLocationModalProps> = ({ onClose, onSuccess 
               disabled={isSubmitting}
               className="px-[25px] py-[10px] rounded-md bg-primary-500 text-white hover:bg-primary-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? "Creating..." : "Create Location"}
+              {isSubmitting ? "Creating..." : "Create CFS"}
             </button>
           </div>
         </form>

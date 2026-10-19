@@ -6,9 +6,9 @@ import Can from "../../../components/auth/Can";
 export default function Page() {
   return (
     <AuthenticatedLayout>
-      <Can any={["ROLE_VIEW_PROJECT_CATEGORY"]} fallback={<div>You do not have permission to view project categories.</div>}>
+      <Can any={["ROLE_VIEW_PROJECT_CATEGORY"]} fallback={<div>You do not have permission to view consignment categories.</div>}>
         <div className="mb-[25px] md:flex items-center justify-between">
-        <h5 className="!mb-0">Project Categories</h5>
+        <h5 className="!mb-0">Categories</h5>
 
         <ol className="breadcrumb mt-[12px] md:mt-0">
           <li className="breadcrumb-item inline-block relative text-sm mx-[11px] ltr:first:ml-0 rtl:first:mr-0 ltr:last:mr-0 rtl:last:ml-0">
@@ -24,7 +24,7 @@ export default function Page() {
           </li>
 
           <li className="breadcrumb-item inline-block relative text-sm mx-[11px] ltr:first:ml-0 rtl:first:mr-0 ltr:last:mr-0 rtl:last:ml-0">
-            Projects
+            Consignments
           </li>
 
           <li className="breadcrumb-item inline-block relative text-sm mx-[11px] ltr:first:ml-0 rtl:first:mr-0 ltr:last:mr-0 rtl:last:ml-0">

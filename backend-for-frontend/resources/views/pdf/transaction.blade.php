@@ -230,7 +230,7 @@
                 </div>
             </div>
             <div class="row">
-                <div class="label">Company</div>
+                <div class="label">Service Provider</div>
                 <div class="value">
                     @if($transaction->company)
                         <span class="font-semibold">{{ $transaction->company->name }}</span>

@@ -54,7 +54,7 @@ const ProjectsProgress: React.FC = () => {
         if (controller.signal.aborted) return;
 
         if (!response.ok) {
-          addToast("Failed to load projects progress", "error");
+          addToast("Failed to load Consignments progress", "error");
           setData(null);
           return;
         }
@@ -66,8 +66,8 @@ const ProjectsProgress: React.FC = () => {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
         }
-        console.error("Error loading projects progress", error);
-        addToast("Error loading projects progress", "error");
+        console.error("Error loading Consignments progress", error);
+        addToast("Error loading Consignments progress", "error");
         setData(null);
       } finally {
         setLoading(false);
@@ -128,7 +128,7 @@ const ProjectsProgress: React.FC = () => {
       <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md h-[500px] flex flex-col">
         <div className="trezo-card-header mb-[20px] md:mb-[25px] flex items-center justify-between">
           <div className="trezo-card-title">
-            <h5 className="!mb-0">Projects Progress</h5>
+            <h5 className="!mb-0">Consignments Progress</h5>
           </div>
         </div>
 
@@ -144,7 +144,7 @@ const ProjectsProgress: React.FC = () => {
           )}
           {loading && (
             <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-              Loading projects progress...
+              Loading Consignments progress...
             </p>
           )}
         </div>
