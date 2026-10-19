@@ -24,7 +24,7 @@ return new class extends Migration
             $table->foreign('loan_id')->references('id')->on('loans');
             $table->foreign('repayment_id')->references('id')->on('loan_repayments');
             $table->foreign('schedule_installment_id')->references('id')->on('loan_schedules');
-            $table->index(['repayment_id', 'schedule_installment_id']);
+            $table->index(['repayment_id', 'schedule_installment_id'], 'lra_repayment_installment_index');
         });
     }
 
