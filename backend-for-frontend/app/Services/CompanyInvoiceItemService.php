@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\CompanyInvoice;
 use App\Models\CompanyInvoiceItem;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class CompanyInvoiceItemService
 {
@@ -38,21 +41,60 @@ class CompanyInvoiceItemService
         return $query->findOrFail($id);
     }
 
+    /**
+     * Line items may be added or edited on any invoice that is not cancelled.
+     * Deleting existing items stays limited to draft invoices so that
+     * invoiced/ledger-backed documents are never silently reduced.
+     */
+    protected function assertInvoiceEditable(int $invoiceId, bool $requireDraft = false): CompanyInvoice
+    {
+        $invoice = CompanyInvoice::findOrFail($invoiceId);
+
+        if ($invoice->status === 'cancelled') {
+            throw ValidationException::withMessages([
+                'invoice_id' => ['Line items cannot be changed on a cancelled company invoice.'],
+            ]);
+        }
+
+        if ($requireDraft && $invoice->status !== 'draft') {
+            throw ValidationException::withMessages([
+                'invoice_id' => ['Line items can only be deleted while the invoice is in draft status.'],
+            ]);
+        }
+
+        return $invoice;
+    }
+
     public function create(array $data)
     {
-        return CompanyInvoiceItem::create($data);
+        return DB::transaction(function () use ($data) {
+            $this->assertInvoiceEditable((int) $data['invoice_id']);
+
+            return CompanyInvoiceItem::create($data);
+        });
     }
 
     public function update(int $id, array $data)
     {
-        $model = CompanyInvoiceItem::findOrFail($id);
-        $model->update($data);
+        return DB::transaction(function () use ($id, $data) {
+            $model = CompanyInvoiceItem::findOrFail($id);
 
-        return $model;
+            $this->assertInvoiceEditable((int) $model->invoice_id);
+
+            $model->update($data);
+
+            return $model;
+        });
     }
 
     public function delete(int $id)
     {
-        return CompanyInvoiceItem::destroy($id);
+        return DB::transaction(function () use ($id) {
+            $model = CompanyInvoiceItem::findOrFail($id);
+
+            $this->assertInvoiceEditable((int) $model->invoice_id, true);
+
+            CompanyInvoiceItem::destroy($id);
+        });
     }
 }

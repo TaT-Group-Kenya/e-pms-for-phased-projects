@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CustInvoice;
 use App\Models\CustomerTransactionsLedger;
+use App\Models\SysConfig;
 use App\Models\User;
 use App\Services\CustDebitNoteItemService;
 use App\Services\CustDebitNoteService;
@@ -27,6 +28,22 @@ class CustDebitNoteTest extends TestCase
         Schema::dropIfExists('customer_transactions_ledger');
         Schema::dropIfExists('cust_invoices');
         Schema::dropIfExists('customers');
+        Schema::dropIfExists('sys_configs');
+
+        Schema::create('sys_configs', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('value');
+            $table->boolean('readonly')->default(false);
+            $table->boolean('is_file')->default(false);
+        });
+        foreach ([
+            ['name' => 'CUST_DEBIT_NOTE_PREFIX', 'value' => 'CDN-'],
+            ['name' => 'CUST_DEBIT_NOTE_INCREMENT', 'value' => '1'],
+            ['name' => 'CUST_DEBIT_NOTE_NUMBER_LENGTH', 'value' => '6'],
+        ] as $config) {
+            SysConfig::create($config);
+        }
 
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
@@ -46,6 +63,54 @@ class CustDebitNoteTest extends TestCase
             $table->unsignedBigInteger('customer_id');
             $table->string('currency');
             $table->string('status')->default('draft');
+            $table->timestamps();
+            $table->boolean('is_deleted')->default(false);
+        });
+        Schema::create('cust_invoice_items', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('invoice_id');
+            $table->timestamps();
+            $table->boolean('is_deleted')->default(false);
+        });
+        Schema::create('cust_payment_allocations', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('payment_id');
+            $table->unsignedBigInteger('invoice_id');
+            $table->boolean('is_deleted')->default(false);
+        });
+        Schema::create('cust_payments', function (Blueprint $table) {
+            $table->id();
+            $table->string('transaction_number')->nullable();
+            $table->string('transaction_type')->nullable();
+            $table->decimal('amount_paid', 15, 2)->default(0);
+            $table->decimal('tax_amount', 15, 2)->default(0);
+            $table->decimal('net_amount', 15, 2)->default(0);
+            $table->date('payment_date')->nullable();
+            $table->string('payment_method')->nullable();
+            $table->string('payment_status')->nullable();
+            $table->string('currency')->nullable();
+            $table->string('payment_type')->nullable();
+            $table->decimal('invoice_total_amount', 15, 2)->default(0);
+            $table->decimal('fee_or_charge', 15, 2)->default(0);
+            $table->boolean('reconciled')->default(false);
+            $table->timestamps();
+            $table->boolean('is_deleted')->default(false);
+        });
+        Schema::create('cust_credit_notes', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('invoice_id');
+            $table->timestamps();
+            $table->boolean('is_deleted')->default(false);
+        });
+        Schema::create('cust_invoice_documents', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('invoice_id');
+            $table->timestamps();
+            $table->boolean('is_deleted')->default(false);
+        });
+        Schema::create('pdc_received_customers', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('invoice_id')->nullable();
             $table->timestamps();
             $table->boolean('is_deleted')->default(false);
         });
@@ -213,6 +278,94 @@ class CustDebitNoteTest extends TestCase
         } catch (ValidationException) {
             $this->assertDatabaseCount('cust_debit_notes', 0);
         }
+    }
+
+    public function test_draft_invoices_are_not_eligible_for_debit_notes(): void
+    {
+        $invoice = CustInvoice::create([
+            'invoice_number' => 'INV-3',
+            'customer_id' => 42,
+            'currency' => 'KES',
+            'status' => 'draft',
+        ]);
+
+        try {
+            (new CustDebitNoteService)->create([
+                'invoice_id' => $invoice->id,
+                'title' => 'Debit against draft invoice',
+            ]);
+            $this->fail('Draft invoices should not be eligible for debit notes.');
+        } catch (ValidationException $exception) {
+            $this->assertStringContainsString(
+                'issued to the customer',
+                (string) $exception->errors()['invoice_id'][0],
+            );
+        }
+        $this->assertDatabaseCount('cust_debit_notes', 0);
+    }
+
+    public function test_debit_note_numbers_follow_configured_sequence(): void
+    {
+        $invoice = CustInvoice::create([
+            'invoice_number' => 'INV-4',
+            'customer_id' => 43,
+            'currency' => 'KES',
+            'status' => 'sent',
+        ]);
+
+        $first = (new CustDebitNoteService)->create([
+            'invoice_id' => $invoice->id,
+            'title' => 'Sequence check one',
+        ]);
+        $second = (new CustDebitNoteService)->create([
+            'invoice_id' => $invoice->id,
+            'title' => 'Sequence check two',
+        ]);
+
+        $this->assertMatchesRegularExpression('/^CDN-\d{6}$/', $first->debit_note_number);
+        $this->assertMatchesRegularExpression('/^CDN-\d{6}$/', $second->debit_note_number);
+        $this->assertNotSame($first->debit_note_number, $second->debit_note_number);
+        $this->assertSame(
+            (int) substr($second->debit_note_number, -6),
+            (int) substr($first->debit_note_number, -6) + 1,
+        );
+    }
+
+    public function test_debit_notes_are_exposed_on_the_invoice_show_resource(): void
+    {
+        $invoice = CustInvoice::create([
+            'invoice_number' => 'INV-DN-TAB',
+            'customer_id' => 42,
+            'currency' => 'KES',
+            'status' => 'sent',
+        ]);
+
+        $note = (new CustDebitNoteService)->create([
+            'invoice_id' => $invoice->id,
+            'title' => 'Visible from invoice',
+        ]);
+        (new CustDebitNoteItemService)->create([
+            'debit_note_id' => $note->id,
+            'item_name' => 'Extra work',
+            'item_amount' => 50,
+            'quantity' => 1,
+            'is_taxable' => false,
+        ]);
+
+        Gate::before(fn () => true);
+        $user = new User;
+        $user->id = 1;
+        $this->actingAs($user, 'sanctum');
+
+        $response = $this->getJson(route('cust-invoices.show', $invoice));
+        $response->assertOk();
+
+        $debitNotes = $response->json('data.debitnotes');
+        $this->assertIsArray($debitNotes);
+        $this->assertCount(1, $debitNotes);
+        $this->assertSame('Visible from invoice', $debitNotes[0]['title']);
+        $this->assertSame('draft', $debitNotes[0]['status']);
+        $this->assertSame(50.0, (float) $debitNotes[0]['total_amount']);
     }
 
     public function test_debit_note_document_upload_replacement_and_deletion_clean_files(): void

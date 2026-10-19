@@ -22,6 +22,7 @@ class Account extends Model
         'currency',
         'balance',
         'overdraft_allowed',
+        'chart_of_account_id',
         'updated_at',
         'updated_by',
         'created_at',
@@ -30,4 +31,14 @@ class Account extends Model
         'deleted_at',
         'deleted_by',
     ];
+
+    public function chartOfAccount()
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account_id');
+    }
+
+    public function loans()
+    {
+        return $this->hasMany(Loan::class, 'account_id');
+    }
 }

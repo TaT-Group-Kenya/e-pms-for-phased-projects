@@ -77,6 +77,17 @@ interface CustCreditNoteSummary {
   currency: string
 }
 
+interface CustDebitNoteSummary {
+  id: number
+  debit_note_number?: string | null
+  title: string
+  status: string
+  subtotal_amount: number
+  tax_amount: number
+  total_amount: number
+  currency: string
+}
+
 interface CustomerSummary {
   id: number
   name: string
@@ -125,6 +136,7 @@ interface CustInvoice {
   taxitems?: CustInvoiceTaxItem[]
   payments?: CustPaymentSummary[]
   creditnotes?: CustCreditNoteSummary[]
+  debitnotes?: CustDebitNoteSummary[]
   customer?: CustomerSummary
   project?: ProjectSummary
   project_owner?: {
@@ -707,8 +719,10 @@ export default function CustInvoiceDetailPage() {
     (sum, pmt) => sum + (pmt?.amount_paid ?? 0),
     0
   )
+  const raisedDebitNotes = (invoice.debitnotes || []).filter((dn) => dn.status === 'raised')
+  const raisedDebitNotesTotal = raisedDebitNotes.reduce((sum, dn) => sum + (dn.total_amount ?? 0), 0)
   const upcomingPdcTotal = invoice.upcoming_pdc_total ?? (invoice.pdcs ? (invoice.pdcs || []).reduce((s: number, p: any) => s + (p?.amount ?? 0), 0) : 0)
-  const outstandingBalance = Math.max(invoice.total_amount - totalPayments - (upcomingPdcTotal || 0), 0)
+  const outstandingBalance = Math.max(invoice.total_amount + raisedDebitNotesTotal - totalPayments - (upcomingPdcTotal || 0), 0)
   const canAddPayment = invoice.status !== 'paid' && invoice.status !== 'draft'
 
   const getStatusBadgeClass = (status: string): string => {
@@ -853,6 +867,21 @@ export default function CustInvoiceDetailPage() {
                   onClick={() => setActiveTab(3)}
                   className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
                     activeTab === 3
+                      ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  <i className="material-symbols-outlined !text-[20px]">add_notes</i>
+                  Debit Notes
+                </button>
+              </li>
+
+              <li className="nav-item inline-block ltr:mr-[50px] rtl:ml-[50px]">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(4)}
+                  className={`nav-link flex items-center gap-[8px] pb-[12px] transition-all relative font-medium whitespace-nowrap ${
+                    activeTab === 4
                       ? 'text-primary-500 border-b-[3px] border-primary-500 pb-[9px]'
                       : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
                   }`}
@@ -1037,6 +1066,25 @@ export default function CustInvoiceDetailPage() {
                           {formatCurrency(invoice.total_amount, invoice.currency)}
                         </span>
                       </div>
+
+                      {raisedDebitNotesTotal > 0 && (
+                        <>
+                          <div className="flex items-center justify-between pt-[10px] text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Charged via debit notes ({raisedDebitNotes.length})
+                            </span>
+                            <span className="font-medium text-warning-600 dark:text-warning-400">
+                              + {formatCurrency(raisedDebitNotesTotal, invoice.currency)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between pt-[10px] border-t border-gray-200 dark:border-[#172036] text-base">
+                            <span className="font-semibold">Total including debit notes</span>
+                            <span className="font-semibold text-primary-500 text-lg">
+                              {formatCurrency(invoice.total_amount + raisedDebitNotesTotal, invoice.currency)}
+                            </span>
+                          </div>
+                        </>
+                      )}
                       <>
                         <div className="mt-[10px] pt-[10px] border-t border-dashed border-gray-200 dark:border-[#172036] space-y-[8px] text-xs">
                           <div className="flex items-center justify-between">
@@ -1090,7 +1138,7 @@ export default function CustInvoiceDetailPage() {
                               </thead>
                               <tbody>
                                 {(() => {
-                                  let runningBalance = invoice.total_amount
+                                  let runningBalance = invoice.total_amount + raisedDebitNotesTotal
                                   const sorted = [...(invoice.payments || [])].sort((a, b) => {
                                     const aDate = a.payment_date || ''
                                     const bDate = b.payment_date || ''
@@ -1657,8 +1705,115 @@ export default function CustInvoiceDetailPage() {
             </div>
           )}
 
-          {/* Payments Tab */}
+          {/* Debit Notes Tab */}
           {activeTab === 3 && (
+            <div className="pt-[20px]">
+              <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
+                <div className="flex items-center justify-between mb-[15px]">
+                  <h6 className="text-black dark:text-white font-semibold">
+                    Debit Notes
+                  </h6>
+                  <div className="text-right">
+                    <Can any={['ROLE_ADD_CUST_DEBIT_NOTE']}>
+                      <Link
+                        href="/cust-invoices/debit-notes"
+                        className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white text-xs"
+                      >
+                        <i className="material-symbols-outlined mr-[6px] !text-[18px]">add</i>
+                        Create Debit Note
+                      </Link>
+                    </Can>
+                  </div>
+                </div>
+
+                <p className="mb-[15px] text-[11px] text-gray-500 dark:text-gray-400">
+                  Only <span className="font-medium">raised</span> debit notes increase the amount
+                  due on this invoice.
+                </p>
+
+                {(!invoice.debitnotes || invoice.debitnotes.length === 0) && (
+                  <p className="text-xs text-gray-500">
+                    No debit notes associated with this invoice.
+                  </p>
+                )}
+
+                {invoice.debitnotes && invoice.debitnotes.length > 0 && (
+                  <div className="table-responsive overflow-x-auto border border-gray-100 dark:border-[#172036] rounded-md">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 dark:bg-[#15203c]">
+                        <tr>
+                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                            Debit Note #
+                          </th>
+                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                            Title
+                          </th>
+                          <th className="text-xs font-semibold ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                            Status
+                          </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Subtotal({currencySymbols[invoice.currency]})
+                          </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Tax({currencySymbols[invoice.currency]})
+                          </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Total({currencySymbols[invoice.currency]})
+                          </th>
+                          <th className="text-xs font-semibold text-right px-[15px] py-[12px]">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invoice.debitnotes.map((dn) => (
+                          <tr
+                            key={dn.id}
+                            className="border-b border-gray-100 dark:border-[#172036] align-middle"
+                          >
+                            <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px] font-mono">
+                              {dn.debit_note_number || dn.id}
+                            </td>
+                            <td className="text-sm ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                              <Link
+                                href={`/cust-invoices/debit-notes/${dn.id}`}
+                                className="font-medium text-primary-500 hover:text-primary-600 hover:underline"
+                              >
+                                {dn.title || '(Untitled)'}
+                              </Link>
+                            </td>
+                            <td className="text-sm capitalize ltr:text-left rtl:text-right px-[15px] py-[12px]">
+                              {dn.status}
+                            </td>
+                            <td className="text-sm text-right px-[15px] py-[12px]">
+                              {formatCurrency(dn.subtotal_amount, dn.currency)}
+                            </td>
+                            <td className="text-sm text-right px-[15px] py-[12px]">
+                              {formatCurrency(dn.tax_amount, dn.currency)}
+                            </td>
+                            <td className="text-sm text-right px-[15px] py-[12px] font-semibold">
+                              {formatCurrency(dn.total_amount, dn.currency)}
+                            </td>
+                            <td className="text-sm text-right px-[15px] py-[12px]">
+                              <Link
+                                href={`/cust-invoices/debit-notes/${dn.id}`}
+                                className="text-primary-500 hover:underline text-xs"
+                              >
+                                View
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Payments Tab */}
+          {activeTab === 4 && (
             <div className="pt-[20px]">
               <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[25px] p-[20px] md:p-[25px] rounded-md">
                 <div className="flex items-center justify-between mb-[15px]">

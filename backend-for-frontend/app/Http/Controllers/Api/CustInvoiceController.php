@@ -115,6 +115,7 @@ class CustInvoiceController extends Controller
             'invoiceItems',
             'payments',
             'creditnotes',
+            'debitnotes',
             'documents',
             'pdcsReceived',
             'projectOwner',
@@ -148,6 +149,7 @@ class CustInvoiceController extends Controller
             'invoiceItems',
             'payments',
             'creditnotes',
+            'debitnotes',
             'documents',
         ]);
 
@@ -210,6 +212,7 @@ class CustInvoiceController extends Controller
             'invoiceItems',
             'payments',
             'creditnotes',
+            'debitnotes',
             'documents',
         ]);
 
@@ -334,6 +337,7 @@ class CustInvoiceController extends Controller
                         'invoiceItems',
                         'payments',
                         'creditnotes',
+                        'debitnotes',
                         'documents',
                     ]);
 
@@ -652,6 +656,7 @@ class CustInvoiceController extends Controller
             'invoiceItems',
             'payments',
             'creditnotes',
+            'debitnotes',
             'documents',
         ]);
 
@@ -786,6 +791,7 @@ class CustInvoiceController extends Controller
             'invoiceItems',
             'payments',
             'creditnotes',
+            'debitnotes',
             'documents',
         ]);
 

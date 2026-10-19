@@ -17,6 +17,7 @@ class AccountService
         if (! empty($with)) {
             $query->with($with);
         }
+        $query->with('chartOfAccount');
         // Handle soft-delete visibility flags
         $withDeleted = filter_var($filters['with_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
         $onlyDeleted = filter_var($filters['only_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
@@ -46,6 +47,7 @@ class AccountService
         if (! empty($with)) {
             $query->with($with);
         }
+        $query->with('chartOfAccount');
 
         return $query->findOrFail($id);
     }

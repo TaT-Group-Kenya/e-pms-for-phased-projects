@@ -599,8 +599,8 @@ export default function CompanyInvoiceDetailPage() {
       return
     }
 
-    if (invoice.status !== 'draft') {
-      addToast('Invoice items can only be modified while the invoice is in draft status.', 'error')
+    if (invoice.status === 'cancelled') {
+      addToast('Invoice items cannot be changed on a cancelled invoice.', 'error')
       return
     }
 
@@ -698,8 +698,8 @@ export default function CompanyInvoiceDetailPage() {
       return
     }
 
-    if (invoice.status !== 'draft') {
-      addToast('Invoice items can only be modified while the invoice is in draft status.', 'error')
+    if (invoice.status === 'cancelled') {
+      addToast('Invoice items cannot be changed on a cancelled invoice.', 'error')
       return
     }
 
@@ -783,6 +783,11 @@ export default function CompanyInvoiceDetailPage() {
     if (!invoice || !itemToDelete) return
     if (!accessToken) {
       addToast('You are not authenticated.', 'error')
+      return
+    }
+
+    if (invoice.status === 'cancelled') {
+      addToast('Invoice items cannot be changed on a cancelled invoice.', 'error')
       return
     }
 
@@ -2131,8 +2136,8 @@ export default function CompanyInvoiceDetailPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          if (invoice.status !== 'draft') {
-                            addToast('Invoice items can only be modified while the invoice is in draft status.', 'error')
+                          if (invoice.status === 'cancelled') {
+                            addToast('Invoice items cannot be changed on a cancelled invoice.', 'error')
                             return
                           }
                           setItemName(primaryPhase?.name || '')
@@ -2147,16 +2152,16 @@ export default function CompanyInvoiceDetailPage() {
                           )
                           setIsAddingItem(true)
                         }}
-                        disabled={invoice.status !== 'draft'}
+                        disabled={invoice.status === 'cancelled'}
                         className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-primary-50 dark:bg-primary-950 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <i className="material-symbols-outlined mr-[6px] !text-[20px]">add</i>
                         Add Item
                       </button>
                     </Can>
-                    {invoice.status !== 'draft' && (
+                    {invoice.status === 'cancelled' && (
                       <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
-                        Items can only be added or changed while the invoice is <span className="font-medium">draft</span>.
+                        Items can no longer be changed because this invoice is <span className="font-medium">cancelled</span>.
                       </p>
                     )}
                   </div>
@@ -2251,7 +2256,7 @@ export default function CompanyInvoiceDetailPage() {
                                   <button
                                     type="button"
                                     onClick={() => handleStartEditItem(item)}
-                                    disabled={invoice.status !== 'draft'}
+                                    disabled={invoice.status === 'cancelled'}
                                     className="inline-flex items-center justify-center px-[8px] py-[4px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#15203c] disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     Edit

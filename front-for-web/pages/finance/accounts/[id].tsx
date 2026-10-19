@@ -8,6 +8,7 @@ import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../../components/common/Toast";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
 import { currencyStrength, formatCurrency } from "../../../utils/format";
+import { formatApiError } from "../../../utils/errorHandler";
 
 interface AccountMeta {
   id: number;
@@ -17,6 +18,8 @@ interface AccountMeta {
   type?: string;
   group?: string;
   currency?: string;
+  chart_of_account_id?: number | null;
+  chart_of_account?: { id: number; code: string; name: string } | null;
 }
 
 interface AccountStatementRow {
@@ -51,6 +54,16 @@ interface AccountStatementResponse {
     closing_balance_base: number;
     pdc_issued_total?: number;
     pdc_received_total?: number;
+    loans_totals?: {
+      loan_count: number;
+      total_borrowed: number;
+      total_outstanding: number;
+      total_repaid: number;
+      total_interest_repaid: number;
+      next_due_date?: string | null;
+      next_due_amount?: number | null;
+      active_count: number;
+    } | null;
     from?: string | null;
     to?: string | null;
   };
@@ -79,6 +92,10 @@ const AccountStatementPage: React.FC = () => {
   const [selectedSourceId, setSelectedSourceId] = useState<string>("");
   const [sourceDebitAmount, setSourceDebitAmount] = useState<string>("");
   const [forexRate, setForexRate] = useState<string>("");
+
+  const [sourceMode, setSourceMode] = useState<"internal" | "external">("internal");
+  const [externalSourceDescription, setExternalSourceDescription] = useState<string>("");
+  const [externalAmount, setExternalAmount] = useState<string>("");
 
   useEffect(() => {
     if (!id || !accessToken) return;
@@ -129,6 +146,11 @@ const AccountStatementPage: React.FC = () => {
 
   const account = statement?.meta.account ?? null;
 
+  // External top-up support: only for accounts linked to the Liabilities
+  // (2000) or Equity (3000) chart of accounts.
+  const accountChartCode = account?.chart_of_account?.code ?? null;
+  const allowsExternalTopup = accountChartCode === "2000" || accountChartCode === "3000";
+
   const rows = useMemo(() => statement?.data ?? [], [statement]);
 
   const handleClearFilters = () => {
@@ -148,12 +170,16 @@ const AccountStatementPage: React.FC = () => {
     setSelectedSourceId("");
     setSourceDebitAmount("");
     setForexRate("");
+    setSourceMode("internal");
+    setExternalSourceDescription("");
+    setExternalAmount("");
     setShowTopupModal(true);
   };
 
   // Load eligible source accounts (with balance > 0 and excluding the current account)
   useEffect(() => {
     if (!showTopupModal || !accessToken || !account) return;
+    if (sourceMode === "external" && allowsExternalTopup) return;
 
     const controller = new AbortController();
 
@@ -217,7 +243,7 @@ const AccountStatementPage: React.FC = () => {
     fetchSources();
 
     return () => controller.abort();
-  }, [showTopupModal, accessToken, account, addToast]);
+  }, [showTopupModal, accessToken, account, sourceMode, allowsExternalTopup, addToast]);
 
   const handleSubmitTopup = async () => {
     if (!id) return;
@@ -232,8 +258,15 @@ const AccountStatementPage: React.FC = () => {
       return;
     }
 
-    if (!selectedSourceId) {
-      addToast("Please select a source account for this top-up.", "error");
+    const isExternal = sourceMode === "external" && allowsExternalTopup;
+
+    if (!isExternal) {
+      if (!selectedSourceId) {
+        addToast("Please select a source account for this top-up.", "error");
+        return;
+      }
+    } else if (!externalSourceDescription.trim()) {
+      addToast("Please describe the external source.", "error");
       return;
     }
 
@@ -241,21 +274,35 @@ const AccountStatementPage: React.FC = () => {
       (acc) => String(acc.id) === String(selectedSourceId),
     );
 
-    if (!selectedSource) {
+    if (!isExternal && !selectedSource) {
       addToast("Selected source account is not available.", "error");
       return;
     }
 
+    if (isExternal) {
+      const externalAmountNum = parseFloat(externalAmount || "0");
+      if (!externalAmount || Number.isNaN(externalAmountNum) || externalAmountNum <= 0) {
+        addToast("Please enter a valid top-up amount greater than zero.", "error");
+        return;
+      }
+    }
+
     const rawSourceAmount = parseFloat(sourceDebitAmount || "0");
-    if (!sourceDebitAmount || Number.isNaN(rawSourceAmount) || rawSourceAmount <= 0) {
-      addToast("Please enter a valid source debit amount greater than zero.", "error");
-      return;
+
+    if (selectedSource) {
+      if (!sourceDebitAmount || Number.isNaN(rawSourceAmount) || rawSourceAmount <= 0) {
+        addToast("Please enter a valid source debit amount greater than zero.", "error");
+        return;
+      }
     }
 
     const targetCurrency = account.currency || "";
-    const sourceCurrency = selectedSource.currency || "";
+    const sourceCurrency = selectedSource?.currency || "";
     const currenciesDiffer =
-      !!sourceCurrency && !!targetCurrency && sourceCurrency !== targetCurrency;
+      !!selectedSource &&
+      !!sourceCurrency &&
+      !!targetCurrency &&
+      sourceCurrency !== targetCurrency;
 
     let exchangeRateValue: number | undefined;
 
@@ -277,9 +324,11 @@ const AccountStatementPage: React.FC = () => {
       exchangeRateValue = 1;
     }
 
-    const amount = currenciesDiffer && exchangeRateValue
-      ? rawSourceAmount * exchangeRateValue
-      : rawSourceAmount;
+    const amount = selectedSource
+      ? currenciesDiffer && exchangeRateValue
+        ? rawSourceAmount * exchangeRateValue
+        : rawSourceAmount
+      : parseFloat(externalAmount || "0");
 
     if (amount <= 0) {
       addToast("Calculated top-up amount must be greater than zero.", "error");
@@ -287,7 +336,7 @@ const AccountStatementPage: React.FC = () => {
     }
 
     // Basic client-side check that the source account has enough balance
-    if (rawSourceAmount > selectedSource.balance) {
+    if (selectedSource && rawSourceAmount > selectedSource.balance) {
       addToast("Source account does not have enough balance for this top-up.", "error");
       return;
     }
@@ -296,15 +345,21 @@ const AccountStatementPage: React.FC = () => {
     try {
       const payload: any = {
         amount,
-        source_debit_amount: rawSourceAmount,
         narration: topupNarration.trim() || undefined,
-        source_account_id: selectedSource.id,
+        source_type: isExternal ? "external" : "internal",
       };
       if (topupDate) {
         payload.transaction_date = topupDate;
       }
-      if (currenciesDiffer && exchangeRateValue && exchangeRateValue !== 1) {
-        payload.exchange_rate = exchangeRateValue;
+
+      if (selectedSource) {
+        payload.source_account_id = selectedSource.id;
+        payload.source_debit_amount = rawSourceAmount;
+        if (currenciesDiffer && exchangeRateValue && exchangeRateValue !== 1) {
+          payload.exchange_rate = exchangeRateValue;
+        }
+      } else {
+        payload.external_source_description = externalSourceDescription.trim();
       }
 
       const resp = await fetch(`/api/accounts/${id}/topup`, {
@@ -318,8 +373,7 @@ const AccountStatementPage: React.FC = () => {
 
       const data: any = await resp.json().catch(() => null);
       if (!resp.ok) {
-        const message = data?.message || "Failed to top up account";
-        addToast(message, "error");
+        addToast(formatApiError(data), "error");
         return;
       }
 
@@ -329,6 +383,9 @@ const AccountStatementPage: React.FC = () => {
       setSelectedSourceId("");
       setSourceDebitAmount("");
       setForexRate("");
+      setSourceMode("internal");
+      setExternalSourceDescription("");
+      setExternalAmount("");
       setReloadKey((k) => k + 1);
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -478,8 +535,22 @@ const AccountStatementPage: React.FC = () => {
                   Currency: {account.currency}
                 </span>
               )}
+              {account?.chart_of_account && (
+                <span className="inline-flex items-center px-2 py-[3px] rounded-full bg-gray-100 dark:bg-[#111827]">
+                  Chart of Account: {account.chart_of_account.code} - {account.chart_of_account.name}
+                </span>
+              )}
+              {account?.group === "Loans" && statement?.meta.loans_totals && (
+                <span className="inline-flex items-center px-2 py-[3px] rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">
+                  Loan balance: {account.currency || "KES"}{" "}
+                  {Number(statement.meta.loans_totals.total_outstanding ?? 0).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              )}
             </div>
-            <div className="mt-3 flex items-center gap-3">
+            <div className="mt-3 flex items-center gap-3 flex-wrap">
               <div className="inline-flex flex-col px-3 py-2 rounded-md bg-gray-50 dark:bg-[#081328]">
                 <div className="text-xs text-gray-500">PDC Issued</div>
                 <div className="text-sm font-semibold text-black dark:text-white">
@@ -496,6 +567,48 @@ const AccountStatementPage: React.FC = () => {
                     : "-"}
                 </div>
               </div>
+              {account?.group === "Loans" && statement?.meta.loans_totals && (
+                <>
+                  <div className="inline-flex flex-col px-3 py-2 rounded-md bg-gray-50 dark:bg-[#081328]">
+                    <div className="text-xs text-gray-500">Loans ({statement.meta.loans_totals.loan_count})</div>
+                    <div className="text-sm font-semibold text-black dark:text-white">
+                      {formatCurrency(Number(statement.meta.loans_totals.total_borrowed ?? 0), account?.currency || "")}
+                    </div>
+                  </div>
+                  <div className="inline-flex flex-col px-3 py-2 rounded-md bg-gray-50 dark:bg-[#081328]">
+                    <div className="text-xs text-gray-500">Repaid</div>
+                    <div className="text-sm font-semibold text-black dark:text-white">
+                      {formatCurrency(Number(statement.meta.loans_totals.total_repaid ?? 0), account?.currency || "")}
+                    </div>
+                  </div>
+                  <div className="inline-flex flex-col px-3 py-2 rounded-md bg-gray-50 dark:bg-[#081328]">
+                    <div className="text-xs text-gray-500">Interest Paid</div>
+                    <div className="text-sm font-semibold text-black dark:text-white">
+                      {formatCurrency(
+                        Number(statement.meta.loans_totals.total_interest_repaid ?? 0),
+                        account?.currency || "",
+                      )}
+                    </div>
+                  </div>
+                  <div className="inline-flex flex-col px-3 py-2 rounded-md bg-orange-50 dark:bg-orange-500/10">
+                    <div className="text-xs text-gray-500">Outstanding</div>
+                    <div className="text-sm font-semibold text-orange-600 dark:text-orange-300">
+                      {formatCurrency(Number(statement.meta.loans_totals.total_outstanding ?? 0), account?.currency || "")}
+                    </div>
+                  </div>
+                  <div className="inline-flex flex-col px-3 py-2 rounded-md bg-gray-50 dark:bg-[#081328]">
+                    <div className="text-xs text-gray-500">Next Payment Due</div>
+                    <div className="text-sm font-semibold text-black dark:text-white">
+                      {statement.meta.loans_totals.next_due_date
+                        ? `${new Date(statement.meta.loans_totals.next_due_date).toLocaleDateString()} · ${formatCurrency(
+                            Number(statement.meta.loans_totals.next_due_amount ?? 0),
+                            account?.currency || "",
+                          )}`
+                        : "-"}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -524,14 +637,16 @@ const AccountStatementPage: React.FC = () => {
               })}
             </div>
 
-            <button
-              type="button"
-              onClick={handleOpenTopup}
-              className="mt-[6px] inline-flex items-center px-[10px] py-[6px] rounded-md bg-primary-500 text-white text-xs font-medium hover:bg-primary-600"
-            >
-              <i className="material-symbols-outlined text-[16px] mr-[4px]">account_balance_wallet</i>
-              Top up account
-            </button>
+            {account?.group !== "Loans" && (
+              <button
+                type="button"
+                onClick={handleOpenTopup}
+                className="mt-[6px] inline-flex items-center px-[10px] py-[6px] rounded-md bg-primary-500 text-white text-xs font-medium hover:bg-primary-600"
+              >
+                <i className="material-symbols-outlined text-[16px] mr-[4px]">account_balance_wallet</i>
+                Top up account
+              </button>
+            )}
           </div>
         </div>
 
@@ -671,34 +786,120 @@ const AccountStatementPage: React.FC = () => {
             </p>
 
             <div className="space-y-[12px] mb-[18px]">
-              <div>
-                <label className="block text-xs font-medium mb-[5px]">Source of money</label>
-                <select
-                  value={selectedSourceId}
-                  onChange={(e) => setSelectedSourceId(e.target.value)}
-                  disabled={loadingSources || toppingUp}
-                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select source account</option>
-                  {sourceAccounts.map((src) => (
-                    <option key={src.id} value={src.id}>
-                      {src.name} ({src.code}) — {src.currency || ""} {" "}
-                      {Number(src.balance).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </option>
-                  ))}
-                </select>
-                {showTopupModal && !loadingSources && sourceAccounts.length === 0 && (
-                  <p className="mt-[4px] text-[11px] text-yellow-600 dark:text-yellow-400">
-                    No eligible source accounts with a positive balance were found.
+              {allowsExternalTopup && (
+                <div>
+                  <label className="block text-xs font-medium mb-[5px]">Source type</label>
+                  <div className="flex items-center gap-[8px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSourceMode("internal");
+                        setExternalSourceDescription("");
+                        setExternalAmount("");
+                      }}
+                      disabled={toppingUp}
+                      className={`px-[12px] py-[7px] rounded-md text-xs font-medium border transition-colors ${
+                        sourceMode === "internal"
+                          ? "bg-primary-500 text-white border-primary-500"
+                          : "border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827]"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      Internal (existing account)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSourceMode("external");
+                        setSelectedSourceId("");
+                        setSourceDebitAmount("");
+                        setForexRate("");
+                      }}
+                      disabled={toppingUp}
+                      className={`px-[12px] py-[7px] rounded-md text-xs font-medium border transition-colors ${
+                        sourceMode === "external"
+                          ? "bg-primary-500 text-white border-primary-500"
+                          : "border-gray-200 dark:border-[#172036] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827]"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      External (not in system)
+                    </button>
+                  </div>
+                  <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                    {sourceMode === "internal"
+                      ? "Funds will be moved from another account in the system."
+                      : "The money comes from outside the system (e.g. a bank loan or capital injection). Only the credit entry is recorded."}
                   </p>
-                )}
-              </div>
+                </div>
+              )}
+
+              {sourceMode === "internal" && (
+                <div>
+                  <label className="block text-xs font-medium mb-[5px]">Source of money</label>
+                  <select
+                    value={selectedSourceId}
+                    onChange={(e) => setSelectedSourceId(e.target.value)}
+                    disabled={loadingSources || toppingUp}
+                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Select source account</option>
+                    {sourceAccounts.map((src) => (
+                      <option key={src.id} value={src.id}>
+                        {src.name} ({src.code}) — {src.currency || ""} {" "}
+                        {Number(src.balance).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </option>
+                    ))}
+                  </select>
+                  {showTopupModal && !loadingSources && sourceAccounts.length === 0 && (
+                    <p className="mt-[4px] text-[11px] text-yellow-600 dark:text-yellow-400">
+                      No eligible source accounts with a positive balance were found. You can switch
+                      to an external source if this account allows it.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {sourceMode === "external" && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium mb-[5px]">
+                      External source description
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={externalSourceDescription}
+                      onChange={(e) => setExternalSourceDescription(e.target.value)}
+                      placeholder="e.g. ABC Bank loan disbursement, owner capital injection, ..."
+                      disabled={toppingUp}
+                      className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    <p className="mt-[3px] text-[11px] text-gray-500 dark:text-gray-400">
+                      Describe where the money is coming from (not tracked as an account in the
+                      system).
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-[5px]">
+                      Top-up amount ({account?.currency || "---"})
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={externalAmount}
+                      onChange={(e) => setExternalAmount(e.target.value)}
+                      disabled={toppingUp}
+                      className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                </>
+              )}
 
               {(() => {
-                if (!account || !selectedSourceId) return null;
+                if (sourceMode === "external" || !account || !selectedSourceId) return null;
                 const selectedSource = sourceAccounts.find(
                   (acc) => String(acc.id) === String(selectedSourceId),
                 );

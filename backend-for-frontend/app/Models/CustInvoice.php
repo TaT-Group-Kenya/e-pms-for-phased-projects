@@ -90,6 +90,11 @@ class CustInvoice extends Model
         return $this->hasMany(CustCreditNote::class, 'invoice_id');
     }
 
+    public function debitnotes()
+    {
+        return $this->hasMany(CustDebitNote::class, 'invoice_id');
+    }
+
     public function documents()
     {
         return $this->hasMany(CustInvoiceDocument::class, 'invoice_id');

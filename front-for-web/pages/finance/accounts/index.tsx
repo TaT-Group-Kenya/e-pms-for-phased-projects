@@ -11,7 +11,10 @@ export default function AccountsPage() {
           <div>
             <h5 className="!mb-1">Accounts</h5>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Manage your cash, M-Pesa, and bank accounts.
+              Manage your cash, M-Pesa, and bank accounts.{" "}
+              <Link href="/finance/loans" className="text-primary-500 hover:underline">
+                View Loans
+              </Link>
             </p>
           </div>
 

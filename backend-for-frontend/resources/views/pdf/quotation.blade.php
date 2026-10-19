@@ -87,10 +87,24 @@
         </table>
     </div>
 
-    @if($quotation->description)
+    @if($quotation->description || $clearanceDeadline)
         <div class="section card">
             <h2>Summary</h2>
-            <div class="text-sm">{{ $quotation->description }}</div>
+            @if($quotation->description)
+                <div class="text-sm">{{ $quotation->description }}</div>
+            @endif
+            @if($clearanceDeadline)
+                <div class="mt-2">
+                    <div class="summary-row text-sm">
+                        <span class="summary-label">Clearance deadline:</span>
+                        <span class="summary-label" style="float: right;">{{ $clearanceDeadline }}</span>
+                    </div>
+                    <div class="summary-row text-sm">
+                        <span class="summary-label">Remaining clearance days (No. of free days):</span>
+                        <span class="summary-label" style="float: right;">{{ $remainingClearanceDays }}</span>
+                    </div>
+                </div>
+            @endif
         </div>
     @endif
 

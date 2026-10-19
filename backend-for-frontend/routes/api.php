@@ -38,8 +38,12 @@ Route::prefix('/')->group(function () {
 		Route::get('accounts/{account}/statement-pdf', [App\Http\Controllers\Api\AccountController::class, 'downloadStatementPdf']);
 		Route::post('accounts/{account}/topup', [App\Http\Controllers\Api\AccountController::class, 'topup']);
 		Route::apiResource('accounts', App\Http\Controllers\Api\AccountController::class);
+		Route::apiResource('loans', App\Http\Controllers\Api\LoanController::class);
+		Route::post('loans/{loan}/repay', [App\Http\Controllers\Api\LoanController::class, 'repay']);
+		Route::get('loans/{loan}/statement-pdf', [App\Http\Controllers\Api\LoanController::class, 'statementPdf']);
 		Route::apiResource('account-types', App\Http\Controllers\Api\AccountTypeController::class);
 		Route::apiResource('account-groups', App\Http\Controllers\Api\AccountGroupController::class);
+		Route::apiResource('chart-of-accounts', App\Http\Controllers\Api\ChartOfAccountController::class);
 		Route::apiResource('companies', App\Http\Controllers\Api\CompanyController::class);
 		Route::apiResource('company-banks', App\Http\Controllers\Api\CompanyBankController::class);
 		Route::apiResource('company-credit-notes', App\Http\Controllers\Api\CompanyCreditNoteController::class);

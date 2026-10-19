@@ -93,6 +93,10 @@ class CompanyInvoiceItem extends Model
             $invoice->total_amount = $subtotal + $taxAmount - $discountAmount;
 
             $invoice->save();
+
+            // Keep the ledger row, payment-based status, phase billed flags and
+            // the cached PDF consistent with the new totals.
+            $invoice->syncDerivedAmounts();
         };
 
         static::saved($recalculateInvoiceTotals);

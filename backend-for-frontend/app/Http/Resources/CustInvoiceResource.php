@@ -40,6 +40,7 @@ class CustInvoiceResource extends BaseResource
             'invoiceItems' => CustInvoiceItemResource::collection($this->whenLoaded('invoiceItems')),
             'payments' => CustPaymentResource::collection($this->whenLoaded('payments')),
             'creditnotes' => CustCreditNoteResource::collection($this->whenLoaded('creditnotes')),
+            'debitnotes' => CustDebitNoteResource::collection($this->whenLoaded('debitnotes')),
             'documents' => CustInvoiceDocumentResource::collection($this->whenLoaded('documents')),
             'pdcs' => PdcReceivedCustomerResource::collection($this->whenLoaded('pdcsReceived')),
             'upcoming_pdc_total' => (float) (

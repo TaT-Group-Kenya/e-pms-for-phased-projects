@@ -6,11 +6,14 @@ use App\Models\CustDebitNote;
 use App\Models\CustInvoice;
 use App\Models\CustomerTransactionsLedger;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class CustDebitNoteService
 {
+    // A debit note documents an additional charge against an invoice that has
+    // already been issued to the customer (or settled), never a draft one.
+    private const ELIGIBLE_INVOICE_STATUSES = ['sent', 'partial-paid', 'paid'];
+
     public function index(array $filters = [], int $perPage = 15, int $page = 1, array $with = [])
     {
         $query = CustDebitNote::query()->with($with);
@@ -32,6 +35,11 @@ class CustDebitNoteService
     {
         return DB::transaction(function () use ($data) {
             $invoice = CustInvoice::findOrFail($data['invoice_id']);
+            if (! in_array(strtolower((string) $invoice->status), self::ELIGIBLE_INVOICE_STATUSES, true)) {
+                throw ValidationException::withMessages([
+                    'invoice_id' => 'Debit notes can only be created for invoices that were issued to the customer.',
+                ]);
+            }
             if (isset($data['currency']) && strtoupper($data['currency']) !== strtoupper($invoice->currency)) {
                 throw ValidationException::withMessages(['currency' => 'Debit note currency must match the linked invoice.']);
             }
@@ -40,10 +48,12 @@ class CustDebitNoteService
             $data['subtotal_amount'] = 0;
             $data['tax_amount'] = 0;
             $data['total_amount'] = 0;
+            $data['notes_to_customer'] = $data['notes_to_customer'] ?? 'Additional charges for invoice '.$invoice->invoice_number;
             unset($data['debit_note_number']);
 
+            $commonService = new CommonService;
             do {
-                $data['debit_note_number'] = 'CUST-DN-'.now()->format('Ymd').'-'.Str::upper(Str::random(8));
+                $data['debit_note_number'] = $commonService->getNextCustDebitNoteNumber();
             } while (CustDebitNote::withDeleted()->where('debit_note_number', $data['debit_note_number'])->exists());
 
             return CustDebitNote::create($data);
@@ -60,6 +70,11 @@ class CustDebitNoteService
 
             if (array_key_exists('invoice_id', $data)) {
                 $invoice = CustInvoice::findOrFail($data['invoice_id']);
+                if (! in_array(strtolower((string) $invoice->status), self::ELIGIBLE_INVOICE_STATUSES, true)) {
+                    throw ValidationException::withMessages([
+                        'invoice_id' => 'Debit notes can only be linked to invoices that were issued to the customer.',
+                    ]);
+                }
             } else {
                 $invoice = $note->invoice;
             }
@@ -115,11 +130,12 @@ class CustDebitNoteService
         $conversion = (new CurrencyConversionService)->convertToBaseFromInvoice($amount, $note->currency, $baseCurrency);
         $exchangeRate = $conversion['exchange_rate'];
         $convertedAmount = $conversion['converted_amount'];
+        $postedAt = now();
         CustomerTransactionsLedger::create([
             'transaction_number' => $note->debit_note_number,
             'transaction_type' => 'invoice',
-            'transaction_date' => now()->toDateString(),
-            'posted_date' => now()->toDateString(),
+            'transaction_date' => $postedAt->toDateString(),
+            'posted_date' => $postedAt->toDateString(),
             'amount' => $amount,
             'transaction_currency' => $note->currency,
             'base_currency' => $baseCurrency,
@@ -138,8 +154,8 @@ class CustDebitNoteService
             'transaction_status' => 'cleared',
             'narration' => 'Debit note '.$note->debit_note_number.' for invoice '.$invoice->invoice_number,
             'is_recurring' => false,
-            'fiscal_year' => (string) now()->year,
-            'accounting_period' => now()->format('Ym'),
+            'fiscal_year' => (string) $postedAt->year,
+            'accounting_period' => $postedAt->format('Ym'),
             'is_adjusting_entry' => false,
             'cost_center_id' => null,
             'created_by' => $userId,

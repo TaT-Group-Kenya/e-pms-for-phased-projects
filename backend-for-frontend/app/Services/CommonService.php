@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CompanyCreditNote;
 use App\Models\CompanyInvoice;
 use App\Models\CustCreditNote;
+use App\Models\CustDebitNote;
 use App\Models\CustInvoice;
 use App\Models\Order;
 use App\Models\Quotation;
@@ -73,6 +74,17 @@ class CommonService
             'CUST_CREDIT_NOTE_NUMBER_LENGTH',
             CustCreditNote::class,
             'credit_note_number'
+        );
+    }
+
+    public function getNextCustDebitNoteNumber(): string
+    {
+        return $this->getNextDocumentNumber(
+            'CUST_DEBIT_NOTE_PREFIX',
+            'CUST_DEBIT_NOTE_INCREMENT',
+            'CUST_DEBIT_NOTE_NUMBER_LENGTH',
+            CustDebitNote::class,
+            'debit_note_number'
         );
     }
 

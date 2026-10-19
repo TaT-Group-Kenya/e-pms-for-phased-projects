@@ -13,6 +13,7 @@ use App\Models\QuoteLineItem;
 use App\Models\SysConfig;
 use App\Services\CommonService;
 use App\Services\QuotationService;
+use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Http\Request;
@@ -398,6 +399,15 @@ class QuotationController extends Controller
         $generatedAt = now();
         $receivingPaymentMethod = $quotation->receivingPaymentMethod ?? null;
 
+        // Clearance deadline summary for the PDF: formatted date plus signed
+        // calendar-day difference (negative once the deadline has passed).
+        $clearanceDeadline = $quotation->clearance_deadline
+            ? Carbon::parse($quotation->clearance_deadline)->format('d/m/Y')
+            : null;
+        $remainingClearanceDays = $quotation->clearance_deadline
+            ? (int) Carbon::today()->diffInDays(Carbon::parse($quotation->clearance_deadline)->startOfDay(), false)
+            : null;
+
         $data = [
             'quotation' => $quotation,
             'senderName' => $senderName,
@@ -411,6 +421,8 @@ class QuotationController extends Controller
             'senderCountry' => $configValues['COUNTRY'] ?? null,
             'generatedAt' => $generatedAt,
             'receivingPaymentMethod' => $receivingPaymentMethod,
+            'clearanceDeadline' => $clearanceDeadline,
+            'remainingClearanceDays' => $remainingClearanceDays,
         ];
 
         // Render the Blade view to HTML and generate a PDF using Dompdf
