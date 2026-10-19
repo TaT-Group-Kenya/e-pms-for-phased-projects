@@ -37,9 +37,11 @@ interface ProjectDetailsData {
   progress?: number;
   ship_containers?: Array<{
     id: number;
+    container_type: string;
     reference_number?: string | null;
     bl_no?: string | null;
     bol_no?: string | null;
+    container_numbers?: string[];
     container_number_details?: Array<{
       id: number;
       container_no: string;
@@ -48,6 +50,10 @@ interface ProjectDetailsData {
       goods_description?: string | null;
       entry_number?: string | null;
     }>;
+    cfs?: number | string | null;
+    allocation?: number | string | null;
+    cfs_location?: { id: number; name: string } | null;
+    allocation_location?: { id: number; name: string } | null;
   }>;
   currency?: string;
   customer?: { id: number; name: string };
