@@ -10,6 +10,21 @@ use Illuminate\Validation\ValidationException;
 
 class CustDebitNoteService
 {
+    use \App\Services\Concerns\ListQuery;
+
+    /** Columns matched by the free-text `search` parameter. */
+    protected array $listSearchable = [
+        'debit_note_number',
+        'title',
+    ];
+
+    /** Columns the request may filter on with equality. */
+    protected array $listFilterable = [
+        'invoice_id',
+        'status',
+        'currency',
+    ];
+
     // A debit note documents an additional charge against an invoice that has
     // already been issued to the customer (or settled), never a draft one.
     private const ELIGIBLE_INVOICE_STATUSES = ['sent', 'partial-paid', 'paid'];
@@ -17,13 +32,8 @@ class CustDebitNoteService
     public function index(array $filters = [], int $perPage = 15, int $page = 1, array $with = [])
     {
         $query = CustDebitNote::query()->with($with);
-        foreach ($filters as $key => $value) {
-            if (in_array($key, ['invoice_id', 'status'], true)) {
-                $query->where($key, $value);
-            }
-        }
 
-        return $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
+        return $this->paginateList($query, $filters, $perPage, $page);
     }
 
     public function find(int $id, array $with = []): CustDebitNote

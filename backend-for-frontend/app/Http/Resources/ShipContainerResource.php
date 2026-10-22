@@ -113,7 +113,6 @@ class ShipContainerResource extends BaseResource
             'entry_status' => $this->entry_status,
             'tr10_entry_status' => $this->tr10_entry_status,
             'tr12_entry_status' => $this->tr12_entry_status,
-            'entry_number' => $this->entry_number,
             'booking_no' => $this->booking_no,
             'do_status' => $this->do_status,
             'allocation' => $this->allocation,
@@ -138,7 +137,6 @@ class ShipContainerResource extends BaseResource
             'goods_description' => $this->goods_description,
             'coe' => $this->coe,
             // loose unit columns
-            'chassis_no' => $this->chassis_no,
             'registration_no' => $this->registration_no,
             'station' => $this->station,
             'remarks' => $this->remarks,

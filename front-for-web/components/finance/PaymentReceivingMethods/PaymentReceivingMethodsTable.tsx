@@ -3,6 +3,9 @@ import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
+import { useListQuery } from "../../../hooks/useListQuery";
+import PaginationFooter from "../../common/PaginationFooter";
+import FilterSelect from "../../common/FilterSelect";
 import PaymentReceivingMethodForm from "./PaymentReceivingMethodForm";
 
 interface PaymentReceivingMethod {
@@ -24,9 +27,6 @@ interface PaymentReceivingMethod {
 }
 
 const PaymentReceivingMethodsTable: React.FC = () => {
-  const [methods, setMethods] = useState<PaymentReceivingMethod[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [editMethod, setEditMethod] = useState<PaymentReceivingMethod | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -35,19 +35,33 @@ const PaymentReceivingMethodsTable: React.FC = () => {
   const { toasts, addToast, removeToast } = useToast();
   const accessToken = useSelector(selectAccessToken);
 
+  // Server-side listing: pagination and debounced search live in useListQuery.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    clearFilters,
+    setFilter,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: methods,
+    loading,
+    error,
+    meta,
+    refresh,
+  } = useListQuery<PaymentReceivingMethod>("/api/finance/payment-receiving-methods/list", {
+    accessToken,
+    onError: (message) => addToast(message, "error"),
+  });
+
+  const hasActiveSearch = !!searchInput;
+
+  // Keep the edit/delete modal flows triggering a refetch when they close
   useEffect(() => {
-    setLoading(true);
-    fetch(`/api/finance/payment-receiving-methods/list?search=${encodeURIComponent(search)}`, {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const items = Array.isArray(data?.data) ? data.data : [];
-        setMethods(items);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [search, accessToken, showEditModal, showDeleteModal]);
+    if (!showEditModal && !showDeleteModal) refresh();
+  }, [showEditModal, showDeleteModal, refresh]);
 
   return (
     <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md overflow-hidden">
@@ -63,14 +77,26 @@ const PaymentReceivingMethodsTable: React.FC = () => {
         </button>
       </div>
       <div className="p-4">
-        <input
-          type="text"
-          placeholder="Search by name or type..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mb-4 w-64 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary-500 bg-white dark:bg-[#0c1427] text-black dark:text-white transition-colors"
-          style={{ boxSizing: 'border-box' }}
-        />
+        <div className="mb-4 flex items-center gap-2 flex-wrap">
+          {(hasActiveSearch) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-[4px] h-[34px] px-[10px] text-xs rounded-md border border-gray-200 text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+              title="Clear search"
+            >
+              <i className="material-symbols-outlined !text-[16px]">filter_alt_off</i>
+              Clear
+            </button>
+          )}
+          <input
+            type="text"
+            placeholder="Search by name or type..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="w-64 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary-500 bg-white dark:bg-[#0c1427] text-black dark:text-white transition-colors"
+            style={{ boxSizing: 'border-box' }}
+          />
+        </div>
         <div className="table-responsive overflow-x-auto">
           <table className="w-full">
             <thead className="text-black dark:text-white">
@@ -137,7 +163,28 @@ const PaymentReceivingMethodsTable: React.FC = () => {
                         <button
                           className="inline-flex items-center justify-center w-[32px] h-[32px] rounded-md border border-gray-200 dark:border-[#172036] hover:bg-danger-500 hover:text-white hover:border-danger-500 transition-all"
                           title="Delete"
-                          onClick={() => { setDeleteMethod(method); setShowDeleteModal(true); }}
+                          onClick={async () => {
+                            if (!accessToken) {
+                              addToast("You are not authenticated.", "error");
+                              return;
+                            }
+                            if (!window.confirm(`Delete payment receiving method "${method.name}"?`)) return;
+                            try {
+                              const res = await fetch(`/api/finance/payment-receiving-methods/${method.id}`, {
+                                method: "DELETE",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  Authorization: `Bearer ${accessToken}`,
+                                },
+                              });
+                              if (!res.ok) throw new Error();
+                              addToast("Payment method deleted!", "success");
+                            } catch {
+                              addToast("Failed to delete payment method", "error");
+                            } finally {
+                              refresh();
+                            }
+                          }}
                         >
                           <i className="material-symbols-outlined !text-[18px]">delete</i>
                         </button>
@@ -148,6 +195,16 @@ const PaymentReceivingMethodsTable: React.FC = () => {
               )}
             </tbody>
           </table>
+          {!loading && !error && (
+            <PaginationFooter
+              meta={meta}
+              page={page}
+              perPage={perPage}
+              loading={loading}
+              onPageChange={setPage}
+              onPerPageChange={changePerPage}
+            />
+          )}
         </div>
       </div>
       {showEditModal && (
@@ -197,6 +254,7 @@ const PaymentReceivingMethodsTable: React.FC = () => {
                   if (!res.ok) throw new Error("Failed to save");
                   addToast(editMethod ? "Payment method updated!" : "Payment method added!", "success");
                   setShowEditModal(false);
+                  refresh();
                 } catch (e) {
                   addToast("Failed to save payment method", "error");
                 } finally {

@@ -213,7 +213,7 @@ const SECTIONS: SidebarSection[] = [
   },
   {
     id: "company-invoices",
-    label: "Service Provider Invoices",
+    label: "S. Provider Invoices",
     icon: "domain",
     group: "main",
     items: [
@@ -286,7 +286,7 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_CUSTOMER_TRANSACTIONS_LEDGER"],
       },
       {
-        label: "Service Provider Trxns Ledger",
+        label: "S. Provider Trxns Ledger",
         href: "/finance/company-ledger/",
         matchStrategy: "startsWith",
         requiredRoles: ["ROLE_VIEW_COMPANY_TRANSACTIONS_LEDGER"],

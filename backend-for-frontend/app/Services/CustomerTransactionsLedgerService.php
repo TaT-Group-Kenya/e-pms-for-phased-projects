@@ -2,10 +2,32 @@
 
 namespace App\Services;
 
+use App\Services\Concerns\ListQuery;
 use App\Models\CustomerTransactionsLedger;
 
 class CustomerTransactionsLedgerService
 {
+    use ListQuery;
+
+    /** Business date column used by the `date_from`/`date_to` range filters. */
+    protected string $listDateColumn = 'posted_date';
+
+    /** Columns matched by the free-text `search` parameter. */
+    protected array $listSearchable = [
+        'transaction_number',
+        'category',
+    ];
+
+    /** Columns the request may filter on with equality. */
+    protected array $listFilterable = [
+        'transaction_type',
+        'transaction_status',
+        'customer_id',
+        'base_currency',
+        'transaction_currency',
+        'category',
+    ];
+
     public function index(
         array $filters = [],
         int $perPage = 15,
@@ -19,27 +41,10 @@ class CustomerTransactionsLedgerService
             $query->with($with);
         }
 
-        // Handle soft-delete visibility flags
-        $withDeleted = filter_var($filters['with_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
-        $onlyDeleted = filter_var($filters['only_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
+        // Logical-deletion visibility flags
+        $query = $this->applyLogicalDeletion($query, $filters);
 
-        unset($filters['with_deleted'], $filters['only_deleted']);
-
-        if ($onlyDeleted) {
-            $query->onlyDeleted();
-        } elseif ($withDeleted) {
-            $query->withDeleted();
-        }
-
-        foreach ($filters as $key => $value) {
-            $query->where($key, $value);
-        }
-
-        $query->orderByDesc('id');
-
-        $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-
-        return $query->paginate($perPage, ['*'], 'page', $page);
+        return $this->paginateList($query, $filters, $perPage, $page);
     }
 
     public function find(int $id, array $with = [])

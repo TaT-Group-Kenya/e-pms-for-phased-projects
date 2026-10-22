@@ -1,45 +1,42 @@
 import Link from 'next/link'
 import AuthenticatedLayout from '../../../components/authenticated/AuthenticatedLayout'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import Can from '../../../components/auth/Can'
 import { useSelector } from 'react-redux'
 import { selectAccessToken } from '../../../store/auth/selectors'
 import { useToast } from '../../../hooks/useToast'
+import { useListQuery } from '../../../hooks/useListQuery'
+import PaginationFooter from '../../../components/common/PaginationFooter'
 import { formatDate } from '../../../utils/format'
 
 export default function PdcIssuedListPage() {
   const accessToken = useSelector(selectAccessToken)
   const { addToast, removeToast } = useToast()
-  const [items, setItems] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [companyFilter, setCompanyFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
 
-  useEffect(() => {
-    const fetchList = async () => {
-      if (!accessToken) return
-      setLoading(true)
-      try {
-        const resp = await fetch('/api/pdc-issued/list', {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${accessToken}` },
-        })
-        const data = await resp.json().catch(() => null)
-        if (!resp.ok) throw new Error(data?.message || 'Failed to load')
-        const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
-        setItems(list)
-      } catch (err: any) {
-        addToast(err?.message || 'Failed to load PDCs', 'error')
-        setItems([])
-      } finally {
-        setLoading(false)
-      }
-    }
+  // Server-side listing: pagination, debounced search and status filter all
+  // live in useListQuery; the page renders the rows it gets back.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: items,
+    loading,
+    error,
+    meta,
+  } = useListQuery<any>('/api/pdc-issued/list', {
+    accessToken,
+    initialFilters: { status: 'all' },
+    onError: (message) => addToast(message, 'error'),
+  })
 
-    fetchList()
-  }, [accessToken, addToast])
-
+  const statusFilter = filters.status || 'all'
+  const hasExtraFilters = !!searchInput || statusFilter !== 'all'
   return (
     <AuthenticatedLayout>
       <Can any={["ROLE_VIEW_PDC_ISSUED_COMPANY"]} fallback={<div>You do not have permission to view PDC issued.</div>}>
@@ -55,8 +52,8 @@ export default function PdcIssuedListPage() {
               <input
                 type="text"
                 placeholder="Search PDCs..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
               />
             </div>
@@ -69,7 +66,7 @@ export default function PdcIssuedListPage() {
           /> */}
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => setFilter('status', e.target.value)}
               className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full md:w-[200px] block text-black dark:text-white px-[13px] outline-0"
             >
               <option value="all">All Status</option>
@@ -109,18 +106,7 @@ export default function PdcIssuedListPage() {
                   </thead>
                   <tbody className="text-black dark:text-white">
                     {(items || []).filter((it) => {
-                      const lowerSearch = searchTerm.toLowerCase()
-                      const lowerCompany = companyFilter.toLowerCase()
-                      const status = `${it.status || ''}`.toLowerCase()
-                      const companyName = `${it.company_name || it.company?.name || ''}`.toLowerCase()
-                      const matchesSearch =
-                        !lowerSearch ||
-                        `${it.invoice_number || ''}`.toLowerCase().includes(lowerSearch) ||
-                        companyName.includes(lowerSearch) ||
-                        `${it.cheque_number || ''}`.toLowerCase().includes(lowerSearch)
-                      const matchesCompany = !lowerCompany || companyName.includes(lowerCompany)
-                      const matchesStatus = statusFilter === 'all' || status === statusFilter
-                      return matchesSearch && matchesCompany && matchesStatus
+
                     }).map((it: any) => {
                       const parseDate = (d: any) => {
                         try {
@@ -169,6 +155,16 @@ export default function PdcIssuedListPage() {
                     )})}
                   </tbody>
                 </table>
+                {(!loading && !error) && (
+                  <PaginationFooter
+                    meta={meta}
+                    page={page}
+                    perPage={perPage}
+                    loading={loading}
+                    onPageChange={setPage}
+                    onPerPageChange={changePerPage}
+                  />
+                )}
               </div>
             </>
           )}

@@ -1,11 +1,15 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
+import { useFilterOptions } from "../../../hooks/useFilterOptions";
 import { ToastContainer } from "../../common/Toast";
+import PaginationFooter from "../../common/PaginationFooter";
+import FilterSelect from "../../common/FilterSelect";
 
 interface TxnRow {
   id: number;
@@ -55,344 +59,50 @@ const TransactionsTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
 
-  const [rows, setRows] = useState<TxnRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(20);
-  const [total, setTotal] = useState(0);
-  const [typeFilter, setTypeFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [currencyFilter, setCurrencyFilter] = useState("");
+  // Server-side listing: pagination, debounced search and filters live in
+  // useListQuery; this component keeps its own columns/cells/export.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows,
+    loading,
+    error,
+    meta,
+  } = useListQuery<TxnRow>("/api/finance/transactions/list", {
+    accessToken,
+    onError: (message) => addToast(message, "error"),
+  });
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const typeFilter = filters.transaction_type || "";
+  const statusFilter = filters.transaction_status || "";
+  const currencyFilter = filters.base_currency || "";
+  const hasExtraFilters =
+    !!searchInput || typeFilter !== "" || statusFilter !== "" || currencyFilter !== "";
 
-    const fetchRows = async () => {
-      if (!accessToken) {
-        setRows([]);
-        setTotal(0);
-        return;
-      }
-      setLoading(true);
-      try {
-        const params = new URLSearchParams();
-        params.set("page", String(page));
-        params.set("per_page", String(perPage));
-
-        const resp = await fetch(`/api/finance/transactions/list?${params.toString()}` , {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          signal: controller.signal,
-        });
-
-        const data: any = await resp.json().catch(() => null);
-        if (!resp.ok) {
-          addToast(data?.message || "Failed to load transactions", "error");
-          setRows([]);
-          setTotal(0);
-          return;
-        }
-
-        const items = Array.isArray(data?.data)
-          ? data.data
-          : Array.isArray(data)
-          ? data
-          : [];
-
-        const mapped: TxnRow[] = (items || []).map((r: any) => ({
-          id: Number(r.id),
-          transaction_number: r.transaction_number ?? null,
-          transaction_type: r.transaction_type ?? null,
-          transaction_date: r.transaction_date ?? null,
-          posted_date: r.posted_date ?? null,
-          amount: Number(r.amount ?? 0),
-          transaction_currency: r.transaction_currency ?? null,
-          base_currency: r.base_currency ?? null,
-          exchange_rate:
-            r.exchange_rate !== undefined && r.exchange_rate !== null
-              ? Number(r.exchange_rate)
-              : null,
-          converted_amount:
-            r.converted_amount !== undefined && r.converted_amount !== null
-              ? Number(r.converted_amount)
-              : null,
-          tax_amount:
-            r.tax_amount !== undefined && r.tax_amount !== null
-              ? Number(r.tax_amount)
-              : null,
-          net_amount:
-            r.net_amount !== undefined && r.net_amount !== null
-              ? Number(r.net_amount)
-              : null,
-          converted_tax_amount:
-            r.converted_tax_amount !== undefined && r.converted_tax_amount !== null
-              ? Number(r.converted_tax_amount)
-              : null,
-          converted_net_amount:
-            r.converted_net_amount !== undefined && r.converted_net_amount !== null
-              ? Number(r.converted_net_amount)
-              : null,
-          customer_id: r.customer_id != null ? Number(r.customer_id) : null,
-          company_id: r.company_id != null ? Number(r.company_id) : null,
-          source_type: r.source_type ?? null,
-          source_id: r.source_id != null ? Number(r.source_id) : null,
-          account_debit: r.account_debit != null ? Number(r.account_debit) : null,
-          account_credit: r.account_credit != null ? Number(r.account_credit) : null,
-          category: r.category ?? null,
-          payment_method: r.payment_method ?? null,
-          bank_account: r.bank_account ?? null,
-          check_number: r.check_number ?? null,
-          transaction_status: r.transaction_status ?? null,
-          related_transaction_id:
-            r.related_transaction_id != null ? Number(r.related_transaction_id) : null,
-          narration: r.narration ?? null,
-          is_recurring:
-            r.is_recurring !== undefined && r.is_recurring !== null
-              ? Boolean(r.is_recurring)
-              : null,
-          fiscal_year: r.fiscal_year != null ? Number(r.fiscal_year) : null,
-          accounting_period: r.accounting_period ?? null,
-          is_adjusting_entry:
-            r.is_adjusting_entry !== undefined && r.is_adjusting_entry !== null
-              ? Boolean(r.is_adjusting_entry)
-              : null,
-          cost_center_id: r.cost_center_id != null ? Number(r.cost_center_id) : null,
-          customer: r.customer ?? null,
-          company: r.company ?? null,
-          paymentMethod: r.paymentMethod ?? null,
-          costCenter: r.costCenter ?? null,
-          relatedTransaction: r.relatedTransaction ?? null,
-          created_at: r.created_at ?? null,
-          updated_at: r.updated_at ?? null,
-          created_by: r.created_by ?? null,
-          updated_by: r.updated_by ?? null,
-        }));
-
-        setRows(mapped);
-
-        const meta =
-          data && typeof data === "object" && "meta" in data ? (data as any).meta : null;
-
-        if (meta) {
-          const totalFromMeta = Number(meta.total ?? 0);
-          if (!Number.isNaN(totalFromMeta)) {
-            setTotal(totalFromMeta);
-          }
-
-          const currentPageFromMeta = Number(meta.current_page ?? 0);
-          if (currentPageFromMeta && currentPageFromMeta !== page) {
-            setPage(currentPageFromMeta);
-          }
-
-          const perPageFromMeta = Number(meta.per_page ?? 0);
-          if (perPageFromMeta && perPageFromMeta !== perPage) {
-            setPerPage(perPageFromMeta);
-          }
-        } else {
-          setTotal(Array.isArray(items) ? items.length : 0);
-        }
-      } catch (err: any) {
-        if (err?.name === "AbortError") return;
-        // eslint-disable-next-line no-console
-        console.error("fetch transactions error", err);
-        addToast("Error loading transactions.", "error");
-        setRows([]);
-        setTotal(0);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRows();
-
-    return () => controller.abort();
-  }, [accessToken, addToast, page, perPage]);
-
-  const totalPages = useMemo(
-    () => (perPage > 0 ? Math.max(1, Math.ceil((total || 0) / perPage)) : 1),
-    [total, perPage]
-  );
-
-  const filteredRows = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return rows.filter((r) => {
-      if (typeFilter && (r.transaction_type || "") !== typeFilter) {
-        return false;
-      }
-      if (statusFilter && (r.transaction_status || "") !== statusFilter) {
-        return false;
-      }
-      if (currencyFilter && (r.base_currency || "") !== currencyFilter) {
-        return false;
-      }
-      return (
-        (r.transaction_number || "").toLowerCase().includes(term) ||
-        (r.transaction_type || "").toLowerCase().includes(term) ||
-        (r.category || "").toLowerCase().includes(term) ||
-        (r.transaction_status || "").toLowerCase().includes(term) ||
-        (r.narration || "").toLowerCase().includes(term) ||
-        (r.payment_method || "").toLowerCase().includes(term)
-      );
-    });
-  }, [rows, searchTerm, typeFilter, statusFilter, currencyFilter]);
-
-  const typeOptions = useMemo(() => {
-    const set = new Set<string>();
-    rows.forEach((r) => {
-      if (r.transaction_type) {
-        set.add(r.transaction_type);
-      }
-    });
-    return Array.from(set.values());
-  }, [rows]);
-
-  const statusOptions = useMemo(() => {
-    const set = new Set<string>();
-    rows.forEach((r) => {
-      if (r.transaction_status) {
-        set.add(r.transaction_status);
-      }
-    });
-    return Array.from(set.values());
-  }, [rows]);
-
-  const currencyOptions = useMemo(() => {
-    const set = new Set<string>();
-    rows.forEach((r) => {
-      if (r.transaction_currency) {
-        set.add(r.transaction_currency);
-      }
-    });
-    return Array.from(set.values());
-  }, [rows]);
-
-  const handlePerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = Number(e.target.value) || 10;
-    setPerPage(value);
-    setPage(1);
-  };
-
-  const handlePrevPage = () => {
-    setPage((prev) => Math.max(1, prev - 1));
-  };
-
-  const handleNextPage = () => {
-    setPage((prev) => Math.min(totalPages, prev + 1));
-  };
-
-  const handleClearFilters = () => {
-    setSearchTerm("");
-    setTypeFilter("");
-    setStatusFilter("");
-    setCurrencyFilter("");
-    setPerPage(20);
-    setPage(1);
-  };
+  // Option lists built from the current page's rows (small distinct sets).
+  const typeOptions = Array.from(
+    new Set(rows.map((r) => r.transaction_type).filter(Boolean))
+  ) as string[];
+  const statusOptions = Array.from(
+    new Set(rows.map((r) => r.transaction_status).filter(Boolean))
+  ) as string[];
+  const currencyOptions = Array.from(
+    new Set(rows.map((r) => r.base_currency).filter(Boolean))
+  ).sort() as string[];
 
   const handleExportCsv = () => {
     if (!rows.length) {
       addToast("No data to export.", "error");
       return;
     }
-
-    const headers = [
-      "ID",
-      "TransactionNumber",
-      "Type",
-      "Date",
-      "PostedDate",
-      "Amount",
-      "TransactionCurrency",
-      "BaseCurrency",
-      "ExchangeRate",
-      "ConvertedAmount",
-      "TaxAmount",
-      "NetAmount",
-      "ConvertedTaxAmount",
-      "ConvertedNetAmount",
-      "CustomerId",
-      "CompanyId",
-      "SourceType",
-      "SourceId",
-      "AccountDebit",
-      "AccountCredit",
-      "Category",
-      "PaymentMethod",
-      "BankAccount",
-      "CheckNumber",
-      "Status",
-      "RelatedTransactionId",
-      "Narration",
-      "IsRecurring",
-      "FiscalYear",
-      "AccountingPeriod",
-      "IsAdjustingEntry",
-      "CostCenterId",
-      "CreatedAt",
-      "UpdatedAt",
-      "CreatedBy",
-      "UpdatedBy",
-    ];
-
-    const dataRows = rows.map((r) => [
-      r.id,
-      r.transaction_number ?? "",
-      r.transaction_type ?? "",
-      r.transaction_date ?? "",
-      r.posted_date ?? "",
-      r.amount,
-      r.transaction_currency ?? "",
-      r.base_currency ?? "",
-      r.exchange_rate ?? "",
-      r.converted_amount ?? "",
-      r.tax_amount ?? "",
-      r.net_amount ?? "",
-      r.converted_tax_amount ?? "",
-      r.converted_net_amount ?? "",
-      r.customer_id ?? "",
-      r.company_id ?? "",
-      r.source_type ?? "",
-      r.source_id ?? "",
-      r.account_debit ?? "",
-      r.account_credit ?? "",
-      r.category ?? "",
-      r.payment_method ?? "",
-      r.bank_account ?? "",
-      r.check_number ?? "",
-      r.transaction_status ?? "",
-      r.related_transaction_id ?? "",
-      r.narration ?? "",
-      r.is_recurring != null ? (r.is_recurring ? "Yes" : "No") : "",
-      r.fiscal_year ?? "",
-      r.accounting_period ?? "",
-      r.is_adjusting_entry != null ? (r.is_adjusting_entry ? "Yes" : "No") : "",
-      r.cost_center_id ?? "",
-      r.created_at ?? "",
-      r.updated_at ?? "",
-      r.created_by ?? "",
-      r.updated_by ?? "",
-    ]);
-
-    const csv = [headers, ...dataRows]
-      .map((row) => row.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "transactions.csv");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
   };
-
-  const from = rows.length ? (page - 1) * perPage + 1 : 0;
-  const to = rows.length ? (page - 1) * perPage + rows.length : 0;
 
   return (
     <>
@@ -400,9 +110,9 @@ const TransactionsTable: React.FC = () => {
         <div className="flex-1 flex flex-wrap gap-3 w-full md:w-auto">
           <input
             type="text"
-            placeholder="Search by number, type, category, status, narration..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by number, category, narration..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full md:max-w-xs px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
 
@@ -410,10 +120,7 @@ const TransactionsTable: React.FC = () => {
             <span className="text-xs text-gray-500 dark:text-gray-400">Type:</span>
             <select
               value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => setFilter("transaction_type", e.target.value)}
               disabled={loading}
               className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[130px]"
             >
@@ -430,10 +137,7 @@ const TransactionsTable: React.FC = () => {
             <span className="text-xs text-gray-500 dark:text-gray-400">Status:</span>
             <select
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => setFilter("transaction_status", e.target.value)}
               disabled={loading}
               className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[130px]"
             >
@@ -450,10 +154,7 @@ const TransactionsTable: React.FC = () => {
             <span className="text-xs text-gray-500 dark:text-gray-400">Currency:</span>
             <select
               value={currencyFilter}
-              onChange={(e) => {
-                setCurrencyFilter(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => setFilter("base_currency", e.target.value)}
               disabled={loading}
               className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[120px]"
             >
@@ -468,7 +169,7 @@ const TransactionsTable: React.FC = () => {
 
           <button
             type="button"
-            onClick={handleClearFilters}
+            onClick={clearFilters}
             disabled={loading}
             className="px-[10px] py-[6px] rounded-md border border-amber-500 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -481,7 +182,7 @@ const TransactionsTable: React.FC = () => {
             <span className="text-xs text-gray-500 dark:text-gray-400">Rows per page:</span>
             <select
               value={perPage}
-              onChange={handlePerPageChange}
+              onChange={(e) => changePerPage(Number(e.target.value) || 20)}
               disabled={loading}
               className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
@@ -605,7 +306,18 @@ const TransactionsTable: React.FC = () => {
                 </tr>
               )}
 
-              {!loading && filteredRows.length === 0 && (
+              {!loading && error && (
+                <tr>
+                  <td
+                    colSpan={28}
+                    className="text-center text-sm px-[10px] py-[16px] text-danger-500"
+                  >
+                    {error}
+                  </td>
+                </tr>
+              )}
+
+              {!loading && !error && rows.length === 0 && (
                 <tr>
                   <td
                     colSpan={28}
@@ -617,7 +329,8 @@ const TransactionsTable: React.FC = () => {
               )}
 
               {!loading &&
-                filteredRows.map((r) => (
+                !error &&
+                rows.map((r) => (
                   <tr
                     key={r.id}
                     className="border-b border-gray-100 dark:border-[#172036] align-middle hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
@@ -784,34 +497,16 @@ const TransactionsTable: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row items-center justify-between gap-[10px] px-[16px] py-[8px] border-t border-gray-100 dark:border-[#172036] text-xs md:text-sm mt-[-1px]">
-        <div className="flex items-center gap-3">
-          <span className="text-gray-500 dark:text-gray-400">
-            {from}-{to} of {total || rows.length}
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={handlePrevPage}
-              disabled={loading || page <= 1}
-              className="px-[8px] py-[4px] rounded-md border border-primary-500 text-xs md:text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:border-primary-200 disabled:text-primary-300 disabled:bg-transparent"
-            >
-              Previous
-            </button>
-            <span className="text-gray-500 dark:text-gray-400">
-              Page {total ? page : rows.length ? 1 : 0} of {total ? totalPages : 1}
-            </span>
-            <button
-              type="button"
-              onClick={handleNextPage}
-              disabled={loading || page >= totalPages}
-              className="px-[8px] py-[4px] rounded-md border border-primary-500 text-xs md:text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:border-primary-200 disabled:text-primary-300 disabled:bg-transparent"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
+      {!loading && !error && (
+        <PaginationFooter
+          meta={meta}
+          page={page}
+          perPage={perPage}
+          loading={loading}
+          onPageChange={setPage}
+          onPerPageChange={changePerPage}
+        />
+      )}
 
       <ToastContainer toasts={toasts} onClose={removeToast} />
     </>

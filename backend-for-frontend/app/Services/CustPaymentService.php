@@ -2,10 +2,31 @@
 
 namespace App\Services;
 
+use App\Services\Concerns\ListQuery;
 use App\Models\CustPayment;
 
 class CustPaymentService
 {
+    use ListQuery;
+
+    /** Business date column used by the `date_from`/`date_to` range filters. */
+    protected string $listDateColumn = 'payment_date';
+
+    /** Columns matched by the free-text `search` parameter. */
+    protected array $listSearchable = [
+        'receipt_number',
+        'transaction_reference',
+        'check_number',
+        'bank_name',
+    ];
+
+    /** Columns the request may filter on with equality. */
+    protected array $listFilterable = [
+        'payment_method',
+        'payment_status',
+        'currency',
+    ];
+
     public function index(
         array $filters = [],
         int $perPage = 15,
@@ -19,29 +40,14 @@ class CustPaymentService
             $query->with($with);
         }
 
-        // Handle soft-delete visibility flags
-        $withDeleted = filter_var($filters['with_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
-        $onlyDeleted = filter_var($filters['only_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
+        // Logical-deletion visibility flags
+        $query = $this->applyLogicalDeletion($query, $filters);
 
-        unset($filters['with_deleted'], $filters['only_deleted']);
-
-        if ($onlyDeleted) {
-            $query->onlyDeleted();
-        } elseif ($withDeleted) {
-            $query->withDeleted();
-        }
-
-        foreach ($filters as $key => $value) {
-            $query->where($key, $value);
-        }
-
+        // Receipts listing is always normal receipts
         $query->where('transaction_type', 'receipt');
         $query->where('payment_type', 'normal');
-        $query->orderByDesc('id');
 
-        $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-
-        return $query->paginate($perPage, ['*'], 'page', $page);
+        return $this->paginateList($query, $filters, $perPage, $page);
     }
 
     public function find(int $id, array $with = [])

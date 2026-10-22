@@ -4,9 +4,26 @@ namespace App\Services;
 
 use App\Models\Project;
 use App\Models\Quotation;
+use App\Services\Concerns\ListQuery;
 
 class QuotationService
 {
+    use ListQuery;
+
+    /** Columns matched by the free-text `search` parameter. */
+    protected array $listSearchable = [
+        'quotation_number',
+        'bol_number',
+        'title',
+    ];
+
+    /** Columns the request may filter on with equality. */
+    protected array $listFilterable = [
+        'customer_id',
+        'status',
+        'ship_container_id',
+    ];
+
     public function index(
         array $filters = [],
         int $perPage = 15,
@@ -14,20 +31,16 @@ class QuotationService
         int $offset = 0,
         array $with = ['customer', 'createdByUser', 'updatedByUser', 'projectOwner', 'receivingPaymentMethod']
     ) {
-        // optimized query: apply eager loading and simple filters
+        // optimized query: apply eager loading, search and whitelisted filters
         $query = Quotation::query();
         if (! empty($with)) {
             $query->with($with);
         }
-        foreach ($filters as $key => $value) {
-            $query->where($key, $value);
-        }
-        $query->orderByDesc('id');
 
-        // Calculate offset if page is provided, otherwise use explicit offset
-        $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
+        // Logical-deletion visibility flags (Quotation previously had none, kept for parity)
+        $query = $this->applyLogicalDeletion($query, $filters);
 
-        return $query->paginate($perPage, ['*'], 'page', $page);
+        return $this->paginateList($query, $filters, $perPage, $page);
     }
 
     public function find(int $id, array $with = [])

@@ -3,7 +3,11 @@ import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
+import { useFilterOptions } from "../../../hooks/useFilterOptions";
 import { ToastContainer } from "../../common/Toast";
+import PaginationFooter from "../../common/PaginationFooter";
+import FilterSelect from "../../common/FilterSelect";
 import Can from "../../auth/Can";
 import { formatCurrency } from "../../../utils/format";
 import { formatApiError } from "../../../utils/errorHandler";
@@ -51,10 +55,31 @@ const LoansTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
 
-  const [loans, setLoans] = useState<LoanRow[]>([]);
-  const [loanAccounts, setLoanAccounts] = useState<AccountOption[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [reloadKey, setReloadKey] = useState(0);
+  // Server-side listing: pagination, debounced search and status filter live
+  // in useListQuery; the create-loan modal keeps its own state below.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: loans,
+    loading,
+    error,
+    meta,
+    refresh,
+  } = useListQuery<LoanRow>("/api/loans", {
+    accessToken,
+    initialFilters: { status: "all" },
+    onError: (message) => addToast(message, "error"),
+  });
+
+  const statusFilter = filters.status || "all";
+  const hasExtraFilters = searchInput || statusFilter !== "all";
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -69,48 +94,8 @@ const LoansTable: React.FC = () => {
   const [formFirstPaymentDate, setFormFirstPaymentDate] = useState("");
   const [formDescription, setFormDescription] = useState("");
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchLoans = async () => {
-      if (!accessToken) {
-        setLoans([]);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const resp = await fetch("/api/loans?page=1&per_page=100", {
-          method: "GET",
-          headers: { Authorization: `Bearer ${accessToken}` },
-          signal: controller.signal,
-        });
-
-        const data: any = await resp.json().catch(() => null);
-        if (!resp.ok) {
-          addToast(data?.message || "Failed to load loans", "error");
-          setLoans([]);
-          return;
-        }
-
-        const items = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-        setLoans(items as LoanRow[]);
-      } catch (err: any) {
-        if (err?.name === "AbortError") return;
-        // eslint-disable-next-line no-console
-        console.error("fetch loans error", err);
-        addToast("Error loading loans. Please try again.", "error");
-        setLoans([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLoans();
-
-    return () => controller.abort();
-  }, [accessToken, addToast, reloadKey]);
+  // Options for the loan-account select in the create modal
+  const [loanAccounts, setLoanAccounts] = useState<AccountOption[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -232,7 +217,7 @@ const LoansTable: React.FC = () => {
       addToast("Loan created and the account funded. The repayment schedule is ready.", "success");
       setShowCreateModal(false);
       resetForm();
-      setReloadKey((k) => k + 1);
+      refresh();
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("create loan error", err);
@@ -275,7 +260,40 @@ const LoansTable: React.FC = () => {
         <p className="text-xs text-gray-500 dark:text-gray-400">
           Loans live on accounts in the Loans group. Creating a loan funds the account and books the schedule.
         </p>
-        <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end">
+        <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end flex-wrap">
+          {(hasExtraFilters) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-[4px] h-[36px] px-[10px] text-xs rounded-md border border-gray-50 dark:border-[#15203c] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+              title="Clear all filters"
+            >
+              <i className="material-symbols-outlined !text-[16px]">filter_alt_off</i>
+              Clear
+            </button>
+          )}
+          <select
+            value={statusFilter}
+            onChange={(e) => setFilter("status", e.target.value)}
+            className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md px-[13px] py-[6px] text-black dark:text-white outline-0"
+          >
+            <option value="all">All Status</option>
+            <option value="pending_disbursement">Pending Disbursement</option>
+            <option value="active">Active</option>
+            <option value="closed">Closed</option>
+            <option value="restructured">Restructured</option>
+          </select>
+          <div className="relative md:flex-none md:w-[220px]">
+            <label className="leading-none absolute ltr:left-[13px] rtl:right-[13px] text-black dark:text-white mt-px top-1/2 -translate-y-1/2">
+              <i className="material-symbols-outlined !text-[20px]">search</i>
+            </label>
+            <input
+              type="text"
+              placeholder="Search loans (lender)..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
+            />
+          </div>
           <Can any={["ROLE_ADD_ACCOUNT"]}>
             <button
               type="button"
@@ -386,6 +404,17 @@ const LoansTable: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {!loading && !error && (
+          <PaginationFooter
+            meta={meta}
+            page={page}
+            perPage={perPage}
+            loading={loading}
+            onPageChange={setPage}
+            onPerPageChange={changePerPage}
+          />
+        )}
       </div>
 
       {showCreateModal && (

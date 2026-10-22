@@ -3,7 +3,10 @@ import { useToast } from "../../../hooks/useToast";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
+import { useListQuery } from "../../../hooks/useListQuery";
 import { ToastContainer } from "../../common/Toast";
+import PaginationFooter from "../../common/PaginationFooter";
+import FilterSelect from "../../common/FilterSelect";
 import { formatCurrency } from "../../../utils/format";
 // Fix implicit any types
 type Category = { id: number; name: string };
@@ -41,9 +44,6 @@ interface OfficeExpense {
 }
 
 const OfficeExpensesTable: React.FC = () => {
-  const [expenses, setExpenses] = useState<OfficeExpense[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [editExpense, setEditExpense] = useState<OfficeExpense | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -52,31 +52,67 @@ const OfficeExpensesTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken);
   const accessTokenStr = typeof accessToken === "string" ? accessToken : "";
 
+  // Server-side listing: pagination, debounced search and status filter live
+  // in useListQuery.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: expenses,
+    loading,
+    error,
+    meta,
+    refresh,
+  } = useListQuery<OfficeExpense>("/api/finance/office-expenses/list", {
+    accessToken,
+    initialFilters: { status: "all" },
+    onError: (message) => addToast(message, "error"),
+  });
+
+  const statusFilter = filters.status || "all";
+  const hasExtraFilters = searchInput || statusFilter !== "all";
+
+  // Keep the edit/delete modal flows triggering a refetch when they close
   useEffect(() => {
-    setLoading(true);
-    fetch(`/api/finance/office-expenses/list?search=${encodeURIComponent(search)}`, {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const items = Array.isArray(data?.data) ? data.data : [];
-        setExpenses(items);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [search, accessToken, showEditModal, showDeleteModal]);
+    if (!showEditModal && !showDeleteModal) refresh();
+  }, [showEditModal, showDeleteModal, refresh]);
 
   return (
     <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md overflow-hidden">
       <ToastContainer toasts={toasts} onClose={removeToast} />
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2 p-[20px] pb-0">
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap">
+          {(hasExtraFilters) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-[4px] h-[36px] px-[10px] text-xs rounded-md border border-gray-50 dark:border-[#15203c] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+              title="Clear all filters"
+            >
+              <i className="material-symbols-outlined !text-[16px]">filter_alt_off</i>
+              Clear
+            </button>
+          )}
+          <select
+            value={statusFilter}
+            onChange={(e) => setFilter("status", e.target.value)}
+            className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md px-[13px] py-[6px] text-black dark:text-white outline-0"
+          >
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+          </select>
           <input
             type="text"
             placeholder="Search by description or category..."
             className="input input-bordered w-full md:w-64"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
       </div>
@@ -164,6 +200,16 @@ const OfficeExpensesTable: React.FC = () => {
             )}
           </tbody>
         </table>
+        {!loading && !error && (
+          <PaginationFooter
+            meta={meta}
+            page={page}
+            perPage={perPage}
+            loading={loading}
+            onPageChange={setPage}
+            onPerPageChange={changePerPage}
+          />
+        )}
       </div>
       {/* Edit Modal */}
       {showEditModal && editExpense && (

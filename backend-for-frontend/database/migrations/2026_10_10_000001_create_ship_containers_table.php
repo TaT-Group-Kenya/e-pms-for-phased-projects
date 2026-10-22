@@ -41,7 +41,7 @@ return new class extends Migration
             $table->string('entry_status')->nullable();
             $table->string('tr10_entry_status')->nullable();
             $table->string('tr12_entry_status')->nullable();
-            $table->string('entry_number')->nullable(); // exports "ENTRY"
+            // Entry numbers live on ship_container_numbers (per tracked number)
             $table->string('booking_no')->nullable();
             $table->string('do_status')->nullable();
             $table->string('allocation')->nullable();
@@ -65,8 +65,8 @@ return new class extends Migration
             $table->string('goods_description')->nullable(); // exports "GOODS DESCRIPTION"
             $table->enum('coe', ['PENDING', 'GENERATED'])->nullable(); // exports "COE"
 
-            // Loose unit columns
-            $table->string('chassis_no')->nullable();
+            // Loose unit columns; the chassis number is tracked as a
+            // ship_container_numbers row (container_no) like any other unit.
             $table->string('registration_no')->nullable();
             $table->string('station')->nullable();
             $table->text('remarks')->nullable();

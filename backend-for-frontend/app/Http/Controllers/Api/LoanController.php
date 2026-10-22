@@ -38,8 +38,18 @@ class LoanController extends Controller
             $query->where('account_id', $request->get('account_id'));
         }
 
-        if ($request->filled('status')) {
+        if ($request->filled('status') && $request->get('status') !== 'all') {
             $query->where('status', $request->get('status'));
+        }
+
+        // Free-text search across lender name and loan description
+        $search = trim((string) $request->get('search'));
+        if ($search !== '') {
+            $like = '%'.strtolower($search).'%';
+            $query->where(function ($q) use ($like) {
+                $q->whereRaw('LOWER(lender_name) LIKE ?', [$like])
+                    ->orWhereRaw("LOWER(COALESCE(description, '')) LIKE ?", [$like]);
+            });
         }
 
         $data = $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);

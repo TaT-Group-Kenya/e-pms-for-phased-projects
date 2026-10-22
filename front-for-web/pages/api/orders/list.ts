@@ -8,15 +8,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!base) return res.status(500).json({ message: 'EPMS_API_BASE not configured' })
 
   try {
-    const { page = 1, per_page = 15, customer_id, status, project_id } = req.query
-
     const url = new URL(`${base}/orders`)
-    url.searchParams.append('page', String(page))
-    url.searchParams.append('per_page', String(per_page))
-
-    if (customer_id) url.searchParams.append('customer_id', String(customer_id))
-    if (status) url.searchParams.append('status', String(status))
-    if (project_id) url.searchParams.append('project_id', String(project_id))
+    Object.entries(req.query || {}).forEach(([key, value]) => {
+      if (typeof value === 'string') url.searchParams.append(key, value)
+    })
 
     const resp = await fetch(url.toString(), {
       method: 'GET',

@@ -3,9 +3,27 @@
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Services\Concerns\ListQuery;
 
 class CustomerService
 {
+    use ListQuery;
+
+    /** Columns matched by the free-text `search` parameter. */
+    protected array $listSearchable = [
+        'name',
+        'email',
+        'contact_person_name',
+        'phone',
+        'kra_pin',
+    ];
+
+    /** Columns the request may filter on with equality. */
+    protected array $listFilterable = [
+        'country',
+        'city',
+    ];
+
     public function index(
         array $filters = [],
         int $perPage = 15,
@@ -13,35 +31,16 @@ class CustomerService
         int $offset = 0,
         array $with = []
     ) {
-        // optimized query: apply eager loading and simple filters
-        $query = Customer::query();
-
         // Include projects count for each customer
-        $query->withCount('projects');
+        $query = Customer::query()->withCount('projects');
         if (! empty($with)) {
             $query->with($with);
         }
-        // Handle soft-delete visibility flags
-        $withDeleted = filter_var($filters['with_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
-        $onlyDeleted = filter_var($filters['only_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
 
-        unset($filters['with_deleted'], $filters['only_deleted']);
+        // Logical-deletion visibility flags
+        $query = $this->applyLogicalDeletion($query, $filters);
 
-        if ($onlyDeleted) {
-            $query->onlyDeleted();
-        } elseif ($withDeleted) {
-            $query->withDeleted();
-        }
-
-        foreach ($filters as $key => $value) {
-            $query->where($key, $value);
-        }
-        $query->orderByDesc('id');
-
-        // Calculate offset if page is provided, otherwise use explicit offset
-        $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-
-        return $query->paginate($perPage, ['*'], 'page', $page);
+        return $this->paginateList($query, $filters, $perPage, $page, 'name');
     }
 
     public function find(int $id, array $with = [])

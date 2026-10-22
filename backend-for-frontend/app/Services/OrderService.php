@@ -5,9 +5,28 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Quotation;
+use App\Services\Concerns\ListQuery;
 
 class OrderService
 {
+    use ListQuery;
+
+    /** Columns matched by the free-text `search` parameter. */
+    protected array $listSearchable = [
+        'order_number',
+        'bol_number',
+        'title',
+    ];
+
+    /** Columns the request may filter on with equality. */
+    protected array $listFilterable = [
+        'customer_id',
+        'project_id',
+        'project_owner_id',
+        'status',
+        'ship_container_id',
+    ];
+
     public function index(
         array $filters = [],
         int $perPage = 15,
@@ -15,32 +34,15 @@ class OrderService
         int $offset = 0,
         array $with = ['customer', 'creator']
     ) {
-        // optimized query: apply eager loading and simple filters
         $query = Order::query();
         if (! empty($with)) {
             $query->with($with);
         }
-        // Handle soft-delete visibility flags
-        $withDeleted = filter_var($filters['with_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
-        $onlyDeleted = filter_var($filters['only_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
 
-        unset($filters['with_deleted'], $filters['only_deleted']);
+        // Logical-deletion visibility flags
+        $query = $this->applyLogicalDeletion($query, $filters);
 
-        if ($onlyDeleted) {
-            $query->onlyDeleted();
-        } elseif ($withDeleted) {
-            $query->withDeleted();
-        }
-
-        foreach ($filters as $key => $value) {
-            $query->where($key, $value);
-        }
-        $query->orderByDesc('id');
-
-        // Calculate offset if page is provided, otherwise use explicit offset
-        $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-
-        return $query->paginate($perPage, ['*'], 'page', $page);
+        return $this->paginateList($query, $filters, $perPage, $page);
     }
 
     public function find(int $id, array $with = [])

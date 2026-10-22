@@ -15,11 +15,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let url = `${base}/loans`
     if (req.method === 'GET') {
       const params = new URLSearchParams()
-      const { page = 1, per_page = 50, account_id, status } = req.query
-      params.append('page', String(page))
-      params.append('per_page', String(per_page))
-      if (account_id) params.append('account_id', String(account_id))
-      if (status) params.append('status', String(status))
+      Object.entries(req.query || {}).forEach(([key, value]) => {
+        if (typeof value === 'string') params.append(key, value)
+      })
       url = `${url}?${params.toString()}`
     }
 

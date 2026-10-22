@@ -6,6 +6,28 @@ use App\Models\PdcIssuedCompany;
 
 class PdcIssuedCompanyService
 {
+    use \App\Services\Concerns\ListQuery;
+
+    /** Columns matched by the free-text `search` parameter. */
+    protected array $listSearchable = [
+        'transaction_number',
+        'cheque_number',
+        'bank',
+        'narration',
+    ];
+
+    /** Columns the request may filter on with equality. */
+    protected array $listFilterable = [
+        'company_id',
+        'invoice_id',
+        'status',
+        'currency',
+        'bank',
+    ];
+
+    /** Business date column used by the `date_from`/`date_to` range filters. */
+    protected string $listDateColumn = 'cheque_date';
+
     public function index(array $filters = [], int $perPage = 15, int $page = 1, int $offset = 0, array $with = [])
     {
         $query = PdcIssuedCompany::query();
@@ -13,22 +35,9 @@ class PdcIssuedCompanyService
             $query->with($with);
         }
 
-        $withDeleted = filter_var($filters['with_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
-        $onlyDeleted = filter_var($filters['only_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
+        $query = $this->applyLogicalDeletion($query, $filters);
 
-        unset($filters['with_deleted'], $filters['only_deleted']);
-
-        if ($onlyDeleted) {
-            $query->onlyDeleted();
-        } elseif ($withDeleted) {
-            $query->withDeleted();
-        }
-
-        foreach ($filters as $key => $value) {
-            $query->where($key, $value);
-        }
-
-        return $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
+        return $this->paginateList($query, $filters, $perPage, $page);
     }
 
     public function find(int $id, array $with = [])

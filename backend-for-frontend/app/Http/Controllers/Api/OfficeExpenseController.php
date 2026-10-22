@@ -41,7 +41,7 @@ class OfficeExpenseController extends Controller
         $this->authorize('viewAny', OfficeExpense::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
-        $filters = $request->except('per_page', 'page', 'search');
+        $filters = $request->only('status', 'currency', 'date_from', 'date_to');
         $query = OfficeExpense::with(['category', 'costCenter', 'payments', 'payments.transaction', 'payments.transaction.debitAccount', 'payments.transaction.creditAccount', 'createdByUser']);
         if ($request->get('with_trashed')) {
             $query->withTrashed();
@@ -49,19 +49,20 @@ class OfficeExpenseController extends Controller
         if ($request->get('only_trashed')) {
             $query->onlyTrashed();
         }
-        foreach ($filters as $key => $value) {
-            $query->where($key, $value);
-        }
-        // Dedicated search block
-        if ($search = $request->get('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', "%$search%")
-                    ->orWhereHas('category', function ($q) use ($search) {
-                        $q->where('name', 'like', "%$search%");
+        // Search across expense description + category name (orWhere inside a
+        // single group so it combines correctly with the other filters)
+        $search = trim((string) $request->get('search'));
+        if ($search !== '') {
+            $like = '%'.strtolower($search).'%';
+            $query->where(function ($q) use ($like) {
+                $q->whereRaw('LOWER(description) LIKE ?', [$like])
+                    ->orWhereHas('category', function ($q) use ($like) {
+                        $q->whereRaw('LOWER(name) LIKE ?', [$like]);
                     });
             });
         }
-        $data = $query->paginate($perPage, ['*'], 'page', $page);
+        $service = app(\App\Services\OfficeExpenseService::class);
+        $data = $service->paginateList($query, $filters, $perPage, $page);
 
         return OfficeExpenseResource::collection($data);
     }

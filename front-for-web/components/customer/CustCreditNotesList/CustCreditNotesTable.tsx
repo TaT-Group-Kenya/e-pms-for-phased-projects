@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
 import { ToastContainer } from "../../common/Toast";
+import PaginationFooter from "../../common/PaginationFooter";
+import FilterSelect from "../../common/FilterSelect";
 import Can from "../../auth/Can";
 
 interface CustCreditNoteSummary {
@@ -40,11 +43,31 @@ const CustCreditNotesTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
 
-  const [creditNotes, setCreditNotes] = useState<CustCreditNoteSummary[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [reloadKey, setReloadKey] = useState<number>(0);
+  // Server-side listing: pagination, debounced search and status filter all
+  // live in useListQuery; the create-credit-note modal keeps its own state.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: creditNotes,
+    loading,
+    error,
+    meta,
+    refresh,
+  } = useListQuery<CustCreditNoteSummary>("/api/cust-credit-notes", {
+    accessToken,
+    initialFilters: { status: "all" },
+    onError: (message) => addToast(message, "error"),
+  });
+
+  const statusFilter = filters.status || "all";
+  const hasExtraFilters = !!searchInput || statusFilter !== "all";
 
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [invoices, setInvoices] = useState<CustInvoiceSummary[]>([]);
@@ -55,79 +78,6 @@ const CustCreditNotesTable: React.FC = () => {
   const [creditNoteNotes, setCreditNoteNotes] = useState<string>("");
   const [creatingCreditNote, setCreatingCreditNote] = useState<boolean>(false);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchCreditNotes = async () => {
-      if (!accessToken) {
-        setLoading(false);
-        setCreditNotes([]);
-        return;
-      }
-
-      setLoading(true);
-
-      try {
-        const params = new URLSearchParams();
-        if (statusFilter && statusFilter !== "all") {
-          params.append("status", statusFilter);
-        }
-
-        const qs = params.toString();
-        const url = qs ? `/api/cust-credit-notes?${qs}` : "/api/cust-credit-notes";
-
-        const resp = await fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          signal: controller.signal,
-        });
-
-        const data: any = await resp.json().catch(() => null);
-
-        if (!resp.ok) {
-          addToast(data?.message || "Failed to load customer credit notes", "error");
-          setCreditNotes([]);
-          return;
-        }
-
-        const items = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-
-        const mapped: CustCreditNoteSummary[] = (items || []).map((cn: any) => ({
-          id: cn.id,
-          invoice_id:
-            typeof cn.invoice_id === "number"
-              ? cn.invoice_id
-              : cn.invoice_id
-              ? Number(cn.invoice_id)
-              : null,
-          title: cn.title ?? null,
-          description: cn.description ?? null,
-          status: cn.status || "draft",
-          subtotal_amount: Number(cn.subtotal_amount ?? 0),
-          tax_amount: Number(cn.tax_amount ?? 0),
-          total_amount: Number(cn.total_amount ?? 0),
-          currency: cn.currency || "USD",
-          created_at: cn.created_at ?? null,
-        }));
-
-        setCreditNotes(mapped);
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        // eslint-disable-next-line no-console
-        console.error("fetch customer credit notes error", err);
-        addToast("Error loading customer credit notes. Please try again.", "error");
-        setCreditNotes([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCreditNotes();
-
-    return () => controller.abort();
-  }, [accessToken, addToast, reloadKey, statusFilter]);
 
   const formatCurrency = (value: number, currency: string) => {
     if (Number.isNaN(value)) return "-";
@@ -151,19 +101,6 @@ const CustCreditNotesTable: React.FC = () => {
         return "bg-gray-50 text-gray-500";
     }
   };
-
-  const filteredCreditNotes = creditNotes.filter((cn) => {
-    const lowerSearch = searchTerm.toLowerCase();
-    const matchesSearch =
-      (cn.title || "").toLowerCase().includes(lowerSearch) ||
-      (cn.status || "").toLowerCase().includes(lowerSearch) ||
-      (cn.invoice_id ? String(cn.invoice_id).includes(lowerSearch) : false);
-
-    const matchesStatus =
-      statusFilter === "all" || cn.status.toLowerCase() === statusFilter.toLowerCase();
-
-    return matchesSearch && matchesStatus;
-  });
 
   const fetchInvoices = async () => {
     if (!accessToken) {
@@ -286,7 +223,7 @@ const CustCreditNotesTable: React.FC = () => {
 
       addToast("Draft credit note created.", "success");
       setShowCreateModal(false);
-      setReloadKey((prev) => prev + 1);
+      refresh();
     } catch (e: any) {
       addToast(e.message || "Failed to create credit note", "error");
     } finally {
@@ -304,11 +241,19 @@ const CustCreditNotesTable: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-[15px] w-full md:w-auto flex-wrap md:flex-nowrap">
+          {(hasExtraFilters) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-[4px] h-[36px] px-[10px] text-xs rounded-md border border-gray-50 dark:border-[#15203c] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+              title="Clear all filters"
+            >
+              <i className="material-symbols-outlined !text-[16px]">filter_alt_off</i>
+              Clear
+            </button>
+          )}
           <select
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-            }}
+            onChange={(e) => setFilter("status", e.target.value)}
             className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md px-[13px] py-[6px] text-black dark:text-white outline-0"
           >
             <option value="all">All Status</option>
@@ -323,11 +268,9 @@ const CustCreditNotesTable: React.FC = () => {
             </label>
             <input
               type="text"
-              placeholder="Search credit notes..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-              }}
+              placeholder="Search credit notes (number, title)..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
             />
           </div>
@@ -387,8 +330,15 @@ const CustCreditNotesTable: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="text-black dark:text-white">
-                  {filteredCreditNotes.length > 0 ? (
-                    filteredCreditNotes.map((cn) => (
+                  {!loading && error && (
+                    <tr>
+                      <td colSpan={11} className="text-center px-[20px] py-[40px] text-danger-500">
+                        {error}
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && !error && creditNotes.length > 0 ? (
+                    creditNotes.map((cn) => (
                       <tr
                         key={cn.id}
                         className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
@@ -460,7 +410,7 @@ const CustCreditNotesTable: React.FC = () => {
                         colSpan={11}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
-                        {searchTerm || statusFilter !== "all"
+                        {hasExtraFilters
                           ? "No customer credit notes match your criteria"
                           : "No customer credit notes found"}
                       </td>
@@ -469,6 +419,17 @@ const CustCreditNotesTable: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            {!loading && !error && (
+              <PaginationFooter
+                meta={meta}
+                page={page}
+                perPage={perPage}
+                loading={loading}
+                onPageChange={setPage}
+                onPerPageChange={changePerPage}
+              />
+            )}
           </>
         )}
       </div>

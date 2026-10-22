@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
+import { useFilterOptions } from "../../../hooks/useFilterOptions";
 import { ToastContainer } from "../../common/Toast";
+import PaginationFooter from "../../common/PaginationFooter";
+import FilterSelect from "../../common/FilterSelect";
 import Can from "../../auth/Can";
 
 interface OrderSummary {
@@ -34,97 +38,43 @@ interface OrderSummary {
   };
 }
 
-interface PaginatedResponse<T> {
-  data: T[];
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
-}
-
 const OrdersTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
 
-  const [orders, setOrders] = useState<OrderSummary[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [page, setPage] = useState<number>(1);
-  const [totalCount, setTotalCount] = useState<number>(0);
-  const perPage = 15;
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  // Server-side listing: pagination, debounced search and status filter all
+  // live in useListQuery; this component keeps only its own columns/cells.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: orders,
+    loading,
+    error,
+    meta,
+  } = useListQuery<OrderSummary>("/api/orders/list", {
+    accessToken,
+    initialFilters: { status: "all" },
+    onError: (message) => addToast(message, "error"),
+  });
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const statusFilter = filters.status || "all";
 
-    const fetchOrders = async () => {
-      if (!accessToken) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-
-      try {
-        const params = new URLSearchParams();
-        params.append("page", String(page));
-        params.append("per_page", String(perPage));
-
-        const resp = await fetch(`/api/orders/list?${params.toString()}`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          signal: controller.signal,
-        });
-
-        const data: PaginatedResponse<OrderSummary> | any = await resp.json();
-
-        if (!resp.ok) {
-          addToast(data?.message || "Failed to load orders", "error");
-          setOrders([]);
-          setTotalPages(1);
-          setTotalCount(0);
-          return;
-        }
-
-        if (Array.isArray(data?.data)) {
-          setOrders(data.data as OrderSummary[]);
-          setTotalPages(data.last_page || 1);
-          setTotalCount(data.total || (data.data as OrderSummary[]).length || 0);
-        } else if (Array.isArray(data)) {
-          setOrders(data as OrderSummary[]);
-          setTotalPages(1);
-          setTotalCount((data as OrderSummary[]).length || 0);
-        } else {
-          setOrders([]);
-          setTotalPages(1);
-          setTotalCount(0);
-        }
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        // eslint-disable-next-line no-console
-        console.error("fetch orders error", err);
-        addToast("Error loading orders. Please try again.", "error");
-        setOrders([]);
-        setTotalPages(1);
-        setTotalCount(0);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-
-    return () => controller.abort();
-  }, [accessToken, page, perPage, addToast]);
-
-  const handlePageClick = (targetPage: number) => {
-    if (targetPage >= 1 && targetPage <= totalPages) {
-      setPage(targetPage);
-    }
-  };
+  // Option lists for the extra filter dropdowns (small reference data).
+  const accessTokenRef = accessToken as string;
+  const { options: customerOptions } = useFilterOptions(
+    accessTokenRef ? "/api/customers/list?page=1&per_page=500" : null,
+    (row) => (row?.id != null && row?.name ? { value: String(row.id), label: row.name } : null),
+    { accessToken: accessTokenRef }
+  );
+  const customerIdFilter = filters.customer_id || "all";
+  const hasExtraFilters = searchInput || statusFilter !== "all" || customerIdFilter !== "all";
 
   const formatCurrency = (value: number, currency: string) => {
     if (Number.isNaN(value)) return "-";
@@ -151,25 +101,6 @@ const OrdersTable: React.FC = () => {
     }
   };
 
-  const filteredOrders = orders.filter((order) => {
-    const lowerSearch = searchTerm.toLowerCase();
-    const matchesSearch =
-      order.order_number.toLowerCase().includes(lowerSearch) ||
-      (order.bol_number || "").toLowerCase().includes(lowerSearch) ||
-      (order.customer?.name || "").toLowerCase().includes(lowerSearch) ||
-      (order.project_owner?.name || "").toLowerCase().includes(lowerSearch) ||
-      order.title.toLowerCase().includes(lowerSearch) ||
-      order.status.toLowerCase().includes(lowerSearch);
-
-    const matchesStatus =
-      statusFilter === "all" || order.status.toLowerCase() === statusFilter.toLowerCase();
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const indexOfFirstOrder = (page - 1) * perPage + 1;
-  const indexOfLastOrder = Math.min(page * perPage, totalCount);
-
   return (
     <>
       <ToastContainer toasts={toasts} onClose={removeToast} />
@@ -180,12 +111,19 @@ const OrdersTable: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-[15px] w-full md:w-auto flex-wrap md:flex-nowrap">
+          {(hasExtraFilters) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-[4px] h-[36px] px-[10px] text-xs rounded-md border border-gray-50 dark:border-[#15203c] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+              title="Clear all filters"
+            >
+              <i className="material-symbols-outlined !text-[16px]">filter_alt_off</i>
+              Clear
+            </button>
+          )}
           <select
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => setFilter("status", e.target.value)}
             className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md px-[13px] py-[6px] text-black dark:text-white outline-0"
           >
             <option value="all">All Status</option>
@@ -196,6 +134,14 @@ const OrdersTable: React.FC = () => {
             <option value="revised">Revised</option>
           </select>
 
+          {/* Customer Filter */}
+          <FilterSelect
+            value={customerIdFilter}
+            options={customerOptions}
+            placeholder="All Customers"
+            onChange={(value) => setFilter("customer_id", value)}
+          />
+
           <div className="relative flex-1 md:flex-none md:w-[265px]">
             <label className="leading-none absolute ltr:left-[13px] rtl:right-[13px] text-black dark:text-white mt-px top-1/2 -translate-y-1/2">
               <i className="material-symbols-outlined !text-[20px]">search</i>
@@ -203,11 +149,8 @@ const OrdersTable: React.FC = () => {
             <input
               type="text"
               placeholder="Search orders..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
-              }}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
             />
           </div>
@@ -285,8 +228,18 @@ const OrdersTable: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="text-black dark:text-white">
-                  {filteredOrders.length > 0 ? (
-                    filteredOrders.map((order) => (
+                  {!loading && error && (
+                    <tr>
+                      <td
+                        colSpan={12}
+                        className="text-center px-[20px] py-[40px] text-danger-500"
+                      >
+                        {error}
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && !error && orders.length > 0 ? (
+                    orders.map((order) => (
                       <tr
                         key={order.id}
                         className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
@@ -380,7 +333,7 @@ const OrdersTable: React.FC = () => {
                         colSpan={12}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
-                        {searchTerm || statusFilter !== "all"
+                        {hasExtraFilters
                           ? "No orders match your criteria"
                           : "No orders found"}
                       </td>
@@ -390,45 +343,15 @@ const OrdersTable: React.FC = () => {
               </table>
             </div>
 
-            {totalPages > 1 && (
-              <div className="px-[20px] py-[12px] md:py-[14px] border-t border-gray-100 dark:border-[#172036] flex items-center justify-between flex-wrap gap-[10px]">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Showing {indexOfFirstOrder} to {indexOfLastOrder} of {totalCount} results
-                </p>
-                <div className="flex gap-[5px]">
-                  <button
-                    type="button"
-                    onClick={() => handlePageClick(page - 1)}
-                    disabled={page === 1}
-                    className="w-[31px] h-[31px] flex items-center justify-center rounded-md border border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <i className="material-symbols-outlined">chevron_left</i>
-                  </button>
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      type="button"
-                      // eslint-disable-next-line react/no-array-index-key
-                      key={i}
-                      onClick={() => handlePageClick(i + 1)}
-                      className={`w-[31px] h-[31px] flex items-center justify-center rounded-md border transition-all ${
-                        page === i + 1
-                          ? "bg-primary-500 text-white border-primary-500"
-                          : "border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => handlePageClick(page + 1)}
-                    disabled={page === totalPages}
-                    className="w-[31px] h-[31px] flex items-center justify-center rounded-md border border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <i className="material-symbols-outlined">chevron_right</i>
-                  </button>
-                </div>
-              </div>
+            {!loading && !error && (
+              <PaginationFooter
+                meta={meta}
+                page={page}
+                perPage={perPage}
+                loading={loading}
+                onPageChange={setPage}
+                onPerPageChange={changePerPage}
+              />
             )}
           </>
         )}

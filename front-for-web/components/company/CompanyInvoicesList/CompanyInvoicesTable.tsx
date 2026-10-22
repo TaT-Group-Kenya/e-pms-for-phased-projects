@@ -1,11 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
+import { useFilterOptions } from "../../../hooks/useFilterOptions";
 import { ToastContainer } from "../../common/Toast";
+import PaginationFooter from "../../common/PaginationFooter";
+import FilterSelect from "../../common/FilterSelect";
 import Can from "../../auth/Can";
 
 interface CompanyInvoiceSummary {
@@ -53,13 +57,44 @@ const CompanyInvoicesTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
 
-  const [invoices, setInvoices] = useState<CompanyInvoiceSummary[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  // Server-side listing: pagination, debounced search and filters all live in
+  // useListQuery; this component keeps its own columns/actions/modals.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: invoices,
+    loading,
+    error,
+    meta,
+    refresh,
+  } = useListQuery<CompanyInvoiceSummary>("/api/company-invoices/list", {
+    accessToken,
+    initialFilters: { status: "all" },
+    onError: (message) => addToast(message, "error"),
+  });
+
+  const statusFilter = filters.status || "all";
+
+  // Option list for the Service Provider filter (small reference data).
+  const accessTokenRef = accessToken as string;
+  const { options: companyOptions } = useFilterOptions(
+    accessTokenRef ? "/api/companies/list?page=1&per_page=500" : null,
+    (row) => (row?.id != null && row?.name ? { value: String(row.id), label: row.name } : null),
+    { accessToken: accessTokenRef }
+  );
+  const companyIdFilter = filters.company_id || "all";
+  const hasExtraFilters =
+    searchInput || statusFilter !== "all" || companyIdFilter !== "all";
+
   const [sendingEmailId, setSendingEmailId] = useState<number | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
-  const [reloadKey, setReloadKey] = useState<number>(0);
 
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
@@ -74,87 +109,6 @@ const CompanyInvoicesTable: React.FC = () => {
   const [invoicePaymentTerms, setInvoicePaymentTerms] = useState<string>("");
   const [invoiceNotes, setInvoiceNotes] = useState<string>("");
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchInvoices = async () => {
-      if (!accessToken) {
-        setLoading(false);
-        setInvoices([]);
-        return;
-      }
-
-      setLoading(true);
-
-      try {
-        const params = new URLSearchParams();
-        if (statusFilter && statusFilter !== "all") {
-          params.append("status", statusFilter);
-        }
-
-        const qs = params.toString();
-        const url = qs ? `/api/company-invoices/list?${qs}` : "/api/company-invoices/list";
-
-        const resp = await fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          signal: controller.signal,
-        });
-
-        const data: any = await resp.json().catch(() => null);
-
-        if (!resp.ok) {
-          addToast(
-            data?.message || "Failed to load Service Provider invoices",
-            "error"
-          );
-          setInvoices([]);
-          return;
-        }
-
-        const items = Array.isArray(data?.data)
-          ? data.data
-          : Array.isArray(data)
-          ? data
-          : [];
-
-        const mapped: CompanyInvoiceSummary[] = (items || []).map((inv: any) => ({
-          id: inv.id,
-          invoice_number: inv.invoice_number,
-          title: inv.title ?? null,
-          status: inv.status,
-          subtotal_amount: Number(inv.subtotal_amount ?? 0),
-          tax_amount: Number(inv.tax_amount ?? 0),
-          discount_amount: Number(inv.discount_amount ?? 0),
-          total_amount: Number(inv.total_amount ?? 0),
-          currency: inv.currency || "USD",
-          created_at: inv.created_at ?? null,
-          total_paid: Number(inv.total_paid ?? 0),
-          total_balance: Number(inv.total_balance ?? 0),
-          ...inv
-        }));
-
-        setInvoices(mapped);
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        // eslint-disable-next-line no-console
-        console.error("fetch Service Provider invoices error", err);
-        addToast(
-          "Error loading Service Provider invoices. Please try again.",
-          "error"
-        );
-        setInvoices([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInvoices();
-
-    return () => controller.abort();
-  }, [accessToken, addToast, reloadKey, statusFilter]);
 
   const formatCurrency = (value: number, currency: string) => {
     if (Number.isNaN(value)) return "-";
@@ -181,20 +135,6 @@ const CompanyInvoicesTable: React.FC = () => {
     }
   };
 
-  const filteredInvoices = invoices.filter((inv) => {
-    const lowerSearch = searchTerm.toLowerCase();
-    const matchesSearch =
-      inv.invoice_number.toLowerCase().includes(lowerSearch) ||
-      (inv.title || "").toLowerCase().includes(lowerSearch) ||
-      inv.status.toLowerCase().includes(lowerSearch) ||
-      (inv.project.project_owner?.name || "").toLowerCase().includes(lowerSearch);
-
-    const matchesStatus =
-      statusFilter === "all" ||
-      inv.status.toLowerCase() === statusFilter.toLowerCase();
-
-    return matchesSearch && matchesStatus;
-  });
 
   const handleSendEmail = async (id: number) => {
     if (!accessToken) {
@@ -432,7 +372,7 @@ const CompanyInvoicesTable: React.FC = () => {
 
       addToast(data?.message || "Service Provider invoice created successfully", "success");
       setShowCreateModal(false);
-      setReloadKey((prev) => prev + 1);
+      refresh();
     } catch (e: any) {
       addToast(e?.message || "Failed to create Service Provider invoice from phase", "error");
     } finally {
@@ -450,11 +390,19 @@ const CompanyInvoicesTable: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-[15px] w-full md:w-auto flex-wrap md:flex-nowrap">
+          {(hasExtraFilters) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-[4px] h-[36px] px-[10px] text-xs rounded-md border border-gray-50 dark:border-[#15203c] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+              title="Clear all filters"
+            >
+              <i className="material-symbols-outlined !text-[16px]">filter_alt_off</i>
+              Clear
+            </button>
+          )}
           <select
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-            }}
+            onChange={(e) => setFilter("status", e.target.value)}
             className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md px-[13px] py-[6px] text-black dark:text-white outline-0"
           >
             <option value="all">All Status</option>
@@ -464,17 +412,23 @@ const CompanyInvoicesTable: React.FC = () => {
             <option value="overdue">Overdue</option>
           </select>
 
+          {/* Service Provider Filter */}
+          <FilterSelect
+            value={companyIdFilter}
+            options={companyOptions}
+            placeholder="All Service Providers"
+            onChange={(value) => setFilter("company_id", value)}
+          />
+
           <div className="relative flex-1 md:flex-none md:w-[265px]">
             <label className="leading-none absolute ltr:left-[13px] rtl:right-[13px] text-black dark:text-white mt-px top-1/2 -translate-y-1/2">
               <i className="material-symbols-outlined !text-[20px]">search</i>
             </label>
             <input
               type="text"
-              placeholder="Search invoices..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-              }}
+              placeholder="Search invoices (number, title)..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
             />
           </div>
@@ -560,8 +514,18 @@ const CompanyInvoicesTable: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="text-black dark:text-white">
-                  {filteredInvoices.length > 0 ? (
-                    filteredInvoices.map((inv) => (
+                  {!loading && error && (
+                    <tr>
+                      <td
+                        colSpan={14}
+                        className="text-center px-[20px] py-[40px] text-danger-500"
+                      >
+                        {error}
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && !error && invoices.length > 0 ? (
+                    invoices.map((inv) => (
                       <tr
                         key={inv.id}
                         className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
@@ -693,7 +657,7 @@ const CompanyInvoicesTable: React.FC = () => {
                         colSpan={14}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
-                        {searchTerm || statusFilter !== "all"
+                        {hasExtraFilters
                           ? "No Service Provider invoices match your criteria"
                           : "No Service Provider invoices found"}
                       </td>
@@ -702,6 +666,17 @@ const CompanyInvoicesTable: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            {!loading && !error && (
+              <PaginationFooter
+                meta={meta}
+                page={page}
+                perPage={perPage}
+                loading={loading}
+                onPageChange={setPage}
+                onPerPageChange={changePerPage}
+              />
+            )}
           </>
         )}
       </div>

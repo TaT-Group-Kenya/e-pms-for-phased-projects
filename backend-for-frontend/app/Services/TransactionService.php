@@ -2,10 +2,35 @@
 
 namespace App\Services;
 
+use App\Services\Concerns\ListQuery;
 use App\Models\Transaction;
 
 class TransactionService
 {
+    use ListQuery;
+
+    /** Business date column used by the `date_from`/`date_to` range filters. */
+    protected string $listDateColumn = 'transaction_date';
+
+    /** Columns matched by the free-text `search` parameter. */
+    protected array $listSearchable = [
+        'transaction_number',
+        'category',
+        'narration',
+        'payment_method',
+        'check_number',
+    ];
+
+    /** Columns the request may filter on with equality. */
+    protected array $listFilterable = [
+        'transaction_type',
+        'transaction_status',
+        'base_currency',
+        'customer_id',
+        'company_id',
+        'category',
+    ];
+
     public function index(
         array $filters = [],
         int $perPage = 15,
@@ -13,32 +38,16 @@ class TransactionService
         int $offset = 0,
         array $with = []
     ) {
-        // optimized query: apply eager loading and simple filters
+        // optimized query: apply eager loading, search and whitelisted filters
         $query = Transaction::query();
         if (! empty($with)) {
             $query->with($with);
         }
-        // Handle soft-delete visibility flags
-        $withDeleted = filter_var($filters['with_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
-        $onlyDeleted = filter_var($filters['only_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
 
-        unset($filters['with_deleted'], $filters['only_deleted']);
+        // Logical-deletion visibility flags
+        $query = $this->applyLogicalDeletion($query, $filters);
 
-        if ($onlyDeleted) {
-            $query->onlyDeleted();
-        } elseif ($withDeleted) {
-            $query->withDeleted();
-        }
-
-        foreach ($filters as $key => $value) {
-            $query->where($key, $value);
-        }
-        $query->orderByDesc('id');
-
-        // Calculate offset if page is provided, otherwise use explicit offset
-        $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-
-        return $query->paginate($perPage, ['*'], 'page', $page);
+        return $this->paginateList($query, $filters, $perPage, $page);
     }
 
     public function find(int $id, array $with = [])

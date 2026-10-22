@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
+import { useFilterOptions } from "../../../hooks/useFilterOptions";
 import { ToastContainer } from "../../common/Toast";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal";
+import PaginationFooter from "../../common/PaginationFooter";
+import FilterSelect from "../../common/FilterSelect";
 import Can from "../../auth/Can";
 import { formatCurrency } from "../../../utils/format";
 
@@ -38,14 +42,6 @@ interface Quotation {
   };
 }
 
-interface PaginationData {
-  data: Quotation[];
-  current_page: number;
-  per_page: number;
-  total: number;
-  last_page: number;
-}
-
 const getStatusColor = (status: string): string => {
   switch (status?.toLowerCase()) {
     case 'approved':
@@ -66,89 +62,59 @@ const getStatusColor = (status: string): string => {
 const QuotationsList: React.FC = () => {
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
-  
-  // State management
-  const [quotations, setQuotations] = useState<Quotation[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Server-side listing: pagination, debounced search and status filter all
+  // live in useListQuery; this component keeps only its own columns/actions.
+  const {
+    searchInput,
+    setSearchInput,
+    searchTerm,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: quotations,
+    loading,
+    error,
+    meta,
+    refresh,
+  } = useListQuery<Quotation>("/api/quotations/list", {
+    accessToken,
+    initialFilters: { status: "all" },
+    onError: (message) => addToast(message, "error"),
+  });
+
+  const statusFilter = filters.status || "all";
+
+  // Option lists for the extra filter dropdowns (small reference data).
+  const accessTokenRef = accessToken as string;
+  const { options: customerOptions } = useFilterOptions(
+    accessTokenRef ? "/api/customers/list?page=1&per_page=500" : null,
+    (row) => (row?.id != null && row?.name ? { value: String(row.id), label: row.name } : null),
+    { accessToken: accessTokenRef }
+  );
+  const { options: containerOptions } = useFilterOptions(
+    accessTokenRef ? "/api/ship-containers/list?page=1&per_page=500" : null,
+    (row) =>
+      row?.id != null && row?.reference_number
+        ? { value: String(row.id), label: row.reference_number }
+        : null,
+    { accessToken: accessTokenRef }
+  );
+  const customerIdFilter = filters.customer_id || "all";
+  const containerIdFilter = filters.ship_container_id || "all";
+  const hasExtraFilters =
+    searchInput || statusFilter !== "all" || customerIdFilter !== "all" || containerIdFilter !== "all";
+
+  // Delete modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteQuotationId, setDeleteQuotationId] = useState<number | null>(null);
   const [deleteQuotationName, setDeleteQuotationName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  
-  const perPage = 15;
-
-  // Fetch quotations from API
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchQuotations = async () => {
-      setLoading(true);
-
-      try {
-        let url = `/api/quotations/list?page=${currentPage}&per_page=${perPage}`;
-        if (statusFilter !== "all") {
-          url += `&status=${statusFilter}`;
-        }
-
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          signal: controller.signal,
-        });
-
-        // Don't process if request was aborted
-        if (controller.signal.aborted) return;
-
-        const data: PaginationData = await response.json();
-
-        if (!response.ok) {
-          addToast("Failed to load quotations", "error");
-          setQuotations([]);
-          return;
-        }
-
-        // Handle both paginated and direct responses
-        const quotationList = data.data || data;
-        setQuotations(Array.isArray(quotationList) ? quotationList : []);
-        setTotalPages(data.last_page || 1);
-        setTotalCount(data.total || 0);
-      } catch (err) {
-        // Ignore abort errors
-        if (err instanceof DOMException && err.name === "AbortError") {
-          return;
-        }
-        console.error("Error fetching quotations:", err);
-        addToast("Error loading quotations. Please refresh the page.", "error");
-        setQuotations([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (accessToken) {
-      fetchQuotations();
-    } else {
-      setLoading(false);
-    }
-
-    // Cleanup: abort request if effect runs again or component unmounts
-    return () => controller.abort();
-  }, [currentPage, statusFilter, accessToken, perPage, addToast]);
-
-  // Handle page change
-  const handlePageClick = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
 
   const deleteQuotation = async (quotationId: number, accessToken: string): Promise<any> => {
     try {
@@ -194,11 +160,7 @@ const QuotationsList: React.FC = () => {
       await deleteQuotation(deleteQuotationId, accessToken as string);
       addToast("Quotation deleted successfully", "success");
       closeDeleteModal();
-      if (quotations.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      } else {
-        setCurrentPage(currentPage);
-      }
+      refresh();
     } catch (error: any) {
       const errorMessage = error.message || "Failed to delete quotation";
       setDeleteError(errorMessage);
@@ -208,19 +170,10 @@ const QuotationsList: React.FC = () => {
     }
   };
 
-  // Filter quotations based on search term
-  const filteredQuotations = quotations.filter((quotation) =>
-    quotation.quotation_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (quotation.bol_number || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (quotation.customer?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (quotation.project_owner?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    quotation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    quotation.status.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Calculate pagination display values
-  const indexOfFirstQuotation = (currentPage - 1) * perPage + 1;
-  const indexOfLastQuotation = Math.min(currentPage * perPage, totalCount);
+  // The backend now paginates and filters; rows arrive already filtered.
+  const indexOfFirstQuotation =
+    meta.total > 0 ? (meta.current_page - 1) * meta.per_page + 1 : 0;
+  const indexOfLastQuotation = Math.min(meta.current_page * meta.per_page, meta.total);
 
   return (
     <>
@@ -245,10 +198,7 @@ const QuotationsList: React.FC = () => {
           {/* Status Filter */}
           <select
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setCurrentPage(1);
-            }}
+            onChange={(e) => setFilter("status", e.target.value)}
             className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md px-[13px] py-[6px] text-black dark:text-white outline-0"
           >
             <option value="all">All Status</option>
@@ -259,6 +209,33 @@ const QuotationsList: React.FC = () => {
             <option value="revised">Revised</option>
           </select>
 
+          {(hasExtraFilters) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-[4px] h-[36px] px-[10px] text-xs rounded-md border border-gray-50 dark:border-[#15203c] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+              title="Clear all filters"
+            >
+              <i className="material-symbols-outlined !text-[16px]">filter_alt_off</i>
+              Clear
+            </button>
+          )}
+
+          {/* Customer Filter */}
+          <FilterSelect
+            value={customerIdFilter}
+            options={customerOptions}
+            placeholder="All Customers"
+            onChange={(value) => setFilter("customer_id", value)}
+          />
+
+          {/* Container Filter */}
+          <FilterSelect
+            value={containerIdFilter}
+            options={containerOptions}
+            placeholder="All Containers"
+            onChange={(value) => setFilter("ship_container_id", value)}
+          />
+
           {/* Search Box */}
           <div className="relative flex-1 md:flex-none md:w-[265px]">
             <label className="leading-none absolute ltr:left-[13px] rtl:right-[13px] text-black dark:text-white mt-px top-1/2 -translate-y-1/2">
@@ -266,12 +243,9 @@ const QuotationsList: React.FC = () => {
             </label>
             <input
               type="text"
-              placeholder="Search quotations (number, BOL Number, title, status)..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
+              placeholder="Search quotations (number, BOL Number, title)..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
             />
           </div>
@@ -358,8 +332,18 @@ const QuotationsList: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="text-black dark:text-white">
-                  {filteredQuotations.length > 0 ? (
-                    filteredQuotations.map((quotation) => (
+                  {!loading && error && (
+                    <tr>
+                      <td
+                        colSpan={13}
+                        className="text-center px-[20px] py-[40px] text-danger-500"
+                      >
+                        {error}
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && !error && quotations.length > 0 ? (
+                    quotations.map((quotation) => (
                       <tr key={quotation.id} className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors">
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {quotation.created_at ? new Date(quotation.created_at).toLocaleDateString() : ""}
@@ -459,7 +443,7 @@ const QuotationsList: React.FC = () => {
                         colSpan={13}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
-                        {searchTerm || statusFilter !== "all" ? "No quotations match your criteria" : "No quotations found"}
+                        {hasExtraFilters ? "No quotations match your criteria" : "No quotations found"}
                       </td>
                     </tr>
                   )}
@@ -468,41 +452,15 @@ const QuotationsList: React.FC = () => {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="px-[20px] py-[12px] md:py-[14px] border-t border-gray-100 dark:border-[#172036] flex items-center justify-between flex-wrap gap-[10px]">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Showing {indexOfFirstQuotation} to {indexOfLastQuotation} of {totalCount} results
-                </p>
-                <div className="flex gap-[5px]">
-                  <button
-                    onClick={() => handlePageClick(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="w-[31px] h-[31px] flex items-center justify-center rounded-md border border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <i className="material-symbols-outlined">chevron_left</i>
-                  </button>
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handlePageClick(i + 1)}
-                      className={`w-[31px] h-[31px] flex items-center justify-center rounded-md border transition-all ${
-                        currentPage === i + 1
-                          ? "bg-primary-500 text-white border-primary-500"
-                          : "border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => handlePageClick(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="w-[31px] h-[31px] flex items-center justify-center rounded-md border border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <i className="material-symbols-outlined">chevron_right</i>
-                  </button>
-                </div>
-              </div>
+            {!loading && !error && (
+              <PaginationFooter
+                meta={meta}
+                page={page}
+                perPage={perPage}
+                loading={loading}
+                onPageChange={setPage}
+                onPerPageChange={changePerPage}
+              />
             )}
           </>
         )}

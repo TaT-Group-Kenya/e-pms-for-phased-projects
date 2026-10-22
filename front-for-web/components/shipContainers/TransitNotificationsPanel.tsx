@@ -111,7 +111,7 @@ const TransitNotificationsPanel: React.FC = () => {
                   <th className="py-[8px] pr-[12px] font-medium">Type</th>
                   <th className="py-[8px] pr-[12px] font-medium">Client Name</th>
                   <th className="py-[8px] pr-[12px] font-medium">BOL No</th>
-                  <th className="py-[8px] pr-[12px] font-medium">Container Nos</th>
+                  <th className="py-[8px] pr-[12px] font-medium">Container/Chassis Nos</th>
                   <th className="py-[8px] pr-[12px] font-medium">Port In</th>
                   <th className="py-[8px] pr-[12px] font-medium">Get In (Arrival)</th>
                   <th className="py-[8px] pr-[12px] font-medium">Deadline</th>

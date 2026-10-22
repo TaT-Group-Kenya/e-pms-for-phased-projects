@@ -5,8 +5,12 @@ import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
+import { useFilterOptions } from "../../../hooks/useFilterOptions";
 import { ToastContainer } from "../../common/Toast";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal";
+import PaginationFooter from "../../common/PaginationFooter";
+import FilterSelect from "../../common/FilterSelect";
 import Can from "../../auth/Can";
 
 interface Project {
@@ -36,14 +40,6 @@ interface Project {
     first_name?: string;
     last_name?: string;
   };
-}
-
-interface PaginationData {
-  data: Project[];
-  current_page: number;
-  per_page: number;
-  total: number;
-  last_page: number;
 }
 
 const getStatusColor = (status: string): string => {
@@ -76,86 +72,56 @@ const getPriorityColor = (priority: string): string => {
 const ProjectsList: React.FC = () => {
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
-  
-  // State management
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+
+  // Server-side listing: pagination, debounced search and status filter all
+  // live in useListQuery; this component keeps only its own columns/actions.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: projects,
+    loading,
+    error,
+    meta, 
+    refresh,
+  } = useListQuery<Project>("/api/projects/list", {
+    accessToken,
+    initialFilters: { status: "all" },
+    onError: (message) => addToast(message, "error"),
+  });
+
+  const statusFilter = filters.status || "all";
+
+  // Option lists for the extra filter dropdowns (small reference data).
+  const accessTokenRef = accessToken as string;
+  const { options: customerOptions } = useFilterOptions(
+    accessTokenRef ? "/api/customers/list?page=1&per_page=500" : null,
+    (row) => (row?.id != null && row?.name ? { value: String(row.id), label: row.name } : null),
+    { accessToken: accessTokenRef }
+  );
+  const { options: categoryOptions } = useFilterOptions(
+    accessTokenRef ? "/api/projects/categories/list?page=1&per_page=500" : null,
+    (row) => (row?.id != null && row?.name ? { value: String(row.id), label: row.name } : null),
+    { accessToken: accessTokenRef }
+  );
+  const customerIdFilter = filters.customer_id || "all";
+  const categoryFilter = filters.project_category_id || "all";
+  const priorityFilter = filters.priority || "all";
+  const hasExtraFilters =
+    searchInput || statusFilter !== "all" || customerIdFilter !== "all" || categoryFilter !== "all" || priorityFilter !== "all";
+
+  // Delete modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteProjectId, setDeleteProjectId] = useState<number | null>(null);
   const [deleteProjectName, setDeleteProjectName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  
-  const perPage = 15;
-
-  // Fetch projects from API
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchProjects = async () => {
-      setLoading(true);
-
-      try {
-        const response = await fetch(
-          `/api/projects/list?page=${currentPage}&per_page=${perPage}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-            signal: controller.signal,
-          }
-        );
-
-        // Don't process if request was aborted
-        if (controller.signal.aborted) return;
-
-        const data: PaginationData = await response.json();
-
-        if (!response.ok) {
-          addToast("Failed to load Consignments", "error");
-          setProjects([]);
-          return;
-        }
-
-        // Handle both paginated and direct responses
-        const projectList = data.data || data;
-        setProjects(Array.isArray(projectList) ? projectList : []);
-        setTotalPages(data.last_page || 1);
-        setTotalCount(data.total || 0);
-      } catch (err) {
-        // Ignore abort errors
-        if (err instanceof DOMException && err.name === "AbortError") {
-          return;
-        }
-        console.error("Error fetching Consignments:", err);
-        addToast("Error loading Consignments. Please refresh the page.", "error");
-        setProjects([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (accessToken) {
-      fetchProjects();
-    } else {
-      setLoading(false);
-    }
-
-    // Cleanup: abort request if effect runs again or component unmounts
-    return () => controller.abort();
-  }, [currentPage, accessToken, perPage, addToast]);
-
-  // Handle page change
-  const handlePageClick = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
 
   const deleteProject = async (projectId: number, accessToken: string): Promise<any> => {
     try {
@@ -202,13 +168,8 @@ const ProjectsList: React.FC = () => {
       await deleteProject(deleteProjectId, accessToken as string);
       addToast("Consignment deleted successfully", "success");
       closeDeleteModal();
-      // Refetch projects on current page in the background
-      // Trigger a refetch by resetting to page 1 if needed
-      if (projects.length === 1 && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      } else {
-        setCurrentPage(currentPage);
-      }
+      // Refetch on current page in the background
+      refresh();
     } catch (error: any) {
       const errorMessage = error.message || "Failed to delete Consignment";
       setDeleteError(errorMessage);
@@ -217,21 +178,6 @@ const ProjectsList: React.FC = () => {
       setIsDeleting(false);
     }
   };
-
-  // Filter projects based on search term
-  const filteredProjects = projects.filter((project) =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (project.customer?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (project.project_owner?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (project.order?.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (project.bol_number || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Calculate pagination display values
-  const indexOfFirstProject = (currentPage - 1) * perPage + 1;
-  const indexOfLastProject = Math.min(currentPage * perPage, totalCount);
 
   return (
     <>
@@ -249,10 +195,62 @@ const ProjectsList: React.FC = () => {
       
       <div className="trezo-card-header bg-white dark:bg-[#0c1427] mb-[20px] md:mb-[25px] flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-md gap-[15px]">
         <div className="trezo-card-title">
-          <h5 className="!mb-0">All Consignments</h5>
+          {/* <h5 className="!mb-0">All Consignments</h5> */}
         </div>
 
         <div className="flex items-center gap-[15px] w-full md:w-auto">
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setFilter("status", e.target.value)}
+            className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md px-[13px] py-[6px] text-black dark:text-white outline-0"
+          >
+            <option value="all">All Status</option>
+            <option value="new">New</option>
+            <option value="progress">In Progress</option>
+            <option value="draft">Draft</option>
+            <option value="complete">Complete</option>
+          </select>
+
+          {(hasExtraFilters) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-[4px] h-[36px] px-[10px] text-xs rounded-md border border-gray-50 dark:border-[#15203c] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+              title="Clear all filters"
+            >
+              <i className="material-symbols-outlined !text-[16px]">filter_alt_off</i>
+              Clear
+            </button>
+          )}
+
+          {/* Customer Filter */}
+          <FilterSelect
+            value={customerIdFilter}
+            options={customerOptions}
+            placeholder="All Customers"
+            onChange={(value) => setFilter("customer_id", value)}
+          />
+
+          {/* Category Filter */}
+          <FilterSelect
+            value={categoryFilter}
+            options={categoryOptions}
+            placeholder="All Categories"
+            onChange={(value) => setFilter("project_category_id", value)}
+          />
+
+          {/* Priority Filter */}
+          <FilterSelect
+            value={priorityFilter}
+            options={[
+              { value: "high", label: "High" },
+              { value: "medium", label: "Medium" },
+              { value: "low", label: "Low" },
+            ]}
+            placeholder="All Priorities"
+            onChange={(value) => setFilter("priority", value)}
+          />
+
           {/* Search Box */}
           <div className="relative flex-1 md:flex-none md:w-[265px]">
             <label className="leading-none absolute ltr:left-[13px] rtl:right-[13px] text-black dark:text-white mt-px top-1/2 -translate-y-1/2">
@@ -261,11 +259,8 @@ const ProjectsList: React.FC = () => {
             <input
               type="text"
               placeholder="Search Consignments..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
             />
           </div>
@@ -348,8 +343,18 @@ const ProjectsList: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="text-black dark:text-white">
-                  {filteredProjects.length > 0 ? (
-                    filteredProjects.map((project) => (
+                  {!loading && error && (
+                    <tr>
+                      <td
+                        colSpan={13}
+                        className="text-center px-[20px] py-[40px] text-danger-500"
+                      >
+                        {error}
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && !error && projects.length > 0 ? (
+                    projects.map((project) => (
                       <tr key={project.id} className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors">
                         <td className="ltr:text-left rtl:text-right px-[12px] py-[8px] whitespace-nowrap text-sm">
                           {project.created_at ? new Date(project.created_at).toLocaleDateString() : ""}
@@ -429,7 +434,7 @@ const ProjectsList: React.FC = () => {
                         colSpan={14}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
-                        {searchTerm ? "No Consignments match your search" : "No Consignments found"}
+                        {hasExtraFilters ? "No Consignments match your criteria" : "No Consignments found"}
                       </td>
                     </tr>
                   )}
@@ -438,41 +443,15 @@ const ProjectsList: React.FC = () => {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="px-[20px] py-[12px] md:py-[14px] border-t border-gray-100 dark:border-[#172036] flex items-center justify-between flex-wrap gap-[10px]">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Showing {indexOfFirstProject} to {indexOfLastProject} of {totalCount} results
-                </p>
-                <div className="flex gap-[5px]">
-                  <button
-                    onClick={() => handlePageClick(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="w-[31px] h-[31px] flex items-center justify-center rounded-md border border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <i className="material-symbols-outlined">chevron_left</i>
-                  </button>
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handlePageClick(i + 1)}
-                      className={`w-[31px] h-[31px] flex items-center justify-center rounded-md border transition-all ${
-                        currentPage === i + 1
-                          ? "bg-primary-500 text-white border-primary-500"
-                          : "border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => handlePageClick(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="w-[31px] h-[31px] flex items-center justify-center rounded-md border border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <i className="material-symbols-outlined">chevron_right</i>
-                  </button>
-                </div>
-              </div>
+            {!loading && !error && (
+              <PaginationFooter
+                meta={meta}
+                page={page}
+                perPage={perPage}
+                loading={loading}
+                onPageChange={setPage}
+                onPerPageChange={changePerPage}
+              />
             )}
           </>
         )}

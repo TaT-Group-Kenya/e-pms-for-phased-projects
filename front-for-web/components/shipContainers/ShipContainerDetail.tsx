@@ -439,7 +439,7 @@ const ShipContainerDetail: React.FC<{ container: ContainerDetail }> = ({ contain
                           <table className="w-full min-w-[560px] text-left text-[12px]">
                             <thead className="bg-gray-50 dark:bg-[#15203c] text-gray-500 dark:text-gray-400">
                               <tr>
-                                <th className="p-2 font-medium">Container No</th>
+                                <th className="p-2 font-medium">Container/Chassis No</th>
                                 <th className="p-2 font-medium">Size</th>
                                 <th className="p-2 font-medium">Goods Description</th>
                                 <th className="p-2 font-medium">Entry Number</th>

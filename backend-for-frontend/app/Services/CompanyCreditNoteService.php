@@ -6,6 +6,22 @@ use App\Models\CompanyCreditNote;
 
 class CompanyCreditNoteService
 {
+    use \App\Services\Concerns\ListQuery;
+
+    /** Columns matched by the free-text `search` parameter. */
+    protected array $listSearchable = [
+        'credit_note_number',
+        'title',
+        'description',
+    ];
+
+    /** Columns the request may filter on with equality. */
+    protected array $listFilterable = [
+        'invoice_id',
+        'status',
+        'currency',
+    ];
+
     public function index(
         array $filters = [],
         int $perPage = 15,
@@ -13,32 +29,16 @@ class CompanyCreditNoteService
         int $offset = 0,
         array $with = []
     ) {
-        // optimized query: apply eager loading and simple filters
+        // optimized query: apply eager loading, search and whitelisted filters
         $query = CompanyCreditNote::query();
         if (! empty($with)) {
             $query->with($with);
         }
-        // Handle soft-delete visibility flags
-        $withDeleted = filter_var($filters['with_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
-        $onlyDeleted = filter_var($filters['only_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
 
-        unset($filters['with_deleted'], $filters['only_deleted']);
+        // Logical-deletion visibility flags
+        $query = $this->applyLogicalDeletion($query, $filters);
 
-        if ($onlyDeleted) {
-            $query->onlyDeleted();
-        } elseif ($withDeleted) {
-            $query->withDeleted();
-        }
-
-        foreach ($filters as $key => $value) {
-            $query->where($key, $value);
-        }
-        $query->orderByDesc('id');
-
-        // Calculate offset if page is provided, otherwise use explicit offset
-        $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-
-        return $query->paginate($perPage, ['*'], 'page', $page);
+        return $this->paginateList($query, $filters, $perPage, $page);
     }
 
     public function find(int $id, array $with = [])

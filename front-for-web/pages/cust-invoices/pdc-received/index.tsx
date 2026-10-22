@@ -1,45 +1,42 @@
 import Link from 'next/link'
 import AuthenticatedLayout from '../../../components/authenticated/AuthenticatedLayout'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import Can from '../../../components/auth/Can'
 import { useSelector } from 'react-redux'
 import { selectAccessToken } from '../../../store/auth/selectors'
 import { useToast } from '../../../hooks/useToast'
+import { useListQuery } from '../../../hooks/useListQuery'
+import PaginationFooter from '../../../components/common/PaginationFooter'
 import { formatDate } from '../../../utils/format'
 
 export default function PdcReceivedListPage() {
   const accessToken = useSelector(selectAccessToken)
-  const { toasts, addToast, removeToast } = useToast()
-  const [items, setItems] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [customerFilter, setCustomerFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const { addToast, removeToast } = useToast()
 
-  useEffect(() => {
-    const fetchList = async () => {
-      if (!accessToken) return
-      setLoading(true)
-      try {
-        const resp = await fetch('/api/pdc-received/list', {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${accessToken}` },
-        })
-        const data = await resp.json().catch(() => null)
-        if (!resp.ok) throw new Error(data?.message || 'Failed to load')
-        const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
-        setItems(list)
-      } catch (err: any) {
-        addToast(err?.message || 'Failed to load PDCs', 'error')
-        setItems([])
-      } finally {
-        setLoading(false)
-      }
-    }
+  // Server-side listing: pagination, debounced search and status filter all
+  // live in useListQuery; the page renders the rows it gets back.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: items,
+    loading,
+    error,
+    meta,
+  } = useListQuery<any>('/api/pdc-received/list', {
+    accessToken,
+    initialFilters: { status: 'all' },
+    onError: (message) => addToast(message, 'error'),
+  })
 
-    fetchList()
-  }, [accessToken, addToast])
-
+  const statusFilter = filters.status || 'all'
+  const hasExtraFilters = !!searchInput || statusFilter !== 'all'
   return (
     <AuthenticatedLayout>
       <Can any={["ROLE_VIEW_PDC_RECEIVED_CUSTOMER"]} fallback={<div>You do not have permission to view PDC received.</div>}>
@@ -55,14 +52,14 @@ export default function PdcReceivedListPage() {
               <input
                 type="text"
                 placeholder="Search PDCs..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
               />
             </div>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => setFilter('status', e.target.value)}
               className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full md:w-[200px] block text-black dark:text-white px-[13px] outline-0"
             >
               <option value="all">All Status</option>
@@ -100,20 +97,19 @@ export default function PdcReceivedListPage() {
                     </tr>
                   </thead>
                   <tbody className="text-black dark:text-white">
-                    {(items || []).filter((it) => {
-                      const lowerSearch = searchTerm.toLowerCase()
-                      const lowerCustomer = customerFilter.toLowerCase()
-                      const status = `${it.status || ''}`.toLowerCase()
-                      const customerName = `${it.customer_name || it.customer?.name || ''}`.toLowerCase()
-                      const matchesSearch =
-                        !lowerSearch ||
-                        `${it.invoice_number || ''}`.toLowerCase().includes(lowerSearch) ||
-                        customerName.includes(lowerSearch) ||
-                        `${it.cheque_number || ''}`.toLowerCase().includes(lowerSearch)
-                      const matchesCustomer = !lowerCustomer || customerName.includes(lowerCustomer)
-                      const matchesStatus = statusFilter === 'all' || status === statusFilter
-                      return matchesSearch && matchesCustomer && matchesStatus
-                    }).map((it: any) => {
+                    {(!loading && error) && (
+                      <tr>
+                        <td colSpan={8} className="text-center px-[20px] py-[40px] text-danger-500">{error}</td>
+                      </tr>
+                    )}
+                    {(!loading && !error && (items || []).length === 0) && (
+                      <tr>
+                        <td colSpan={8} className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400">
+                          {hasExtraFilters ? 'No PDCs match your criteria' : 'No PDCs found'}
+                        </td>
+                      </tr>
+                    )}
+                    {(!loading && !error ? items || [] : []).map((it: any) => {
                       const parseDate = (d: any) => {
                         try {
                           const dt = new Date(d)
@@ -161,6 +157,16 @@ export default function PdcReceivedListPage() {
                     )})}
                   </tbody>
                 </table>
+                {(!loading && !error) && (
+                  <PaginationFooter
+                    meta={meta}
+                    page={page}
+                    perPage={perPage}
+                    loading={loading}
+                    onPageChange={setPage}
+                    onPerPageChange={changePerPage}
+                  />
+                )}
               </div>
             </>
           )}

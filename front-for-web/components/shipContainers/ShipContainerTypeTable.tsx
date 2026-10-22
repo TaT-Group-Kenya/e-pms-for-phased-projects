@@ -58,7 +58,6 @@ type ListRow = {
   entry_status?: string | null
   tr10_entry_status?: string | null
   tr12_entry_status?: string | null
-  entry_number?: string | null
   booking_no?: string | null
   do_status?: string | null
   allocation?: string | number | null
@@ -77,7 +76,6 @@ type ListRow = {
   location?: string | null
   goods_description?: string | null
   coe?: string | null
-  chassis_no?: string | null
   registration_no?: string | null
   station?: string | null
   remarks?: string | null
@@ -442,7 +440,11 @@ const ShipContainerTypeTable: React.FC<ShipContainerTypeTableProps> = ({ contain
 
     if (key === "container_numbers") {
       const containerNumbers =
-        row.container_numbers ?? row.container_number_details?.map((number) => number.container_no) ?? []
+        row.container_numbers ??
+        row.container_number_details
+          ?.map((number) => (number?.entry_number ? `${number?.container_no} (${number?.entry_number})` : number?.container_no))
+          .filter((value): value is string => !!value) ??
+        []
       return <span>{containerNumbers.length ? containerNumbers.join(", ") : "—"}</span>
     }
 

@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
 import { ToastContainer } from "../../common/Toast";
+import PaginationFooter from "../../common/PaginationFooter";
 import Can from "../../auth/Can";
 
 interface CustDebitNoteSummary {
@@ -45,11 +47,32 @@ const CustDebitNotesTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
 
-  const [debitNotes, setDebitNotes] = useState<CustDebitNoteSummary[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [reloadKey, setReloadKey] = useState<number>(0);
+  // Server-side listing: pagination, debounced search and status filter all
+  // live in useListQuery; the create-debit-note modal keeps its own state.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: debitNotes,
+    loading,
+    error,
+    meta,
+    refresh,
+  } = useListQuery<CustDebitNoteSummary>("/api/cust-debit-notes", {
+    accessToken,
+    initialFilters: { status: "all" },
+    onError: (message) => addToast(message, "error"),
+  });
+
+  const statusFilter = filters.status || "all";
+  const hasExtraFilters = !!searchInput || statusFilter !== "all";
+
 
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [invoices, setInvoices] = useState<CustInvoiceSummary[]>([]);
@@ -60,80 +83,6 @@ const CustDebitNotesTable: React.FC = () => {
   const [debitNoteNotes, setDebitNoteNotes] = useState<string>("");
   const [creatingDebitNote, setCreatingDebitNote] = useState<boolean>(false);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchDebitNotes = async () => {
-      if (!accessToken) {
-        setLoading(false);
-        setDebitNotes([]);
-        return;
-      }
-
-      setLoading(true);
-
-      try {
-        const params = new URLSearchParams();
-        if (statusFilter && statusFilter !== "all") {
-          params.append("status", statusFilter);
-        }
-
-        const qs = params.toString();
-        const url = qs ? `/api/cust-debit-notes?${qs}` : "/api/cust-debit-notes";
-
-        const resp = await fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          signal: controller.signal,
-        });
-
-        const data: any = await resp.json().catch(() => null);
-
-        if (!resp.ok) {
-          addToast(data?.message || "Failed to load customer debit notes", "error");
-          setDebitNotes([]);
-          return;
-        }
-
-        const items = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-
-        const mapped: CustDebitNoteSummary[] = (items || []).map((dn: any) => ({
-          id: dn.id,
-          debit_note_number: dn.debit_note_number ?? String(dn.id ?? ""),
-          invoice_id:
-            typeof dn.invoice_id === "number"
-              ? dn.invoice_id
-              : dn.invoice_id
-              ? Number(dn.invoice_id)
-              : null,
-          title: dn.title ?? null,
-          description: dn.description ?? null,
-          status: dn.status || "draft",
-          subtotal_amount: Number(dn.subtotal_amount ?? 0),
-          tax_amount: Number(dn.tax_amount ?? 0),
-          total_amount: Number(dn.total_amount ?? 0),
-          currency: dn.currency || "USD",
-          created_at: dn.created_at ?? null,
-        }));
-
-        setDebitNotes(mapped);
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        // eslint-disable-next-line no-console
-        console.error("fetch customer debit notes error", err);
-        addToast("Error loading customer debit notes. Please try again.", "error");
-        setDebitNotes([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDebitNotes();
-
-    return () => controller.abort();
-  }, [accessToken, addToast, reloadKey, statusFilter]);
 
   const formatCurrency = (value: number, currency: string) => {
     if (Number.isNaN(value)) return "-";
@@ -155,20 +104,6 @@ const CustDebitNotesTable: React.FC = () => {
         return "bg-gray-50 text-gray-500";
     }
   };
-
-  const filteredDebitNotes = debitNotes.filter((dn) => {
-    const lowerSearch = searchTerm.toLowerCase();
-    const matchesSearch =
-      (dn.title || "").toLowerCase().includes(lowerSearch) ||
-      (dn.status || "").toLowerCase().includes(lowerSearch) ||
-      (dn.debit_note_number || "").toLowerCase().includes(lowerSearch) ||
-      (dn.invoice_id ? String(dn.invoice_id).includes(lowerSearch) : false);
-
-    const matchesStatus =
-      statusFilter === "all" || dn.status.toLowerCase() === statusFilter.toLowerCase();
-
-    return matchesSearch && matchesStatus;
-  });
 
   const fetchInvoices = async () => {
     if (!accessToken) {
@@ -293,7 +228,7 @@ const CustDebitNotesTable: React.FC = () => {
 
       addToast(data?.message || "Draft debit note created.", "success");
       setShowCreateModal(false);
-      setReloadKey((prev) => prev + 1);
+      refresh();
     } catch (e: any) {
       addToast(e.message || "Failed to create debit note", "error");
     } finally {
@@ -311,11 +246,19 @@ const CustDebitNotesTable: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-[15px] w-full md:w-auto flex-wrap md:flex-nowrap">
+          {(hasExtraFilters) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-[4px] h-[36px] px-[10px] text-xs rounded-md border border-gray-50 dark:border-[#15203c] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+              title="Clear all filters"
+            >
+              <i className="material-symbols-outlined !text-[16px]">filter_alt_off</i>
+              Clear
+            </button>
+          )}
           <select
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-            }}
+            onChange={(e) => setFilter("status", e.target.value)}
             className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md px-[13px] py-[6px] text-black dark:text-white outline-0"
           >
             <option value="all">All Status</option>
@@ -329,11 +272,9 @@ const CustDebitNotesTable: React.FC = () => {
             </label>
             <input
               type="text"
-              placeholder="Search debit notes..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-              }}
+              placeholder="Search debit notes (number, title)..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
             />
           </div>
@@ -393,8 +334,15 @@ const CustDebitNotesTable: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="text-black dark:text-white">
-                  {filteredDebitNotes.length > 0 ? (
-                    filteredDebitNotes.map((dn) => (
+                  {!loading && error && (
+                    <tr>
+                      <td colSpan={11} className="text-center px-[20px] py-[40px] text-danger-500">
+                        {error}
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && !error && debitNotes.length > 0 ? (
+                    debitNotes.map((dn) => (
                       <tr
                         key={dn.id}
                         className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
@@ -466,7 +414,7 @@ const CustDebitNotesTable: React.FC = () => {
                         colSpan={11}
                         className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400"
                       >
-                        {searchTerm || statusFilter !== "all"
+                        {hasExtraFilters
                           ? "No customer debit notes match your criteria"
                           : "No customer debit notes found"}
                       </td>
@@ -475,6 +423,17 @@ const CustDebitNotesTable: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            {!loading && !error && (
+              <PaginationFooter
+                meta={meta}
+                page={page}
+                perPage={perPage}
+                loading={loading}
+                onPageChange={setPage}
+                onPerPageChange={changePerPage}
+              />
+            )}
           </>
         )}
       </div>

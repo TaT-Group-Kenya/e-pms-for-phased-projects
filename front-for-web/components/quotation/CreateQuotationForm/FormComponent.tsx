@@ -437,7 +437,7 @@ const CreateQuotationForm: React.FC = () => {
                       <table className="w-full min-w-[460px] text-left text-[12px]">
                         <thead className="text-gray-500 dark:text-gray-400">
                           <tr>
-                            <th className="py-1 pr-3 font-medium">Container No</th>
+                            <th className="py-1 pr-3 font-medium">Container/Chassis No</th>
                             <th className="py-1 pr-3 font-medium">Size</th>
                             <th className="py-1 pr-3 font-medium">Goods Description</th>
                             <th className="py-1 pr-3 font-medium">Entry Number</th>

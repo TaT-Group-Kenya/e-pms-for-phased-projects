@@ -46,6 +46,12 @@ class ShipContainerStoreRequest extends FormRequest
             $rules['status'] = ['prohibited'];
         }
 
+        // Chassis numbers and entry numbers live on the tracked number rows
+        // (ShipContainerNumber); the retired container-level columns must not
+        // be accepted from clients.
+        $rules['entry_number'] = ['prohibited'];
+        $rules['chassis_no'] = ['prohibited'];
+
         return $rules;
     }
 

@@ -88,13 +88,13 @@ const LinkedShipContainerCard: FC<LinkedShipContainerCardProps> = ({
       </div>
 
       <div className="mt-[15px] pt-[15px] border-t border-gray-50 dark:border-[#15203c]">
-        <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-[4px]">Container numbers</p>
+        <p className="text-[12px] text-gray-500 dark:text-gray-400 mb-[4px]">Container/Chassis numbers</p>
         {numberDetails.length ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[420px] text-left text-[12px]">
               <thead className="text-gray-500 dark:text-gray-400">
                 <tr>
-                  <th className="py-1 pr-3 font-medium">Container No</th>
+                  <th className="py-1 pr-3 font-medium">Container/Chassis No</th>
                   <th className="py-1 pr-3 font-medium">Size</th>
                   <th className="py-1 pr-3 font-medium">Goods Description</th>
                   <th className="py-1 pr-3 font-medium">Entry Number</th>

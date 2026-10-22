@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\ProjectLocation;
 use App\Models\ProjectOwner;
 use App\Models\ShipContainer;
+use App\Models\ShipContainerNumber;
 use App\Models\SysConfig;
 use App\Models\SysGroup;
 use App\Models\SysRole;
@@ -282,7 +283,6 @@ class ShipContainerApiTest extends TestCase
             'customer_id' => $this->customer->id,
             'project_owner_id' => $this->owner->id,
             'etd' => '2026-10-12',
-            'entry_number' => 'EXP-1',
             'booking_no' => 'BOOK-1',
             'shipping_line' => 'MSC',
             'quantity' => 1,
@@ -614,7 +614,6 @@ class ShipContainerApiTest extends TestCase
             'project_owner_id' => $this->owner->id,
             'etd' => '2026-10-02',
             'container_numbers' => ['EXPORT-STATUS-1'],
-            'entry_number' => 'EXP-STATUS-1',
             'booking_no' => 'BOOK-STATUS-1',
             'shipping_line' => 'MSC',
             'status' => ShipContainer::STATUS_RELEASED_CUSTOMS,
@@ -740,6 +739,47 @@ class ShipContainerApiTest extends TestCase
         $this->postJson('/e-pms/api/v1/ship-containers', $bad, $this->authHeaders())
             ->assertStatus(422)
             ->assertJsonValidationErrors(['container_numbers.0.size_unit']);
+    }
+
+    public function test_container_level_chassis_and_entry_numbers_are_not_accepted(): void
+    {
+        // Chassis numbers are tracked as number rows; entry numbers are
+        // per-number fields managed on ShipContainerNumber.
+        $payload = [
+            'container_type' => ShipContainer::TYPE_UNIT_TRANSIT,
+            'customer_id' => $this->customer->id,
+            'project_owner_id' => $this->owner->id,
+            'eta' => '2026-10-02',
+            'container_numbers' => [['container_no' => 'UTR-RO-01']],
+            'bol_no' => 'BOL-RETIRED-1',
+            'shipping_line' => 'MSC',
+            'chassis_no' => 'CHS-TR-000001',
+        ];
+
+        $this->postJson('/e-pms/api/v1/ship-containers', $payload, $this->authHeaders())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['chassis_no']);
+
+        $exportPayload = [
+            'container_type' => ShipContainer::TYPE_CONTAINER_EXPORT,
+            'customer_id' => $this->customer->id,
+            'project_owner_id' => $this->owner->id,
+            'etd' => '2026-10-02',
+            'container_numbers' => [['container_no' => 'EXPRET-1', 'entry_number' => 'EXP-001']],
+            'booking_no' => 'BOOK-RETIRED-1',
+            'shipping_line' => 'MSC',
+        ];
+
+        $created = $this->postJson('/e-pms/api/v1/ship-containers', $exportPayload, $this->authHeaders())->assertCreated();
+
+        $this->putJson("/e-pms/api/v1/ship-containers/{$created->json('data.id')}", [
+            'entry_number' => 'EXP-002',
+        ], $this->authHeaders())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['entry_number']);
+
+        // The per-number entry number still persists through the numbers payload.
+        $this->assertSame('EXP-001', ShipContainerNumber::where('container_no', 'EXPRET-1')->value('entry_number'));
     }
 
     public function test_project_links_containers_by_bl_or_bol_and_can_update_number_entry(): void

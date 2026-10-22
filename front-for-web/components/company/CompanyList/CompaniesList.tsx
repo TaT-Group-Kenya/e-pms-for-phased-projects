@@ -5,8 +5,12 @@ import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
+import { useFilterOptions } from "../../../hooks/useFilterOptions";
 import { ToastContainer } from "../../common/Toast";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal";
+import PaginationFooter from "../../common/PaginationFooter";
+import FilterSelect from "../../common/FilterSelect";
 import Can from "../../auth/Can";
 
 const internalImages = process.env.NEXT_PUBLIC_EPMS_API_BASE;
@@ -22,134 +26,47 @@ interface Company {
   logo?: string;
 }
 
-interface PaginationData {
-  data: Company[];
-  current_page: number;
-  per_page: number;
-  total: number;
-  last_page: number;
-}
-
 const CompaniesList: React.FC = () => {
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
-  
-  // State management
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+
+  // Server-side listing: pagination and debounced search live in useListQuery.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: companies,
+    loading,
+    error, 
+    meta,
+    refresh,
+  } = useListQuery<Company>("/api/companies/list", {
+    accessToken,
+    onError: (message) => addToast(message, "error"),
+  });
+
+  // Option list for the country filter.
+  const accessTokenRef = accessToken as string;
+  const { options: countryOptions } = useFilterOptions(
+    accessTokenRef ? "/api/companies/list?page=1&per_page=500" : null,
+    (row) => (row?.country ? { value: String(row.country), label: String(row.country) } : null),
+    { accessToken: accessTokenRef }
+  );
+  const countryFilter = filters.country || "all";
+  const hasActiveSearch = !!searchInput || countryFilter !== "all";
+
+  // Delete modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteCompanyId, setDeleteCompanyId] = useState<number | null>(null);
   const [deleteCompanyName, setDeleteCompanyName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  
-  const perPage = 15;
-
-  // Fetch companies from API
-  const fetchCompanies = async (page: number = currentPage) => {
-    setLoading(true);
-
-    try {
-      const response = await fetch(
-        `/api/companies/list?page=${page}&per_page=${perPage}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
-
-      const data: PaginationData = await response.json();
-
-      if (!response.ok) {
-        addToast("Failed to load companies", "error");
-        setCompanies([]);
-        return;
-      }
-
-      // Handle both paginated and direct responses
-      const companiesList = data.data || data;
-      setCompanies(Array.isArray(companiesList) ? companiesList : []);
-      setTotalPages(data.last_page || 1);
-      setTotalCount(data.total || 0);
-    } catch (err) {
-      console.error("Error fetching companies:", err);
-      addToast("Error loading companies. Please refresh the page.", "error");
-      setCompanies([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch companies from API
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchCompaniesWithAbort = async () => {
-      setLoading(true);
-
-      try {
-        const response = await fetch(
-          `/api/companies/list?page=${currentPage}&per_page=${perPage}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-            signal: controller.signal,
-          }
-        );
-
-        // Don't process if request was aborted
-        if (controller.signal.aborted) return;
-
-        const data: PaginationData = await response.json();
-
-        if (!response.ok) {
-          addToast("Failed to load companies", "error");
-          setCompanies([]);
-          return;
-        }
-
-        // Handle both paginated and direct responses
-        const companiesList = data.data || data;
-        setCompanies(Array.isArray(companiesList) ? companiesList : []);
-        setTotalPages(data.last_page || 1);
-        setTotalCount(data.total || 0);
-      } catch (err) {
-        // Ignore abort errors
-        if (err instanceof DOMException && err.name === "AbortError") {
-          return;
-        }
-        console.error("Error fetching companies:", err);
-        addToast("Error loading companies. Please refresh the page.", "error");
-        setCompanies([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (accessToken) {
-      fetchCompaniesWithAbort();
-    } else {
-      setLoading(false);
-    }
-
-    // Cleanup: abort request if effect runs again or component unmounts
-    return () => controller.abort();
-  }, [currentPage, accessToken, perPage, addToast]);
-
-  // Handle page change
-  const handlePageClick = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
 
   const deleteCompany = async (companyId: number, accessToken: string): Promise<any> => {
     try {
@@ -195,8 +112,8 @@ const CompaniesList: React.FC = () => {
       await deleteCompany(deleteCompanyId, accessToken as string);
       addToast("Company deleted successfully", "success");
       closeDeleteModal();
-      // Refetch companies on current page in the background
-      await fetchCompanies(currentPage);
+      // Refetch on current page in the background
+      refresh();
     } catch (error: any) {
       const errorMessage = error.message || "Failed to delete company";
       setDeleteError(errorMessage);
@@ -205,10 +122,6 @@ const CompaniesList: React.FC = () => {
       setIsDeleting(false);
     }
   };
-
-  // Calculate pagination display values
-  const indexOfFirstCompany = (currentPage - 1) * perPage + 1;
-  const indexOfLastCompany = Math.min(currentPage * perPage, totalCount);
 
   return (
     <>
@@ -228,6 +141,23 @@ const CompaniesList: React.FC = () => {
           <h5 className="!mb-0">All Companies</h5>
         </div>
         <div className="flex items-center gap-[15px] w-full md:w-auto">
+          {(hasActiveSearch) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-[4px] h-[36px] px-[10px] text-xs rounded-md border border-gray-50 dark:border-[#15203c] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+              title="Clear all filters"
+            >
+              <i className="material-symbols-outlined !text-[16px]">filter_alt_off</i>
+              Clear
+            </button>
+          )}
+          {/* Country Filter */}
+          <FilterSelect
+            value={countryFilter}
+            options={countryOptions}
+            placeholder="All Countries"
+            onChange={(value) => setFilter("country", value)}
+          />
           {/* Search Box */}
           <div className="relative flex-1 md:flex-none md:w-[265px]">
             <label className="leading-none absolute ltr:left-[13px] rtl:right-[13px] text-black dark:text-white mt-px top-1/2 -translate-y-1/2">
@@ -236,11 +166,8 @@ const CompaniesList: React.FC = () => {
             <input
               type="text"
               placeholder="Search companies..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="bg-gray-50 dark:bg-[#15203c] border border-gray-50 dark:border-[#15203c] h-[36px] text-xs rounded-md w-full block text-black dark:text-white pt-[11px] pb-[12px] ltr:pl-[38px] rtl:pr-[38px] ltr:pr-[13px] rtl:pl-[13px] placeholder:text-gray-500 dark:placeholder:text-gray-400 outline-0"
             />
           </div>
@@ -287,18 +214,15 @@ const CompaniesList: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="text-black dark:text-white">
-                  {companies.filter((company) =>
-                    company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    company.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    (company.contact_person_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    (company.phone || "").toLowerCase().includes(searchTerm.toLowerCase())
-                  ).length > 0 ? (
-                    companies.filter((company) =>
-                      company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      company.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      (company.contact_person_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-                      (company.phone || "").toLowerCase().includes(searchTerm.toLowerCase())
-                    ).map((company) => (
+                  {!loading && error && (
+                    <tr>
+                      <td colSpan={7} className="text-center px-[20px] py-[40px] text-danger-500">
+                        {error}
+                      </td>
+                    </tr>
+                  )}
+                  {!loading && !error && companies.length > 0 ? (
+                    companies.map((company) => (
                       <tr key={company.id} className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors">
                         <td className="ltr:text-left rtl:text-right px-[20px] py-[15px] whitespace-nowrap">
                           <Link href={`/company/${company.id}`} className="text-primary-500 hover:text-primary-600 hover:underline font-medium text-sm">
@@ -337,7 +261,7 @@ const CompaniesList: React.FC = () => {
                   ) : (
                     <tr>
                       <td colSpan={7} className="text-center px-[20px] py-[40px] text-gray-500 dark:text-gray-400">
-                        {searchTerm ? "No companies match your search" : "No companies found"}
+                        {hasActiveSearch ? "No companies match your criteria" : "No companies found"}
                       </td>
                     </tr>
                   )}
@@ -345,41 +269,15 @@ const CompaniesList: React.FC = () => {
               </table>
             </div>
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="px-[20px] py-[12px] md:py-[14px] border-t border-gray-100 dark:border-[#172036] flex items-center justify-between flex-wrap gap-[10px]">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Showing {indexOfFirstCompany} to {indexOfLastCompany} of {totalCount} results
-                </p>
-                <div className="flex gap-[5px]">
-                  <button
-                    onClick={() => handlePageClick(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="w-[31px] h-[31px] flex items-center justify-center rounded-md border border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <i className="material-symbols-outlined">chevron_left</i>
-                  </button>
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handlePageClick(i + 1)}
-                      className={`w-[31px] h-[31px] flex items-center justify-center rounded-md border transition-all ${
-                        currentPage === i + 1
-                          ? "bg-primary-500 text-white border-primary-500"
-                          : "border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => handlePageClick(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="w-[31px] h-[31px] flex items-center justify-center rounded-md border border-gray-100 dark:border-[#172036] hover:bg-primary-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <i className="material-symbols-outlined">chevron_right</i>
-                  </button>
-                </div>
-              </div>
+            {!loading && !error && (
+              <PaginationFooter
+                meta={meta}
+                page={page}
+                perPage={perPage}
+                loading={loading}
+                onPageChange={setPage}
+                onPerPageChange={changePerPage}
+              />
             )}
           </>
         )}

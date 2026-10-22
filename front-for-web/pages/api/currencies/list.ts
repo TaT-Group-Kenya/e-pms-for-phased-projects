@@ -8,7 +8,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!base) return res.status(500).json({ message: 'EPMS_API_BASE not configured' })
 
   try {
-    const resp = await fetch(`${base}/currencies?per_page=100`, {
+    const params = new URLSearchParams()
+    Object.entries(req.query || {}).forEach(([key, value]) => {
+      if (typeof value === 'string') params.append(key, value)
+    })
+    if (!params.has('per_page')) params.append('per_page', '100')
+
+    const resp = await fetch(`${base}/currencies?${params.toString()}`, {
       method: 'GET',
       headers: {
         ...JSON_HEADERS,

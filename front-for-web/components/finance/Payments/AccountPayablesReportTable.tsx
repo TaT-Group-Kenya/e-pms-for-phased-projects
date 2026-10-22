@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
 import { ToastContainer } from "../../common/Toast";
+import PaginationFooter from "../../common/PaginationFooter";
 
 interface CompanyPaymentSummary {
   id: number;
@@ -29,270 +31,34 @@ const AccountPayablesReportTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
 
-  const [rows, setRows] = useState<CompanyPaymentSummary[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(25);
-  const [total, setTotal] = useState(0);
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: unfilteredRows,
+    loading,
+    error,
+    meta,
+  } = useListQuery<CompanyPaymentSummary>("/api/finance/company-payments/list", {
+    accessToken,
+    onError: (message) => addToast(message, "error"),
+  });
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [companyFilterId, setCompanyFilterId] = useState("");
-  const [projectFilterId, setProjectFilterId] = useState("");
-  const [invoiceFilterId, setInvoiceFilterId] = useState("");
-  const [currencyFilter, setCurrencyFilter] = useState("");
+  // Date/company/currency filters now go to the API via `filters`.
+  const fromDate = filters.date_from || "";
+  const toDate = filters.date_to || "";
+  const companyFilterId = filters.company_id || "";
+  const currencyFilter = filters.currency || "";
+  const hasExtraFilters =
+    !!searchInput || fromDate !== "" || toDate !== "" || companyFilterId !== "" || currencyFilter !== "";
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchCompanyPayments = async () => {
-      if (!accessToken) {
-        setRows([]);
-        return;
-      }
-      setLoading(true);
-      try {
-        const resp = await fetch(
-          `/api/finance/company-payments/list?page=${page}&per_page=${perPage}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-            signal: controller.signal,
-          }
-        );
-
-        const data: any = await resp.json().catch(() => null);
-        if (!resp.ok) {
-          addToast(data?.message || "Failed to load Service Provider payments", "error");
-          setRows([]);
-          return;
-        }
-
-        const items = Array.isArray(data?.data)
-          ? data.data
-          : Array.isArray(data)
-          ? data
-          : [];
-
-        const mapped: CompanyPaymentSummary[] = (items || []).map((p: any) => {
-          const invoice = p.invoice || null;
-
-          let companyName: string | null = null;
-          let companyId: number | null = null;
-          let projectName: string | null = null;
-          let projectId: number | null = null;
-          let invoiceNumber: string | null = null;
-          let invoiceId: number | null = null;
-          let bolNumber: string | null = null;
-
-          if (invoice) {
-            if (invoice.invoice_number) {
-              invoiceNumber = String(invoice.invoice_number);
-            }
-            if (invoice.id != null) {
-              invoiceId = Number(invoice.id);
-            }
-
-            if (invoice.company) {
-              if (invoice.company.name) {
-                companyName = String(invoice.company.name);
-              }
-              if (invoice.company.id != null) {
-                companyId = Number(invoice.company.id);
-              }
-            }
-
-            if (invoice.project) {
-              const label = invoice.project.name || invoice.project.title || invoice.project.code;
-              if (label) {
-                projectName = String(label);
-              }
-              if (invoice.project.id != null) {
-                projectId = Number(invoice.project.id);
-              }
-              if (invoice.project.bol_number) {
-                bolNumber = String(invoice.project.bol_number);
-              }
-            }
-          }
-
-          return {
-            id: Number(p.id),
-            transaction_number: p.transaction_number ?? null,
-            amount_paid: Number(p.amount_paid ?? 0),
-            payment_date: p.payment_date ?? null,
-            payment_method: p.payment_method ?? null,
-            payment_status: p.payment_status ?? null,
-            currency: p.currency ?? null,
-            transactedBy: p.created_by_user ? `${p.created_by_user.first_name} ${p.created_by_user.last_name}` : null,
-            companyName,
-            companyId,
-            projectName,
-            projectId,
-            invoiceNumber,
-            invoiceId,
-            bolNumber,
-          };
-        });
-
-        setRows(mapped);
-
-        const totalValue =
-          typeof data?.meta?.total === "number"
-            ? data.meta.total
-            : Array.isArray(data?.data)
-            ? data.data.length
-            : Array.isArray(data)
-            ? data.length
-            : mapped.length;
-        setTotal(totalValue);
-      } catch (err: any) {
-        if (err?.name === "AbortError") return;
-        // eslint-disable-next-line no-console
-        console.error("fetch Service Provider payments error", err);
-        addToast("Error loading Service Provider payments.", "error");
-        setRows([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCompanyPayments();
-
-    return () => controller.abort();
-  }, [accessToken, addToast, page, perPage]);
-
-  const filteredRows = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-
-    const fromTime = fromDate ? new Date(`${fromDate}T00:00:00`).getTime() : null;
-    const toTime = toDate ? new Date(`${toDate}T23:59:59`).getTime() : null;
-
-    return rows.filter((p) => {
-      if (fromTime || toTime) {
-        const paidTime = p.payment_date ? new Date(p.payment_date).getTime() : null;
-
-        if (fromTime && (paidTime === null || paidTime < fromTime)) {
-          return false;
-        }
-
-        if (toTime && (paidTime === null || paidTime > toTime)) {
-          return false;
-        }
-      }
-
-      if (companyFilterId && p.companyId != null) {
-        if (String(p.companyId) !== companyFilterId) {
-          return false;
-        }
-      }
-
-      if (projectFilterId && p.projectId != null) {
-        if (String(p.projectId) !== projectFilterId) {
-          return false;
-        }
-      }
-
-      if (invoiceFilterId && p.invoiceId != null) {
-        if (String(p.invoiceId) !== invoiceFilterId) {
-          return false;
-        }
-      }
-
-      if (currencyFilter) {
-        if ((p.currency || "") !== currencyFilter) {
-          return false;
-        }
-      }
-
-      return (
-        (p.transaction_number || "").toLowerCase().includes(term) ||
-        (p.payment_method || "").toLowerCase().includes(term) ||
-        (p.payment_status || "").toLowerCase().includes(term)
-      );
-    });
-  }, [rows, searchTerm, fromDate, toDate, companyFilterId, projectFilterId, invoiceFilterId]);
-
-  const companyOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    rows.forEach((p) => {
-      if (p.companyId != null) {
-        const key = String(p.companyId);
-        if (!map.has(key)) {
-          map.set(key, p.companyName || key);
-        }
-      }
-    });
-    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
-  }, [rows]);
-
-  const projectOptions = useMemo(() => {
-    const map = new Map<string, string>();
-
-    rows.forEach((p) => {
-      if (p.projectId != null) {
-        const key = String(p.projectId);
-        if (!map.has(key)) {
-          map.set(key, p.projectName || key);
-        }
-      }
-    });
-
-    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
-  }, [rows]);
-
-  const invoiceOptions = useMemo(() => {
-    const map = new Map<string, string>();
-
-    rows.forEach((p) => {
-      if (p.invoiceId != null) {
-        const key = String(p.invoiceId);
-        if (!map.has(key)) {
-          map.set(key, p.invoiceNumber || key);
-        }
-      }
-    });
-
-    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
-  }, [rows]);
-
-  const currencyOptions = useMemo(() => {
-    const set = new Set<string>();
-    rows.forEach((p) => {
-      if (p.currency) {
-        set.add(p.currency);
-      }
-    });
-    return Array.from(set.values()).sort();
-  }, [rows]);
-
-  const handleClearFilters = () => {
-    setSearchTerm("");
-    setFromDate("");
-    setToDate("");
-    setCompanyFilterId("");
-    setProjectFilterId("");
-    setInvoiceFilterId("");
-    setCurrencyFilter("");
-  };
-
-  const totalPages = perPage > 0 ? Math.max(1, Math.ceil(total / perPage)) : 1;
-
-  const handleChangePerPage = (value: number) => {
-    setPerPage(value);
-    setPage(1);
-  };
-
-  const handlePrevPage = () => {
-    setPage((prev) => Math.max(1, prev - 1));
-  };
-
-  const handleNextPage = () => {
-    setPage((prev) => Math.min(totalPages, prev + 1));
-  };
+  const rows = unfilteredRows;
 
   const formatCurrency = (value: number, currency?: string | null) => {
     if (Number.isNaN(value)) return "-";
@@ -309,7 +75,7 @@ const AccountPayablesReportTable: React.FC = () => {
   };
 
   const handleExportCsv = () => {
-    const rowsSource = filteredRows;
+    const rowsSource = rows;
 
     if (!rowsSource.length) {
       addToast("No data to export.", "error");
@@ -356,54 +122,40 @@ const AccountPayablesReportTable: React.FC = () => {
       <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md overflow-hidden mb-[20px]">
         <div className="trezo-card-header flex flex-col md:flex-row items-start md:items-center justify-between p-5 gap-[15px]">
           <div className="flex flex-wrap items-center gap-2 justify-start w-full md:flex-1 mt-[10px] md:mt-0">
+              {(hasExtraFilters) && (
+                <button
+                  onClick={clearFilters}
+                  className="inline-flex items-center gap-[4px] h-[36px] px-[10px] text-xs rounded-md border border-gray-200 dark:border-[#172036] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+                  title="Clear all filters"
+                >
+                  <i className="material-symbols-outlined !text-[16px]">filter_alt_off</i>
+                  Clear
+                </button>
+              )}
               <input
                 type="text"
-                placeholder="Search ..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search (number, provider)..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-48 md:max-w-xs px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
 
               <div className="flex items-center gap-2">
                 <select
                   value={companyFilterId}
-                  onChange={(e) => setCompanyFilterId(e.target.value)}
+                  onChange={(e) => setFilter("company_id", e.target.value)}
                   className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
                 >
                   <option value="">All Service Providers</option>
-                  {companyOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <select
-                  value={projectFilterId}
-                  onChange={(e) => setProjectFilterId(e.target.value)}
-                  className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
-                >
-                  <option value="">All Consignments</option>
-                  {projectOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <select
-                  value={invoiceFilterId}
-                  onChange={(e) => setInvoiceFilterId(e.target.value)}
-                  className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
-                >
-                  <option value="">All invoices</option>
-                  {invoiceOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
+                  {Array.from(
+                    new Map(
+                      rows
+                        .filter((p) => p.companyId != null)
+                        .map((p) => [String(p.companyId), p.companyName || String(p.companyId)])
+                    ).entries()
+                  ).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
                     </option>
                   ))}
                 </select>
@@ -412,11 +164,11 @@ const AccountPayablesReportTable: React.FC = () => {
               <div className="flex items-center gap-2">
                 <select
                   value={currencyFilter}
-                  onChange={(e) => setCurrencyFilter(e.target.value)}
+                  onChange={(e) => setFilter("currency", e.target.value)}
                   className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[120px]"
                 >
                   <option value="">All currencies</option>
-                  {currencyOptions.map((cur) => (
+                  {Array.from(new Set(rows.map((p) => p.currency).filter(Boolean) as string[])).sort().map((cur) => (
                     <option key={cur} value={cur}>
                       {cur}
                     </option>
@@ -429,14 +181,14 @@ const AccountPayablesReportTable: React.FC = () => {
                 <input
                   type="date"
                   value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
+                  onChange={(e) => setFilter("date_from", e.target.value)}
                   className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
                 <span className="text-xs text-gray-500 dark:text-gray-400">Date to:</span>
                 <input
                   type="date"
                   value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
+                  onChange={(e) => setFilter("date_to", e.target.value)}
                   className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[10px] py-[6px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
@@ -445,7 +197,7 @@ const AccountPayablesReportTable: React.FC = () => {
                 <span className="text-xs text-gray-500 dark:text-gray-400">Rows per page:</span>
                 <select
                   value={perPage}
-                  onChange={(e) => handleChangePerPage(Number(e.target.value) || 25)}
+                  onChange={(e) => changePerPage(Number(e.target.value) || 25)}
                   className="border border-gray-200 dark:border-[#172036] rounded-md bg-transparent px-[8px] py-[4px] text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
                   <option value={10}>10</option>
@@ -457,7 +209,7 @@ const AccountPayablesReportTable: React.FC = () => {
 
               <button
                 type="button"
-                onClick={handleClearFilters}
+                onClick={clearFilters}
                 className="px-[10px] py-[6px] rounded-md border border-amber-500 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100"
               >
                 Clear filters
@@ -499,7 +251,15 @@ const AccountPayablesReportTable: React.FC = () => {
                 </tr>
               )}
 
-              {!loading && filteredRows.length === 0 && (
+              {!loading && error && (
+                <tr>
+                  <td colSpan={8} className="text-center px-[15px] py-[12px] text-danger-500">
+                    {error}
+                  </td>
+                </tr>
+              )}
+
+              {!loading && !error && rows.length === 0 && (
                 <tr>
                   <td colSpan={8} className="text-center text-sm px-[15px] py-[12px] text-gray-500">
                     No Service Provider payments found.
@@ -508,7 +268,8 @@ const AccountPayablesReportTable: React.FC = () => {
               )}
 
               {!loading &&
-                filteredRows.map((p) => (
+                !error &&
+                rows.map((p) => (
                   <tr
                     key={p.id}
                     className="border-t border-gray-100 dark:border-[#172036] align-middle"
@@ -552,47 +313,16 @@ const AccountPayablesReportTable: React.FC = () => {
           </table>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-2 px-4 py-3 border-t border-gray-100 dark:border-[#172036]">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {total > 0
-              ? `Showing ${(page - 1) * perPage + 1} to ${Math.min(page * perPage, total)} of ${total}`
-              : "No records"}
-          </p>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePrevPage}
-              disabled={page <= 1}
-              className={`px-[10px] py-[6px] rounded-md border text-xs font-medium flex items-center gap-1 transition-colors ${
-                page <= 1
-                  ? "border-gray-200 text-gray-300 cursor-not-allowed"
-                  : "border-primary-200 text-primary-600 hover:bg-primary-50"
-              }`}
-            >
-              <span className="material-symbols-outlined !text-[16px]">chevron_left</span>
-              Previous
-            </button>
-
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              Page {page} of {totalPages}
-            </span>
-
-            <button
-              type="button"
-              onClick={handleNextPage}
-              disabled={page >= totalPages}
-              className={`px-[10px] py-[6px] rounded-md border text-xs font-medium flex items-center gap-1 transition-colors ${
-                page >= totalPages
-                  ? "border-gray-200 text-gray-300 cursor-not-allowed"
-                  : "border-primary-200 text-primary-600 hover:bg-primary-50"
-              }`}
-            >
-              Next
-              <span className="material-symbols-outlined !text-[16px]">chevron_right</span>
-            </button>
-          </div>
-        </div>
+        {!loading && !error && (
+          <PaginationFooter
+            meta={meta}
+            page={page}
+            perPage={perPage}
+            loading={loading}
+            onPageChange={setPage}
+            onPerPageChange={changePerPage}
+          />
+        )}
       </div>
 
       <ToastContainer toasts={toasts} onClose={removeToast} />

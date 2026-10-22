@@ -5,8 +5,12 @@ import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
+import { useFilterOptions } from "../../../hooks/useFilterOptions";
 import { ToastContainer } from "../../common/Toast";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal/DeleteConfirmationModal";
+import PaginationFooter from "../../common/PaginationFooter";
+import FilterSelect from "../../common/FilterSelect";
 import Can from "../../auth/Can";
 import { formatApiError } from "../../../utils/errorHandler";
 
@@ -41,13 +45,9 @@ const AccountsTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken);
   const { toasts, addToast, removeToast } = useToast();
 
-  const [accounts, setAccounts] = useState<AccountSummary[]>([]);
   const [currencies, setCurrencies] = useState<CurrencyOption[]>([]);
   const [chartOfAccounts, setChartOfAccounts] = useState<ChartOfAccountOption[]>([]);
   const [formChartOfAccountId, setFormChartOfAccountId] = useState<string>("");
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
 
   const [showModal, setShowModal] = useState(false);
   const [editingAccount, setEditingAccount] = useState<AccountSummary | null>(null);
@@ -63,81 +63,33 @@ const AccountsTable: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = useState<AccountSummary | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    const controller = new AbortController();
+  // Server-side listing: pagination, debounced search and type/group filters
+  // live in useListQuery; form-currency/chart options remain local.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: accounts,
+    loading,
+    error,
+    meta,
+    refresh,
+  } = useListQuery<AccountSummary>("/api/accounts/list", {
+    accessToken,
+    onError: (message) => addToast(message, "error"),
+  });
 
-    const fetchAccounts = async () => {
-      if (!accessToken) {
-        setLoading(false);
-        setAccounts([]);
-        return;
-      }
+  const typeFilter = filters.type || "";
+  const groupFilter = filters.group || "";
+  const hasExtraFilters =
+    !!searchInput || typeFilter !== "" || groupFilter !== "";
 
-      setLoading(true);
-
-      try {
-        const url = "/api/accounts/list?page=1&per_page=100";
-        const resp = await fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          signal: controller.signal,
-        });
-
-        const data: any = await resp.json().catch(() => null);
-
-        if (!resp.ok) {
-          addToast(data?.message || "Failed to load accounts", "error");
-          setAccounts([]);
-          return;
-        }
-
-        const items = Array.isArray(data?.data)
-          ? data.data
-          : Array.isArray(data)
-          ? data
-          : [];
-
-        const mapped: AccountSummary[] = (items || []).map((acc: any) => ({
-          id: Number(acc.id),
-          code: String(acc.code ?? ""),
-          name: String(acc.name ?? ""),
-          description: String(acc.description ?? ""),
-          type: String(acc.type ?? ""),
-          group: String(acc.group ?? ""),
-          balance: String(acc.balance ?? "0"),
-          overdraft_allowed: Number(acc.overdraft_allowed ?? 0),
-          currency: String(acc.currency ?? acc.currency_code ?? acc.currency?.code ?? ""),
-          chart_of_account_id:
-            acc.chart_of_account_id === null || acc.chart_of_account_id === undefined
-              ? null
-              : Number(acc.chart_of_account_id),
-          chart_of_account: acc.chart_of_account
-            ? {
-                id: Number(acc.chart_of_account.id),
-                code: String(acc.chart_of_account.code ?? ""),
-                name: String(acc.chart_of_account.name ?? ""),
-              }
-            : null,
-        }));
-
-        setAccounts(mapped);
-      } catch (err: any) {
-        if (err?.name === "AbortError") return;
-        // eslint-disable-next-line no-console
-        console.error("fetch accounts error", err);
-        addToast("Error loading accounts. Please try again.", "error");
-        setAccounts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAccounts();
-
-    return () => controller.abort();
-  }, [accessToken, addToast, reloadKey]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -248,26 +200,6 @@ const AccountsTable: React.FC = () => {
     return () => controller.abort();
   }, [accessToken, addToast]);
 
-  const filteredAccounts = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return accounts.filter((acc) => {
-      const overdraft = acc.overdraft_allowed;
-      const overdraftLabel = overdraft === 1 ? "yes" : "no";
-
-      const currencyCode = (acc.currency || "").toLowerCase();
-
-      return (
-        acc.code.toLowerCase().includes(term) ||
-        acc.name.toLowerCase().includes(term) ||
-        acc.description.toLowerCase().includes(term) ||
-        acc.type.toLowerCase().includes(term) ||
-        acc.group.toLowerCase().includes(term) ||
-        currencyCode.includes(term) ||
-        overdraftLabel.toLowerCase().includes(term)
-      );
-    });
-  }, [accounts, searchTerm]);
-
   const resetForm = () => {
     setFormName("");
     setFormDescription("");
@@ -363,7 +295,7 @@ const AccountsTable: React.FC = () => {
       setShowModal(false);
       setEditingAccount(null);
       resetForm();
-      setReloadKey((k) => k + 1);
+      refresh();
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("save account error", err);
@@ -404,7 +336,7 @@ const AccountsTable: React.FC = () => {
       }
 
       addToast("Account deleted successfully.", "success");
-      setReloadKey((k) => k + 1);
+      refresh();
       setShowDeleteModal(false);
       setDeleteTarget(null);
     } catch (err) {
@@ -475,19 +407,47 @@ const AccountsTable: React.FC = () => {
   return (
     <>
       <div className="trezo-card-header bg-white dark:bg-[#0c1427] mb-[20px] md:mb-[25px] flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-md gap-[15px]">
-        <div className="flex-1 flex flex-col gap-2 w-full md:w-auto">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Account codes are generated automatically in the backend.
-          </p>
-          <div className="flex gap-3">
-            <input
-              type="text"
-              placeholder="Search by code, name, type, group..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full md:max-w-xs px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-            />
-          </div>
+        <div className="flex-1 flex gap-3 flex-wrap items-center">
+          {(hasExtraFilters) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-[4px] h-[36px] px-[10px] text-xs rounded-md border border-gray-50 dark:border-[#15203c] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+              title="Clear all filters"
+            >
+              <i className="material-symbols-outlined !text-[16px]">filter_alt_off</i>
+              Clear
+            </button>
+          )}
+          {/* Type Filter */}
+          <FilterSelect
+            value={typeFilter}
+            options={[
+              { value: "cash", label: "Cash" },
+              { value: "mpesa", label: "Mpesa" },
+              { value: "bank", label: "Bank" },
+            ]}
+            placeholder="All Types"
+            onChange={(value) => setFilter("type", value)}
+          />
+          {/* Group Filter */}
+          <FilterSelect
+            value={groupFilter}
+            options={[
+              { value: "Petty", label: "Petty" },
+              { value: "Checking", label: "Checking" },
+              { value: "Savings", label: "Savings" },
+              { value: "Loans", label: "Loans" },
+            ]}
+            placeholder="All Groups"
+            onChange={(value) => setFilter("group", value)}
+          />
+          <input
+            type="text"
+            placeholder="Search by code, name..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="w-full md:max-w-xs px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+          />
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end">
@@ -538,7 +498,18 @@ const AccountsTable: React.FC = () => {
                 </tr>
               )}
 
-              {!loading && filteredAccounts.length === 0 && (
+              {!loading && error && (
+                <tr>
+                  <td
+                    colSpan={9}
+                    className="text-center text-sm px-[10px] py-[16px] text-danger-500"
+                  >
+                    {error}
+                  </td>
+                </tr>
+              )}
+
+              {!loading && !error && accounts.length === 0 && (
                 <tr>
                   <td
                     colSpan={9}
@@ -550,7 +521,8 @@ const AccountsTable: React.FC = () => {
               )}
 
               {!loading &&
-                filteredAccounts.map((acc) => (
+                !error &&
+                accounts.map((acc) => (
                   <tr
                     key={acc.id}
                     className="border-b border-gray-100 dark:border-[#172036] align-middle hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
@@ -607,6 +579,17 @@ const AccountsTable: React.FC = () => {
                 ))}
             </tbody>
           </table>
+
+          {!loading && !error && (
+            <PaginationFooter
+              meta={meta}
+              page={page}
+              perPage={perPage}
+              loading={loading}
+              onPageChange={setPage}
+              onPerPageChange={changePerPage}
+            />
+          )}
         </div>
       </div>
 

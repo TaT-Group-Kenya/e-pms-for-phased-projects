@@ -1819,7 +1819,7 @@ const QuotationDetail: React.FC = () => {
                     <div className="mt-[15px] pt-[15px] border-t border-gray-50 dark:border-[#15203c]">
                       <div className="flex items-center justify-between mb-[8px]">
                         <p className="text-[12px] text-gray-500 dark:text-gray-400">
-                          Container Numbers ({containerNumbers.length})
+                          Container/Chassis Numbers ({containerNumbers.length})
                         </p>
                         <button
                           type="button"
@@ -1834,7 +1834,7 @@ const QuotationDetail: React.FC = () => {
                         <table className="w-full min-w-[520px] text-left text-[12px]">
                           <thead className="text-gray-500 dark:text-gray-400">
                             <tr>
-                              <th className="py-1 pr-3 font-medium">Container No</th>
+                              <th className="py-1 pr-3 font-medium">Container/Chassis No</th>
                               <th className="py-1 pr-3 font-medium">Size</th>
                               <th className="py-1 pr-3 font-medium">Goods Description</th>
                               <th className="py-1 pr-3 font-medium">Entry Number</th>

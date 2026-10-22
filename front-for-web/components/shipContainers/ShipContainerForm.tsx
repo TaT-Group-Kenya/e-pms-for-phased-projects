@@ -320,38 +320,28 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
           </div>
 
           <div className="rounded-md border border-gray-50 dark:border-[#172036] bg-gray-50/70 dark:bg-[#101a30] p-[15px] md:p-[18px]">
-            <h6 className="mb-[12px] text-[13px] font-medium text-gray-700 dark:text-gray-300">Add a container row</h6>
+            <h6 className="mb-[12px] text-[13px] font-medium text-gray-700 dark:text-gray-300">Add a container/Chassis row</h6>
             <div className="grid gap-[10px] sm:grid-cols-2 lg:grid-cols-6">
               <input
                 type="text"
                 value={numberDraft.container_no}
                 onChange={(e) => setNumberDraft((prev) => ({ ...prev, container_no: e.target.value }))}
                 onKeyDown={onNumberKeyDown}
-                placeholder="Container No"
+                placeholder="Container/Chassis No"
                 aria-label="Container number"
-                className={`${inputClass}`}
-              />
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={numberDraft.size}
-                onChange={(e) => setNumberDraft((prev) => ({ ...prev, size: e.target.value }))}
-                placeholder="Size"
-                aria-label="Container size"
-                className={inputClass}
+                className={`${inputClass} lg:col-span-2`}
               />
               <select
-                value={numberDraft.size_unit}
+                value={numberDraft.size}
                 onChange={(e) =>
-                  setNumberDraft((prev) => ({ ...prev, size_unit: e.target.value as ContainerNumberDraft["size_unit"] }))
+                  setNumberDraft((prev) => ({ ...prev, size: e.target.value as ContainerNumberDraft["size"] }))
                 }
-                aria-label="Container size unit"
+                aria-label="Container size"
                 className={selectClass}
               >
-                <option value="feet">Feet</option>
-                <option value="cm">cm</option>
-                <option value="m">m</option>
+                <option value="">Choose size</option>
+                <option value="40">40ft</option>
+                <option value="20">20ft</option>
               </select>
               <input
                 type="text"
@@ -359,7 +349,7 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
                 onChange={(e) => setNumberDraft((prev) => ({ ...prev, goods_description: e.target.value }))}
                 placeholder="Goods Description"
                 aria-label="Goods description"
-                className={`${inputClass} lg:col-span-3`}
+                className={`${inputClass}`}
               />
               <input
                 type="text"
@@ -385,9 +375,8 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
               <table className="w-full min-w-[760px] text-[13px]">
                 <thead className="bg-gray-50 dark:bg-[#15203c] text-left text-gray-500 dark:text-gray-400">
                   <tr>
-                    <th className="p-2 font-medium">Container No</th>
+                    <th className="p-2 font-medium">Container/Chassis No</th>
                     <th className="p-2 font-medium">Size</th>
-                    <th className="p-2 font-medium">Unit</th>
                     <th className="p-2 font-medium">Goods Description</th>
                     <th className="p-2 font-medium">Entry Number</th>
                     <th className="p-2" />
@@ -397,27 +386,17 @@ const ShipContainerForm: React.FC<ShipContainerFormProps> = ({ containerId, init
                   {numbers.map((number, index) => (
                     <tr key={`${number.container_no}-${index}`} className="text-black dark:text-white">
                       <td className="p-2 whitespace-nowrap font-medium">{number.container_no}</td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={number.size}
-                          onChange={(event) => setNumberField(index, "size", event.target.value)}
-                          className={`${inputClass} min-w-[90px]`}
-                          aria-label={`Size for ${number.container_no}`}
-                        />
-                      </td>
+                      
                       <td className="p-2">
                         <select
-                          value={number.size_unit}
-                          onChange={(event) => setNumberField(index, "size_unit", event.target.value)}
+                          value={number.size}
+                          onChange={(event) => setNumberField(index, "size", event.target.value)}
                           className={selectClass}
-                          aria-label={`Size unit for ${number.container_no}`}
+                          aria-label={`Size for ${number.container_no}`}
                         >
-                          <option value="feet">Feet</option>
-                          <option value="cm">cm</option>
-                          <option value="m">m</option>
+                          <option value="">Choose size</option>
+                          <option value="40">40ft</option>
+                          <option value="20">20ft</option>
                         </select>
                       </td>
                       <td className="p-2">
