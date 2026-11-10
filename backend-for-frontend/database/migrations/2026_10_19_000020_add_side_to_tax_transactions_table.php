@@ -13,7 +13,7 @@ return new class extends Migration
         // Existing rows (payment-time collections) are credit-side movements.
         Schema::table('tax_transactions', function ($table) {
             $table->enum('side', ['dr', 'cr'])->default('cr')->after('direction');
-            $table->index(['source_type', 'source_id', 'side']);
+            $table->index(['source_type', 'source_id', 'side'], 'tax_txn_doc_side_index');
         });
 
         DB::table('tax_transactions')->update(['side' => 'cr']);
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('tax_transactions', function ($table) {
-            $table->dropIndex(['source_type', 'source_id', 'side']);
+            $table->dropIndex('tax_txn_doc_side_index');
             $table->dropColumn('side');
         });
     }

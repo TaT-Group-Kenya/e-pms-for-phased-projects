@@ -26,7 +26,7 @@ return new class extends Migration
         // refunds are revenue.
         Schema::table('company_transactions_ledger', function ($table) {
             $table->unsignedBigInteger('chart_of_account')->default(0)->after('account_credit');
-            $table->index('chart_of_account');
+            $table->index('chart_of_account', 'corl_chart_index');
         });
 
         DB::table('company_transactions_ledger')->update(['chart_of_account' => $liabilitiesId]);
@@ -46,7 +46,7 @@ return new class extends Migration
 
         if (Schema::hasColumn('company_transactions_ledger', 'chart_of_account')) {
             Schema::table('company_transactions_ledger', function ($table) {
-                if (Schema::hasIndex('company_transactions_ledger', 'company_transactions_ledger_chart_of_account_index')) {
+                if (Schema::hasIndex('company_transactions_ledger', 'corl_chart_index')) {
                     $table->dropIndex(['chart_of_account']);
                 }
 
