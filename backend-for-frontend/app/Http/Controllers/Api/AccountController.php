@@ -165,15 +165,6 @@ class AccountController extends Controller
 
         $userId = $request->user()?->id;
 
-        // Accounts in the "Loans" group are funded exclusively through
-        // loan disbursements; manual top-ups (internal or external) are
-        // disabled because the balance is managed by the loans ledger.
-        if ($account->group === 'Loans') {
-            return response()->json([
-                'message' => 'Manual top-ups are disabled for Loan accounts. Record a loan disbursement instead.',
-            ], 422);
-        }
-
         // Top-ups for accounts classified as Liabilities or Equity
         // (chart of account codes 2000 / 3000) may be funded from an
         // external (non-system) source (e.g. capital injection or a
@@ -652,7 +643,7 @@ class AccountController extends Controller
             'to' => $to,
         ];
 
-        // Loans booked on this account (single currency — the account's own
+        // Loans disbursed onto this account (single currency — the account's own
         // currency; no forex logic applies).
         $meta['loans_totals'] = $this->buildLoansTotals($account);
 
@@ -676,12 +667,12 @@ class AccountController extends Controller
     }
 
     /**
-     * Aggregate the loans booked on an account. All loans must be in the
-     * account's currency — no forex logic is applied here.
+     * Aggregate the loans disbursed onto this account. All loans must be in
+     * the account's currency — no forex logic is applied here.
      */
     protected function buildLoansTotals(Account $account): array
     {
-        $loans = $account->loans()->with(['repayments', 'schedule'])->get();
+        $loans = $account->destinationLoans()->with(['repayments', 'schedule'])->get();
 
         $totals = [
             'loan_count' => $loans->count(),

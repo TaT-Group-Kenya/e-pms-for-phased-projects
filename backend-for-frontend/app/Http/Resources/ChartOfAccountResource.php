@@ -11,6 +11,7 @@ class ChartOfAccountResource extends BaseResource
             'code' => $this->code,
             'name' => $this->name,
             'description' => $this->description,
+            'is_bank_account_grp' => (bool) $this->is_bank_account_grp,
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,
             'created_at' => $this->formatTimestamp($this->created_at),

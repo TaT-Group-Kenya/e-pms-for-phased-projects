@@ -141,7 +141,28 @@ class CustInvoiceController extends Controller
         $validated = $request->validated();
         $validated['created_at'] = $validated['created_at'] ?? $custInvoice->created_at;
         $validated['updated_by'] = Auth::id();
+
+        // A provided forex rate recomputes the converted amounts (USD to
+        // KES); KES invoices stay at rate 1.
+        $providedRate = $validated['forex_rate'] ?? null;
+        unset($validated['forex_rate']);
+
         $updated = $this->service->update($custInvoice->id, $validated);
+
+        if ($providedRate !== null) {
+            if ($updated->currency === 'KES' && (float) $providedRate !== 1.0) {
+                return response()->json([
+                    'message' => 'KES invoices use forex rate 1.',
+                    'errors' => ['forex_rate' => ['Forex rate is not applicable to KES invoices (set 1).']],
+                ], 422);
+            }
+
+            $updated->applyForexRate((float) $providedRate);
+            $updated->updated_by = Auth::id();
+            $updated->save();
+        }
+
+        $updated = $updated->refresh();
         $updated->loadMissing([
             'order',
             'project',
@@ -198,6 +219,29 @@ class CustInvoiceController extends Controller
                     'status' => ['This invoice is not in draft status.'],
                 ],
             ], 422);
+        }
+
+        // A forex rate must be in place before the invoice leaves draft:
+        // non-KES invoices require an explicit USD→KES rate; KES invoices
+        // are fixed at 1.
+        $providedRate = $request->input('forex_rate');
+
+        if ($custInvoice->currency !== 'KES') {
+            if ((float) ($custInvoice->forex_rate ?? 0) <= 1 && ($providedRate === null || (float) $providedRate <= 1)) {
+                return response()->json([
+                    'message' => 'A forex rate (USD to KES) is required before an invoice can be marked as sent.',
+                    'errors' => [
+                        'forex_rate' => ['Provide the USD to KES forex rate before marking this invoice as sent.'],
+                    ],
+                ], 422);
+            }
+
+            if ($providedRate !== null && (float) $providedRate > 1) {
+                $custInvoice->applyForexRate((float) $providedRate);
+            }
+        } else {
+            $custInvoice->forex_rate = 1;
+            $custInvoice->applyForexRate(1.0);
         }
 
         $custInvoice->status = 'sent';
@@ -490,6 +534,26 @@ class CustInvoiceController extends Controller
 
             $payment->transaction_id = $trxn->id;
             $payment->save();
+
+            // Tax collected on the receipt is VAT payable — a liability owed
+            // to the revenue authority (chart 2000) in the tax ledger.
+            // CR movement against the invoice's opened tax (the DR was
+            // logged at invoice generation) — the TB splits this collected
+            // portion from the uncollected remainder.
+            \App\Services\TaxTransactionService::record([
+                'side' => \App\Services\TaxTransactionService::SIDE_CR,
+                'direction' => 'collected',
+                'source_type' => 'cust_invoice',
+                'source_id' => $invoice->id,
+                'payment_id' => $payment->id,
+                'amount' => $taxPortion,
+                'transaction_currency' => $invoiceCurrencyCode,
+                'exchange_rate' => $exchangeRate,
+                'transaction_date' => $validated['payment_date'],
+                'customer_id' => $invoice->customer_id,
+                'narration' => 'Tax collected on payment for invoice '.$invoice->invoice_number,
+                'created_by' => Auth::id(),
+            ]);
 
             // Update benefiting account balance: credit increases balance
             $currentBalance = (float) $account->balance;

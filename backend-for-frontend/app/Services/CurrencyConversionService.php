@@ -39,4 +39,10 @@ class CurrencyConversionService
             'base_currency' => $baseCurrencyCode,
         ];
     }
+
+    public static function getForexRateToKes(string $fromCurrency): float
+    {
+        $forexRate = Currency::where('code', $fromCurrency)->value('current_forex_rate');
+        return (float) $forexRate;
+    }
 }

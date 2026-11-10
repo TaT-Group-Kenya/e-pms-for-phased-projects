@@ -17,6 +17,7 @@ class PdcReceivedCustomer extends Model
         'transaction_number',
         'customer_id',
         'invoice_id',
+        'debit_note_id',
         'forex_rate',
         'cheque_number',
         'cheque_date',
@@ -51,6 +52,11 @@ class PdcReceivedCustomer extends Model
     public function invoice()
     {
         return $this->belongsTo(CustInvoice::class, 'invoice_id');
+    }
+
+    public function debitNote()
+    {
+        return $this->belongsTo(CustDebitNote::class, 'debit_note_id');
     }
 
     public function createdByUser()

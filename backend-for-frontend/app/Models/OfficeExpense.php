@@ -17,6 +17,7 @@ class OfficeExpense extends Model
         'description',
         'amount',
         'currency',
+        'chart_of_account',
         'date',
         'status',
         'created_by',
@@ -31,6 +32,14 @@ class OfficeExpense extends Model
             }
             if (empty($expense->status)) {
                 $expense->status = 'pending';
+            }
+            if (empty($expense->chart_of_account)) {
+                try {
+                    $expense->chart_of_account =
+                        (int) ChartOfAccount::where('code', '5000')->value('id') ?: null;
+                } catch (\Throwable) {
+                    $expense->chart_of_account = null;
+                }
             }
         });
     }
@@ -71,5 +80,11 @@ class OfficeExpense extends Model
     public function documents()
     {
         return $this->hasMany(OfficeExpenseDocument::class, 'expense_id');
+    }
+
+    // Office expenses are expense classifications (chart 5000).
+    public function chartOfAccount()
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account');
     }
 }

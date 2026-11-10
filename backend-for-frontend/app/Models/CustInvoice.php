@@ -27,6 +27,11 @@ class CustInvoice extends Model
         'discount_amount',
         'total_amount',
         'currency',
+        'forex_rate',
+        'subtotal_converted',
+        'tax_converted',
+        'discount_converted',
+        'total_converted',
         'payment_terms',
         'notes_to_customer',
         'valid_until',
@@ -43,6 +48,18 @@ class CustInvoice extends Model
     public function receivingPaymentMethod()
     {
         return $this->belongsTo(PaymentReceivingMethod::class, 'payment_receiving_method_id');
+    }
+
+    // USD→KES rate applied to this invoice; 1 for KES invoices. The
+    // converted columns are maintained alongside it (recomputed on update
+    // and when the rate is provided before sending).
+    public function applyForexRate(float $rate): void
+    {
+        $this->forex_rate = $rate;
+        $this->subtotal_converted = round((float) $this->subtotal_amount * $rate, 2);
+        $this->tax_converted = round((float) $this->tax_amount * $rate, 2);
+        $this->discount_converted = round((float) $this->discount_amount * $rate, 2);
+        $this->total_converted = round((float) $this->total_amount * $rate, 2);
     }
 
     public function order()

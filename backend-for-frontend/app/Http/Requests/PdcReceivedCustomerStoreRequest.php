@@ -17,6 +17,13 @@ class PdcReceivedCustomerStoreRequest extends FormRequest
             'transaction_number' => ['sometimes', 'string', 'max:255'],
             'customer_id' => ['required', 'integer', 'exists:customers,id'],
             'invoice_id' => ['nullable', 'integer', 'exists:cust_invoices,id'],
+            'debit_note_id' => [
+                'nullable',
+                'integer',
+                'exists:cust_debit_notes,id',
+                // A PDC settles either an invoice or a debit note, never both
+                'prohibited_with:invoice_id',
+            ],
             'cheque_number' => ['required', 'string', 'max:255'],
             'cheque_date' => ['required', 'date', 'after_or_equal:today'],
             'received_date' => ['required', 'date'],

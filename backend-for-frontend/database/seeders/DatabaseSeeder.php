@@ -21,11 +21,18 @@ class DatabaseSeeder extends Seeder
             LanguageSeeder::class,
             CountrySeeder::class,
             CurrencySeeder::class,
+            DepartmentSeeder::class,
             CompanySeeder::class,
             CustomerSeeder::class,
             SysConfigSeeder::class,
             ShipContainerSupportSeeder::class,
             ShipContainerSeeder::class,
+            // SampleCustDebitNoteSeeder is disabled: it writes sample
+            // financial rows (debit notes, payments, ledger entries) which
+            // break the clean financial slate. Re-enable deliberately for
+            // demos only — after FinanceCleanSlateSeeder.
+            // SampleCustDebitNoteSeeder::class,
+            FinanceCleanSlateSeeder::class,
         ]);
     }
 }

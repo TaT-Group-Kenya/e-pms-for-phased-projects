@@ -29,10 +29,12 @@ class Loan extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'account_id',
+        'destination_account_id',
         'lender_name',
         'principal',
+        'principal_kes',
         'currency',
+        'chart_of_account',
         'interest_type',
         'interest_rate',
         'tenure_months',
@@ -40,6 +42,7 @@ class Loan extends Model
         'disbursement_date',
         'first_payment_date',
         'installment_amount',
+        'installment_amount_kes',
         'status',
         'description',
         'disbursement_transaction_id',
@@ -58,11 +61,33 @@ class Loan extends Model
         'principal' => 'float',
         'interest_rate' => 'float',
         'installment_amount' => 'float',
+        'principal_kes' => 'float',
+        'installment_amount_kes' => 'float',
     ];
 
-    public function account(): BelongsTo
+    protected static function booted(): void
     {
-        return $this->belongsTo(Account::class, 'account_id');
+        // Loans default to the Liabilities chart (2000) — the Loan entity
+        // is itself a liability on the books.
+        static::creating(function (Loan $loan) {
+            if (empty($loan->chart_of_account)) {
+                $loan->chart_of_account = ChartOfAccount::where('code', '2000')->value('id');
+            }
+        });
+    }
+
+    // The loaned money is disbursed straight onto this asset account; the
+    // Loan entity itself carries the liability.
+    public function destination(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'destination_account_id');
+    }
+
+    // The chart the loan is classified under; defaults to the Liabilities
+    // chart (2000) since a loan is itself a liability position.
+    public function chartOfAccount()
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account');
     }
 
     public function disbursementTransaction(): BelongsTo

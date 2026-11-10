@@ -37,8 +37,10 @@ class Account extends Model
         return $this->belongsTo(ChartOfAccount::class, 'chart_of_account_id');
     }
 
-    public function loans()
+    // Loans disbursed onto this account (this account is the destination
+    // asset account, loans.destination_account_id).
+    public function destinationLoans()
     {
-        return $this->hasMany(Loan::class, 'account_id');
+        return $this->hasMany(Loan::class, 'destination_account_id');
     }
 }

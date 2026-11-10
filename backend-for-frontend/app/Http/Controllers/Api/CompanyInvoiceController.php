@@ -463,6 +463,8 @@ class CompanyInvoiceController extends Controller
                 'source_id' => $invoice->id,
                 'account_debit' => $account->id,
                 'account_credit' => null,
+                // Paying a company invoice creates/settles the liability position.
+                'chart_of_account' => CompanyTransactionsLedger::liabilityChartId(),
                 'category' => 'expense',
                 'payment_method' => $validated['payment_method'],
                 'bank_account' => $validated['bank_name'] ?? null,
@@ -481,6 +483,24 @@ class CompanyInvoiceController extends Controller
 
             $payment->transaction_id = $trxn->id;
             $payment->save();
+
+            // Tax paid on the company invoice payment is VAT receivable — an
+            // asset recoverable from the revenue authority (chart 1000).
+            if ($taxPortion > 0) {
+                \App\Services\TaxTransactionService::record([
+                    'direction' => 'paid',
+                    'source_type' => 'company_invoice',
+                    'source_id' => $invoice->id,
+                    'payment_id' => $payment->id,
+                    'amount' => $taxPortion,
+                    'transaction_currency' => $invoiceCurrencyCode,
+                    'exchange_rate' => $exchangeRate,
+                    'transaction_date' => $validated['payment_date'],
+                    'company_id' => $invoice->company_id,
+                    'narration' => 'Tax paid on payment for company invoice '.$invoice->invoice_number,
+                    'created_by' => $userId,
+                ]);
+            }
 
             // Update accounts account balance: debit decreases balance
             $balanceAfterThis = $currentBalance - $amountToDebitAccount;
@@ -863,6 +883,8 @@ class CompanyInvoiceController extends Controller
                         'source_id' => $updatedInvoice->id,
                         'account_debit' => null,
                         'account_credit' => null,
+                        // Invoice posting establishes the liability position.
+                        'chart_of_account' => CompanyTransactionsLedger::liabilityChartId(),
                         'category' => 'expense',
                         'payment_method' => null,
                         'bank_account' => null,

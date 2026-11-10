@@ -11,6 +11,37 @@ class CustomerTransactionsLedger extends Model
 
     protected $table = 'customer_transactions_ledger';
 
+    // Chart code that customer invoice payments and debit-note entries fall
+    // under (Revenue/Income).
+    public const CHART_REVENUE_CODE = '4000';
+
+    protected static ?int $revenueChartId = null;
+
+    protected static function booted(): void
+    {
+        // Default any un-tagged ledger row to the Revenue chart. Skips the
+        // lookup when the chart table is unavailable (e.g. minimal test
+        // schemas) so ledger creation never breaks.
+        static::creating(function (self $ledger) {
+            if (empty($ledger->chart_of_account)) {
+                $ledger->chart_of_account = self::revenueChartId();
+            }
+        });
+    }
+
+    public static function revenueChartId(): ?int
+    {
+        if (self::$revenueChartId === null) {
+            try {
+                self::$revenueChartId = (int) ChartOfAccount::where('code', self::CHART_REVENUE_CODE)->value('id');
+            } catch (\Throwable) {
+                self::$revenueChartId = 0;
+            }
+        }
+
+        return self::$revenueChartId ?: null;
+    }
+
     protected $fillable = [
         'cust_payment_id',
         'transaction_number',
@@ -31,6 +62,7 @@ class CustomerTransactionsLedger extends Model
         'source_id',
         'account_debit',
         'account_credit',
+        'chart_of_account',
         'category',
         'payment_method',
         'bank_account',
@@ -113,5 +145,12 @@ class CustomerTransactionsLedger extends Model
     public function debitAccount()
     {
         return $this->belongsTo(Account::class, 'account_debit');
+    }
+
+    // Chart of accounts this entry is tagged with (e.g. 4000 Revenue/Income
+    // for invoice payments and debit-note receipts).
+    public function chartOfAccount()
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account');
     }
 }

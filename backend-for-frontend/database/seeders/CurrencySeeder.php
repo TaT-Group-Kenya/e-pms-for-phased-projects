@@ -9,6 +9,9 @@ class CurrencySeeder extends Seeder
 {
     public function run(): void
     {
+        // The client operates KES and USD only (trial balance assumes the
+        // two-currency world; KES is the base at rate 1, USD enters KES at
+        // current_forex_rate).
         $currencies = [
             [
                 'code' => 'KES',
@@ -25,26 +28,6 @@ class CurrencySeeder extends Seeder
                 'name' => 'US Dollar',
                 'description' => 'US Dollar',
                 'current_forex_rate' => 128.4500,
-                'created_at' => now(),
-                'created_by' => 1,
-                'updated_at' => now(),
-                'updated_by' => 1,
-            ],
-            [
-                'code' => 'EUR',
-                'name' => 'Euro',
-                'description' => 'Euro',
-                'current_forex_rate' => 151.2000,
-                'created_at' => now(),
-                'created_by' => 1,
-                'updated_at' => now(),
-                'updated_by' => 1,
-            ],
-            [
-                'code' => 'GBP',
-                'name' => 'British Pound',
-                'description' => 'British Pound',
-                'current_forex_rate' => 176.3500,
                 'created_at' => now(),
                 'created_by' => 1,
                 'updated_at' => now(),

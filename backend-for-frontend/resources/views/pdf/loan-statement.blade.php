@@ -158,7 +158,6 @@
             <div class="meta-label">Loan</div>
             <div class="meta-value">
                 <strong>{{ $loan->lender_name }}</strong><br>
-                Account: {{ $loan->account->name }} ({{ $loan->account->code }})<br>
                 Terms: {{ $terms }}<br>
                 Currency: {{ $currency }} · Status: {{ str_replace('_', ' ', $loan->status) }}
             </div>

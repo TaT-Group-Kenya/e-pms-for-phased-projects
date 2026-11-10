@@ -7,6 +7,7 @@ use App\Http\Requests\CompanyCreditNoteStoreRequest;
 use App\Http\Requests\CompanyCreditNoteUpdateRequest;
 use App\Http\Resources\CompanyCreditNoteResource;
 use App\Models\Account;
+use App\Models\ChartOfAccount;
 use App\Models\CompanyCreditNote;
 use App\Models\CompanyInvoice;
 use App\Models\CompanyPayment;
@@ -262,6 +263,9 @@ class CompanyCreditNoteController extends Controller
                 'source_id' => $companyCreditNote->id,
                 'account_debit' => null,
                 'account_credit' => (string) $account->id,
+                // Money flows back out to the vendor on a refund: the credit
+                // note position (a liability) is settled — revenue realisation.
+                'chart_of_account' => ChartOfAccount::where('code', '4000')->value('id'),
                 'category' => 'revenue',
                 'payment_method' => $validated['payment_method'] ?? null,
                 'bank_account' => null,

@@ -7,6 +7,7 @@ use App\Http\Requests\CustCreditNoteStoreRequest;
 use App\Http\Requests\CustCreditNoteUpdateRequest;
 use App\Http\Resources\CustCreditNoteResource;
 use App\Models\Account;
+use App\Models\ChartOfAccount;
 use App\Models\CustCreditNote;
 use App\Models\CustInvoice;
 use App\Models\CustomerTransactionsLedger;
@@ -285,6 +286,9 @@ class CustCreditNoteController extends Controller
                 'source_id' => $custCreditNote->id,
                 'account_debit' => (string) $account->id,
                 'account_credit' => null,
+                // Refund money leaves the system; the credit note is settled
+                // as a liability (chart 2000).
+                'chart_of_account' => $custCreditNote->chart_of_account,
                 'category' => 'expense',
                 'payment_method' => $validated['payment_method'] ?? null,
                 'bank_account' => null,

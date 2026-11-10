@@ -125,6 +125,11 @@ interface CustInvoice {
   description?: string | null
   status: string
   currency: string
+  forex_rate?: number
+  subtotal_converted?: number
+  tax_converted?: number
+  discount_converted?: number
+  total_converted?: number
   subtotal_amount: number
   tax_amount: number
   discount_amount: number
@@ -170,6 +175,7 @@ export default function CustInvoiceDetailPage() {
   const [saving, setSaving] = useState(false)
 
   const [editPaymentReceivingMethodId, setEditPaymentReceivingMethodId] = useState<number | ''>('');
+  const [editForexRate, setEditForexRate] = useState<string>('');
   const [paymentReceivingMethods, setPaymentReceivingMethods] = useState<Array<{ id: number; name: string, currency: string }>>([]);
   const [loadingReceivingMethods, setLoadingReceivingMethods] = useState(false);
 
@@ -367,6 +373,7 @@ export default function CustInvoiceDetailPage() {
     setEditNotes(invoice.notes_to_customer || '')
     setEditCreatedAt(invoice.created_at ? invoice.created_at.slice(0, 10) : '');
     setEditPaymentReceivingMethodId(invoice.payment_receiving_method_id || '');
+    setEditForexRate(invoice.forex_rate ? String(invoice.forex_rate) : '');
     setIsEditing(true)
   }
 
@@ -379,6 +386,13 @@ export default function CustInvoiceDetailPage() {
     if (!editPaymentReceivingMethodId) {
       addToast('Please select a receiving payment method.', 'error');
       return;
+    }
+    if (invoice?.currency !== 'KES') {
+      const rate = Number(editForexRate);
+      if (!editForexRate || !rate || rate <= 0) {
+        addToast('Forex rate (USD to KES) is required for non-KES invoices before sending.', 'error');
+        return;
+      }
     }
     setSaving(true);
     try {
@@ -395,6 +409,9 @@ export default function CustInvoiceDetailPage() {
           notes_to_customer: editNotes || null,
           payment_receiving_method_id: editPaymentReceivingMethodId,
           created_at: editCreatedAt || null,
+          ...(invoice?.currency !== 'KES' && editForexRate
+            ? { forex_rate: Number(editForexRate) }
+            : {}),
         }),
       });
       const data = await resp.json().catch(() => null);
@@ -1973,6 +1990,27 @@ export default function CustInvoiceDetailPage() {
                   className="w-full border rounded px-3 py-2 text-sm"
                 />
               </div>
+              {invoice?.currency !== 'KES' && (
+                <div>
+                  <label className="block text-sm font-medium mb-1 mt-3">
+                    Forex rate (USD to KES) <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0.000001"
+                    step="0.0001"
+                    value={editForexRate}
+                    onChange={(e) => setEditForexRate(e.target.value)}
+                    className="w-full border rounded px-3 py-2 text-sm"
+                    placeholder="e.g. 129.75"
+                    required
+                  />
+                  <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                    Required before the invoice can be marked as sent. Converted
+                    totals update automatically on save.
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium mb-1 mt-3">Receiving Payment Method <span className="text-danger-500">*</span></label>
                 <select

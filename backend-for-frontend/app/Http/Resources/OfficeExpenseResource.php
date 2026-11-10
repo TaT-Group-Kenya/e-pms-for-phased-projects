@@ -15,6 +15,7 @@ class OfficeExpenseResource extends JsonResource
             'description' => $this->description,
             'amount' => (float) $this->amount,
             'currency' => $this->currency,
+            'chart_of_account' => $this->chart_of_account,
             'date' => $this->date,
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,

@@ -12,6 +12,7 @@ export default function OfficeExpensePaymentsReportPage() {
     currency_code: '',
     category: '',
     source_account: '',
+    cost_center: '',
     status: '',
     from: '',
     to: '',
@@ -24,6 +25,7 @@ export default function OfficeExpensePaymentsReportPage() {
   const [currencyOptions, setCurrencyOptions] = useState<any[]>([]);
   const [categoryOptions, setCategoryOptions] = useState<any[]>([]);
   const [sourceAccountOptions, setSourceAccountOptions] = useState<any[]>([]);
+  const [departmentOptions, setDepartmentOptions] = useState<any[]>([]);
   const [statusOptions] = useState([
     { value: 'pending', label: 'Pending' },
     { value: 'paid', label: 'Paid' },
@@ -44,7 +46,10 @@ export default function OfficeExpensePaymentsReportPage() {
       fetch('/api/accounts/list', { headers: { Authorization: `Bearer ${accessToken}` } })
         .then(res => res.json().then(json => ({ ok: res.ok, data: Array.isArray(json.data) ? json.data : json })))
         .catch(() => ({ ok: false, data: null, error: 'Error loading accounts' })),
-    ]).then(([currencies, categories, accounts]) => {
+      fetch('/api/departments/list', { headers: { Authorization: `${accessToken}` } })
+        .then(res => res.json().then(json => ({ ok: res.ok, data: Array.isArray(json.data) ? json.data : json })))
+        .catch(() => ({ ok: false, data: null, error: 'Error loading departments' })),
+    ]).then(([currencies, categories, accounts, departments]) => {
       if (!isMounted) return;
       if (currencies.ok && Array.isArray(currencies.data)) {
         setCurrencyOptions(currencies.data);
@@ -62,6 +67,9 @@ export default function OfficeExpensePaymentsReportPage() {
       else addToast('Failed to load categories', 'error');
       if (accounts.ok && Array.isArray(accounts.data)) setSourceAccountOptions(accounts.data);
       else addToast('Failed to load accounts', 'error');
+      if (departments.ok && Array.isArray(departments.data)) {
+        setDepartmentOptions(departments.data);
+      }
     });
     return () => { isMounted = false; };
   }, [accessToken, addToast]);
@@ -297,6 +305,23 @@ export default function OfficeExpensePaymentsReportPage() {
                   {statusOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="cost_center" className="mb-1 text-sm text-gray-600">Department (Cost center)</label>
+                <select
+                  id="cost_center"
+                  name="cost_center"
+                  value={filters.cost_center}
+                  onChange={handleFilterChange}
+                  className="form-select rounded-lg border border-gray-300 focus:border-primary-500 focus:ring-primary-500 px-4 h-[42px]"
+                >
+                  <option value="">All Departments</option>
+                  {departmentOptions.map((d: any) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
                     </option>
                   ))}
                 </select>

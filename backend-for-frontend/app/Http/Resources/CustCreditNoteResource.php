@@ -17,6 +17,7 @@ class CustCreditNoteResource extends BaseResource
             'tax_amount' => (float) $this->tax_amount,
             'total_amount' => (float) $this->total_amount,
             'currency' => $this->currency,
+            'chart_of_account' => $this->chart_of_account,
             'notes_to_customer' => $this->notes_to_customer,
             'updated_at' => $this->formatTimestamp($this->updated_at),
             'updated_by' => $this->updated_by,

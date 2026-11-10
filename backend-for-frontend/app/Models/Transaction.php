@@ -11,6 +11,70 @@ class Transaction extends Model
 
     protected $table = 'transactions';
 
+    // Chart codes by transaction_type: 'topup' rows credit asset accounts
+    // (cash coming in — 1000), 'expense' rows are expense settlements
+    // (5000), and loan repayment legs carry their own types: 'interest'
+    // (5000) and 'loan_principal' (2000). Postings that break this pattern
+    // are tagged explicitly at their creation sites.
+    public const CHART_ASSET_CODE = '1000';
+
+    public const CHART_EXPENSE_CODE = '5000';
+
+    public const TYPE_TOPUP = 'topup';
+
+    public const TYPE_EXPENSE = 'expense';
+
+    public const TYPE_INTEREST = 'interest';
+
+    public const TYPE_LOAN_PRINCIPAL = 'loan_principal';
+
+    protected static ?int $assetChartId = null;
+
+    protected static ?int $expenseChartId = null;
+
+    protected static function booted(): void
+    {
+        // Default any un-tagged transaction by its transaction_type. Skips
+        // the lookup when the chart table is unavailable so creation never
+        // breaks (e.g. minimal test schemas).
+        static::creating(function (self $transaction) {
+            if (empty($transaction->chart_of_account)) {
+                $transaction->chart_of_account = match ($transaction->transaction_type) {
+                    self::TYPE_TOPUP => self::assetChartId(),
+                    self::TYPE_INTEREST => self::expenseChartId(),
+                    self::TYPE_LOAN_PRINCIPAL => null,
+                    default => self::expenseChartId(),
+                };
+            }
+        });
+    }
+
+    public static function assetChartId(): ?int
+    {
+        if (self::$assetChartId === null) {
+            try {
+                self::$assetChartId = (int) ChartOfAccount::where('code', self::CHART_ASSET_CODE)->value('id');
+            } catch (\Throwable) {
+                self::$assetChartId = 0;
+            }
+        }
+
+        return self::$assetChartId ?: null;
+    }
+
+    public static function expenseChartId(): ?int
+    {
+        if (self::$expenseChartId === null) {
+            try {
+                self::$expenseChartId = (int) ChartOfAccount::where('code', self::CHART_EXPENSE_CODE)->value('id');
+            } catch (\Throwable) {
+                self::$expenseChartId = 0;
+            }
+        }
+
+        return self::$expenseChartId ?: null;
+    }
+
     protected $fillable = [
         'transaction_number',
         'transaction_type',
@@ -31,6 +95,7 @@ class Transaction extends Model
         'source_id',
         'account_debit',
         'account_credit',
+        'chart_of_account',
         'category',
         'payment_method',
         'bank_account',
@@ -52,10 +117,6 @@ class Transaction extends Model
         'deleted_by',
         'should_apply_forex_to_stmt',
     ];
-
-    public const TYPE_TOPUP = 'topup';
-
-    public const TYPE_EXPENSE = 'expense';
 
     public function customer()
     {
@@ -90,5 +151,12 @@ class Transaction extends Model
     public function creditAccount()
     {
         return $this->belongsTo(Account::class, 'account_credit');
+    }
+
+    // Chart of accounts this posting is tagged with (5000 for expense
+    // settlements such as office expenses and loan interest).
+    public function chartOfAccount()
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account');
     }
 }

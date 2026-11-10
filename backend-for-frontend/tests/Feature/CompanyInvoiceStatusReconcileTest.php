@@ -122,6 +122,7 @@ class CompanyInvoiceStatusReconcileTest extends TestCase
             $table->unsignedBigInteger('source_id')->nullable();
             $table->unsignedBigInteger('account_debit')->nullable();
             $table->unsignedBigInteger('account_credit')->nullable();
+            $table->unsignedBigInteger('chart_of_account')->nullable();
             $table->string('category')->default('expense');
             $table->string('payment_method')->nullable();
             $table->string('bank_account')->nullable();

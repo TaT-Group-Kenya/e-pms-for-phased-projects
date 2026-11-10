@@ -34,6 +34,8 @@ export interface SetupListTableProps<T extends SetupItemBase> {
   formFields?: string[];
   /** Optional roles required to create, edit, delete items */
   canCreateRoles?: RoleName[];
+  /** Optional note; when set, the Create button is hidden and the note is shown instead. */
+  createDisabledNote?: string;
   canEditRoles?: RoleName[];
   canDeleteRoles?: RoleName[];
   isJsonFormContent?: boolean;
@@ -65,6 +67,7 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
     searchableKeys,
     formFields,
     canCreateRoles,
+    createDisabledNote,
     canEditRoles,
     canDeleteRoles,
     isJsonFormContent = false,
@@ -394,18 +397,25 @@ const SetupListTable = <T extends SetupItemBase>(props: SetupListTableProps<T>) 
           </button>
 
           <Can any={canCreateRoles}>
-            <button
-              type="button"
-              onClick={openCreateModal}
-              className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
-            >
-              <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
-                <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
-                  add
-                </i>
-                {`Create ${entityName}`}
+            {createDisabledNote ? (
+              <span className="inline-flex items-center gap-[5px] px-[12px] py-[7px] rounded-md border border-gray-200 dark:border-[#172036] bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-medium whitespace-nowrap">
+                <i className="material-symbols-outlined !text-[18px]">info</i>
+                {createDisabledNote}
               </span>
-            </button>
+            ) : (
+              <button
+                type="button"
+                onClick={openCreateModal}
+                className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] text-primary-500 border border-primary-500 hover:bg-primary-500 hover:text-white whitespace-nowrap"
+              >
+                <span className="inline-block relative ltr:pl-[22px] rtl:pr-[22px]">
+                  <i className="material-symbols-outlined !text-[22px] absolute ltr:-left-[4px] rtl:-right-[4px] top-1/2 -translate-y-1/2">
+                    add
+                  </i>
+                  {`Create ${entityName}`}
+                </span>
+              </button>
+            )}
           </Can>
         </div>
       </div>

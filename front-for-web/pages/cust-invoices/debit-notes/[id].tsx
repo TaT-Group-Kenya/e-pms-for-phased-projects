@@ -57,6 +57,8 @@ interface CustDebitNote {
   created_at: string | null
   updated_at: string | null
   items: CustDebitNoteItem[]
+  payments?: CustPaymentSummary[] | null
+  total_paid?: number | null
   invoice?: RelatedInvoiceSummary | null
 }
 
@@ -99,7 +101,32 @@ interface TaxSummary {
   is_default?: boolean | number | null
 }
 
-type DebitNoteStatus = 'draft' | 'raised'
+interface CustPaymentSummary {
+  id: number
+  transaction_number?: string | null
+  amount_paid: number
+  payment_date?: string | null
+  payment_method?: string | null
+  payment_status?: string | null
+  receipt_number?: string | null
+  bank_name?: string | null
+  check_number?: string | null
+  reconciled?: boolean
+  pivot?: {
+    allocated_amount?: number
+    payment_date?: string | null
+    installment_number?: number
+  } | null
+}
+
+interface AccountSummary {
+  id: number
+  code: string
+  name: string
+  currency: string
+}
+
+type DebitNoteStatus = 'draft' | 'raised' | 'partial-paid' | 'paid'
 
 const CustDebitNoteDetailPage: React.FC = () => {
   const router = useRouter()
@@ -142,6 +169,32 @@ const CustDebitNoteDetailPage: React.FC = () => {
   const [ledgerRows, setLedgerRows] = useState<any[]>([])
   const [loadingLedger, setLoadingLedger] = useState(false)
   const [ledgerError, setLedgerError] = useState<string | null>(null)
+
+  const [isAddingPayment, setIsAddingPayment] = useState(false)
+  const [savingPayment, setSavingPayment] = useState(false)
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [paymentDate, setPaymentDate] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mpesa' | 'bank_transfer' | 'check'>('cash')
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'complete'>('complete')
+  const [paymentAccountId, setPaymentAccountId] = useState('')
+  const [receiptNumber, setReceiptNumber] = useState('')
+  const [bankName, setBankName] = useState('')
+  const [bankBranch, setBankBranch] = useState('')
+  const [checkNumber, setCheckNumber] = useState('')
+  const [chequeDate, setChequeDate] = useState('')
+
+  const [editingPayment, setEditingPayment] = useState<any>(null)
+  const [savingEditPayment, setSavingEditPayment] = useState(false)
+  const [editPaymentStatus, setEditPaymentStatus] = useState<'pending' | 'complete'>('complete')
+  const [editReceiptNumber, setEditReceiptNumber] = useState('')
+  const [editBankName, setEditBankName] = useState('')
+  const [editCheckNumber, setEditCheckNumber] = useState('')
+
+  const [paymentToDelete, setPaymentToDelete] = useState<any>(null)
+  const [deletingPayment, setDeletingPayment] = useState(false)
+
+  const [accounts, setAccounts] = useState<AccountSummary[]>([])
+  const [accountsLoading, setAccountsLoading] = useState(false)
 
   const [downloading, setDownloading] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
@@ -206,6 +259,28 @@ const CustDebitNoteDetailPage: React.FC = () => {
           tax_amount: it.tax_amount !== undefined && it.tax_amount !== null ? Number(it.tax_amount) : 0,
           custom_note: it.custom_note ?? null,
         })),
+        payments: Array.isArray(dn?.payments)
+          ? dn.payments.map((pmt: any) => ({
+              id: Number(pmt.id),
+              transaction_number: pmt.transaction_number ?? null,
+              amount_paid: Number(pmt.amount_paid ?? 0),
+              payment_date: pmt.payment_date ?? null,
+              payment_method: pmt.payment_method ?? null,
+              payment_status: pmt.payment_status ?? null,
+              receipt_number: pmt.receipt_number ?? null,
+              bank_name: pmt.bank_name ?? null,
+              check_number: pmt.check_number ?? null,
+              reconciled: Boolean(pmt.reconciled),
+              pivot: pmt.pivot
+                ? {
+                    allocated_amount: pmt.pivot.allocated_amount != null ? Number(pmt.pivot.allocated_amount) : undefined,
+                    payment_date: pmt.pivot.payment_date ?? null,
+                    installment_number: pmt.pivot.installment_number != null ? Number(pmt.pivot.installment_number) : undefined,
+                  }
+                : null,
+            }))
+          : [],
+        total_paid: dn.total_paid !== undefined && dn.total_paid !== null ? Number(dn.total_paid) : 0,
         invoice: rawInvoice
           ? {
               id: Number(rawInvoice.id),
@@ -286,6 +361,44 @@ const CustDebitNoteDetailPage: React.FC = () => {
       setTaxesError('Error loading taxes')
     } finally {
       setLoadingTaxes(false)
+    }
+  }
+
+  const loadAccounts = async () => {
+    if (!accessToken) return
+
+    setAccountsLoading(true)
+    try {
+      const resp = await fetch('/api/accounts/list?per_page=1000', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      const data: any = await resp.json().catch(() => null)
+
+      if (!resp.ok) {
+        const message = data?.message || 'Failed to load accounts'
+        setAccounts([])
+        if (resp.status !== 404 && resp.status !== 403) addToast(message, 'error')
+        return
+      }
+
+      const list = (data?.data || data) as any[]
+      const mapped: AccountSummary[] = (Array.isArray(list) ? list : []).map((acc: any) => ({
+        id: Number(acc.id),
+        code: String(acc.code ?? ''),
+        name: String(acc.name ?? ''),
+        currency: String(acc.currency ?? ''),
+      }))
+      setAccounts(mapped)
+    } catch (err: any) {
+      // eslint-disable-next-line no-console
+      console.error('fetch accounts error', err)
+      setAccounts([])
+    } finally {
+      setAccountsLoading(false)
     }
   }
 
@@ -417,6 +530,176 @@ const CustDebitNoteDetailPage: React.FC = () => {
     }
   }
 
+  const handleOpenAddPaymentModal = () => {
+    if (!debitNote) return
+    setPaymentAmount(String(Math.max(totalOutstanding, 0).toFixed(2)))
+    setPaymentDate(new Date().toISOString().slice(0, 10))
+    setPaymentMethod('cash')
+    setPaymentStatus('complete')
+    setPaymentAccountId('')
+    setReceiptNumber('')
+    setBankName('')
+    setBankBranch('')
+    setCheckNumber('')
+    setChequeDate('')
+    setIsAddingPayment(true)
+  }
+
+  const handleSavePayment = async () => {
+    if (!debitNote || !accessToken) return
+
+    const amount = Number(paymentAmount)
+    if (!paymentAmount || Number.isNaN(amount) || amount <= 0) {
+      addToast('Enter a valid payment amount.', 'error')
+      return
+    }
+    if (!paymentDate) {
+      addToast('Payment date is required.', 'error')
+      return
+    }
+
+    let computedReceipt: string | null = receiptNumber || null
+    if (paymentMethod === 'check') {
+      if (!chequeDate) {
+        addToast('Cheque date is required for check payments.', 'error')
+        return
+      }
+      const today = new Date().toISOString().slice(0, 10)
+      if (chequeDate < today) {
+        addToast('Cheque date cannot be in the past.', 'error')
+        return
+      }
+      if (!bankName) {
+        addToast('Bank name is required for check payments.', 'error')
+        return
+      }
+      if (!checkNumber) {
+        addToast('Check number is required for check payments.', 'error')
+        return
+      }
+      if (!computedReceipt) {
+        computedReceipt = `chk-${checkNumber}`
+      }
+    } else if (!receiptNumber) {
+      addToast('Receipt number is required.', 'error')
+      return
+    }
+
+    if (!paymentAccountId) {
+      addToast('Please select a benefiting account.', 'error')
+      return
+    }
+
+    setSavingPayment(true)
+    try {
+      const resp = await fetch(`/api/cust-debit-notes/${debitNote.id}/payments/receive`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          amount_paid: amount,
+          payment_date: paymentDate,
+          payment_method: paymentMethod,
+          payment_status: paymentStatus,
+          bank_name: bankName || null,
+          bank_branch: paymentMethod === 'check' ? (bankBranch || null) : null,
+          check_number: checkNumber || null,
+          cheque_date: paymentMethod === 'check' ? (chequeDate || paymentDate) : null,
+          receipt_number: computedReceipt,
+          account_id: Number(paymentAccountId),
+        }),
+      })
+
+      const data: any = await resp.json().catch(() => null)
+      if (!resp.ok) {
+        throw new Error(data?.message || 'Failed to receive payment')
+      }
+
+      setIsAddingPayment(false)
+      addToast(data?.message || 'Payment received successfully.', 'success')
+      await fetchDebitNote()
+      await loadLedgerForDebitNote(debitNote)
+      void loadAccounts()
+    } catch (e: any) {
+      addToast(e.message || 'Failed to receive payment', 'error')
+    } finally {
+      setSavingPayment(false)
+    }
+  }
+
+  const handleOpenEditPaymentModal = (payment: any) => {
+    setEditingPayment(payment)
+    setEditPaymentStatus(payment.payment_status === 'pending' ? 'pending' : 'complete')
+    setEditReceiptNumber(payment.receipt_number || '')
+    setEditBankName(payment.bank_name || '')
+    setEditCheckNumber(payment.check_number || '')
+  }
+
+  const handleSaveEditPayment = async () => {
+    if (!debitNote || !accessToken || !editingPayment) return
+
+    setSavingEditPayment(true)
+    try {
+      const resp = await fetch(`/api/cust-debit-notes/${debitNote.id}/payments/${editingPayment.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          payment_status: editPaymentStatus,
+          bank_name: editBankName || null,
+          check_number: editCheckNumber || null,
+          receipt_number: editReceiptNumber,
+        }),
+      })
+
+      const data: any = await resp.json().catch(() => null)
+      if (!resp.ok) {
+        throw new Error(data?.message || 'Failed to update payment')
+      }
+
+      setEditingPayment(null)
+      addToast(data?.message || 'Payment updated successfully.', 'success')
+      await fetchDebitNote()
+      await loadLedgerForDebitNote(debitNote)
+    } catch (e: any) {
+      addToast(e.message || 'Failed to update payment', 'error')
+    } finally {
+      setSavingEditPayment(false)
+    }
+  }
+
+  const handleConfirmDeletePayment = async () => {
+    if (!debitNote || !accessToken || !paymentToDelete) return
+
+    setDeletingPayment(true)
+    try {
+      const resp = await fetch(`/api/cust-debit-notes/${debitNote.id}/payments/${paymentToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      const data: any = await resp.json().catch(() => null)
+      if (!resp.ok) {
+        throw new Error(data?.message || 'Failed to delete payment')
+      }
+
+      setPaymentToDelete(null)
+      addToast(data?.message || 'Payment deleted successfully.', 'success')
+      await fetchDebitNote()
+      await loadLedgerForDebitNote(debitNote)
+    } catch (e: any) {
+      addToast(e.message || 'Failed to delete payment', 'error')
+    } finally {
+      setDeletingPayment(false)
+    }
+  }
+
   const handleSendEmail = async () => {
     if (!debitNote || !accessToken) return
     setSendingEmail(true)
@@ -479,6 +762,7 @@ const CustDebitNoteDetailPage: React.FC = () => {
   useEffect(() => {
     if (!accessToken) return
     loadTaxes()
+    loadAccounts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken])
 
@@ -498,6 +782,10 @@ const CustDebitNoteDetailPage: React.FC = () => {
         return 'bg-warning-50 text-warning-500'
       case 'raised':
         return 'bg-info-50 text-info-500'
+      case 'partial-paid':
+        return 'bg-warning-50 text-warning-600'
+      case 'paid':
+        return 'bg-success-50 text-success-500'
       default:
         return 'bg-gray-50 text-gray-500'
     }
@@ -694,6 +982,17 @@ const CustDebitNoteDetailPage: React.FC = () => {
     return debitNote.items.reduce((sum, item) => sum + (item.tax_amount || 0), 0)
   }, [debitNote?.items])
 
+  const totalPaidOnNote = useMemo(() => {
+    if (debitNote?.total_paid != null) return Number(debitNote.total_paid) || 0
+    return (debitNote?.payments || [])
+      .reduce((sum, pmt) => sum + (pmt.pivot?.allocated_amount ?? pmt.amount_paid ?? 0), 0)
+  }, [debitNote?.total_paid, debitNote?.payments])
+
+  const totalOutstanding = useMemo(
+    () => Math.max((debitNote?.total_amount ?? 0) - totalPaidOnNote, 0),
+    [debitNote?.total_amount, totalPaidOnNote],
+  )
+
   if (loading && !debitNote) {
     return (
       <AuthenticatedLayout>
@@ -735,6 +1034,9 @@ const CustDebitNoteDetailPage: React.FC = () => {
   const normalizedStatus = debitNote.status?.toLowerCase() as any
   const isDraft = normalizedStatus === 'draft'
   const isRaised = normalizedStatus === 'raised'
+  const isPartialPaid = normalizedStatus === 'partial-paid'
+  const isPaid = normalizedStatus === 'paid'
+  const isSettling = isRaised || isPartialPaid
 
   return (
     <AuthenticatedLayout>
@@ -996,6 +1298,20 @@ const CustDebitNoteDetailPage: React.FC = () => {
                         <span className="font-semibold">Total Due</span>
                         <span className="font-semibold text-primary-500 text-lg">
                           {formatCurrency(debitNote.total_amount, debitNote.currency)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-[10px] text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Total paid</span>
+                        <span className="font-medium text-success-600 dark:text-success-400">
+                          {formatCurrency(totalPaidOnNote, debitNote.currency)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Outstanding balance</span>
+                        <span className="font-semibold text-warning-500">
+                          {formatCurrency(totalOutstanding, debitNote.currency)}
                         </span>
                       </div>
 
@@ -1442,13 +1758,13 @@ const CustDebitNoteDetailPage: React.FC = () => {
 
           {activeTab === 2 && (
             <div className="space-y-[16px] pt-[20px]">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-[15px] flex-wrap">
                 <div>
                   <h6 className="text-sm font-semibold text-black dark:text-white">
                     Related Transactions
                   </h6>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Customer ledger entries linked to this debit note.
+                    Customer ledger entries and payments linked to this debit note.
                   </p>
                 </div>
                 <div className="text-right">
@@ -1479,11 +1795,170 @@ const CustDebitNoteDetailPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Settlement Summary */}
+              <div className="trezo-card bg-white dark:bg-[#0c1427] p-[15px] md:p-[20px] rounded-md">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-[15px] text-sm">
+                  <div>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 mb-[4px]">
+                      Note Total
+                    </span>
+                    <span className="font-semibold text-black dark:text-white">
+                      {formatCurrency(debitNote.total_amount, debitNote.currency)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 mb-[4px]">
+                      Total Paid
+                    </span>
+                    <span className="font-semibold text-success-600 dark:text-success-400">
+                      {formatCurrency(totalPaidOnNote, debitNote.currency)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 mb-[4px]">
+                      Outstanding Balance
+                    </span>
+                    <span className="font-semibold text-warning-600 dark:text-warning-400">
+                      {formatCurrency(totalOutstanding, debitNote.currency)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payments */}
+              <div className="flex items-center justify-between">
+                <h6 className="text-sm font-semibold text-black dark:text-white">
+                  Payments Received
+                </h6>
+                <Can any={['ROLE_ADD_CUST_PAYMENT']}>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddPaymentModal}
+                    disabled={!isSettling || isPaid}
+                    title={
+                      isDraft
+                        ? 'Raise the debit note before receiving payments.'
+                        : isPaid
+                        ? 'This debit note is fully paid.'
+                        : undefined
+                    }
+                    className="inline-flex items-center justify-center transition-all rounded-md font-medium px-[13px] py-[6px] bg-warning-50 dark:bg-warning-950 text-warning-500 hover:bg-warning-100 dark:hover:bg-warning-900 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <i className="material-symbols-outlined mr-[6px] !text-[18px]">payments</i>
+                    Receive Payment
+                  </button>
+                </Can>
+              </div>
+
+              <div className="trezo-card bg-white dark:bg-[#0c1427] border border-gray-100 dark:border-[#172036] rounded-md overflow-hidden">
+                <div className="table-responsive overflow-x-auto">
+                  <table className="w-full text-xs md:text-sm">
+                    <thead className="text-black dark:text-white">
+                      <tr>
+                        <th className="font-medium ltr:text-left rtl:text-right px-[16px] py-[10px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                          Receipt #
+                        </th>
+                        <th className="font-medium ltr:text-left rtl:text-right px-[16px] py-[10px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                          Date
+                        </th>
+                        <th className="font-medium ltr:text-left rtl:text-right px-[16px] py-[10px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                          Method
+                        </th>
+                        <th className="font-medium ltr:text-left rtl:text-right px-[16px] py-[10px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                          Reference
+                        </th>
+                        <th className="font-medium ltr:text-right rtl:text-left px-[16px] py-[10px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                          Amount
+                        </th>
+                        <th className="font-medium ltr:text-right rtl:text-left px-[16px] py-[10px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                          Status
+                        </th>
+                        <th className="font-medium ltr:text-right rtl:text-left px-[16px] py-[10px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-black dark:text-white">
+                      {debitNote.payments && debitNote.payments.length > 0 ? (
+                        debitNote.payments.map((pmt) => (
+                          <tr
+                            key={pmt.id}
+                            className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
+                          >
+                            <td className="px-[16px] py-[10px] whitespace-nowrap">
+                              {pmt.transaction_number || `#${pmt.id}`}
+                            </td>
+                            <td className="px-[16px] py-[10px] whitespace-nowrap">
+                              {pmt.payment_date
+                                ? new Date(pmt.payment_date).toLocaleDateString()
+                                : '-'}
+                            </td>
+                            <td className="px-[16px] py-[10px] whitespace-nowrap capitalize">
+                              {(pmt.payment_method || '-').replace('_', ' ')}
+                            </td>
+                            <td className="px-[16px] py-[10px] whitespace-nowrap">
+                              {pmt.receipt_number || pmt.check_number || '-'}
+                            </td>
+                            <td className="px-[16px] py-[10px] whitespace-nowrap text-right font-semibold">
+                              {formatCurrency(pmt.pivot?.allocated_amount ?? pmt.amount_paid, debitNote.currency)}
+                            </td>
+                            <td className="px-[16px] py-[10px] whitespace-nowrap text-right capitalize">
+                              {pmt.payment_status || '-'}
+                            </td>
+                            <td className="px-[16px] py-[10px] whitespace-nowrap text-right">
+                              <Can any={['ROLE_EDIT_CUST_PAYMENT']}>
+                                <button
+                                  type="button"
+                                  className="inline-flex items-center px-2 py-1 text-xs text-primary-500 hover:underline mr-2"
+                                  onClick={() => handleOpenEditPaymentModal(pmt)}
+                                >
+                                  Edit
+                                </button>
+                              </Can>
+                              <Can any={['ROLE_DELETE_CUST_PAYMENT']}>
+                                <button
+                                  type="button"
+                                  className="inline-flex items-center px-2 py-1 text-xs text-red-600 hover:underline"
+                                  onClick={() => setPaymentToDelete(pmt)}
+                                  disabled={pmt.reconciled}
+                                  title={
+                                    pmt.reconciled
+                                      ? 'Reconciled payments cannot be deleted.'
+                                      : undefined
+                                  }
+                                >
+                                  Delete
+                                </button>
+                              </Can>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={7}
+                            className="text-center px-[16px] py-[20px] text-gray-500 dark:text-gray-400"
+                          >
+                            {isDraft
+                              ? 'Receive payments after this debit note is raised.'
+                              : 'No payments received against this debit note yet.'}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               {ledgerError && (
                 <div className="mb-[10px] p-[10px] rounded-md bg-danger-50 dark:bg-[#2a1a1a] border border-danger-200 dark:border-danger-900 text-xs text-danger-700 dark:text-danger-300">
                   {ledgerError}
                 </div>
               )}
+
+              <h6 className="text-sm font-semibold text-black dark:text-white">
+                Customer Ledger Entries
+              </h6>
 
               <div className="trezo-card bg-white dark:bg-[#0c1427] border border-gray-100 dark:border-[#172036] rounded-md overflow-hidden">
                 {loadingLedger ? (
@@ -1938,6 +2413,300 @@ const CustDebitNoteDetailPage: React.FC = () => {
                   {savingHeader ? 'Saving…' : 'Save Changes'}
                 </button>
               </Can>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAddingPayment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#0c1427] rounded-md shadow-lg w-[90%] max-w-xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
+              Receive Payment
+            </h3>
+
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-[15px]">
+              Record a payment received from the customer against debit note{' '}
+              <span className="font-medium">{debitNote.debit_note_number}</span>. This posts a credit
+              entry to the customer ledger and credits the selected account.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
+              <div>
+                <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Amount Paid</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <p className="mt-[5px] text-xs text-gray-500 dark:text-gray-400">
+                  Amount is in the debit note currency ({debitNote.currency}).
+                </p>
+                <p className="mt-[2px] text-[11px] text-gray-500 dark:text-gray-400">
+                  Outstanding balance on this debit note:{' '}
+                  {formatCurrency(totalOutstanding, debitNote.currency)}.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Payment Date</label>
+                <input
+                  type="date"
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Method</label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) =>
+                    setPaymentMethod(e.target.value as 'cash' | 'mpesa' | 'bank_transfer' | 'check')
+                  }
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="mpesa">M-Pesa</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="check">Cheque</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Status</label>
+                <select
+                  value={paymentStatus}
+                  onChange={(e) => setPaymentStatus(e.target.value as 'pending' | 'complete')}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option disabled value="pending">Pending</option>
+                  <option value="complete">Complete</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Benefiting Account</label>
+                <p className="mb-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                  Showing accounts in currency <span className="font-medium">{debitNote.currency}</span> only.
+                </p>
+                <select
+                  value={paymentAccountId}
+                  onChange={(e) => setPaymentAccountId(e.target.value)}
+                  disabled={accountsLoading}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">{accountsLoading ? 'Loading accounts…' : 'Select account'}</option>
+                  {accounts
+                    .filter((account) => account.currency === debitNote.currency)
+                    .map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.code} - {account.name}
+                      </option>
+                    ))}
+                </select>
+                {!accountsLoading &&
+                  accounts.filter((a) => a.currency === debitNote.currency).length === 0 && (
+                    <p className="mt-[4px] text-[11px] text-warning-600 dark:text-warning-400">
+                      No benefiting accounts are configured for currency {debitNote.currency}.
+                    </p>
+                  )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Receipt / Transaction Reference</label>
+                <input
+                  type="text"
+                  value={receiptNumber}
+                  onChange={(e) => setReceiptNumber(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Bank Name (optional)</label>
+                <input
+                  type="text"
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Cheque Number (optional)</label>
+                <input
+                  type="text"
+                  value={checkNumber}
+                  onChange={(e) => setCheckNumber(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              {paymentMethod === 'check' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Cheque Date</label>
+                    <input
+                      type="date"
+                      value={chequeDate}
+                      onChange={(e) => setChequeDate(e.target.value)}
+                      className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                      Future-dated cheques are parked as post-dated cheques and posted when cleared.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Bank Branch (optional)</label>
+                    <input
+                      type="text"
+                      value={bankBranch}
+                      onChange={(e) => setBankBranch(e.target.value)}
+                      className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-[10px]">
+              <button
+                type="button"
+                onClick={() => setIsAddingPayment(false)}
+                disabled={savingPayment}
+                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <Can any={['ROLE_ADD_CUST_PAYMENT']}>
+                <button
+                  type="button"
+                  onClick={handleSavePayment}
+                  disabled={savingPayment}
+                  className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingPayment ? 'Saving…' : 'Save Payment'}
+                </button>
+              </Can>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingPayment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#0c1427] rounded-md shadow-lg w-[90%] max-w-xl max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-[15px]">
+              Edit Payment
+            </h3>
+
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-[15px]">
+              Financial fields (amount, date, account or currency) cannot be edited. Delete and
+              re-add the payment with corrected values.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[15px] mb-[20px]">
+              <div>
+                <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Status</label>
+                <select
+                  value={editPaymentStatus}
+                  onChange={(e) => setEditPaymentStatus(e.target.value as 'pending' | 'complete')}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="complete">Complete</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Receipt / Transaction Reference</label>
+                <input
+                  type="text"
+                  value={editReceiptNumber}
+                  onChange={(e) => setEditReceiptNumber(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Bank Name (optional)</label>
+                <input
+                  type="text"
+                  value={editBankName}
+                  onChange={(e) => setEditBankName(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px] text-black dark:text-white">Cheque Number (optional)</label>
+                <input
+                  type="text"
+                  value={editCheckNumber}
+                  onChange={(e) => setEditCheckNumber(e.target.value)}
+                  className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-[10px]">
+              <button
+                type="button"
+                onClick={() => setEditingPayment(null)}
+                disabled={savingEditPayment}
+                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEditPayment}
+                disabled={savingEditPayment}
+                className="px-[13px] py-[8px] rounded-md bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingEditPayment ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {paymentToDelete && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#0c1427] rounded-md p-[20px] md:p-[25px] w-full max-w-md">
+            <div className="mb-[12px]">
+              <h6 className="font-semibold text-black dark:text-white mb-[4px]">Confirm Delete Payment</h6>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Deleting payment{' '}
+                <span className="font-medium">{paymentToDelete.transaction_number || `#${paymentToDelete.id}`}</span>{' '}
+                ({formatCurrency(paymentToDelete.pivot?.allocated_amount ?? paymentToDelete.amount_paid, debitNote.currency)}) will reverse
+                its customer ledger entry and restore the outstanding balance on this debit note.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-[10px] mt-[10px]">
+              <button
+                type="button"
+                onClick={() => setPaymentToDelete(null)}
+                disabled={deletingPayment}
+                className="px-[13px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#111827] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeletePayment}
+                disabled={deletingPayment}
+                className="px-[13px] py-[8px] rounded-md bg-danger-500 text-white text-sm font-medium hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deletingPayment ? 'Deleting…' : 'Delete Payment'}
+              </button>
             </div>
           </div>
         </div>

@@ -311,11 +311,53 @@ export default function PdcReceivedDetailPage() {
                     {formatCurrency(
                       item.invoice?.total_amount ??
                         item.invoice?.subtotal_amount ??
-                        null,
+                        item.amount,
                       item.invoice?.currency || item.currency,
                     )}
                   </div>
                 </div>
+
+                {item.debit_note_id && (
+                  <div className="p-4 border rounded-md bg-slate-50 dark:bg-[#111827]">
+                    <div className="text-sm text-gray-500 font-semibold">
+                      Debit Note
+                    </div>
+                    <div className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
+                      {item.debit_note ? (
+                        <a
+                          href={`/cust-invoices/debit-notes/${item.debit_note.id}`}
+                          className="text-primary-500 hover:text-primary-600"
+                        >
+                          {item.debit_note.debit_note_number}
+                        </a>
+                      ) : (
+                        <span>{item.debit_note_number || "-"}</span>
+                      )}
+                    </div>
+                    {item.debit_note?.title && (
+                      <div className="text-sm text-gray-500 mt-1">
+                        {item.debit_note.title}
+                      </div>
+                    )}
+                    <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+                      Debit note amount:{" "}
+                      {formatCurrency(
+                        item.debit_note?.total_amount ?? item.amount,
+                        item.debit_note?.currency || item.currency,
+                      )}
+                    </div>
+                    <div className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                      Debit note status:{" "}
+                      <span className="capitalize">
+                        {item.debit_note?.status ?? "-"}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      Clearing this cheque settles the debit note and posts a credit
+                      entry to the customer ledger.
+                    </p>
+                  </div>
+                )}
 
                 <div className="p-4 border rounded-md bg-slate-50 dark:bg-[#111827]">
                   <div className="text-sm text-gray-500 font-semibold">

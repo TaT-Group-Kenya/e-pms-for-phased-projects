@@ -153,10 +153,10 @@ class LoanService
      * so Loans accounts are tracked as soon as a loan is registered.
      */
     /**
-     * Record a new loan and fund the account in one all-or-nothing
-     * transaction: ledger top-up entry ("top up from loan {id}"), account
-     * cash balance, loan balance, installment plan and status all commit
-     * together or not at all.
+     * Record a new loan and disburse the funds in one all-or-nothing
+     * transaction: ledger entry crediting the destination asset account
+     * ("loan disbursement {id}"), destination cash balance, loan balance,
+     * installment plan and status all commit together or not at all.
      */
     public function createLoan(array $data, int $userId): Loan
     {
@@ -174,6 +174,26 @@ class LoanService
             // Funding happens immediately, so the loan is born active.
             $data['status'] = Loan::STATUS_ACTIVE;
 
+            /*
+             * Forex handling (USD→KES):
+             *  - A non-KES loan requires an explicit forex_rate (validated
+             *    upstream and enforced here as a hard check).
+             *  - KES loans use rate 1 — the UI never asks for a rate.
+             *  - USD columns (principal/installment) stay in the loan's
+             *    operating currency for schedule + repayments; the _kes
+             *    columns store the booked KES equivalents for the TB.
+             */
+            $requestedRate = isset($data['forex_rate']) && (float) $data['forex_rate'] > 0
+                ? (float) $data['forex_rate']
+                : null;
+            unset($data['forex_rate']);
+
+            $fxRate = ($data['currency'] ?? 'KES') === 'KES'
+                ? 1.0
+                : ($requestedRate ?? throw new InvalidArgumentException(
+                    'A USD to KES forex rate is required for non-KES loans.'
+                ));
+
             $loan = Loan::create($data);
             $loan->installment_amount = $this->computeInstallment(
                 (float) $loan->principal,
@@ -182,29 +202,32 @@ class LoanService
                 (int) $loan->tenure_months,
                 $loan->repayment_frequency
             );
+            // Booked KES equivalents.
+            $loan->principal_kes = round((float) $loan->principal * $fxRate, 2);
+            $loan->installment_amount_kes = round((float) $loan->installment_amount * $fxRate, 2);
             $loan->updated_at = now();
             $loan->save();
 
-            // Ledger entry crediting the loan account with the borrowed
-            // cash, narrated with the loan reference.
-            $loan->disbursement_transaction_id = $this->createTopupTransaction(
+            // Ledger entry crediting the destination asset account with the
+            // borrowed cash, narrated with the loan reference.
+            $loan->disbursement_transaction_id = $this->createDisbursementTransaction(
                 $loan,
                 (float) $loan->principal,
-                "top up from loan {$loan->id}",
+                "loan disbursement {$loan->id}",
                 $userId,
                 new CommonService
             )->id;
             $loan->updated_at = now();
             $loan->save();
 
-            // Account: the borrowed cash lands in the account; the loan
-            // obligation itself is tracked by the Loan model (schedule +
-            // allocations), not on the account.
-            $account = $loan->account;
-            $account->balance = round((float) $account->balance + (float) $loan->principal, 2);
-            $account->updated_by = $userId;
-            $account->updated_at = now();
-            $account->save();
+            // Account: the borrowed cash lands on the destination asset
+            // account; the loan obligation itself is tracked by the Loan
+            // model (schedule + allocations), not on the account.
+            $destination = $loan->destination;
+            $destination->balance = round((float) $destination->balance + (float) $loan->principal, 2);
+            $destination->updated_by = $userId;
+            $destination->updated_at = now();
+            $destination->save();
 
             // Build the installment plan once the loan is persisted.
             $this->generateSchedule($loan);
@@ -214,9 +237,8 @@ class LoanService
     }
 
     /**
-     * Record a repayment against the loan. Money moves from the paying
-     * system account to the loan account (both are internal), the loan
-     * account's cash balance and outstanding obligation both reduce.
+     * Record a repayment against the loan. Money moves from a paying asset
+     * account out to the lender; the loan's outstanding obligation reduces.
      */
     public function repay(Loan $loan, array $data, int $userId): LoanRepayment
     {
@@ -255,8 +277,18 @@ class LoanService
 
         $paidFromAccount = Account::findOrFail($data['paid_from_account_id']);
 
-        if ($paidFromAccount->id === $loan->account_id) {
-            throw new InvalidArgumentException('Paying account must be different from the loan account.');
+        // Repayments must leave a real cash account — asset chart 1000 —
+        // because the money physically goes out to the lender.
+        if ($paidFromAccount->chartOfAccount?->code !== '1000') {
+            throw new InvalidArgumentException(
+                'Repayments can only be paid from asset (chart 1000) accounts.'
+            );
+        }
+
+        if ($paidFromAccount->currency !== $loan->currency) {
+            throw new InvalidArgumentException(
+                'Paying account currency must match the loan currency ('.$loan->currency.').'
+            );
         }
 
         if ((float) $paidFromAccount->balance < $amount) {
@@ -270,32 +302,77 @@ class LoanService
             $narration = $data['notes'] ?? null;
             $narration = trim((string) $narration) ?: ('Loan repayment to '.$loan->lender_name);
 
-            // Single ledger leg: debit the paying (cash) account. A
-            // repayment sends the money OUT of the system to the lender —
-            // the loan account's balance must not change, and the loan's
-            // own outstanding (schedule minus allocations) drops instead.
-            $debit = $this->createRepaymentLeg(
-                $loan,
-                'expense',
-                (float) $amount,
-                $loan->account->currency,
-                $paidFromAccount->id,
-                null,
-                $narration,
-                $userId,
-                $commonService
-            );
+            // Trial-balance-exact ledger legs: the money leaving the system
+            // is split into its interest component (its own transaction
+            // type 'interest', an expense, 5000) and its principal component
+            // ('loan_principal', a liability reduction, 2000) so each chart
+            // and each type only accumulates the amounts that genuinely
+            // belong to it. Component-less repayments produce a single leg.
+            $legs = [];
+            if ($interestComponent > 0) {
+                $legs[] = [
+                    'amount' => $interestComponent,
+                    'type' => Transaction::TYPE_INTEREST,
+                    'chart' => Transaction::expenseChartId(),
+                    'narration' => $narration.' — interest',
+                ];
+            }
+            if ($principalComponent > 0) {
+                $legs[] = [
+                    'amount' => $principalComponent,
+                    'type' => Transaction::TYPE_LOAN_PRINCIPAL,
+                    'chart' => $loan->chart_of_account,
+                    'narration' => $narration.' — principal',
+                ];
+            }
+            if (empty($legs)) {
+                // Nothing allocatable (shouldn't happen due to earlier checks).
+                $legs[] = [
+                    'amount' => (float) $amount,
+                    'type' => 'expense',
+                    'chart' => null,
+                    'narration' => $narration,
+                ];
+            }
 
-            $transactionId = $debit->id;
+            $debit = null;
+            foreach ($legs as $leg) {
+                $debit = $this->createRepaymentLeg(
+                    $loan,
+                    $leg['type'],
+                    $leg['amount'],
+                    $loan->destination->currency,
+                    $paidFromAccount->id,
+                    null,
+                    $leg['narration'],
+                    $userId,
+                    $commonService,
+                    $leg['chart']
+                );
+
+                if ($leg['type'] === Transaction::TYPE_LOAN_PRINCIPAL) {
+                    // The loan's repayment transaction_id points at the
+                    // principal leg (the liability reduction) for statements.
+                    $transactionId = $debit->id;
+                }
+            }
+
+            if (! isset($transactionId)) {
+                $transactionId = $debit->id;
+            }
 
             // Reduce the paying account cash balance: the money leaves the
-            // system to the lender. The loan account's own balance is NOT
+            // system to the lender. The destination account's balance is NOT
             // touched by a repayment — it only changes when loan cash is
-            // disbursed into it or when its own account transactions move it.
+            // disbursed onto it or when its own account transactions move it.
             $paidFromAccount->balance = (float) $paidFromAccount->balance - $amount;
             $paidFromAccount->updated_at = now();
             $paidFromAccount->updated_by = $userId;
             $paidFromAccount->save();
+
+            // Record both the real (loan currency) components and the
+            // converted (KES, at the loan's booked forex rate) components.
+            $fxRate = $this->fxRate($loan);
 
             $repayment = LoanRepayment::create([
                 'loan_id' => $loan->id,
@@ -303,8 +380,12 @@ class LoanService
                 'schedule_installment_id' => $data['schedule_installment_id'] ?? null,
                 'payment_date' => $paymentDate,
                 'amount_paid' => $amount,
+                'amount_paid_kes' => round($amount * $fxRate, 2),
                 'principal_component' => $principalComponent,
+                'principal_component_kes' => round($principalComponent * $fxRate, 2),
                 'interest_component' => $interestComponent,
+                'interest_component_kes' => round($interestComponent * $fxRate, 2),
+                'exchange_rate' => $fxRate,
                 'balance_after' => null,
                 'paid_from_account_id' => $paidFromAccount->id,
                 'payment_reference' => $data['payment_reference'] ?? null,
@@ -384,7 +465,7 @@ class LoanService
      */
     public function summary(Loan $loan): array
     {
-        $loan->loadMissing('account', 'repayments', 'schedule');
+        $loan->loadMissing('destination', 'repayments', 'schedule');
 
         $totalRepaid = round((float) $loan->repayments->sum('amount_paid'), 2);
         $principalRepaid = round((float) $loan->repayments->sum('principal_component'), 2);
@@ -452,13 +533,33 @@ class LoanService
         return round(max($installment * $tenure - (float) $loan->principal, 0), 2);
     }
 
-    private function createTopupTransaction(
+    /**
+     * The loan's booked USD→KES rate. KES loans: 1. Non-KES: the rate the
+     * user entered at creation (principal_kes / principal), falling back to
+     * 1 for legacy rows so nothing divides by zero.
+     */
+    public function fxRate(Loan $loan): float
+    {
+        if ($loan->currency === 'KES') {
+            return 1.0;
+        }
+
+        if ((float) $loan->principal > 0 && (float) $loan->principal_kes > 0) {
+            return round((float) $loan->principal_kes / (float) $loan->principal, 6);
+        }
+
+        return 1.0;
+    }
+
+    private function createDisbursementTransaction(
         Loan $loan,
         float $amount,
         string $narration,
         int $userId,
         CommonService $commonService
     ): Transaction {
+        $exchangeRate = $this->fxRate($loan);
+
         return app(TransactionService::class)->create([
             'transaction_number' => $commonService->generateUniqueCode('TRX-'),
             'transaction_type' => 'topup',
@@ -469,16 +570,16 @@ class LoanService
             'tax_amount' => 0,
             'net_amount' => $amount,
             'transaction_currency' => $loan->currency,
-            'exchange_rate' => 1,
-            'converted_amount' => $amount,
+            'exchange_rate' => $exchangeRate,
+            'converted_amount' => round($amount * $exchangeRate, 2),
             'converted_tax_amount' => 0,
-            'converted_net_amount' => $amount,
+            'converted_net_amount' => round($amount * $exchangeRate, 2),
             'customer_id' => null,
             'company_id' => null,
             'source_type' => 'loan_disbursement',
             'source_id' => $loan->id,
             'account_debit' => null,
-            'account_credit' => $loan->account_id,
+            'account_credit' => $loan->destination_account_id,
             'category' => 'revenue',
             'payment_method' => 'CASH',
             'bank_account' => null,
@@ -507,9 +608,11 @@ class LoanService
         ?int $creditAccountId,
         string $narration,
         int $userId,
-        CommonService $commonService
+        CommonService $commonService,
+        ?int $chartOfAccount = null
     ): Transaction {
         $date = now()->toDateString();
+        $exchangeRate = $this->fxRate($loan);
 
         return app(TransactionService::class)->create([
             'transaction_number' => $commonService->generateUniqueCode('TRX-'),
@@ -521,16 +624,18 @@ class LoanService
             'tax_amount' => 0,
             'net_amount' => $amount,
             'transaction_currency' => $currency,
-            'exchange_rate' => 1,
-            'converted_amount' => $amount,
+            'exchange_rate' => $exchangeRate,
+            'converted_amount' => round($amount * $exchangeRate, 2),
             'converted_tax_amount' => 0,
-            'converted_net_amount' => $amount,
+            'converted_net_amount' => round($amount * $exchangeRate, 2),
             'customer_id' => null,
             'company_id' => null,
             'source_type' => 'loan_repayment',
             'source_id' => $loan->id,
             'account_debit' => $debitAccountId,
             'account_credit' => $creditAccountId,
+            // Trial-balance tag; falls back to the type-aware default.
+            'chart_of_account' => $chartOfAccount,
             'category' => 'revenue',
             'payment_method' => 'CASH',
             'bank_account' => null,
@@ -605,15 +710,39 @@ class LoanService
 
             $fullyPaid = $principalSettled && $interestSettled;
 
-            $allocations[] = [
+            // Interest applied reduces the P&L: interest-only allocations
+            // carry the expense chart (5000) and principal-only allocations
+            // carry the liability chart (2000). A single installment can
+            // receive both components, so mixed allocations are split into
+            // two rows to keep the trial balance exact per component.
+            $allocationFxRate = $this->fxRate($loan);
+            $baseAllocation = [
                 'loan_id' => $loan->id,
                 'repayment_id' => $repayment->id,
                 'schedule_installment_id' => $installment->id,
-                'interest_applied' => $interestApplied,
-                'principal_applied' => $principalApplied,
                 'created_at' => now(),
                 'created_by' => $userId,
             ];
+
+            if ($interestApplied > 0) {
+                $allocations[] = array_merge($baseAllocation, [
+                    'interest_applied' => $interestApplied,
+                    'interest_applied_kes' => round($interestApplied * $allocationFxRate, 2),
+                    'principal_applied' => 0,
+                    'principal_applied_kes' => 0,
+                    'chart_of_account' => Transaction::expenseChartId(),
+                ]);
+            }
+
+            if ($principalApplied > 0) {
+                $allocations[] = array_merge($baseAllocation, [
+                    'interest_applied' => 0,
+                    'interest_applied_kes' => 0,
+                    'principal_applied' => $principalApplied,
+                    'principal_applied_kes' => round($principalApplied * $allocationFxRate, 2),
+                    'chart_of_account' => $loan->chart_of_account,
+                ]);
+            }
 
             $installment->status = $fullyPaid
                 ? LoanSchedule::STATUS_PAID
@@ -631,7 +760,6 @@ class LoanService
             DB::table('loan_repayment_allocations')->insert($allocations);
         }
     }
-
     private function paidFor(LoanSchedule $installment, string $component): float
     {
         return round(

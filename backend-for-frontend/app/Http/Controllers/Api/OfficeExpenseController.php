@@ -199,6 +199,8 @@ class OfficeExpenseController extends Controller
                 'source_id' => $expense->id,
                 'account_debit' => $validated['funding_account'],
                 'account_credit' => null,
+                // Office expenses are expense postings (chart 5000).
+                'chart_of_account' => $expense->chart_of_account,
                 'category' => 'expense',
                 'payment_method' => 'internal_transfer',
                 'transaction_status' => 'cleared',
@@ -215,6 +217,25 @@ class OfficeExpenseController extends Controller
             // Link payment to transaction
             $payment->transaction_id = $ledger->id;
             $payment->save();
+
+            // Tax paid on the office expense settlement is VAT receivable —
+            // recoverable from the revenue authority (chart 1000).
+            $expenseTaxPortion = (float) ($ledger->tax_amount ?? 0);
+
+            if ($expenseTaxPortion > 0) {
+                \App\Services\TaxTransactionService::record([
+                    'direction' => 'paid',
+                    'source_type' => 'office_expense',
+                    'source_id' => $expense->id,
+                    'payment_id' => $payment->id,
+                    'amount' => $expenseTaxPortion,
+                    'transaction_currency' => $expense->currency,
+                    'exchange_rate' => 1,
+                    'transaction_date' => $validated['date'],
+                    'narration' => 'Tax paid on office expense settlement '.$expense->id,
+                    'created_by' => $userId,
+                ]);
+            }
 
             // Update expense status to paid
             $expense->status = 'paid';

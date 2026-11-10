@@ -38,6 +38,7 @@ interface ChartOfAccountOption {
   id: number;
   code: string;
   name: string;
+  is_bank_account_grp: boolean;
 }
 
 const AccountsTable: React.FC = () => {
@@ -55,7 +56,7 @@ const AccountsTable: React.FC = () => {
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formType, setFormType] = useState<"cash" | "mpesa" | "bank">("cash");
-  const [formGroup, setFormGroup] = useState<"Petty" | "Checking" | "Savings" | "Loans">("Petty");
+  const [formGroup, setFormGroup] = useState<"Petty" | "Checking" | "Savings">("Petty");
   const [formCurrency, setFormCurrency] = useState("");
   const [formBalance, setFormBalance] = useState("0.00");
   const [formOverdraft, setFormOverdraft] = useState("0");
@@ -183,6 +184,7 @@ const AccountsTable: React.FC = () => {
           id: Number(c.id),
           code: String(c.code ?? ""),
           name: String(c.name ?? ""),
+          is_bank_account_grp: Boolean(c.is_bank_account_grp),
         }));
 
         setChartOfAccounts(mapped);
@@ -211,6 +213,8 @@ const AccountsTable: React.FC = () => {
     setFormChartOfAccountId("");
   };
 
+  const bankGroupChartOfAccounts = chartOfAccounts.filter((c) => c.is_bank_account_grp);
+
   const handleOpenCreate = () => {
     setEditingAccount(null);
     resetForm();
@@ -229,11 +233,14 @@ const AccountsTable: React.FC = () => {
     const value = overdraft === 1 ? "1" : "0";
     setFormOverdraft(value);
     setFormCurrency(acc.currency || "");
-    setFormChartOfAccountId(
+    const linkedChartId =
       acc.chart_of_account_id !== null && acc.chart_of_account_id !== undefined
         ? String(acc.chart_of_account_id)
-        : "",
-    );
+        : "";
+    // Only bank account groups are selectable, so a non-bank link starts
+    // unselected.
+    const linkedChart = bankGroupChartOfAccounts.find((c) => String(c.id) === linkedChartId);
+    setFormChartOfAccountId(linkedChart ? linkedChartId : "");
     setShowModal(true);
   };
 
@@ -645,7 +652,6 @@ const AccountsTable: React.FC = () => {
                     <option value="Petty">Petty</option>
                     <option value="Checking">Checking</option>
                     <option value="Savings">Savings</option>
-                    <option value="Loans">Loans</option>
                   </select>
                 </div>
 
@@ -674,15 +680,15 @@ const AccountsTable: React.FC = () => {
                     className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
                     <option value="">Select chart of account</option>
-                    {chartOfAccounts.map((c) => (
+                    {bankGroupChartOfAccounts.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.code} - {c.name}
                       </option>
                     ))}
                   </select>
-                  {chartOfAccounts.length === 0 && (
+                  {bankGroupChartOfAccounts.length === 0 && (
                     <p className="mt-[4px] text-[11px] text-yellow-600 dark:text-yellow-400">
-                      No chart of accounts available.
+                      No bank account chart groups available.
                     </p>
                   )}
                 </div>

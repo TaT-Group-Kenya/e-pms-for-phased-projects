@@ -11,6 +11,7 @@ use App\Models\LoanSchedule;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\LoanService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Tests\TestCase;
 
@@ -135,6 +136,7 @@ class LoanTest extends TestCase
             $table->boolean('is_deleted')->default(false);
             $table->timestamp('deleted_at')->nullable();
             $table->unsignedBigInteger('deleted_by')->nullable();
+            $table->boolean('is_bank_account_grp')->default(false);
         });
 
         foreach ([
@@ -224,6 +226,7 @@ class LoanTest extends TestCase
             $table->unsignedBigInteger('source_id')->nullable();
             $table->string('account_debit')->nullable();
             $table->string('account_credit')->nullable();
+            $table->unsignedBigInteger('chart_of_account')->nullable();
             $table->string('category')->nullable();
             $table->string('transaction_status')->nullable();
             $table->text('narration')->nullable();
@@ -282,6 +285,7 @@ class LoanTest extends TestCase
             $table->unsignedBigInteger('source_id')->nullable();
             $table->string('account_debit')->nullable();
             $table->string('account_credit')->nullable();
+            $table->unsignedBigInteger('chart_of_account')->nullable();
             $table->string('category')->nullable();
             $table->string('payment_method')->nullable();
             $table->string('bank_account')->nullable();
@@ -302,12 +306,25 @@ class LoanTest extends TestCase
             $table->unsignedBigInteger('deleted_by')->nullable();
         });
 
+        \Schema::create('currencies', function ($table) {
+            $table->id();
+            $table->string('code', 10)->unique();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        foreach (['KES', 'USD', 'EUR'] as $code) {
+            DB::table('currencies')->insert(['code' => $code, 'name' => $code]);
+        }
+
         \Schema::create('loans', function ($table) {
             $table->id();
-            $table->unsignedBigInteger('account_id');
+            $table->unsignedBigInteger('destination_account_id');
             $table->string('lender_name');
             $table->decimal('principal', 15, 2);
+            $table->decimal('principal_kes', 15, 2)->default(0);
             $table->string('currency', 10);
+            $table->unsignedBigInteger('chart_of_account');
             $table->string('interest_type')->default('none');
             $table->decimal('interest_rate', 8, 4)->default(0);
             $table->unsignedInteger('tenure_months')->default(1);
@@ -315,6 +332,7 @@ class LoanTest extends TestCase
             $table->date('disbursement_date');
             $table->date('first_payment_date')->nullable();
             $table->decimal('installment_amount', 15, 2)->nullable();
+            $table->decimal('installment_amount_kes', 15, 2)->default(0);
             $table->string('status')->default('pending_disbursement');
             $table->text('description')->nullable();
             $table->unsignedBigInteger('disbursement_transaction_id')->nullable();
@@ -325,7 +343,8 @@ class LoanTest extends TestCase
             $table->timestamp('deleted_at')->nullable();
             $table->unsignedBigInteger('deleted_by')->nullable();
 
-            $table->foreign('account_id')->references('id')->on('accounts');
+            $table->foreign('destination_account_id')->references('id')->on('accounts');
+            $table->foreign('chart_of_account')->references('id')->on('chart_of_accounts');
             $table->foreign('disbursement_transaction_id')->references('id')->on('transactions');
         });
 
@@ -355,8 +374,12 @@ class LoanTest extends TestCase
             $table->unsignedBigInteger('schedule_installment_id')->nullable();
             $table->date('payment_date');
             $table->decimal('amount_paid', 15, 2);
+            $table->decimal('amount_paid_kes', 15, 2)->default(0);
             $table->decimal('principal_component', 15, 2)->default(0);
+            $table->decimal('principal_component_kes', 15, 2)->default(0);
             $table->decimal('interest_component', 15, 2)->default(0);
+            $table->decimal('interest_component_kes', 15, 2)->default(0);
+            $table->decimal('exchange_rate', 15, 6)->default(1);
             $table->decimal('balance_after', 15, 2)->nullable();
             $table->unsignedBigInteger('paid_from_account_id')->nullable();
             $table->string('payment_reference')->nullable();
@@ -380,7 +403,10 @@ class LoanTest extends TestCase
             $table->unsignedBigInteger('repayment_id');
             $table->unsignedBigInteger('schedule_installment_id');
             $table->decimal('interest_applied', 15, 2)->default(0);
+            $table->decimal('interest_applied_kes', 15, 2)->default(0);
             $table->decimal('principal_applied', 15, 2)->default(0);
+            $table->decimal('principal_applied_kes', 15, 2)->default(0);
+            $table->unsignedBigInteger('chart_of_account')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->timestamps();
 
@@ -390,22 +416,23 @@ class LoanTest extends TestCase
         });
     }
 
-    private function makeLoanAccount(array $overrides = []): Account
+    // The asset (chart 1000) account loans are disbursed onto.
+    private function makeDestinationAccount(array $overrides = []): Account
     {
         return Account::create(array_merge([
-            'code' => 'INT-ACC-LOAN-'.uniqid(),
-            'name' => 'Loan account',
-            'description' => 'Loan account',
+            'code' => 'INT-ACC-DEST-'.uniqid(),
+            'name' => 'Destination account',
+            'description' => 'Destination account',
             'type' => 'bank',
-            'group' => 'Loans',
+            'group' => 'Checking',
             'currency' => 'KES',
             'balance' => 0,
             'overdraft_allowed' => false,
-            'chart_of_account_id' => ChartOfAccount::where('code', '2000')->value('id'),
+            'chart_of_account_id' => ChartOfAccount::where('code', '1000')->value('id'),
         ], $overrides));
     }
 
-    private function makeCashAccount(float $balance = 100000): Account
+    private function makeCashAccount(float $balance = 100000, string $currency = 'KES'): Account
     {
         return Account::create([
             'code' => 'INT-ACC-CASH-'.uniqid(),
@@ -413,7 +440,7 @@ class LoanTest extends TestCase
             'description' => 'Main cash',
             'type' => 'bank',
             'group' => 'Checking',
-            'currency' => 'KES',
+            'currency' => $currency,
             'balance' => $balance,
             'overdraft_allowed' => false,
             'chart_of_account_id' => ChartOfAccount::where('code', '1000')->value('id'),
@@ -428,34 +455,35 @@ class LoanTest extends TestCase
         $this->actingAs($user, 'sanctum');
     }
 
-    public function test_manual_topup_is_rejected_for_loan_accounts(): void
+    public function test_external_topup_is_rejected_for_asset_accounts(): void
     {
         $this->authorizeAll();
 
-        $loanAccount = $this->makeLoanAccount();
+        $destination = $this->makeDestinationAccount();
 
-        $response = $this->postJson('/e-pms/api/v1/accounts/'.$loanAccount->id.'/topup', [
+        $response = $this->postJson('/e-pms/api/v1/accounts/'.$destination->id.'/topup', [
             'source_type' => 'external',
             'external_source_description' => 'Direct funding',
             'amount' => 5000,
         ]);
 
+        // External top-ups stay limited to liability/equity charts.
         $response->assertStatus(422);
-        $loanAccount->refresh();
-        $this->assertEqualsWithDelta(0.0, (float) $loanAccount->balance, 0.01);
+        $destination->refresh();
+        $this->assertEqualsWithDelta(0.0, (float) $destination->balance, 0.01);
         $this->assertDatabaseCount('transactions', 0);
 
-        // Internal source top-ups are equally rejected.
+        // Internal source top-ups are allowed for asset accounts.
         $cash = $this->makeCashAccount(50000);
-        $response2 = $this->postJson('/e-pms/api/v1/accounts/'.$loanAccount->id.'/topup', [
+        $response2 = $this->postJson('/e-pms/api/v1/accounts/'.$destination->id.'/topup', [
             'source_type' => 'internal',
             'source_account_id' => $cash->id,
             'source_debit_amount' => 1000,
         ]);
 
-        $response2->assertStatus(422);
-        $loanAccount->refresh();
-        $this->assertEqualsWithDelta(0.0, (float) $loanAccount->balance, 0.01);
+        $response2->assertOk();
+        $destination->refresh();
+        $this->assertEqualsWithDelta(1000.0, (float) $destination->balance, 0.01);
     }
 
     public function test_statement_meta_includes_loans_totals(): void
@@ -463,12 +491,12 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         Gate::before(fn () => true);
 
-        $loanAccount = $this->makeLoanAccount();
+        $loanAccount = $this->makeDestinationAccount();
         $cash = $this->makeCashAccount(1000000);
         $service = new LoanService;
 
         $loan = $service->createLoan([
-            'account_id' => $loanAccount->id,
+            'destination_account_id' => $loanAccount->id,
             'lender_name' => 'E2E Bank',
             'principal' => 100000,
             'currency' => 'KES',
@@ -508,14 +536,15 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $loanAccount = $this->makeLoanAccount();
+        $loanAccount = $this->makeDestinationAccount();
         $cash = $this->makeCashAccount(100000);
 
         $loan = $service->createLoan([
-            'account_id' => $loanAccount->id,
+            'destination_account_id' => $loanAccount->id,
             'lender_name' => 'Reported Bank',
             'principal' => 1000,
             'currency' => 'USD',
+            'forex_rate' => 128.45,
             'interest_type' => 'reducing',
             'interest_rate' => 12.5,
             'tenure_months' => 24,
@@ -529,7 +558,7 @@ class LoanTest extends TestCase
         // Only installment 1 has fallen due (first payment = today).
         $repayment = $service->repay($loan->fresh(), [
             'amount' => 200,
-            'paid_from_account_id' => $cash->id,
+            'paid_from_account_id' => $this->makeCashAccount(10000, 'USD')->id,
         ], 1);
 
         $loan->refresh();
@@ -568,9 +597,9 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $loanAccount = $this->makeLoanAccount();
+        $loanAccount = $this->makeDestinationAccount();
         $service->createLoan([
-            'account_id' => $loanAccount->id,
+            'destination_account_id' => $loanAccount->id,
             'lender_name' => 'PDF Bank',
             'principal' => 50000,
             'currency' => 'KES',
@@ -619,10 +648,10 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $account = $this->makeLoanAccount();
+        $account = $this->makeDestinationAccount();
 
         $loan = $service->createLoan([
-            'account_id' => $account->id,
+            'destination_account_id' => $account->id,
             'lender_name' => 'ABC Bank',
             'principal' => 75000,
             'currency' => 'KES',
@@ -650,7 +679,7 @@ class LoanTest extends TestCase
             'source_id' => $loan->id,
             'account_credit' => (string) $account->id,
             'amount' => 75000.0,
-            'narration' => 'top up from loan '.$loan->id,
+            'narration' => 'loan disbursement '.$loan->id,
         ]);
 
         // Schedule is part of the same commit.
@@ -662,13 +691,13 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $account = $this->makeLoanAccount();
+        $account = $this->makeDestinationAccount();
 
         // Invalid terms tenure=0 makes computeInstallment throw after the
         // loan row is created; the transaction must roll everything back.
         try {
             $service->createLoan([
-                'account_id' => $account->id,
+                'destination_account_id' => $account->id,
                 'lender_name' => 'Bad Loan',
                 'principal' => 100,
                 'currency' => 'KES',
@@ -697,9 +726,9 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $account = $this->makeLoanAccount();
+        $account = $this->makeDestinationAccount();
         $loan = $service->createLoan([
-            'account_id' => $account->id,
+            'destination_account_id' => $account->id,
             'lender_name' => 'ABC Bank',
             'principal' => 500000,
             'currency' => 'KES',
@@ -737,11 +766,11 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $loanAccount = $this->makeLoanAccount();
+        $loanAccount = $this->makeDestinationAccount();
         $cash = $this->makeCashAccount(100000);
 
         $loan = $service->createLoan([
-            'account_id' => $loanAccount->id,
+            'destination_account_id' => $loanAccount->id,
             'lender_name' => 'ABC Bank',
             'principal' => 100000,
             'currency' => 'KES',
@@ -767,13 +796,13 @@ class LoanTest extends TestCase
         $this->assertSame(0.0, (float) $repayment->interest_component);
         $this->assertEqualsWithDelta(30000.0, (float) $repayment->principal_component, 0.01);
 
-        // Cash leaves the paying account to the lender; the loan account's
-        // balance is untouched (it only holds disbursed loan cash).
+        // Cash leaves the paying account to the lender; the destination
+        // account's balance is untouched (it holds disbursed loan cash).
         $this->assertEqualsWithDelta(70000.0, (float) $cash->balance, 0.01);
         // Disbursement credited 100k; repayment does NOT touch it.
         $this->assertEqualsWithDelta(100000.0, (float) $loanAccount->balance, 0.01);
 
-        // One debit leg for the paying account; no credit leg on the loan account.
+        // One debit leg for the paying account; no credit leg on the destination.
         $this->assertDatabaseHas('transactions', [
             'source_type' => 'loan_repayment',
             'account_debit' => (string) $cash->id,
@@ -790,11 +819,11 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $loanAccount = $this->makeLoanAccount();
+        $loanAccount = $this->makeDestinationAccount();
         $cash = $this->makeCashAccount(1000000);
 
         $loan = $service->createLoan([
-            'account_id' => $loanAccount->id,
+            'destination_account_id' => $loanAccount->id,
             'lender_name' => 'Early Bank',
             'principal' => 120000,
             'currency' => 'KES',
@@ -845,11 +874,11 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $loanAccount = $this->makeLoanAccount();
+        $loanAccount = $this->makeDestinationAccount();
         $cash = $this->makeCashAccount(1000000);
 
         $loan = $service->createLoan([
-            'account_id' => $loanAccount->id,
+            'destination_account_id' => $loanAccount->id,
             'lender_name' => 'Lump Bank',
             'principal' => 10000,
             'currency' => 'KES',
@@ -892,13 +921,13 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $loanAccount = $this->makeLoanAccount();
+        $loanAccount = $this->makeDestinationAccount();
         $cash = $this->makeCashAccount(1000000);
 
         // 36-month loan at 8% flat: total interest 120. Monthly interest
         // instalment = 3.33; first 3 installments fall due immediately.
         $loan = $service->createLoan([
-            'account_id' => $loanAccount->id,
+            'destination_account_id' => $loanAccount->id,
             'lender_name' => 'Fast Bank',
             'principal' => 500,
             'currency' => 'KES',
@@ -939,11 +968,11 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $loanAccount = $this->makeLoanAccount();
+        $loanAccount = $this->makeDestinationAccount();
         $cash = $this->makeCashAccount(200000);
 
         $loan = $service->createLoan([
-            'account_id' => $loanAccount->id,
+            'destination_account_id' => $loanAccount->id,
             'lender_name' => 'ABC Bank',
             'principal' => 120000,
             'currency' => 'KES',
@@ -1007,13 +1036,13 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $account = $this->makeLoanAccount();
+        $account = $this->makeDestinationAccount();
 
         // 500 @ 8% p.a. flat over 36 monthly installments:
         // total interest = 500 * 8% * (36/12) = 120 => repayable 620,
         // installment 620/36 = 17.22.
         $loan = $service->createLoan([
-            'account_id' => $account->id,
+            'destination_account_id' => $account->id,
             'lender_name' => 'Micro Lender',
             'principal' => 500,
             'currency' => 'KES',
@@ -1051,11 +1080,11 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $loanAccount = $this->makeLoanAccount();
+        $loanAccount = $this->makeDestinationAccount();
         $cash = $this->makeCashAccount(1000000);
 
         $loan = $service->createLoan([
-            'account_id' => $loanAccount->id,
+            'destination_account_id' => $loanAccount->id,
             'lender_name' => 'ABC Bank',
             'principal' => 50000,
             'currency' => 'KES',
@@ -1078,11 +1107,11 @@ class LoanTest extends TestCase
         $this->authorizeAll();
         $service = new LoanService;
 
-        $loanAccount = $this->makeLoanAccount();
+        $loanAccount = $this->makeDestinationAccount();
         $cash = $this->makeCashAccount(1000000);
 
         $loan = $service->createLoan([
-            'account_id' => $loanAccount->id,
+            'destination_account_id' => $loanAccount->id,
             'lender_name' => 'ABC Bank',
             'principal' => 40000,
             'currency' => 'KES',
@@ -1105,14 +1134,25 @@ class LoanTest extends TestCase
         $this->assertEqualsWithDelta(0.0, $service->outstandingBalance($loan->fresh()), 0.01);
     }
 
-    public function test_loan_store_request_rejects_non_loans_account(): void
+    public function test_loan_store_request_rejects_non_asset_account(): void
     {
-        $cash = $this->makeCashAccount();
+        // A liability (chart 2000) account is not a valid destination.
+        $liability = Account::create([
+            'code' => 'INT-ACC-LIA-'.uniqid(),
+            'name' => 'Liability account',
+            'description' => 'Liability account',
+            'type' => 'bank',
+            'group' => 'Checking',
+            'currency' => 'KES',
+            'balance' => 0,
+            'overdraft_allowed' => false,
+            'chart_of_account_id' => ChartOfAccount::where('code', '2000')->value('id'),
+        ]);
 
         $request = new \App\Http\Requests\LoanStoreRequest;
         $request->setContainer(app());
         $request->merge([
-            'account_id' => $cash->id,
+            'destination_account_id' => $liability->id,
             'lender_name' => 'ABC',
             'principal' => 1000,
             'currency' => 'KES',
@@ -1126,17 +1166,17 @@ class LoanTest extends TestCase
         $validator = $method->invoke($request);
 
         $this->assertTrue($validator->fails());
-        $this->assertTrue($validator->errors()->has('account_id'));
+        $this->assertTrue($validator->errors()->has('destination_account_id'));
     }
 
     public function test_loan_store_request_rejects_mismatched_currency(): void
     {
-        $loanAccount = $this->makeLoanAccount(['currency' => 'KES']);
+        $destination = $this->makeDestinationAccount(['currency' => 'KES']);
 
         $request = new \App\Http\Requests\LoanStoreRequest;
         $request->setContainer(app());
         $request->merge([
-            'account_id' => $loanAccount->id,
+            'destination_account_id' => $destination->id,
             'lender_name' => 'ABC',
             'principal' => 1000,
             'currency' => 'USD',

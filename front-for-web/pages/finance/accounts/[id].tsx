@@ -540,10 +540,10 @@ const AccountStatementPage: React.FC = () => {
                   Chart of Account: {account.chart_of_account.code} - {account.chart_of_account.name}
                 </span>
               )}
-              {account?.group === "Loans" && statement?.meta.loans_totals && (
+              {Number(statement?.meta.loans_totals?.loan_count ?? 0) > 0 && (
                 <span className="inline-flex items-center px-2 py-[3px] rounded-full bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">
-                  Loan balance: {account.currency || "KES"}{" "}
-                  {Number(statement.meta.loans_totals.total_outstanding ?? 0).toLocaleString(undefined, {
+                  Loan balance: {account?.currency || "KES"}{" "}
+                  {Number(statement?.meta.loans_totals?.total_outstanding ?? 0).toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
@@ -567,25 +567,25 @@ const AccountStatementPage: React.FC = () => {
                     : "-"}
                 </div>
               </div>
-              {account?.group === "Loans" && statement?.meta.loans_totals && (
+              {Number(statement?.meta.loans_totals?.loan_count ?? 0) > 0 && (
                 <>
                   <div className="inline-flex flex-col px-3 py-2 rounded-md bg-gray-50 dark:bg-[#081328]">
-                    <div className="text-xs text-gray-500">Loans ({statement.meta.loans_totals.loan_count})</div>
+                    <div className="text-xs text-gray-500">Loans ({statement?.meta.loans_totals?.loan_count})</div>
                     <div className="text-sm font-semibold text-black dark:text-white">
-                      {formatCurrency(Number(statement.meta.loans_totals.total_borrowed ?? 0), account?.currency || "")}
+                      {formatCurrency(Number(statement?.meta.loans_totals?.total_borrowed ?? 0), account?.currency || "")}
                     </div>
                   </div>
                   <div className="inline-flex flex-col px-3 py-2 rounded-md bg-gray-50 dark:bg-[#081328]">
                     <div className="text-xs text-gray-500">Repaid</div>
                     <div className="text-sm font-semibold text-black dark:text-white">
-                      {formatCurrency(Number(statement.meta.loans_totals.total_repaid ?? 0), account?.currency || "")}
+                      {formatCurrency(Number(statement?.meta.loans_totals?.total_repaid ?? 0), account?.currency || "")}
                     </div>
                   </div>
                   <div className="inline-flex flex-col px-3 py-2 rounded-md bg-gray-50 dark:bg-[#081328]">
                     <div className="text-xs text-gray-500">Interest Paid</div>
                     <div className="text-sm font-semibold text-black dark:text-white">
                       {formatCurrency(
-                        Number(statement.meta.loans_totals.total_interest_repaid ?? 0),
+                        Number(statement?.meta.loans_totals?.total_interest_repaid ?? 0),
                         account?.currency || "",
                       )}
                     </div>
@@ -593,13 +593,13 @@ const AccountStatementPage: React.FC = () => {
                   <div className="inline-flex flex-col px-3 py-2 rounded-md bg-orange-50 dark:bg-orange-500/10">
                     <div className="text-xs text-gray-500">Outstanding</div>
                     <div className="text-sm font-semibold text-orange-600 dark:text-orange-300">
-                      {formatCurrency(Number(statement.meta.loans_totals.total_outstanding ?? 0), account?.currency || "")}
+                      {formatCurrency(Number(statement?.meta.loans_totals?.total_outstanding ?? 0), account?.currency || "")}
                     </div>
                   </div>
                   <div className="inline-flex flex-col px-3 py-2 rounded-md bg-gray-50 dark:bg-[#081328]">
                     <div className="text-xs text-gray-500">Next Payment Due</div>
                     <div className="text-sm font-semibold text-black dark:text-white">
-                      {statement.meta.loans_totals.next_due_date
+                      {statement?.meta.loans_totals?.next_due_date
                         ? `${new Date(statement.meta.loans_totals.next_due_date).toLocaleDateString()} · ${formatCurrency(
                             Number(statement.meta.loans_totals.next_due_amount ?? 0),
                             account?.currency || "",
@@ -637,16 +637,14 @@ const AccountStatementPage: React.FC = () => {
               })}
             </div>
 
-            {account?.group !== "Loans" && (
-              <button
-                type="button"
-                onClick={handleOpenTopup}
-                className="mt-[6px] inline-flex items-center px-[10px] py-[6px] rounded-md bg-primary-500 text-white text-xs font-medium hover:bg-primary-600"
-              >
-                <i className="material-symbols-outlined text-[16px] mr-[4px]">account_balance_wallet</i>
-                Top up account
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleOpenTopup}
+              className="mt-[6px] inline-flex items-center px-[10px] py-[6px] rounded-md bg-primary-500 text-white text-xs font-medium hover:bg-primary-600"
+            >
+              <i className="material-symbols-outlined text-[16px] mr-[4px]">account_balance_wallet</i>
+              Top up account
+            </button>
           </div>
         </div>
 

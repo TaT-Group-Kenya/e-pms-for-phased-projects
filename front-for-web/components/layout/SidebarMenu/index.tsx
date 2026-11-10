@@ -297,6 +297,18 @@ const SECTIONS: SidebarSection[] = [
         matchStrategy: "startsWith",
         requiredRoles: ["ROLE_VIEW_TRANSACTION"],
       },
+      {
+        label: "Tax Ledger",
+        href: "/finance/tax-ledger/",
+        matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_TRANSACTION"],
+      },
+      {
+        label: "Trial Balance",
+        href: "/finance/trial-balance/",
+        matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_TRANSACTION"],
+      },
     ],
   },
   {

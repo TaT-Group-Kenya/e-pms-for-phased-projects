@@ -25,6 +25,10 @@ class CustDebitNoteResource extends BaseResource
             'invoice' => new CustInvoiceResource($this->whenLoaded('invoice')),
             'items' => CustDebitNoteItemResource::collection($this->whenLoaded('items')),
             'documents' => CustDebitNoteDocumentResource::collection($this->whenLoaded('documents')),
+            'payments' => CustPaymentResource::collection($this->whenLoaded('payments')),
+            'total_paid' => (float) $this->whenLoaded('debitNotePayments', function () {
+                return $this->debitNotePayments->where('is_deleted', false)->sum('allocated_amount');
+            }, 0.0),
         ];
     }
 }

@@ -24,7 +24,7 @@ class Repro2Test extends TestCase
         $dr->setAccessible(true);
         $dr->invoke($base);
         $rm->invoke($base);
-        $mk = new \ReflectionMethod($base, 'makeLoanAccount');
+        $mk = new \ReflectionMethod($base, 'makeDestinationAccount');
         $mk->setAccessible(true);
         $mc = new \ReflectionMethod($base, 'makeCashAccount');
         $mc->setAccessible(true);
@@ -33,7 +33,7 @@ class Repro2Test extends TestCase
 
         $service = new LoanService;
         $loan = $service->createLoan([
-            'account_id' => $loanAccount->id,
+            'destination_account_id' => $loanAccount->id,
             'lender_name' => 'Early Bank',
             'principal' => 120000,
             'currency' => 'KES',

@@ -73,6 +73,9 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('cust-debit-notes', App\Http\Controllers\Api\CustDebitNoteController::class);
 		Route::get('cust-debit-notes/{custDebitNote}/download-pdf', [App\Http\Controllers\Api\CustDebitNoteController::class, 'downloadPdf']);
 		Route::post('cust-debit-notes/{custDebitNote}/send-email', [App\Http\Controllers\Api\CustDebitNoteController::class, 'sendEmail']);
+		Route::post('cust-debit-notes/{custDebitNote}/payments', [App\Http\Controllers\Api\CustDebitNoteController::class, 'addPayment']);
+		Route::patch('cust-debit-notes/{custDebitNote}/payments/{custPayment}', [App\Http\Controllers\Api\CustDebitNoteController::class, 'updatePayment']);
+		Route::delete('cust-debit-notes/{custDebitNote}/payments/{custPayment}', [App\Http\Controllers\Api\CustDebitNoteController::class, 'deletePayment']);
 		Route::apiResource('cust-debit-note-items', App\Http\Controllers\Api\CustDebitNoteItemController::class);
 		Route::get('cust-debit-note-documents/{custDebitNoteDocument}/download', [App\Http\Controllers\Api\CustDebitNoteDocumentController::class, 'download'])
 			->name('cust-debit-note-documents.download');
@@ -140,6 +143,14 @@ Route::prefix('/')->group(function () {
 			->parameter('company-transactions-ledger', 'company_transactions_ledger');
 		Route::apiResource('customer-transactions-ledger', App\Http\Controllers\Api\CustomerTransactionsLedgerController::class)
 			->parameter('customer-transactions-ledger', 'customer_transactions_ledger');
+		Route::apiResource('tax-transactions', App\Http\Controllers\Api\TaxTransactionController::class)
+			->parameter('tax-transactions', 'tax_transaction')->only(['index', 'show']);
+		Route::get('tax-transactions-summary', [App\Http\Controllers\Api\TaxTransactionController::class, 'summary']);
+		Route::apiResource('trial-balance', App\Http\Controllers\Api\TrialBalanceController::class)
+			->parameter('trial-balance', 'trial_balance_run');
+		Route::get('trial-balance/{trial_balance_run}/export-csv', [App\Http\Controllers\Api\TrialBalanceController::class, 'exportCsv']);
+		Route::get('trial-balance/{trial_balance_run}/export-pdf', [App\Http\Controllers\Api\TrialBalanceController::class, 'exportPdf']);
+		Route::get('trial-balance/{trial_balance_run}/lines', [App\Http\Controllers\Api\TrialBalanceController::class, 'lines']);
 		Route::get('transactions/{transaction}/download-pdf', [App\Http\Controllers\Api\TransactionController::class, 'downloadPdf']);
 		Route::get('company-payments/{companyPayment}/download-pdf', [App\Http\Controllers\Api\CompanyPaymentController::class, 'downloadPdf']);
 		Route::get('cust-payments/{custPayment}/download-pdf', [App\Http\Controllers\Api\CustPaymentController::class, 'downloadPdf']);

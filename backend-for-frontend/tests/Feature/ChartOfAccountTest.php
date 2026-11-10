@@ -108,6 +108,7 @@ class ChartOfAccountTest extends TestCase
             $table->boolean('is_deleted')->default(false);
             $table->timestamp('deleted_at')->nullable();
             $table->unsignedBigInteger('deleted_by')->nullable();
+            $table->boolean('is_bank_account_grp')->default(false);
         });
 
         foreach ($this->standardCharts() as $seed) {
@@ -156,6 +157,7 @@ class ChartOfAccountTest extends TestCase
             $table->unsignedBigInteger('source_id')->nullable();
             $table->string('account_debit')->nullable();
             $table->string('account_credit')->nullable();
+            $table->unsignedBigInteger('chart_of_account')->nullable();
             $table->string('category')->nullable();
             $table->string('payment_method')->nullable();
             $table->string('bank_account')->nullable();
@@ -204,11 +206,11 @@ class ChartOfAccountTest extends TestCase
     private function standardCharts(): array
     {
         return [
-            ['code' => '1000', 'name' => 'Assets', 'description' => 'Assets'],
-            ['code' => '2000', 'name' => 'Liabilities', 'description' => 'Liabilities'],
-            ['code' => '3000', 'name' => 'Equity', 'description' => 'Equity'],
-            ['code' => '4000', 'name' => 'Revenue/Income', 'description' => 'Revenue/Income'],
-            ['code' => '5000', 'name' => 'Expenses', 'description' => 'Expenses'],
+            ['code' => '1000', 'name' => 'Assets', 'description' => 'Assets', 'is_bank_account_grp' => true],
+            ['code' => '2000', 'name' => 'Liabilities', 'description' => 'Liabilities', 'is_bank_account_grp' => true],
+            ['code' => '3000', 'name' => 'Equity', 'description' => 'Equity', 'is_bank_account_grp' => false],
+            ['code' => '4000', 'name' => 'Revenue/Income', 'description' => 'Revenue/Income', 'is_bank_account_grp' => false],
+            ['code' => '5000', 'name' => 'Expenses', 'description' => 'Expenses', 'is_bank_account_grp' => false],
         ];
     }
 
@@ -502,25 +504,7 @@ class ChartOfAccountTest extends TestCase
         return $method->invoke($request);
     }
 
-    private function runUpdateRequest(array $payload, Account $account): \Illuminate\Contracts\Validation\Validator
-    {
-        $request = new \App\Http\Requests\AccountUpdateRequest([], []);
-        $request->setContainer(app());
-        $request->setRouteResolver(function () use ($account) {
-            $route = new \Illuminate\Routing\Route('PUT', 'accounts/{account}', []);
-            $route->bind(new \Illuminate\Http\Request);
-            $route->setParameter('account', $account);
-
-            return $route;
-        });
-        $request->merge($payload);
-
-        $method = new \ReflectionMethod($request, 'getValidatorInstance');
-
-        return $method->invoke($request);
-    }
-
-    public function test_store_request_requires_chart_of_account(): void
+        public function test_store_request_requires_chart_of_account(): void
     {
         $validator = $this->runStoreRequest([
             'name' => 'Test',
@@ -620,47 +604,7 @@ class ChartOfAccountTest extends TestCase
         return $user;
     }
 
-    public function test_loans_group_account_must_link_to_liabilities_or_equity(): void
-    {
-        $validator = $this->runStoreRequest([
-            'name' => 'Loan X',
-            'description' => 'Loan X',
-            'type' => 'bank',
-            'group' => 'Loans',
-            'overdraft_allowed' => 0,
-            'chart_of_account_id' => ChartOfAccount::where('code', '1000')->value('id'),
-        ]);
-
-        $this->assertTrue($validator->fails());
-        $this->assertStringContainsString(
-            'Liabilities (2000) or Equity (3000)',
-            (string) $validator->errors()->first('chart_of_account_id')
-        );
-
-        // 2000 is accepted for a Loans account.
-        $validatorOk = $this->runStoreRequest([
-            'name' => 'Loan X',
-            'description' => 'Loan X',
-            'type' => 'bank',
-            'group' => 'Loans',
-            'overdraft_allowed' => 0,
-            'chart_of_account_id' => ChartOfAccount::where('code', '2000')->value('id'),
-        ]);
-        $this->assertTrue($validatorOk->passes());
-
-        // 3000 is accepted for a Loans account.
-        $validatorOk2 = $this->runStoreRequest([
-            'name' => 'Owner loan',
-            'description' => 'Owner loan',
-            'type' => 'bank',
-            'group' => 'Loans',
-            'overdraft_allowed' => 0,
-            'chart_of_account_id' => ChartOfAccount::where('code', '3000')->value('id'),
-        ]);
-        $this->assertTrue($validatorOk2->passes());
-    }
-
-    public function test_non_loans_group_can_link_to_any_chart(): void
+    public function test_any_group_can_link_to_any_chart(): void
     {
         $validator = $this->runStoreRequest([
             'name' => 'Cash box',
@@ -672,39 +616,5 @@ class ChartOfAccountTest extends TestCase
         ]);
 
         $this->assertTrue($validator->passes());
-    }
-
-    public function test_loans_validation_on_update_uses_stored_pair(): void
-    {
-        $loanAccount = Account::create([
-            'code' => 'INT-ACC-LOAN-UPD',
-            'name' => 'Loan upd',
-            'description' => 'Loan upd',
-            'type' => 'bank',
-            'group' => 'Loans',
-            'currency' => 'KES',
-            'balance' => 0,
-            'overdraft_allowed' => false,
-            'chart_of_account_id' => ChartOfAccount::where('code', '2000')->value('id'),
-        ]);
-
-        // Trying to flip just the chart to Assets(1000) must fail because the
-        // stored group is still Loans.
-        $validator = $this->runUpdateRequest(
-            ['chart_of_account_id' => ChartOfAccount::where('code', '1000')->value('id')],
-            $loanAccount
-        );
-        $this->assertTrue($validator->fails());
-
-        // Flipping just the group away from Loans is allowed.
-        $validator2 = $this->runUpdateRequest(['group' => 'Checking'], $loanAccount);
-        $this->assertTrue($validator2->passes());
-
-        // Keeping the valid pair (Loans + Liabilities) is allowed.
-        $validator3 = $this->runUpdateRequest(
-            ['name' => 'Loan renamed'],
-            $loanAccount
-        );
-        $this->assertTrue($validator3->passes());
     }
 }

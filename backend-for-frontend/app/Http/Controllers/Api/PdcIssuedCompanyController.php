@@ -294,6 +294,8 @@ class PdcIssuedCompanyController extends Controller
                 'source_id' => $invoice->id,
                 'account_debit' => $pdcModel->bank_account_id,
                 'account_credit' => null,
+                // Clearing a PDC pays a company invoice: liability position.
+                'chart_of_account' => CompanyTransactionsLedger::liabilityChartId(),
                 'category' => 'expense',
                 'payment_method' => 'CHEQUE',
                 'bank_account' => $pdcModel->bank,

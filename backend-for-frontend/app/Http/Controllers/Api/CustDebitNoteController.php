@@ -7,6 +7,7 @@ use App\Http\Requests\CustDebitNoteStoreRequest;
 use App\Http\Requests\CustDebitNoteUpdateRequest;
 use App\Http\Resources\CustDebitNoteResource;
 use App\Models\CustDebitNote;
+use App\Models\CustPayment;
 use App\Models\Download;
 use App\Models\SysConfig;
 use App\Services\CustDebitNoteService;
@@ -42,7 +43,7 @@ class CustDebitNoteController extends Controller
         $data['description'] ??= $data['title'];
         $model = $this->service->create($data);
 
-        return (new CustDebitNoteResource($model->load(['invoice.customer', 'invoice.project', 'items', 'documents'])))
+        return (new CustDebitNoteResource($model->load(['invoice.customer', 'invoice.project', 'items', 'documents', 'payments', 'debitNotePayments'])))
             ->additional(['message' => 'Draft debit note created.']);
     }
 
@@ -50,7 +51,7 @@ class CustDebitNoteController extends Controller
     {
         $this->authorize('view', $custDebitNote);
 
-        return new CustDebitNoteResource($custDebitNote->load(['invoice.customer', 'invoice.project', 'items', 'documents']));
+        return new CustDebitNoteResource($custDebitNote->load(['invoice.customer', 'invoice.project', 'items', 'documents', 'payments', 'debitNotePayments']));
     }
 
     public function update(CustDebitNoteUpdateRequest $request, CustDebitNote $custDebitNote)
@@ -60,6 +61,76 @@ class CustDebitNoteController extends Controller
 
         return (new CustDebitNoteResource($updated))
             ->additional(['message' => 'Debit note updated successfully.']);
+    }
+
+    /**
+     * Receive a payment against a raised debit note.
+     */
+    public function addPayment(Request $request, CustDebitNote $custDebitNote)
+    {
+        $this->authorize('update', $custDebitNote);
+
+        $validated = $request->validate([
+            'amount_paid' => ['required', 'numeric', 'min:0.01'],
+            'payment_date' => ['required', 'date'],
+            'payment_method' => ['required', 'in:cash,mpesa,bank_transfer,check'],
+            'payment_status' => ['sometimes', 'in:pending,complete'],
+            'account_id' => ['required', 'integer', 'exists:accounts,id'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_branch' => ['nullable', 'string', 'max:255'],
+            'check_number' => ['nullable', 'string', 'max:255'],
+            'cheque_date' => ['nullable', 'date'],
+            'receipt_number' => ['nullable', 'string', 'max:255'],
+            'related_transaction_id' => ['nullable', 'integer'],
+        ]);
+
+        $note = $this->service->addPayment($custDebitNote, $validated, Auth::id());
+
+        return (new CustDebitNoteResource($note))
+            ->additional(['message' => 'Payment received successfully.']);
+    }
+
+    /**
+     * Update non-financial metadata of a payment received against a debit note.
+     */
+    public function updatePayment(Request $request, CustDebitNote $custDebitNote, CustPayment $custPayment)
+    {
+        $this->authorize('update', $custDebitNote);
+
+        $validated = $request->validate([
+            'payment_status' => ['sometimes', 'required', 'in:pending,complete'],
+            'bank_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'check_number' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'receipt_number' => ['sometimes', 'required', 'string', 'max:255'],
+        ]);
+
+        if (empty($validated)) {
+            return response()->json(['message' => 'No editable fields were provided.'], 422);
+        }
+
+        if ($request->hasAny(['amount_paid', 'payment_date', 'account_id', 'currency', 'exchange_rate'])) {
+            return response()->json([
+                'message' => 'Financial fields (amount, date, account or currency) cannot be edited in place. Delete and re-add the payment with corrected values.',
+            ], 422);
+        }
+
+        $note = $this->service->updatePayment($custDebitNote, $custPayment, $validated, Auth::id());
+
+        return (new CustDebitNoteResource($note))
+            ->additional(['message' => 'Payment updated successfully.']);
+    }
+
+    /**
+     * Delete (reverse) a payment received against a debit note.
+     */
+    public function deletePayment(Request $request, CustDebitNote $custDebitNote, CustPayment $custPayment)
+    {
+        $this->authorize('update', $custDebitNote);
+
+        $note = $this->service->deletePayment($custDebitNote, $custPayment, Auth::id());
+
+        return (new CustDebitNoteResource($note))
+            ->additional(['message' => 'Payment deleted successfully.']);
     }
 
     public function destroy(CustDebitNote $custDebitNote)

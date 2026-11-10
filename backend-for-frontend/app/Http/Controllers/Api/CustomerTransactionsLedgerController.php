@@ -40,6 +40,7 @@ class CustomerTransactionsLedgerController extends Controller
             'createdByUser',
             'updatedByUser',
             'deletedByUser',
+            'chartOfAccount',
         ];
 
         $data = $this->service->index($filters, $perPage, $page, 0, $with);

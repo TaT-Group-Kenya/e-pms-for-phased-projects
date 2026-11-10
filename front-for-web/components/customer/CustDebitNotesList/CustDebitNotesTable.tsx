@@ -12,8 +12,7 @@ import Can from "../../auth/Can";
 
 interface CustDebitNoteSummary {
   id: number;
-  debit_note_number: string;
-  invoice_id: number;
+  debit_note_number: string;  invoice_id: number;
   title: string | null;
   description: string | null;
   status: string;
@@ -100,6 +99,10 @@ const CustDebitNotesTable: React.FC = () => {
         return "bg-warning-50 text-warning-500";
       case "raised":
         return "bg-info-50 text-info-500";
+      case "partial-paid":
+        return "bg-warning-50 text-warning-600";
+      case "paid":
+        return "bg-success-50 text-success-500";
       default:
         return "bg-gray-50 text-gray-500";
     }
@@ -264,6 +267,8 @@ const CustDebitNotesTable: React.FC = () => {
             <option value="all">All Status</option>
             <option value="draft">Draft</option>
             <option value="raised">Raised</option>
+            <option value="partial-paid">Partial Paid</option>
+            <option value="paid">Paid</option>
           </select>
 
           <div className="relative flex-1 md:flex-none md:w-[265px]">

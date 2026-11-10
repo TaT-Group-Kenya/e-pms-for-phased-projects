@@ -22,6 +22,7 @@ use App\Models\CompanyPayment;
 use App\Models\CompanyProject;
 use App\Models\CompanyTransactionsLedger;
 use App\Models\Currency;
+use App\Models\CustDebitNote;
 use App\Models\CustInvoice;
 use App\Models\Customer;
 use App\Models\CustomerTransactionsLedger;
@@ -1079,9 +1080,16 @@ class ReportingService
 
         foreach ($transactions as $txn) {
             $invoice = $txn->customerInvoice();
+            $debitNote = null;
+            if ($txn->source_type === 'customer_debit_note') {
+                $debitNote = CustDebitNote::find($txn->source_id);
+            }
             $documentNumber = null;
             if ($txn->transaction_type !== 'receipt') {
-                $documentNumber = $invoice?->invoice_number ?? $txn->transaction_number;
+                // Debit note charges are identified by their own document number
+                $documentNumber = $debitNote?->debit_note_number
+                    ?? $invoice?->invoice_number
+                    ?? $txn->transaction_number;
             } else {
                 $documentNumber = $txn->payment?->transaction_number ?? $txn->transaction_number;
             }
@@ -1273,6 +1281,7 @@ class ReportingService
         $currency = $filters['currency_code'] ?? null;
         $categoryId = $filters['category'] ?? null;
         $sourceAccount = $filters['source_account'] ?? null;
+        $costCenterId = $filters['cost_center'] ?? null;
         $status = $filters['status'] ?? null;
         $from = $filters['from'] ?? null;
         $to = $filters['to'] ?? null;
@@ -1304,6 +1313,10 @@ class ReportingService
         // Filter by status in office_expenses table
         if ($status) {
             $query->where('status', $status);
+        }
+        // Filter by department (cost center) in office_expenses table
+        if ($costCenterId) {
+            $query->where('cost_center_id', $costCenterId);
         }
 
         $query->orderBy('office_expenses.id', 'desc');

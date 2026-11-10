@@ -34,7 +34,19 @@ class CurrencyController extends Controller
     public function store(CurrencyStoreRequest $request)
     {
         $this->authorize('create', Currency::class);
+
+        // The system operates with KES and USD only (client requirement);
+        // new currencies are not permitted.
+        $code = strtoupper((string) $request->validated('code', ''));
+        if ($code !== 'KES' && $code !== 'USD') {
+            return response()->json([
+                'message' => 'Only KES and USD are allowed.',
+                'errors' => ['code' => ['Only KES and USD are allowed.']],
+            ], 422);
+        }
+
         $validated = $request->validated();
+        $validated['code'] = $code;
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
 

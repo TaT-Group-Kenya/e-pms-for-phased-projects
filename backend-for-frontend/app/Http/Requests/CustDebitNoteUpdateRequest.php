@@ -17,7 +17,7 @@ class CustDebitNoteUpdateRequest extends FormRequest
             'invoice_id' => ['sometimes', 'required', 'exists:cust_invoices,id'],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
-            'status' => ['sometimes', 'required', 'in:draft,raised'],
+            'status' => ['sometimes', 'required', 'in:draft,raised,partial-paid,paid'],
             'currency' => ['sometimes', 'string', 'max:10'],
             'notes_to_customer' => ['sometimes', 'nullable', 'string'],
             'subtotal_amount' => ['prohibited'],

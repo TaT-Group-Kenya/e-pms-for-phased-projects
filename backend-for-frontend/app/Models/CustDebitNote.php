@@ -32,4 +32,23 @@ class CustDebitNote extends Model
     {
         return $this->hasMany(CustDebitNoteDocument::class, 'debit_note_id');
     }
+
+    public function debitNotePayments()
+    {
+        return $this->hasMany(CustDebitNotePayment::class, 'debit_note_id');
+    }
+
+    public function payments()
+    {
+        return $this->belongsToMany(CustPayment::class, 'cust_debit_note_payments', 'debit_note_id', 'payment_id')
+            ->withPivot('allocated_amount', 'payment_date', 'installment_number', 'is_deleted')
+            ->wherePivot('is_deleted', false);
+    }
+
+    public function getTotalPaidAttribute(): float
+    {
+        return (float) $this->debitNotePayments()
+            ->where('is_deleted', false)
+            ->sum('allocated_amount');
+    }
 }

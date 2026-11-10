@@ -42,6 +42,7 @@ const Page = () => {
             { key: "current_forex_rate", label: "Forex Rate to KES" },
           ]}
           searchableKeys={["code", "name", "description", "current_forex_rate"]}
+          createDisabledNote="Only KES and USD are allowed"
           canCreateRoles={["ROLE_ADD_CURRENCY"]}
           canEditRoles={["ROLE_EDIT_CURRENCY"]}
           canDeleteRoles={["ROLE_DELETE_CURRENCY"]}

@@ -12,10 +12,17 @@ import Can from "../../auth/Can";
 import { formatCurrency } from "../../../utils/format";
 import { formatApiError } from "../../../utils/errorHandler";
 
+interface CurrencyOption {
+  id: number;
+  code: string;
+  name: string;
+  current_forex_rate?: number;
+}
+
 interface LoanRow {
   id: number;
-  account_id: number;
-  account: { id: number; code: string; name: string; currency: string; balance: number } | null;
+  destination_account_id: number;
+  destination_account: { id: number; code: string; name: string; currency: string; balance: number } | null;
   lender_name: string;
   principal: number;
   currency: string;
@@ -41,6 +48,8 @@ interface AccountOption {
   code: string;
   name: string;
   currency: string;
+  group: string;
+  chartCode: string;
 }
 
 const statusStyles: Record<string, string> = {
@@ -80,10 +89,14 @@ const LoansTable: React.FC = () => {
 
   const statusFilter = filters.status || "all";
   const hasExtraFilters = searchInput || statusFilter !== "all";
+  const [destinationAccounts, setDestinationAccounts] = useState<AccountOption[]>([]);
+  const [currencies, setCurrencies] = useState<CurrencyOption[]>([]);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formAccountId, setFormAccountId] = useState("");
+  const [formCurrency, setFormCurrency] = useState("");
+  const [formForexRate, setFormForexRate] = useState("129.75");
+  const [formDestinationAccountId, setFormDestinationAccountId] = useState("");
   const [formLender, setFormLender] = useState("");
   const [formPrincipal, setFormPrincipal] = useState("");
   const [formInterestType, setFormInterestType] = useState<"none" | "flat" | "reducing">("none");
@@ -100,7 +113,7 @@ const LoansTable: React.FC = () => {
   useEffect(() => {
     const controller = new AbortController();
 
-    const fetchLoanAccounts = async () => {
+    const fetchDestinationAccounts = async () => {
       if (!accessToken) return;
 
       try {
@@ -114,45 +127,104 @@ const LoansTable: React.FC = () => {
         if (!resp.ok) return;
 
         const items = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-        const options: AccountOption[] = (items || [])
-          .filter((acc: any) => String(acc.group) === "Loans")
-          .map((acc: any) => ({
-            id: Number(acc.id),
-            code: String(acc.code ?? ""),
-            name: String(acc.name ?? ""),
-            currency: String(acc.currency ?? ""),
-          }));
+        const options: AccountOption[] = (items || []).map((acc: any) => ({
+          id: Number(acc.id),
+          code: String(acc.code ?? ""),
+          name: String(acc.name ?? ""),
+          currency: String(acc.currency ?? ""),
+          group: String(acc.group ?? ""),
+          chartCode: String(acc.chart_of_account?.code ?? ""),
+        }));
 
-        setLoanAccounts(options);
+        setDestinationAccounts(
+          options.filter((acc) => acc.chartCode === "1000" && acc.currency),
+        );
       } catch (err: any) {
         if (err?.name === "AbortError") return;
         // eslint-disable-next-line no-console
-        console.error("fetch loan accounts error", err);
+        console.error("fetch accounts error", err);
       }
     };
 
-    fetchLoanAccounts();
+    fetchDestinationAccounts();
 
     return () => controller.abort();
   }, [accessToken, showCreateModal]);
 
-  const totals = useMemo(
-    () =>
-      loans.reduce(
-        (acc, loan) => {
-          acc.principal += Number(loan.principal ?? 0);
-          acc.outstanding += Number(loan.summary?.loan_balance ?? 0);
-          acc.repaid += Number(loan.summary?.total_repaid ?? 0);
-          if (loan.status === "active") acc.active += 1;
-          return acc;
-        },
-        { principal: 0, outstanding: 0, repaid: 0, active: 0 },
-      ),
-    [loans],
+  // Currency options for the loan form.
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchCurrencies = async () => {
+      if (!accessToken) {
+        setCurrencies([]);
+        return;
+      }
+
+      try {
+        const resp = await fetch("/api/currencies/list", {
+          method: "GET",
+          headers: { Authorization: `Bearer ${accessToken}` },
+          signal: controller.signal,
+        });
+
+        const data: any = await resp.json().catch(() => null);
+        if (!resp.ok) return;
+
+        const items = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+        setCurrencies(
+          (items || []).map((c: any) => ({
+            id: Number(c.id),
+            code: String(c.code ?? ""),
+            name: String(c.name ?? ""),
+            current_forex_rate: Number(c.current_forex_rate ?? 0),
+          })),
+        );
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+        // eslint-disable-next-line no-console
+        console.error("fetch currencies error", err);
+      }
+    };
+
+    fetchCurrencies();
+
+    return () => controller.abort();
+  }, [accessToken]);
+
+  // Summaries are grouped per currency — mixing currencies in one total
+  // would be meaningless.
+  const totalsByCurrency = useMemo(() => {
+    const grouped: Record<string, { principal: number; outstanding: number; repaid: number; active: number }> = {};
+
+    for (const loan of loans) {
+      const currency = loan.currency || "";
+      if (!grouped[currency]) {
+        grouped[currency] = { principal: 0, outstanding: 0, repaid: 0, active: 0 };
+      }
+      grouped[currency].principal += Number(loan.principal ?? 0);
+      grouped[currency].outstanding += Number(loan.summary?.loan_balance ?? 0);
+      grouped[currency].repaid += Number(loan.summary?.total_repaid ?? 0);
+      if (loan.status === "active") grouped[currency].active += 1;
+    }
+
+    // Deterministic order; loans without a currency group last.
+    const entries = Object.entries(grouped);
+    entries.sort(([a], [b]) => (a === "" ? 1 : b === "" ? -1 : a.localeCompare(b)));
+
+    return entries;
+  }, [loans]);
+
+  // The loaned money is disbursed onto the destination account. Its currency
+  // is chosen first; only matching asset accounts can be picked.
+  const eligibleDestinationAccounts = destinationAccounts.filter(
+    (d) => !formCurrency || d.currency === formCurrency,
   );
 
   const resetForm = () => {
-    setFormAccountId("");
+    setFormCurrency("");
+    setFormForexRate("129.75");
+    setFormDestinationAccountId("");
     setFormLender("");
     setFormPrincipal("");
     setFormInterestType("none");
@@ -169,8 +241,19 @@ const LoansTable: React.FC = () => {
       addToast("You are not authenticated.", "error");
       return;
     }
-    if (!formAccountId) {
-      addToast("Please select a loan account.", "error");
+    if (!formCurrency) {
+      addToast("Please select a currency.", "error");
+      return;
+    }
+    if (formCurrency !== "KES") {
+      const rate = Number(formForexRate);
+      if (!rate || rate <= 0) {
+        addToast("Please enter a valid USD to KES forex rate.", "error");
+        return;
+      }
+    }
+    if (!formDestinationAccountId) {
+      addToast("Please select a destination account.", "error");
       return;
     }
     if (!formLender.trim()) {
@@ -184,12 +267,12 @@ const LoansTable: React.FC = () => {
 
     setSaving(true);
     try {
-      const selected = loanAccounts.find((a) => String(a.id) === formAccountId);
       const payload = {
-        account_id: Number(formAccountId),
+        destination_account_id: Number(formDestinationAccountId),
         lender_name: formLender.trim(),
         principal: Number(formPrincipal),
-        currency: selected?.currency || "KES",
+        currency: formCurrency,
+        ...(formCurrency !== "KES" ? { forex_rate: Number(formForexRate) } : {}),
         interest_type: formInterestType,
         interest_rate: formInterestType === "none" ? 0 : Number(formInterestRate || 0),
         tenure_months: Number(formTenure),
@@ -230,35 +313,69 @@ const LoansTable: React.FC = () => {
   return (
     <>
       <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[20px] md:mb-[25px] p-5 rounded-md">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-[15px]">
-          <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Total Principal</div>
-            <div className="text-lg font-semibold text-black dark:text-white">
-              {formatCurrency(totals.principal, loans[0]?.currency || "KES")}
+        {totalsByCurrency.length === 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-[15px]">
+            <div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Total Principal</div>
+              <div className="text-lg font-semibold text-black dark:text-white">
+                {formatCurrency(0, "KES")}
+              </div>
             </div>
           </div>
-          <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Outstanding</div>
-            <div className="text-lg font-semibold text-primary-500">
-              {formatCurrency(totals.outstanding, loans[0]?.currency || "KES")}
+        )}
+
+        {totalsByCurrency.map(([currency, totals]) => (
+          <div
+            key={currency || "unknown"}
+            className={
+              totalsByCurrency.length > 1
+                ? "mb-[20px] pb-[15px] border-b border-gray-100 dark:border-[#172036] last:mb-0 last:pb-0 last:border-0"
+                : ""
+            }
+          >
+            <div className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-[8px]">
+              {currency || "Unspecified"} currency
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-[15px]">
+              <div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Total Principal{currency ? ` (${currency})` : ""}
+                </div>
+                <div className="text-lg font-semibold text-black dark:text-white">
+                  {formatCurrency(totals.principal, currency)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Outstanding{currency ? ` (${currency})` : ""}
+                </div>
+                <div className="text-lg font-semibold text-primary-500">
+                  {formatCurrency(totals.outstanding, currency)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Repaid{currency ? ` (${currency})` : ""}
+                </div>
+                <div className="text-lg font-semibold text-black dark:text-white">
+                  {formatCurrency(totals.repaid, currency)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Active Loans{currency ? ` (${currency})` : ""}
+                </div>
+                <div className="text-lg font-semibold text-black dark:text-white">{totals.active}</div>
+              </div>
             </div>
           </div>
-          <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Repaid</div>
-            <div className="text-lg font-semibold text-black dark:text-white">
-              {formatCurrency(totals.repaid, loans[0]?.currency || "KES")}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Active Loans</div>
-            <div className="text-lg font-semibold text-black dark:text-white">{totals.active}</div>
-          </div>
-        </div>
+        ))}
       </div>
 
       <div className="trezo-card-header bg-white dark:bg-[#0c1427] mb-[20px] md:mb-[25px] flex flex-col md:flex-row items-start md:items-center justify-between p-5 rounded-md gap-[15px]">
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Loans live on accounts in the Loans group. Creating a loan funds the account and books the schedule.
+          The borrowed money is disbursed straight onto a destination account (chart 1000) and the
+          loan schedule is booked.
         </p>
         <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end flex-wrap">
           {(hasExtraFilters) && (
@@ -315,7 +432,7 @@ const LoansTable: React.FC = () => {
             <thead className="text-black dark:text-white">
               <tr>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Lender</th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Loan Account</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Destination Account</th>
                 <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Principal</th>
                 <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Outstanding</th>
                 <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c] whitespace-nowrap">Repaid</th>
@@ -337,14 +454,14 @@ const LoansTable: React.FC = () => {
               {!loading && loans.length === 0 && (
                 <tr>
                   <td colSpan={9} className="text-center text-sm px-[10px] py-[16px] text-gray-500 dark:text-gray-400">
-                    No loans found. Add a loan on a Loans-group account to get started.
+                    No loans found. Add a loan disbursed onto an asset account to get started.
                   </td>
                 </tr>
               )}
 
               {!loading &&
                 loans.map((loan) => {
-                  const currency = loan.currency || loan.account?.currency || "";
+                  const currency = loan.currency || loan.destination_account?.currency || "";
                   return (
                     <tr
                       key={loan.id}
@@ -354,7 +471,9 @@ const LoansTable: React.FC = () => {
                         {loan.lender_name}
                       </td>
                       <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
-                        {loan.account ? `${loan.account.name} (${loan.account.code})` : "-"}
+                        {loan.destination_account
+                          ? `${loan.destination_account.name} (${loan.destination_account.code})`
+                          : "-"}
                       </td>
                       <td className="text-sm px-[10px] py-[6px] text-right whitespace-nowrap">
                         {formatCurrency(Number(loan.principal ?? 0), currency)}
@@ -422,28 +541,90 @@ const LoansTable: React.FC = () => {
           <div className="bg-white dark:bg-[#0b1220] rounded-md shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-[20px] md:p-[25px]">
             <h3 className="text-lg font-semibold text-black dark:text-white mb-[10px]">Add Loan</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-[16px]">
-              The loan account is funded immediately: a ledger top-up entry is recorded and both the
-              account cash balance and loan balance are updated at once.
+              The loaned money is disbursed immediately: a ledger entry credits the destination
+              account, its cash balance is updated and the repayment schedule is booked at once.
             </p>
 
             <div className="space-y-[12px] mb-[18px]">
               <div>
-                <label className="block text-xs font-medium mb-[5px]">Loan Account (Loans group)</label>
+                <label className="block text-xs font-medium mb-[5px]">Currency</label>
                 <select
-                  value={formAccountId}
-                  onChange={(e) => setFormAccountId(e.target.value)}
+                  value={formCurrency}
+                  onChange={(e) => {
+                    const nextCurrency = e.target.value;
+                    const currentDestination = destinationAccounts.find(
+                      (d) => String(d.id) === formDestinationAccountId,
+                    );
+                    if (currentDestination && nextCurrency && currentDestination.currency !== nextCurrency) {
+                      setFormDestinationAccountId("");
+                    }
+                    if (nextCurrency === "KES") {
+                      setFormForexRate("1");
+                    } else {
+                      const seeded = currencies.find((c) => c.code === nextCurrency);
+                      const seededRate = Number(seeded?.current_forex_rate ?? 0);
+                      setFormForexRate(seededRate > 0 ? String(seededRate) : formForexRate || "129.75");
+                    }
+                    setFormCurrency(nextCurrency);
+                  }}
+                  disabled={saving}
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
-                  <option value="">Select loan account</option>
-                  {loanAccounts.map((a) => (
+                  <option value="">Select currency</option>
+                  {currencies.map((c) => (
+                    <option key={c.id} value={c.code}>
+                      {c.code} - {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {formCurrency && formCurrency !== "KES" && (
+                <div>
+                  <label className="block text-xs font-medium mb-[5px]">
+                    Forex rate (USD to KES) <span className="text-danger-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0.000001"
+                    step="0.0001"
+                    value={formForexRate}
+                    onChange={(e) => setFormForexRate(e.target.value)}
+                    className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="e.g. 129.75"
+                  />
+                  <p className="mt-[4px] text-[11px] text-gray-500 dark:text-gray-400">
+                    Used to book this loan in KES for the trial balance. The loan
+                    schedule and repayments stay in USD.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium mb-[5px]">
+                  Destination Account {formCurrency ? `(${formCurrency})` : ""}
+                </label>
+                <select
+                  value={formDestinationAccountId}
+                  onChange={(e) => setFormDestinationAccountId(e.target.value)}
+                  disabled={!formCurrency || saving}
+                  className={`w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                    !formCurrency || saving ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <option value="">
+                    {!formCurrency ? "Select a currency first" : "Select destination account"}
+                  </option>
+                  {eligibleDestinationAccounts.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.name} ({a.code}) — {a.currency}
                     </option>
                   ))}
                 </select>
-                {loanAccounts.length === 0 && (
+                {formCurrency && eligibleDestinationAccounts.length === 0 && (
                   <p className="mt-[4px] text-[11px] text-yellow-600 dark:text-yellow-400">
-                    No accounts in the Loans group yet. Create one on the Accounts page first.
+                    No asset accounts (1000) available in {formCurrency}. Create one on the Accounts
+                    page first.
                   </p>
                 )}
               </div>

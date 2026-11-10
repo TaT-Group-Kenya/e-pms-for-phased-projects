@@ -167,6 +167,8 @@ class TransactionCostManagerService
             'source_id' => $expense->id,
             'account_debit' => $fundingAccountId,
             'account_credit' => null,
+            // Transaction charges are expenses (chart 5000).
+            'chart_of_account' => $expense->chart_of_account,
             'category' => 'expense',
             'payment_method' => 'internal_transfer',
             'transaction_status' => 'cleared',

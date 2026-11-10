@@ -34,8 +34,8 @@ interface RepaymentRow {
 
 interface LoanDetail {
   id: number;
-  account_id: number;
-  account: { id: number; code: string; name: string; currency: string; balance: number } | null;
+  destination_account_id: number;
+  destination_account: { id: number; code: string; name: string; currency: string; balance: number } | null;
   lender_name: string;
   principal: number;
   currency: string;
@@ -141,7 +141,7 @@ const LoanDetailPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, accessToken]);
 
-  // Source accounts for repayment: internal, with balance, excluding the loan account.
+  // Source accounts for repayment: internal asset accounts with balance.
   useEffect(() => {
     if (!showRepayModal || !accessToken || !loan) return;
 
@@ -172,7 +172,11 @@ const LoanDetailPage: React.FC = () => {
         }));
 
         setSourceAccounts(
-          mapped.filter((a) => a.id !== loan.account_id && a.currency === (loan.currency || a.currency) && a.balance > 0),
+          mapped.filter(
+            (a) =>
+              a.currency === (loan.currency || a.currency) &&
+              a.balance > 0,
+          ),
         );
       } catch (err: any) {
         if (err?.name === "AbortError") return;
@@ -249,7 +253,7 @@ const LoanDetailPage: React.FC = () => {
     }
   };
 
-  const currency = loan?.currency || loan?.account?.currency || "KES";
+  const currency = loan?.currency || loan?.destination_account?.currency || "KES";
 
   const handleExportCsv = () => {
     if (!loan) return;
@@ -278,7 +282,7 @@ const LoanDetailPage: React.FC = () => {
 
     const summaryRows = [
       ["LOAN STATEMENT", loan.lender_name, "", "", "", "", "", ""],
-      ["Loan account", loan.account ? `${loan.account.name} (${loan.account.code})` : "", "", "", "", "", "", ""],
+      ["Destination account", loan.destination_account ? `${loan.destination_account.name} (${loan.destination_account.code})` : "", "", "", "", "", "", ""],
       ["Currency", currency, "", "", "", "", "", ""],
       ["Status", loan.status, "", "", "", "", "", ""],
       ["Principal", String(loan.principal ?? 0), "", "", "", "", "", ""],
@@ -390,10 +394,10 @@ const LoanDetailPage: React.FC = () => {
                   <div className="space-y-[6px]">
                     <h1 className="text-base md:text-lg font-semibold text-black dark:text-white">
                       {loan.lender_name}
-                      {loan.account && (
+                      {loan.destination_account && (
                         <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
                           {" "}
-                          — {loan.account.name} ({loan.account.code})
+                          — {loan.destination_account.name} ({loan.destination_account.code})
                         </span>
                       )}
                     </h1>

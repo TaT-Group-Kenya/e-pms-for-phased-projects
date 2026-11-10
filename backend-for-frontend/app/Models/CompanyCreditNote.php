@@ -25,6 +25,7 @@ class CompanyCreditNote extends Model
         'total_amount',
         'currency',
         'exchange_rate',
+        'chart_of_account',
         'status',
         'updated_at',
         'updated_by',
@@ -43,5 +44,11 @@ class CompanyCreditNote extends Model
     public function items()
     {
         return $this->hasMany(CompanyCreditNoteItem::class, 'credit_note_id');
+    }
+
+    // Company credit note refunds count as revenue (chart 4000).
+    public function chartOfAccount()
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account');
     }
 }

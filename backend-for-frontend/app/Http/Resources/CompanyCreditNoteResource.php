@@ -19,6 +19,7 @@ class CompanyCreditNoteResource extends BaseResource
             'total_amount' => (float) $this->total_amount,
             'currency' => $this->currency,
             'exchange_rate' => (float) $this->exchange_rate,
+            'chart_of_account' => $this->chart_of_account,
             'notes_to_customer' => $this->notes_to_customer,
             'status' => $this->status,
             'updated_at' => $this->formatTimestamp($this->updated_at),

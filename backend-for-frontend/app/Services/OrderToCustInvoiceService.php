@@ -34,6 +34,7 @@ class OrderToCustInvoiceService
                     ->first();
                 $paymentReceivingMethodId = $activeMethod ? $activeMethod->id : null;
             }
+            $forexRate = CurrencyConversionService::getForexRateToKes($order->currency);
 
             $invoice = CustInvoice::create([
                 'invoice_number' => $invoiceNumber,
@@ -52,6 +53,7 @@ class OrderToCustInvoiceService
                 'discount_amount' => 0,
                 'total_amount' => 0,
                 'currency' => $order->currency,
+                'forex_rate' => $forexRate,
                 'payment_terms' => $overrides['payment_terms'] ?? $order->payment_terms,
                 'notes_to_customer' => $overrides['notes_to_customer'] ?? $order->notes_to_customer,
                 'valid_until' => now()->addDays(30),
@@ -102,7 +104,23 @@ class OrderToCustInvoiceService
             $invoice->discount_amount = $discountAmount;
             $invoice->total_amount = $subtotal + $taxAmount - $discountAmount;
 
+            // Booked KES equivalents at the order's forex rate; KES passes at 1.
+            $invoice->forex_rate = $forexRate;
+            $invoice->applyForexRate($forexRate);
+
             $invoice->save();
+
+            // Open the invoice's full tax position (DR) in the tax ledger.
+            \App\Services\TaxTransactionService::openDocumentTax(
+                'cust_invoice',
+                (int) $invoice->id,
+                (float) $invoice->tax_amount,
+                $invoice->currency,
+                (float) $forexRate,
+                auth()->id(),
+                'Full tax opened on invoice '.$invoiceNumber,
+                \App\Services\TaxTransactionService::DIRECTION_COLLECTED
+            );
 
             // Create corresponding customer ledger debit entry for the invoice
             $transactionNumber = $invoiceNumber; // align ledger entry number with invoice number

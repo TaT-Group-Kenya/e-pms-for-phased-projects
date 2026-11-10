@@ -18,6 +18,7 @@ class ChartOfAccount extends Model
         'code',
         'name',
         'description',
+        'is_bank_account_grp',
         'updated_at',
         'updated_by',
         'created_at',
@@ -26,6 +27,20 @@ class ChartOfAccount extends Model
         'deleted_at',
         'deleted_by',
     ];
+
+    // Bank accounts group only applies to the fixed standard codes.
+    protected static array $bankAccountGroupCodes = ['1000', '2000'];
+
+    protected $attributes = [
+        'is_bank_account_grp' => false,
+    ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (ChartOfAccount $chartOfAccount) {
+            $chartOfAccount->is_bank_account_grp = in_array($chartOfAccount->code, self::$bankAccountGroupCodes, true);
+        });
+    }
 
     public function accounts(): HasMany
     {

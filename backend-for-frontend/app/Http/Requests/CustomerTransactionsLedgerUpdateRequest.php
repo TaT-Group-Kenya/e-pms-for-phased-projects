@@ -36,6 +36,7 @@ class CustomerTransactionsLedgerUpdateRequest extends FormRequest
             'source_id' => ['nullable', 'integer'],
             'account_debit' => ['nullable', 'string', 'max:255'],
             'account_credit' => ['nullable', 'string', 'max:255'],
+            'chart_of_account' => ['nullable', 'integer', 'exists:chart_of_accounts,id'],
             'category' => ['sometimes', 'required', Rule::in(['revenue', 'expense'])],
             'payment_method' => ['nullable', 'string', 'max:255'],
             'bank_account' => ['nullable', 'string', 'max:255'],

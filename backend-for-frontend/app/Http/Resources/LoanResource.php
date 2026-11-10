@@ -8,18 +8,28 @@ class LoanResource extends BaseResource
     {
         return [
             'id' => $this->id,
-            'account_id' => $this->account_id,
-            'account' => $this->whenLoaded('account', function () {
-                return $this->account ? [
-                    'id' => $this->account->id,
-                    'code' => $this->account->code,
-                    'name' => $this->account->name,
-                    'currency' => $this->account->currency,
-                    'balance' => $this->account->balance,
+            'destination_account_id' => $this->account_id,
+            'destination_account' => $this->whenLoaded('destination', function () {
+                return $this->destination ? [
+                    'id' => $this->destination->id,
+                    'code' => $this->destination->code,
+                    'name' => $this->destination->name,
+                    'currency' => $this->destination->currency,
+                    'balance' => $this->destination->balance,
+                ] : null;
+            }),
+            'chart_of_account' => $this->chart_of_account,
+            'chart_of_account_data' => $this->whenLoaded('chartOfAccount', function () {
+                return $this->chartOfAccount ? [
+                    'id' => $this->chartOfAccount->id,
+                    'code' => $this->chartOfAccount->code,
+                    'name' => $this->chartOfAccount->name,
+                    'is_bank_account_grp' => (bool) $this->chartOfAccount->is_bank_account_grp,
                 ] : null;
             }),
             'lender_name' => $this->lender_name,
             'principal' => $this->principal,
+            'principal_kes' => (float) $this->principal_kes,
             'currency' => $this->currency,
             'interest_type' => $this->interest_type,
             'interest_rate' => $this->interest_rate,
@@ -64,7 +74,7 @@ class LoanResource extends BaseResource
                 });
             }),
             'summary' => $this->when(
-                $this->relationLoaded('account') && $this->relationLoaded('repayments') && $this->relationLoaded('schedule'),
+                $this->relationLoaded('destination') && $this->relationLoaded('repayments') && $this->relationLoaded('schedule'),
                 function () {
                     $model = $this->resource;
 

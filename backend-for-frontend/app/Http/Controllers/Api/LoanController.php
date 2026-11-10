@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoanStoreRequest;
 use App\Http\Resources\LoanResource;
 use App\Models\Account;
+use App\Models\ChartOfAccount;
 use App\Models\Download;
 use App\Models\Loan;
 use App\Models\SysConfig;
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class LoanController extends Controller
 {
@@ -32,10 +34,10 @@ class LoanController extends Controller
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
 
-        $query = Loan::query()->with(['account', 'repayments', 'schedule']);
+        $query = Loan::query()->with(['destination', 'chartOfAccount', 'repayments', 'schedule']);
 
-        if ($request->filled('account_id')) {
-            $query->where('account_id', $request->get('account_id'));
+        if ($request->filled('destination_account_id')) {
+            $query->where('destination_account_id', $request->get('destination_account_id'));
         }
 
         if ($request->filled('status') && $request->get('status') !== 'all') {
@@ -70,26 +72,34 @@ class LoanController extends Controller
 
         return response()->json([
             'message' => 'Loan created successfully.',
-            'data' => new LoanResource($loan->loadMissing(['account', 'repayments', 'schedule'])),
+            'data' => new LoanResource($loan->loadMissing(['destination', 'chartOfAccount', 'repayments', 'schedule'])),
         ], 201);
     }
 
     public function show(Loan $loan)
     {
         // Loans are managed within the Accounts permission set.
-        $this->authorize('view', $loan->account);
+        $this->authorize('viewAny', Account::class);
 
-        return new LoanResource($loan->loadMissing(['account', 'repayments.paidFromAccount', 'schedule']));
+        return new LoanResource($loan->loadMissing(['destination', 'chartOfAccount', 'repayments.paidFromAccount', 'schedule']));
     }
 
     public function repay(Request $request, Loan $loan, LoanService $loanService)
     {
         // Loans are managed within the Accounts permission set.
-        $this->authorize('update', $loan->account);
+        $this->authorize('viewAny', Account::class);
 
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'paid_from_account_id' => ['required', 'integer', 'exists:accounts,id'],
+            'paid_from_account_id' => [
+                'required',
+                'integer',
+                'exists:accounts,id',
+                Rule::exists('accounts', 'id')->where(function ($query) {
+                    $query->whereIn('chart_of_account_id', ChartOfAccount::where('code', '1000')->select('id'))
+                        ->where('currency', $loan->currency);
+                }),
+            ],
             'payment_date' => ['nullable', 'date'],
             'schedule_installment_id' => ['nullable', 'integer', 'exists:loan_schedules,id'],
             'payment_reference' => ['nullable', 'string', 'max:255'],
@@ -102,14 +112,15 @@ class LoanController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        return new LoanResource($loan->fresh(['account', 'repayments.paidFromAccount', 'schedule']));
+        return new LoanResource($loan->fresh(['destination', 'repayments.paidFromAccount', 'schedule']));
     }
 
     public function statementPdf(Request $request, Loan $loan, LoanService $loanService)
     {
-        $this->authorize('view', $loan->account);
+        // Loans are managed within the Accounts permission set.
+        $this->authorize('viewAny', Account::class);
 
-        $loan->loadMissing(['account', 'repayments.paidFromAccount', 'schedule']);
+        $loan->loadMissing(['destination', 'chartOfAccount', 'repayments.paidFromAccount', 'schedule']);
 
         $pdf = $this->buildLoanStatementPdf(
             $loan,

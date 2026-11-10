@@ -21,6 +21,7 @@ class CustCreditNote extends Model
         'tax_amount',
         'total_amount',
         'currency',
+        'chart_of_account',
         'notes_to_customer',
         'updated_at',
         'updated_by',
@@ -39,5 +40,11 @@ class CustCreditNote extends Model
     public function items()
     {
         return $this->hasMany(CustCreditNoteItem::class, 'credit_note_id');
+    }
+
+    // Credit notes settle as a liability until refunded (chart 2000).
+    public function chartOfAccount()
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account');
     }
 }

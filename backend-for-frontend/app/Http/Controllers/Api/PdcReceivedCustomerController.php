@@ -7,6 +7,8 @@ use App\Http\Requests\PdcReceivedCustomerStoreRequest;
 use App\Http\Requests\PdcReceivedCustomerUpdateRequest;
 use App\Http\Resources\PdcReceivedCustomerResource;
 use App\Models\Account;
+use App\Models\CustDebitNote;
+use App\Models\CustDebitNotePayment;
 use App\Models\CustInvoice;
 use App\Models\CustomerTransactionsLedger;
 use App\Models\CustPayment;
@@ -37,7 +39,7 @@ class PdcReceivedCustomerController extends Controller
         $page = (int) ($request->get('page', 1));
         $filters = $request->except('per_page', 'page');
 
-        $data = $this->service->index($filters, $perPage, $page, 0, ['customer', 'invoice', 'bankAccount']);
+        $data = $this->service->index($filters, $perPage, $page, 0, ['customer', 'invoice', 'debitNote', 'bankAccount']);
 
         return PdcReceivedCustomerResource::collection($data);
     }
@@ -72,7 +74,7 @@ class PdcReceivedCustomerController extends Controller
             return response()->json(['message' => 'PDC id is required'], 400);
         }
 
-        $model = $this->service->find($id, ['customer', 'invoice', 'bankAccount', 'createdByUser', 'updatedByUser']);
+        $model = $this->service->find($id, ['customer', 'invoice', 'debitNote', 'bankAccount', 'createdByUser', 'updatedByUser']);
         $this->authorize('view', $model);
 
         return new PdcReceivedCustomerResource($model);
@@ -85,16 +87,29 @@ class PdcReceivedCustomerController extends Controller
             return response()->json(['message' => 'PDC id is required'], 400);
         }
 
-        $model = $this->service->find($id, ['customer', 'invoice', 'bankAccount', 'createdByUser', 'updatedByUser']);
+        $model = $this->service->find($id, ['customer', 'invoice', 'debitNote', 'bankAccount', 'createdByUser', 'updatedByUser']);
         $this->authorize('update', $model);
 
         if ($model->status === 'cleared') {
             return response()->json(['message' => 'PDC cannot be updated as it is already cleared.'], 400);
         }
 
-        // Validate overpayment risk when changing amount and invoice is attached
+        // Validate overpayment risk when changing amount and a document is attached
         $validated = $request->validated();
-        if (isset($validated['amount']) && $model->invoice_id) {
+        if (isset($validated['amount']) && $model->debit_note_id) {
+            $note = CustDebitNote::find($model->debit_note_id);
+            if ($note) {
+                $otherPdcReserved = (float) PdcReceivedCustomer::where('debit_note_id', $note->id)
+                    ->where('is_deleted', false)
+                    ->whereIn('status', ['received', 'pending'])
+                    ->where('id', '<>', $model->id)
+                    ->sum('amount');
+                $totalAfter = $otherPdcReserved + (float) $note->debitNotePayments()->where('is_deleted', false)->sum('allocated_amount') + (float) $validated['amount'];
+                if ($totalAfter > (float) $note->total_amount + 0.0001) {
+                    return response()->json(['message' => 'Updating this PDC would over-settle the related debit note. Reduce the amount.'], 422);
+                }
+            }
+        } elseif (isset($validated['amount']) && $model->invoice_id) {
             $invoice = CustInvoice::find($model->invoice_id);
             if ($invoice) {
                 // Sum of allocations/payments already applied to invoice
@@ -195,8 +210,17 @@ class PdcReceivedCustomerController extends Controller
         }
 
         $invoice = $pdcModel->invoice_id ? CustInvoice::with('order', 'project')->find($pdcModel->invoice_id) : null;
+        // PDCs can also settle a customer debit note raised against an invoice
+        $debitNote = $pdcModel->debit_note_id
+            ? CustDebitNote::with('invoice')->find($pdcModel->debit_note_id)
+            : null;
 
-        DB::transaction(function () use ($pdcModel, $invoice, $clearDate) {
+        if ($debitNote && ! in_array($debitNote->status, ['raised', 'partial-paid'], true)) {
+            return response()->json([
+                'message' => 'The linked debit note is not in a payable state ('.$debitNote->status.').'], 422);
+        }
+
+        DB::transaction(function () use ($pdcModel, $invoice, $debitNote, $clearDate) {
             $commonService = new CommonService;
             $conversionService = new CurrencyConversionService;
 
@@ -211,7 +235,7 @@ class PdcReceivedCustomerController extends Controller
             if ($account && $account->currency !== $invoiceCurrencyCode) {
                 throw ValidationException::withMessages([
                     'bank_account_id' => [
-                        'Benefiting bank account currency ('.$account->currency.') must match the invoice currency ('.$invoiceCurrencyCode.').',
+                        'Benefiting bank account currency ('.$account->currency.') must match the document currency ('.$invoiceCurrencyCode.').',
                     ],
                 ]);
             }
@@ -226,7 +250,12 @@ class PdcReceivedCustomerController extends Controller
             $convertedAmount = $conversion['converted_amount'];
 
             $previousBalance = null;
-            if ($invoice) {
+            if ($debitNote) {
+                // Settling a debit note: no invoice allocation, outstanding comes from the note
+                $totalPaid = (float) $debitNote->debitNotePayments()->where('is_deleted', false)->sum('allocated_amount');
+                $previousBalance = max((float) $debitNote->total_amount - $totalPaid, 0.0);
+                $amountToAllocate = min((float) $pdcModel->amount, $previousBalance);
+            } elseif ($invoice) {
                 $existingAllocations = CustPaymentAllocation::where('invoice_id', $invoice->id)
                     ->where('is_deleted', false)
                     ->get();
@@ -250,9 +279,14 @@ class PdcReceivedCustomerController extends Controller
 
             $taxPortion = 0.0;
             $netPortion = (float) $pdcModel->amount;
-            if ($invoice && (float) $invoice->total_amount > 0 && (float) $invoice->tax_amount > 0) {
+            $taxSourceTotal = $debitNote ?: $invoice;
+            $taxSourceDocument = $debitNote ?: $invoice;
+            if ($taxSourceDocument
+                && (float) $taxSourceDocument->total_amount > 0
+                && (float) $taxSourceDocument->tax_amount > 0
+            ) {
                 $taxPortion = min(
-                    round(((float) $invoice->tax_amount / (float) $invoice->total_amount) * (float) $pdcModel->amount, 2),
+                    round(((float) $taxSourceDocument->tax_amount / (float) $taxSourceDocument->total_amount) * (float) $pdcModel->amount, 2),
                     (float) $pdcModel->amount
                 );
                 $netPortion = (float) $pdcModel->amount - $taxPortion;
@@ -273,7 +307,7 @@ class PdcReceivedCustomerController extends Controller
                 'check_number' => $pdcModel->cheque_number,
                 'transaction_reference' => $transactionRef,
                 'receipt_number' => $receiptRef,
-                'invoice_total_amount' => $invoice ? $invoice->total_amount : null,
+                'invoice_total_amount' => $taxSourceDocument ? $taxSourceDocument->total_amount : null,
                 'exchange_rate' => $exchangeRate,
                 'fee_or_charge' => 0,
                 'payment_type' => 'normal',
@@ -283,7 +317,29 @@ class PdcReceivedCustomerController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
-            if ($invoice && $amountToAllocate > 0) {
+            if ($debitNote && $amountToAllocate > 0) {
+                // Clearing a debit-note PDC settles the debit note (no invoice allocation)
+                $installmentNumber = $debitNote->debitNotePayments()->where('is_deleted', false)->count() + 1;
+                $afterBalance = max($previousBalance - $amountToAllocate, 0);
+
+                CustDebitNotePayment::create([
+                    'debit_note_id' => $debitNote->id,
+                    'payment_id' => $payment->id,
+                    'allocated_amount' => $amountToAllocate,
+                    'payment_date' => $clearDate,
+                    'installment_number' => $installmentNumber,
+                    'created_by' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                ]);
+
+                if ($afterBalance <= 0) {
+                    $debitNote->status = 'paid';
+                } else {
+                    $debitNote->status = 'partial-paid';
+                }
+                $debitNote->updated_by = Auth::id();
+                $debitNote->save();
+            } elseif ($invoice && $amountToAllocate > 0) {
                 $installmentNumber = CustPaymentAllocation::where('invoice_id', $invoice->id)
                     ->where('is_deleted', false)
                     ->count() + 1;
@@ -325,9 +381,11 @@ class PdcReceivedCustomerController extends Controller
                 'converted_net_amount' => $netPortion * $exchangeRate,
                 'tax_amount' => $taxPortion,
                 'net_amount' => $netPortion,
-                'customer_id' => $pdcModel->customer_id,
-                'source_type' => 'cust_invoice',
-                'source_id' => $invoice->id,
+                'customer_id' => $pdcModel->customer_id ?: ($debitNote?->invoice?->customer_id ?? $invoice?->customer_id),
+                'source_type' => $debitNote ? 'customer_debit_note' : 'cust_invoice',
+                // Payments received against invoices/debit notes are revenue.
+                'chart_of_account' => CustomerTransactionsLedger::revenueChartId(),
+                'source_id' => $debitNote ? $debitNote->id : $invoice->id,
                 'account_debit' => null,
                 'account_credit' => $account ? $account->id : null,
                 'category' => 'revenue',
@@ -336,7 +394,9 @@ class PdcReceivedCustomerController extends Controller
                 'check_number' => $pdcModel->cheque_number,
                 'transaction_status' => 'cleared',
                 'related_transaction_id' => null,
-                'narration' => 'PDC cleared: '.($pdcModel->narration ?? ''),
+                'narration' => $debitNote
+                    ? 'PDC cleared: Payment for debit note '.$debitNote->debit_note_number
+                    : 'PDC cleared: '.($pdcModel->narration ?? ''),
                 'is_recurring' => false,
                 'fiscal_year' => now()->year,
                 'accounting_period' => now()->format('Ym'),

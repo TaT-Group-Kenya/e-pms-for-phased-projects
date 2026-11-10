@@ -27,6 +27,15 @@ class CustomerTransactionsLedgerResource extends BaseResource
             'source_id' => $this->source_id,
             'account_debit' => $this->account_debit,
             'account_credit' => $this->account_credit,
+            'chart_of_account' => $this->chart_of_account,
+            'chart_of_account_data' => $this->whenLoaded('chartOfAccount', function () {
+                return $this->chartOfAccount ? [
+                    'id' => $this->chartOfAccount->id,
+                    'code' => $this->chartOfAccount->code,
+                    'name' => $this->chartOfAccount->name,
+                    'is_bank_account_grp' => (bool) $this->chartOfAccount->is_bank_account_grp,
+                ] : null;
+            }),
             'category' => $this->category,
             'payment_method' => $this->payment_method,
             'bank_account' => $this->bank_account,
