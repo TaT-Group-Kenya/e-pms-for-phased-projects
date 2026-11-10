@@ -12,7 +12,7 @@ return new class extends Migration
         // and debit note postings are revenue (chart 4000).
         Schema::table('customer_transactions_ledger', function ($table) {
             $table->unsignedBigInteger('chart_of_account')->default(0)->after('account_credit');
-            $table->index('chart_of_account');
+            $table->index('chart_of_account', 'ctl_chart_index');
         });
 
         $revenueId = (int) DB::table('chart_of_accounts')->where('code', '4000')->value('id');
@@ -27,7 +27,7 @@ return new class extends Migration
     public function down(): void
     {
         if (Schema::hasColumn('customer_transactions_ledger', 'chart_of_account')) {
-            if (Schema::hasIndex('customer_transactions_ledger', 'customer_transactions_ledger_chart_of_account_index')) {
+            if (Schema::hasIndex('customer_transactions_ledger', 'ctl_chart_index')) {
                 Schema::table('customer_transactions_ledger', function ($table) {
                     $table->dropIndex(['chart_of_account']);
                 });

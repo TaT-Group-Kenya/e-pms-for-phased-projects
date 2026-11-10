@@ -52,7 +52,7 @@ return new class extends Migration
         // interest expense from principal repayment exactly.
         Schema::table('loan_repayment_allocations', function ($table) {
             $table->unsignedBigInteger('chart_of_account')->default(0)->after('principal_applied');
-            $table->index(['chart_of_account', 'loan_id']);
+            $table->index(['chart_of_account', 'loan_id'], 'lra_chart_loan_index');
         });
 
         DB::table('loan_repayment_allocations')->update(['chart_of_account' => $expenseId]);
@@ -96,8 +96,8 @@ return new class extends Migration
 
             $table->foreign('tax_id')->references('id')->on('taxes');
             $table->foreign('chart_of_account')->references('id')->on('chart_of_accounts');
-            $table->index(['source_type', 'source_id']);
-            $table->index(['direction', 'chart_of_account']);
+            $table->index(['source_type', 'source_id'], 'tax_txn_source_index');
+            $table->index(['direction', 'chart_of_account'], 'tax_txn_direction_chart_index');
         });
     }
 
@@ -107,8 +107,8 @@ return new class extends Migration
 
         if (Schema::hasColumn('loan_repayment_allocations', 'chart_of_account')) {
             Schema::table('loan_repayment_allocations', function ($table) {
-                if (Schema::hasIndex('loan_repayment_allocations', 'loan_repayment_allocations_chart_of_account_loan_id_index')) {
-                    $table->dropIndex(['chart_of_account', 'loan_id']);
+                if (Schema::hasIndex('loan_repayment_allocations', 'lra_chart_loan_index')) {
+                    $table->dropIndex('lra_chart_loan_index');
                 }
 
                 $table->dropColumn('chart_of_account');

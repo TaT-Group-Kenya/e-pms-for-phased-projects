@@ -45,7 +45,7 @@ return new class extends Migration
 
             $table->foreign('trial_balance_run_id')->references('id')->on('trial_balance_runs');
             $table->foreign('chart_of_account')->references('id')->on('chart_of_accounts');
-            $table->index(['trial_balance_run_id', 'chart_of_account']);
+            $table->index(['trial_balance_run_id', 'chart_of_account'], 'tbrl_run_chart_index');
         });
     }
 
