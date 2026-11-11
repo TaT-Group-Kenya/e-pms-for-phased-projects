@@ -250,6 +250,12 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_ACCOUNT"],
       },
       {
+        label: "Lenders",
+        href: "/finance/lenders/",
+        matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_LOAN"],
+      },
+      {
         label: "Loans",
         href: "/finance/loans/",
         matchStrategy: "startsWith",

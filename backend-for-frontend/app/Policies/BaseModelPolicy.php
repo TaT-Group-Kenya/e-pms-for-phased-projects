@@ -69,7 +69,7 @@ class BaseModelPolicy
         return $this->check($user, 'EDIT', $model);
     }
 
-    public function delete(User $user, $model)
+    public function delete(User $user, $model = null)
     {
         return $this->check($user, 'DELETE', $model);
     }

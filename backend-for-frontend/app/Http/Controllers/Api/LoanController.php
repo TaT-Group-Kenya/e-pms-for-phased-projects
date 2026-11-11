@@ -30,11 +30,11 @@ class LoanController extends Controller
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', Account::class);
+        $this->authorize('viewAny', Loan::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
 
-        $query = Loan::query()->with(['destination', 'chartOfAccount', 'repayments', 'schedule']);
+        $query = Loan::query()->with(['destination', 'chartOfAccount', 'lender', 'repayments', 'schedule']);
 
         if ($request->filled('destination_account_id')) {
             $query->where('destination_account_id', $request->get('destination_account_id'));
@@ -61,7 +61,7 @@ class LoanController extends Controller
 
     public function store(LoanStoreRequest $request)
     {
-        $this->authorize('create', Account::class);
+        $this->authorize('create', Loan::class);
 
         $validated = $request->validated();
         $validated['interest_rate'] = $validated['interest_type'] === 'none'
@@ -72,22 +72,22 @@ class LoanController extends Controller
 
         return response()->json([
             'message' => 'Loan created successfully.',
-            'data' => new LoanResource($loan->loadMissing(['destination', 'chartOfAccount', 'repayments', 'schedule'])),
+            'data' => new LoanResource($loan->loadMissing(['destination', 'chartOfAccount', 'lender', 'repayments', 'schedule'])),
         ], 201);
     }
 
     public function show(Loan $loan)
     {
         // Loans are managed within the Accounts permission set.
-        $this->authorize('viewAny', Account::class);
+        $this->authorize('viewAny', Loan::class);
 
-        return new LoanResource($loan->loadMissing(['destination', 'chartOfAccount', 'repayments.paidFromAccount', 'schedule']));
+        return new LoanResource($loan->loadMissing(['destination', 'chartOfAccount', 'lender', 'repayments.paidFromAccount', 'schedule']));
     }
 
     public function repay(Request $request, Loan $loan, LoanService $loanService)
     {
         // Loans are managed within the Accounts permission set.
-        $this->authorize('viewAny', Account::class);
+        $this->authorize('viewAny', Loan::class);
 
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
@@ -118,9 +118,9 @@ class LoanController extends Controller
     public function statementPdf(Request $request, Loan $loan, LoanService $loanService)
     {
         // Loans are managed within the Accounts permission set.
-        $this->authorize('viewAny', Account::class);
+        $this->authorize('viewAny', Loan::class);
 
-        $loan->loadMissing(['destination', 'chartOfAccount', 'repayments.paidFromAccount', 'schedule']);
+        $loan->loadMissing(['destination', 'chartOfAccount', 'lender', 'repayments.paidFromAccount', 'schedule']);
 
         $pdf = $this->buildLoanStatementPdf(
             $loan,

@@ -145,6 +145,7 @@ const TrialBalanceDetail: React.FC = () => {
     ])
     const totals = [
       'TOTAL',
+      '',
       detail.totals.debit_kes,
       detail.totals.credit_kes,
     ]

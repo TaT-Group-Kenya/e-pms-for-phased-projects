@@ -37,6 +37,8 @@ interface LoanDetail {
   destination_account_id: number;
   destination_account: { id: number; code: string; name: string; currency: string; balance: number } | null;
   lender_name: string;
+  lender_id?: number | null;
+  lender?: { id: number; name: string; email?: string | null; phone?: string | null; kra_pin?: string | null; address?: string | null } | null;
   principal: number;
   currency: string;
   interest_type: string;
@@ -394,6 +396,12 @@ const LoanDetailPage: React.FC = () => {
                   <div className="space-y-[6px]">
                     <h1 className="text-base md:text-lg font-semibold text-black dark:text-white">
                       {loan.lender_name}
+                      {loan.lender?.name && (
+                        <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+                          {" "}
+                          — {loan.lender.name}
+                        </span>
+                      )}
                       {loan.destination_account && (
                         <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
                           {" "}

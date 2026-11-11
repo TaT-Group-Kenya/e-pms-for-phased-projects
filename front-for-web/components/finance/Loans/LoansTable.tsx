@@ -24,6 +24,8 @@ interface LoanRow {
   destination_account_id: number;
   destination_account: { id: number; code: string; name: string; currency: string; balance: number } | null;
   lender_name: string;
+  lender_id?: number | null;
+  lender?: { id: number; name: string; email?: string | null; phone?: string | null; kra_pin?: string | null; address?: string | null } | null;
   principal: number;
   currency: string;
   interest_type: string;
@@ -90,6 +92,7 @@ const LoansTable: React.FC = () => {
   const statusFilter = filters.status || "all";
   const hasExtraFilters = searchInput || statusFilter !== "all";
   const [destinationAccounts, setDestinationAccounts] = useState<AccountOption[]>([]);
+  const [lenders, setLenders] = useState<{ id: number; name: string }[]>([]);
   const [currencies, setCurrencies] = useState<CurrencyOption[]>([]);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -98,6 +101,7 @@ const LoansTable: React.FC = () => {
   const [formForexRate, setFormForexRate] = useState("129.75");
   const [formDestinationAccountId, setFormDestinationAccountId] = useState("");
   const [formLender, setFormLender] = useState("");
+  const [formLenderId, setFormLenderId] = useState("");
   const [formPrincipal, setFormPrincipal] = useState("");
   const [formInterestType, setFormInterestType] = useState<"none" | "flat" | "reducing">("none");
   const [formInterestRate, setFormInterestRate] = useState("");
@@ -147,6 +151,22 @@ const LoansTable: React.FC = () => {
     };
 
     fetchDestinationAccounts();
+
+    // Lender options for the loan form dropdown.
+    const lendersUrl = "/api/lenders?per_page=100";
+    fetch(lendersUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: controller.signal,
+    })
+      .then((r) => r.json().catch(() => null))
+      .then((data: any) => {
+        if (!data) return;
+        const items = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+        setLenders(
+          (items || []).map((l: any) => ({ id: Number(l.id), name: String(l.name ?? "") })),
+        );
+      })
+      .catch(() => {});
 
     return () => controller.abort();
   }, [accessToken, showCreateModal]);
@@ -226,6 +246,7 @@ const LoansTable: React.FC = () => {
     setFormForexRate("129.75");
     setFormDestinationAccountId("");
     setFormLender("");
+    setFormLenderId("");
     setFormPrincipal("");
     setFormInterestType("none");
     setFormInterestRate("");
@@ -256,8 +277,8 @@ const LoansTable: React.FC = () => {
       addToast("Please select a destination account.", "error");
       return;
     }
-    if (!formLender.trim()) {
-      addToast("Lender name is required.", "error");
+    if (!formLenderId) {
+      addToast("Please select a lender.", "error");
       return;
     }
     if (!formPrincipal || Number(formPrincipal) <= 0) {
@@ -269,7 +290,7 @@ const LoansTable: React.FC = () => {
     try {
       const payload = {
         destination_account_id: Number(formDestinationAccountId),
-        lender_name: formLender.trim(),
+        lender_id: Number(formLenderId),
         principal: Number(formPrincipal),
         currency: formCurrency,
         ...(formCurrency !== "KES" ? { forex_rate: Number(formForexRate) } : {}),
@@ -468,7 +489,7 @@ const LoansTable: React.FC = () => {
                       className="border-b border-gray-100 dark:border-[#172036] align-middle hover:bg-gray-50 dark:hover:bg-[#15203c] transition-colors"
                     >
                       <td className="text-sm px-[10px] py-[6px] font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                        {loan.lender_name}
+                        {loan.lender?.name ?? loan.lender_name ?? "-"}
                       </td>
                       <td className="text-sm px-[10px] py-[6px] whitespace-nowrap">
                         {loan.destination_account
@@ -631,12 +652,24 @@ const LoansTable: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-medium mb-[5px]">Lender</label>
-                <input
-                  type="text"
-                  value={formLender}
-                  onChange={(e) => setFormLender(e.target.value)}
+                <select
+                  value={formLenderId}
+                  onChange={(e) => setFormLenderId(e.target.value)}
+                  disabled={saving}
                   className="w-full px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
+                >
+                  <option value="">Select lender</option>
+                  {lenders.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </select>
+                {lenders.length === 0 && (
+                  <p className="mt-[4px] text-[11px] text-yellow-600 dark:text-yellow-400">
+                    No lenders yet. Create one on the Lenders page first.
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px]">

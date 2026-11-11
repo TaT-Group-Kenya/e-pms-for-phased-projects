@@ -33,5 +33,19 @@ class GroupRoleSeeder extends Seeder
                 $group->roles()->syncWithoutDetaching($groupData['roleIds']);
             }
         }
+
+        // Attach the loan permission set (add/edit/delete/view) to groups
+        // that already carry the account permission set, so loans and
+        // lenders follow the same viewership.
+        $loanRoleIds = SysRole::whereIn('name', [
+            'ROLE_ADD_LOAN', 'ROLE_EDIT_LOAN', 'ROLE_DELETE_LOAN', 'ROLE_VIEW_LOAN',
+        ])->pluck('id')->all();
+
+        $financeGroupId = SysGroup::where('name', 'Finance Admins')->value('id');
+
+        if ($financeGroupId && $loanRoleIds) {
+            $financeGroup = SysGroup::find($financeGroupId);
+            $financeGroup->roles()->syncWithoutDetaching($loanRoleIds);
+        }
     }
 }
