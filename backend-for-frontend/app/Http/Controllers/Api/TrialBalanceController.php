@@ -142,17 +142,16 @@ class TrialBalanceController extends Controller
 
         return response()->streamDownload(function () use ($lines) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['Type', 'Chart Code', 'Account', 'Debit (KES)', 'Credit (KES)'], escape: '\\');
+            fputcsv($out, ['Type', 'Account', 'Debit (KES)', 'Credit (KES)'], escape: '\\');
             foreach ($lines as $line) {
                 fputcsv($out, [
                     $line->category,
-                    $line->chart_code,
                     $line->account_name,
                     $line->debit_kes,
                     $line->credit_kes,
                 ], escape: '\\');
             }
-            fputcsv($out, ['TOTAL', '', '',
+            fputcsv($out, ['TOTAL', '',
                 $lines->sum('debit_kes'), $lines->sum('credit_kes'),
             ], escape: '\\');
             fclose($out);
@@ -219,16 +218,13 @@ class TrialBalanceController extends Controller
             ->join('chart_of_accounts as c', 'c.id', '=', 'trial_balance_run_lines.chart_of_account')
             ->selectRaw('
                 trial_balance_run_lines.id,
-                c.code AS chart_code,
-                c.name AS chart_ref,
                 trial_balance_run_lines.category,
                 trial_balance_run_lines.description AS account_name,
                 SUM(debit_kes) AS debit_kes,
                 SUM(credit_kes) AS credit_kes
             ')
-            ->groupBy('trial_balance_run_lines.id', 'c.code', 'c.name', 'trial_balance_run_lines.category', 'account_name')
-            ->orderBy('c.code')
-            ->orderBy('account_name')
+            ->groupBy('trial_balance_run_lines.id', 'trial_balance_run_lines.category', 'account_name')
+            ->orderBy('trial_balance_run_lines.id')
             ->get();
     }
 }
