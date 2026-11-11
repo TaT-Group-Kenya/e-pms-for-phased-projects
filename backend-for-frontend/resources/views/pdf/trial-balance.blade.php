@@ -86,7 +86,6 @@
         <tr>
             <td class="r">{{ $i }}</td>
             <td>{{ $line->category }}</td>
-            <td>{{ $line->chart_code }}</td>
             <td>{{ $line->account_name }}</td>
             <td class="r">{{ number_format($line->debit_kes, 2) }}</td>
             <td class="r">{{ number_format($line->credit_kes, 2) }}</td>

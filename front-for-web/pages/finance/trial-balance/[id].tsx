@@ -19,7 +19,6 @@ interface RunMeta {
 
 interface ChartLine {
   id: number
-  chart_code: string
   chart_name: string
   account_name: string
   category: string
@@ -137,18 +136,15 @@ const TrialBalanceDetail: React.FC = () => {
   function exportCsv() {
     if (!detail) return
 
-    const columns = ['Type', 'Chart Code', 'Account', 'Debit (KES)', 'Credit (KES)']
+    const columns = ['Type', 'Account', 'Debit (KES)', 'Credit (KES)']
     const rows = detail.lines.map((l) => [
       l.category,
-      l.chart_code,
       l.account_name,
       l.debit_kes,
       l.credit_kes,
     ])
     const totals = [
       'TOTAL',
-      '',
-      '',
       detail.totals.debit_kes,
       detail.totals.credit_kes,
     ]
@@ -248,7 +244,6 @@ const TrialBalanceDetail: React.FC = () => {
             <thead className="text-black dark:text-white">
               <tr>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Type</th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Code</th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Account</th>
                 <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Debit (KES)</th>
                 <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Credit (KES)</th>
@@ -270,7 +265,6 @@ const TrialBalanceDetail: React.FC = () => {
                         ) : (
                           <td className="px-[10px] py-[6px]" />
                         )}
-                        <td className="px-[10px] py-[6px]">{l.chart_code}</td>
                         <td className="px-[10px] py-[6px]">{l.account_name}</td>
                         <td className="px-[10px] py-[6px] text-right">{fmt.format(l.debit_kes)}</td>
                         <td className="px-[10px] py-[6px] text-right">{fmt.format(l.credit_kes)}</td>
@@ -281,7 +275,7 @@ const TrialBalanceDetail: React.FC = () => {
             </tbody>
             <tfoot>
               <tr className="font-bold border-t-2 border-gray-300 dark:border-[#172036]">
-                <td className="px-[10px] py-[8px]" colSpan={3}>TOTAL</td>
+                <td className="px-[10px] py-[8px]" colSpan={2}>TOTAL</td>
                 <td className="px-[10px] py-[8px] text-right">
                   {fmt.format(detail?.totals.debit_kes ?? 0)}
                 </td>
@@ -290,7 +284,7 @@ const TrialBalanceDetail: React.FC = () => {
                 </td>
               </tr>
               <tr>
-                <td colSpan={5} className={`px-[10px] py-[6px] text-xs ${detail?.totals.balanced ? "text-green-600" : "text-red-600"}`}>
+                <td colSpan={4} className={`px-[10px] py-[6px] text-xs ${detail?.totals.balanced ? "text-green-600" : "text-red-600"}`}>
                   {detail
                     ? detail.totals.balanced
                       ? "Balanced: total debits equal total credits."
