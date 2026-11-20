@@ -37,6 +37,7 @@
     33 => 'App\\Providers\\AppServiceProvider',
     34 => 'App\\Providers\\AuthServiceProvider',
     35 => 'App\\Providers\\RouteServiceProvider',
+    36 => 'App\\Providers\\AccountingPeriodServiceProvider',
   ),
   'eager' => 
   array (
@@ -60,6 +61,7 @@
     17 => 'App\\Providers\\AppServiceProvider',
     18 => 'App\\Providers\\AuthServiceProvider',
     19 => 'App\\Providers\\RouteServiceProvider',
+    20 => 'App\\Providers\\AccountingPeriodServiceProvider',
   ),
   'deferred' => 
   array (

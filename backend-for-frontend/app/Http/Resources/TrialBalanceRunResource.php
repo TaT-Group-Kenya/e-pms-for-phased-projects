@@ -12,6 +12,8 @@ class TrialBalanceRunResource extends BaseResource
             'as_at_date' => $this->as_at_date?->toDateString(),
             'forex_rate' => (float) $this->forex_rate,
             'base_currency' => $this->base_currency,
+            'trigger' => $this->trigger ?? 'manual',
+            'accounting_period_id' => $this->accounting_period_id,
             'created_at' => $this->formatTimestamp($this->created_at),
             'created_by' => $this->created_by,
             'is_deleted' => (bool) $this->is_deleted,

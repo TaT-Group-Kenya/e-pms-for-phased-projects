@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\DB;
 
 class OfficeExpenseController extends Controller
 {
+    use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     protected $service;
 
     protected $paymentService;
@@ -71,6 +73,11 @@ class OfficeExpenseController extends Controller
     {
         $this->authorize('create', OfficeExpense::class);
         $data = $request->validated();
+
+        if ($response = $this->ensurePeriodOpenForDate($data['date'] ?? null, 'date')) {
+            return $response;
+        }
+
         $data['created_by'] = auth()->id();
         $expense = $this->service->create($data);
 
@@ -90,6 +97,15 @@ class OfficeExpenseController extends Controller
         $expense = OfficeExpense::findOrFail($id);
         $this->authorize('update', $expense);
         $data = $request->validated();
+
+        // Stored expense date governs edits; a moved date must be open too.
+        if ($response = $this->ensureModelPeriodOpen($expense)) {
+            return $response;
+        }
+        if ($response = $this->ensurePeriodOpenForDate($data['date'] ?? null, 'date')) {
+            return $response;
+        }
+
         $data['updated_by'] = auth()->id();
         \Log::info('Updating office expense', ['id' => $id, 'data' => $data]);
         $expense = $this->service->update($id, $data);
@@ -104,6 +120,11 @@ class OfficeExpenseController extends Controller
         if (method_exists($expense, 'trashed') && $expense->trashed()) {
             return response()->json(['message' => 'Already deleted'], 400);
         }
+
+        if ($response = $this->ensureModelPeriodOpen($expense)) {
+            return $response;
+        }
+
         $expense->delete();
 
         return response()->json(['message' => 'Deleted successfully']);
@@ -129,6 +150,11 @@ class OfficeExpenseController extends Controller
             'narration' => ['nullable', 'string'],
             'transaction_cost' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        // Settlement posts a payment dated {date}: its month must be open.
+        if ($response = $this->ensurePeriodOpenForDate($validated['date'], 'date')) {
+            return $response;
+        }
 
         // Ensure settlement date is not older than expense creation date
         $settleDate = Carbon::parse($validated['date'])->toDateString();

@@ -17,6 +17,8 @@ class TrialBalanceRun extends Model
         'as_at_date',
         'forex_rate',
         'base_currency',
+        'trigger',
+        'accounting_period_id',
         'updated_at',
         'updated_by',
         'created_at',

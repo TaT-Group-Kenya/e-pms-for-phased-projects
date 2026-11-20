@@ -21,6 +21,8 @@ use Illuminate\Validation\Rule;
 
 class LoanController extends Controller
 {
+use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     protected $service;
 
     public function __construct(LoanService $service)
@@ -95,7 +97,7 @@ class LoanController extends Controller
                 'required',
                 'integer',
                 'exists:accounts,id',
-                Rule::exists('accounts', 'id')->where(function ($query) {
+                Rule::exists('accounts', 'id')->where(function ($query) use ($loan) {
                     $query->whereIn('chart_of_account_id', ChartOfAccount::where('code', '1000')->select('id'))
                         ->where('currency', $loan->currency);
                 }),
@@ -105,6 +107,11 @@ class LoanController extends Controller
             'payment_reference' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        // The repayment posts on payment_date (or today): that month must be open.
+        if ($response = $this->ensurePeriodOpenForDate($data['payment_date'] ?? now()->toDateString(), 'payment_date')) {
+            return $response;
+        }
 
         try {
             $loanService->repay($loan, $data, (int) Auth::id());

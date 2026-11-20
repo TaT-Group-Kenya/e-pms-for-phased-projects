@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Storage;
 
 class CustDebitNoteController extends Controller
 {
+use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     public function __construct(private CustDebitNoteService $service) {}
 
     public function index(Request $request)
@@ -57,6 +59,10 @@ class CustDebitNoteController extends Controller
     public function update(CustDebitNoteUpdateRequest $request, CustDebitNote $custDebitNote)
     {
         $this->authorize('update', $custDebitNote);
+
+        if ($response = $this->ensureModelPeriodOpen($custDebitNote)) {
+            return $response;
+        }
         $updated = $this->service->update($custDebitNote->id, $request->validated(), Auth::id());
 
         return (new CustDebitNoteResource($updated))
@@ -83,6 +89,11 @@ class CustDebitNoteController extends Controller
             'receipt_number' => ['nullable', 'string', 'max:255'],
             'related_transaction_id' => ['nullable', 'integer'],
         ]);
+
+        // The payment posts with its payment_date: its month must be open.
+        if ($response = $this->ensurePeriodOpenForDate($validated['payment_date'], 'payment_date')) {
+            return $response;
+        }
 
         $note = $this->service->addPayment($custDebitNote, $validated, Auth::id());
 

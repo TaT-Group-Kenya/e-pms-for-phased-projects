@@ -64,7 +64,7 @@ class BaseModelPolicy
         return $this->check($user, 'ADD', $model);
     }
 
-    public function update(User $user, $model)
+    public function update(User $user, $model = null)
     {
         return $this->check($user, 'EDIT', $model);
     }

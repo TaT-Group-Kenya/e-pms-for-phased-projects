@@ -32,6 +32,8 @@ use Illuminate\Validation\ValidationException;
 
 class CompanyInvoiceController extends Controller
 {
+    use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     protected $service;
 
     protected $transactionCostManager;
@@ -245,6 +247,11 @@ class CompanyInvoiceController extends Controller
             'transaction_cost' => ['nullable', 'numeric', 'min:0'],
             'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
+
+        // The payment is a posting dated payment_date: its month must be open.
+        if ($response = $this->ensurePeriodOpenForDate($validated['payment_date'], 'payment_date')) {
+            return $response;
+        }
 
         // Ensure payment_date is not older than invoice creation date
         $paymentDate = Carbon::parse($validated['payment_date'])->toDateString();
@@ -599,6 +606,11 @@ class CompanyInvoiceController extends Controller
             ], 422);
         }
 
+        // Deleting the payment changes the closed month's balances.
+        if ($response = $this->ensurePeriodOpenForDate($companyPayment->payment_date, 'payment_date')) {
+            return $response;
+        }
+
         $invoice = $companyInvoice;
 
         $invoice = DB::transaction(function () use ($invoice, $companyPayment) {
@@ -731,6 +743,11 @@ class CompanyInvoiceController extends Controller
             ], 422);
         }
 
+        // Editing (even metadata) of a closed month's payment is locked.
+        if ($response = $this->ensurePeriodOpenForDate($companyPayment->payment_date, 'payment_date')) {
+            return $response;
+        }
+
         $invoice = $companyInvoice;
 
         $invoice = DB::transaction(function () use ($invoice, $companyPayment, $validated) {
@@ -807,6 +824,14 @@ class CompanyInvoiceController extends Controller
         $hasStatusInPayload = array_key_exists('status', $validated);
 
         $userId = Auth::id();
+
+        // Period locks: stored invoice date and requested date must be open.
+        if ($response = $this->ensureModelPeriodOpen($companyInvoice)) {
+            return $response;
+        }
+        if ($response = $this->ensurePeriodOpenForDate($validated['created_at'], 'created_at')) {
+            return $response;
+        }
 
         // Prevent marking an invoice as draft if it already has any ledger entries
         if ($hasStatusInPayload && $validated['status'] === 'draft') {
@@ -922,6 +947,10 @@ class CompanyInvoiceController extends Controller
             return response()->json([
                 'message' => 'Only draft company invoices can be deleted.',
             ], 422);
+        }
+
+        if ($response = $this->ensureModelPeriodOpen($companyInvoice)) {
+            return $response;
         }
 
         $this->service->delete($companyInvoice->id);

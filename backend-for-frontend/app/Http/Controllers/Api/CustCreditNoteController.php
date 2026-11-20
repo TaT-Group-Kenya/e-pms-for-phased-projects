@@ -29,6 +29,8 @@ use Illuminate\Support\Facades\Storage;
 
 class CustCreditNoteController extends Controller
 {
+use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     protected $service;
 
     public function __construct(CustCreditNoteService $service)
@@ -119,6 +121,11 @@ class CustCreditNoteController extends Controller
             'transaction_cost' => ['nullable', 'numeric', 'min:0'],
             'forex_rate' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        // The refund posts a payment dated {date}: its month must be open.
+        if ($response = $this->ensurePeriodOpenForDate($validated['date'], 'date')) {
+            return $response;
+        }
 
         $settlementAccRate = $validated['forex_rate'] ?? 1.0;
 

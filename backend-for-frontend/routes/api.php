@@ -152,6 +152,14 @@ Route::prefix('/')->group(function () {
 		Route::get('trial-balance/{trial_balance_run}/export-csv', [App\Http\Controllers\Api\TrialBalanceController::class, 'exportCsv']);
 		Route::get('trial-balance/{trial_balance_run}/export-pdf', [App\Http\Controllers\Api\TrialBalanceController::class, 'exportPdf']);
 		Route::get('trial-balance/{trial_balance_run}/lines', [App\Http\Controllers\Api\TrialBalanceController::class, 'lines']);
+
+		// Accounting periods (year / quarter / month period locking)
+		Route::get('accounting-periods', [App\Http\Controllers\Api\AccountingPeriodController::class, 'index']);
+		Route::get('accounting-periods/{accounting_period}/checklist', [App\Http\Controllers\Api\AccountingPeriodController::class, 'checklist']);
+		Route::get('accounting-periods/{accounting_period}/logs', [App\Http\Controllers\Api\AccountingPeriodController::class, 'logs']);
+		Route::post('accounting-periods/{accounting_period}/close', [App\Http\Controllers\Api\AccountingPeriodController::class, 'close']);
+		Route::post('accounting-periods/{accounting_period}/reopen', [App\Http\Controllers\Api\AccountingPeriodController::class, 'reopen']);
+		Route::get('accounting-periods/{accounting_period}', [App\Http\Controllers\Api\AccountingPeriodController::class, 'show']);
 		Route::get('transactions/{transaction}/download-pdf', [App\Http\Controllers\Api\TransactionController::class, 'downloadPdf']);
 		Route::get('company-payments/{companyPayment}/download-pdf', [App\Http\Controllers\Api\CompanyPaymentController::class, 'downloadPdf']);
 		Route::get('cust-payments/{custPayment}/download-pdf', [App\Http\Controllers\Api\CustPaymentController::class, 'downloadPdf']);
@@ -183,6 +191,7 @@ Route::prefix('/')->group(function () {
 		// Reporting Endpoints
 		Route::prefix('reports')->group(function () {
 			Route::get('orders-summary', [App\Http\Controllers\ReportingController::class, 'ordersSummary']);
+			Route::get('loans-report', [App\Http\Controllers\ReportingController::class, 'loansReport']);
 			Route::get('projects-summary', [App\Http\Controllers\ReportingController::class, 'projectsSummary']);
 			Route::get('customer-history', [App\Http\Controllers\ReportingController::class, 'customerHistory']);
 			Route::get('revenue', [App\Http\Controllers\ReportingController::class, 'revenueSnapshot']);

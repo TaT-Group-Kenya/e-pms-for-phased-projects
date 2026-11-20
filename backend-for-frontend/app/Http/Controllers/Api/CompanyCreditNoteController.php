@@ -25,6 +25,8 @@ use Illuminate\Support\Facades\Auth;
 
 class CompanyCreditNoteController extends Controller
 {
+use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     protected $service;
 
     public function __construct(CompanyCreditNoteService $service)
@@ -118,6 +120,11 @@ class CompanyCreditNoteController extends Controller
             'receiving_account' => ['required', 'integer', 'exists:accounts,id'],
             'narration' => ['nullable', 'string'],
         ]);
+
+        // The refund posts a payment dated {date}: its month must be open.
+        if ($response = $this->ensurePeriodOpenForDate($validated['date'], 'date')) {
+            return $response;
+        }
 
         \Log::info('Initiating refund for Company Credit Note', [
             'company_credit_note_id' => $companyCreditNote->id,

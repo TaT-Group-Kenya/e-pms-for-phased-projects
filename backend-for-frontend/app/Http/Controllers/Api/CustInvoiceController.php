@@ -32,6 +32,8 @@ use Illuminate\Validation\ValidationException;
 
 class CustInvoiceController extends Controller
 {
+    use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     protected $service;
 
     protected $orderToCustInvoiceService;
@@ -70,6 +72,11 @@ class CustInvoiceController extends Controller
                     'status' => ['Order must be approved before creating an invoice.'],
                 ],
             ], 422);
+        }
+
+        // The invoice inherits the order's date: both documents' periods matter.
+        if ($response = $this->ensureModelPeriodOpen($order)) {
+            return $response;
         }
 
         if ($order->custInvoices()->exists()) {
@@ -141,6 +148,15 @@ class CustInvoiceController extends Controller
         $validated = $request->validated();
         $validated['created_at'] = $validated['created_at'] ?? $custInvoice->created_at;
         $validated['updated_by'] = Auth::id();
+
+        // Period locks: stored invoice date (can't edit a closed month's
+        // document) and the requested date (can't re-date into a closed month).
+        if ($response = $this->ensureModelPeriodOpen($custInvoice)) {
+            return $response;
+        }
+        if ($response = $this->ensurePeriodOpenForDate($validated['created_at'], 'created_at')) {
+            return $response;
+        }
 
         // A provided forex rate recomputes the converted amounts (USD to
         // KES); KES invoices stay at rate 1.
@@ -219,6 +235,11 @@ class CustInvoiceController extends Controller
                     'status' => ['This invoice is not in draft status.'],
                 ],
             ], 422);
+        }
+
+        // Status changes on a closed month's document alter postings.
+        if ($response = $this->ensureModelPeriodOpen($custInvoice)) {
+            return $response;
         }
 
         // A forex rate must be in place before the invoice leaves draft:
@@ -303,6 +324,11 @@ class CustInvoiceController extends Controller
             'receipt_number' => ['nullable', 'string', 'max:255'],
             'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
+
+        // The payment is a posting dated payment_date: its month must be open.
+        if ($response = $this->ensurePeriodOpenForDate($validated['payment_date'], 'payment_date')) {
+            return $response;
+        }
 
         // Ensure payment_date is not older than invoice creation date
         $paymentDate = Carbon::parse($validated['payment_date'])->toDateString();
@@ -636,6 +662,11 @@ class CustInvoiceController extends Controller
             ], 422);
         }
 
+        // Deleting the payment changes the closed month's balances.
+        if ($response = $this->ensurePeriodOpenForDate($custPayment->payment_date, 'payment_date')) {
+            return $response;
+        }
+
         $invoice = $custInvoice;
 
         $invoice = DB::transaction(function () use ($invoice, $custPayment, $allocations) {
@@ -792,6 +823,11 @@ class CustInvoiceController extends Controller
             return response()->json([
                 'message' => 'No editable fields were provided.',
             ], 422);
+        }
+
+        // Editing (even metadata) of a closed month's payment is locked.
+        if ($response = $this->ensurePeriodOpenForDate($custPayment->payment_date, 'payment_date')) {
+            return $response;
         }
 
         $invoice = $custInvoice;

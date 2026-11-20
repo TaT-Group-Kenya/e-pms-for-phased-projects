@@ -29,6 +29,7 @@ use App\Models\CustomerTransactionsLedger;
 use App\Models\CustPayment;
 use App\Models\Download;
 use App\Models\OfficeExpense;
+use App\Models\Loan;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\SysConfig;
@@ -51,6 +52,68 @@ class ReportingService
         }
 
         return $query;
+    }
+
+    /**
+     * Loans report: one row per loan with the lender, amount loaned, total
+     * interest, total due, total paid and outstanding balance — in the
+     * loan's currency. Filters: lender_id (required with currency),
+     * currency_code (required), date range on disbursement_date.
+     */
+    public function loansReport($filters)
+    {
+        $currency = $filters['currency_code'] ?? null;
+        $lenderId = $filters['lender_id'] ?? null;
+        $fromDate = $filters['from_date'] ?? null;
+        $toDate = $filters['to_date'] ?? null;
+
+        // Mandatory filter
+        if (! $currency) {
+            return ['error' => 'currency_code is required for the loans report.'];
+        }
+
+        $query = Loan::with(['lender', 'repayments', 'schedule']);
+
+        if ($currency) {
+            $query->where('currency', $currency);
+        }
+
+        if ($lenderId) {
+            $query->where('lender_id', $lenderId);
+        }
+
+        // Lenders without loans must still appear as empty rows? No —
+        // keep the report focused on loans; a lender with no loans is
+        // omitted. (A lender-only listing would need a different report.)
+        if ($fromDate) {
+            $query->whereDate('disbursement_date', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('disbursement_date', '<=', $toDate);
+        }
+
+        $loans = $query->orderBy('lender_id')->orderBy('disbursement_date')->get();
+
+        $loanService = app(\App\Services\LoanService::class);
+        $rows = $loans->map(function (Loan $loan) use ($loanService) {
+            $summary = $loanService->summary($loan);
+
+            return (object) [
+                'loan' => $loan,
+                'disbursement_date' => $loan->disbursement_date?->toDateString(),
+                'lender_name' => $loan->lender?->name ?? $loan->lender_name,
+                'lender_id' => $loan->lender_id,
+                'principal' => (float) $loan->principal,
+                'currency' => $loan->currency,
+                'total_interest' => (float) $summary['total_interest'],
+                'total_due' => (float) $summary['total_repayable'],
+                'total_paid' => (float) $summary['total_repaid'],
+                'balance' => round((float) $summary['total_repayable'] - (float) $summary['total_repaid'], 2),
+                'status' => $loan->status,
+            ];
+        });
+
+        return $rows;
     }
 
     // Placeholder methods for each report
@@ -1406,6 +1469,8 @@ class ReportingService
         switch ($reportType) {
             case 'ordersSummary':
                 return $this->exportOrdersSummaryPdf($filters);
+            case 'loansReport':
+                return $this->exportLoansReportPdf($filters);
             case 'projectsSummary':
                 return $this->exportProjectsSummaryPdf($filters);
             case 'customerHistory':
@@ -1471,6 +1536,47 @@ class ReportingService
         }
 
         return $this->renderPdf('pdf.orders-summary', $data, $filters, $userId, 'ordersSummary');
+    }
+
+    private function exportLoansReportPdf($filters)
+    {
+        $userId = Auth::id() ?? null;
+        if (empty($filters['currency_code'])) {
+            return ['error' => 'Please select a currency to run the loans report.'];
+        }
+        $rawRows = $this->loansReport($filters);
+        if (isset($rawRows['error'])) {
+            return $rawRows;
+        }
+
+        $authorized = $rawRows->filter(function ($row) {
+            return \Gate::allows('view', $row->loan);
+        });
+
+        $data = [];
+        foreach ($authorized as $row) {
+            $data[] = [
+                'disbursement_date' => $row->disbursement_date,
+                'lender_name' => $row->lender_name,
+                'currency' => $row->currency,
+                'amount_loaned' => $row->principal,
+                'total_interest' => $row->total_interest,
+                'total_due' => $row->total_due,
+                'total_paid' => $row->total_paid,
+                'balance' => $row->balance,
+            ];
+        }
+
+        $totals = [
+            'amount_loaned' => round((float) $authorized->sum('principal'), 2),
+            'total_interest' => round((float) $authorized->sum('total_interest'), 2),
+            'total_due' => round((float) $authorized->sum('total_due'), 2),
+            'total_paid' => round((float) $authorized->sum('total_paid'), 2),
+            'balance' => round((float) $authorized->sum('balance'), 2),
+            'currency' => $filters['currency_code'],
+        ];
+
+        return $this->renderPdf('pdf.loans-report', ['rows' => $data, 'totals' => $totals], $filters, $userId, 'loansReport');
     }
 
     private function exportProjectsSummaryPdf($filters)

@@ -30,6 +30,8 @@ use Illuminate\Support\Facades\Storage;
 
 class OrderController extends Controller
 {
+use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     protected $service;
 
     protected $orderToCustInvoiceService;
@@ -58,6 +60,10 @@ class OrderController extends Controller
     public function store(OrderStoreRequest $request)
     {
         $this->authorize('create', Order::class);
+
+        if ($response = $this->ensurePeriodOpenForDate($request->input('created_at') ?? now(), 'created_at')) {
+            return $response;
+        }
 
         $model = DB::transaction(function () use ($request) {
             $validated = $request->validated();
@@ -135,6 +141,11 @@ class OrderController extends Controller
             $quotation = Quotation::with(['quoteItems', 'order'])
                 ->findOrFail($request->input('quotation_id'));
 
+            // The generated order inherits the quotation's date.
+            if ($response = $this->ensureModelPeriodOpen($quotation)) {
+                return $response;
+            }
+
             // Only allow generation from approved quotations without an existing order
             if ($quotation->status !== 'approved') {
                 return response()->json([
@@ -196,6 +207,14 @@ class OrderController extends Controller
                     'status' => ['This order is approved and locked for editing.'],
                 ],
             ], 422);
+        }
+
+        // Period locks: stored order date and requested date must be open.
+        if ($response = $this->ensureModelPeriodOpen($order)) {
+            return $response;
+        }
+        if ($response = $this->ensurePeriodOpenForDate($request->input('created_at') ?? $order->created_at, 'created_at')) {
+            return $response;
         }
 
         $updated = DB::transaction(function () use ($request, $order) {
@@ -301,6 +320,11 @@ class OrderController extends Controller
             ], 422);
         }
 
+        // The invoice inherits the order's date: both periods matter.
+        if ($response = $this->ensureModelPeriodOpen($order)) {
+            return $response;
+        }
+
         $overrides = $request->only([
             'title',
             'description',
@@ -334,6 +358,10 @@ class OrderController extends Controller
     public function destroy(Order $order)
     {
         $this->authorize('delete', $order);
+
+        if ($response = $this->ensureModelPeriodOpen($order)) {
+            return $response;
+        }
 
         return DB::transaction(function () use ($order) {
             // Prevent deleting orders that have customer invoices
@@ -476,6 +504,11 @@ class OrderController extends Controller
                     'status' => ['This order is not currently approved.'],
                 ],
             ], 422);
+        }
+
+        // Unapproval reverses the order's invoices/postings: both months matter.
+        if ($response = $this->ensureModelPeriodOpen($order)) {
+            return $response;
         }
 
         $updated = DB::transaction(function () use ($order, $request) {

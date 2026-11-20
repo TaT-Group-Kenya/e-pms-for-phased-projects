@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Storage;
 
 class QuotationController extends Controller
 {
+    use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     protected $service;
 
     public function __construct(QuotationService $service)
@@ -52,6 +54,10 @@ class QuotationController extends Controller
         $validated['created_at'] = $validated['creationDate'] ?? now();
         $validated['quotation_number'] = $quotationNumber;
         $validated['description'] = $validated['description'] ?? $validated['title'];
+
+        if ($response = $this->ensurePeriodOpenForDate($validated['created_at'], 'creationDate')) {
+            return $response;
+        }
 
         $model = $this->service->create($validated);
         $model->setRelation('shipContainer', $model->shipContainer()->with('numbers')->first());
@@ -83,6 +89,15 @@ class QuotationController extends Controller
         $validated = $request->validated();
         $validated['updated_by'] = Auth::id();
         $validated['created_at'] = $validated['created_at'] ?? $quotation->created_at;
+
+        // Period locks: the stored date (editing an old document) and the
+        // new date (moving a document) must both be in open months.
+        if ($response = $this->ensureModelPeriodOpen($quotation)) {
+            return $response;
+        }
+        if ($response = $this->ensurePeriodOpenForDate($validated['created_at'], 'creationDate')) {
+            return $response;
+        }
 
         $originalStatus = $quotation->status;
         $originalCustomerId = $quotation->customer_id;
@@ -230,6 +245,10 @@ class QuotationController extends Controller
                     'status' => ['Quotation must be in draft status to be deleted.'],
                 ],
             ], 422);
+        }
+
+        if ($response = $this->ensureModelPeriodOpen($quotation)) {
+            return $response;
         }
 
         $this->service->delete($quotation->id, Auth::id());

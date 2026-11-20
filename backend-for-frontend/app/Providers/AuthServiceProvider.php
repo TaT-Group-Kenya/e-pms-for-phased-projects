@@ -66,6 +66,7 @@ use App\Policies\{
     PdcReceivedCustomerPolicy,
     PdcIssuedCompanyPolicy,
     ShipContainerPolicy,
+    AccountingPeriodPolicy,
 };
 
 class AuthServiceProvider extends ServiceProvider
@@ -134,6 +135,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\PdcReceivedCustomer::class => PdcReceivedCustomerPolicy::class,
         \App\Models\PdcIssuedCompany::class => PdcIssuedCompanyPolicy::class,
         \App\Models\ShipContainer::class => ShipContainerPolicy::class,
+        \App\Models\AccountingPeriod::class => AccountingPeriodPolicy::class,
     ];
 
     public function register(): void

@@ -315,6 +315,12 @@ const SECTIONS: SidebarSection[] = [
         matchStrategy: "startsWith",
         requiredRoles: ["ROLE_VIEW_TRANSACTION"],
       },
+      {
+        label: "Accounting Periods",
+        href: "/finance/accounting-periods/",
+        matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_ACCOUNTING_PERIOD"],
+      },
     ],
   },
   {
@@ -323,6 +329,12 @@ const SECTIONS: SidebarSection[] = [
     icon: "bar_chart",
     group: "main",
     items: [
+      {
+        label: "Loans Report",
+        href: "/reports/loans-report",
+        matchStrategy: "exact",
+        requiredRoles: ["ROLE_VIEW_LOAN"],
+      },
       {
         label: "Orders Summary",
         href: "/reports/orders-summary",

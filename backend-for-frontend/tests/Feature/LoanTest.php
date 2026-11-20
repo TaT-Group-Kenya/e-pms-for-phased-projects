@@ -1065,7 +1065,10 @@ class LoanTest extends TestCase
         // tolerancing keeps the test honest without weakening the contract.
         $this->assertEqualsWithDelta(120.0, (float) $summary['total_interest'], 0.5);
         $this->assertEqualsWithDelta(620.0, (float) $summary['total_repayable'], 0.5);
-        $this->assertEqualsWithDelta(500.0, (float) $summary['loan_balance'], 0.01);
+        // Balance = repayable − repaid (0 repaid at creation).
+        $this->assertEqualsWithDelta(620.0, (float) $summary['loan_balance'], 0.5);
+        // Principal-only outstanding is retained for internal ops.
+        $this->assertEqualsWithDelta(500.0, (float) $summary['outstanding_balance'], 0.5);
         // Next due came from the schedule generated at creation.
         $this->assertSame('2026-05-01', $summary['next_due_date']);
         $this->assertEqualsWithDelta(17.22, (float) $summary['next_due_amount'], 0.01);
