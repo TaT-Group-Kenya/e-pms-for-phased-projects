@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
 import { ToastContainer } from "../../common/Toast";
+import PaginationFooter from "../../common/PaginationFooter";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal";
 import Can from "../../auth/Can";
 
@@ -44,6 +46,12 @@ interface User {
   roles?: SysRole[];
 }
 
+interface UserGroupAssignment {
+  id: number;
+  user_id: number;
+  sys_group_id: number;
+}
+
 interface PaginationData<T> {
   data: T[];
   current_page: number;
@@ -52,22 +60,38 @@ interface PaginationData<T> {
   last_page: number;
 }
 
-interface UserGroupAssignment {
-  id: number;
-  user_id: number;
-  sys_group_id: number;
-}
-
 const UsersTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken) as string | null;
   const { toasts, addToast, removeToast } = useToast();
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  // Server-side listing: pagination, debounced search and the category/active
+  // filters all live in useListQuery; this component keeps its CRUD modals.
+  const {
+    searchInput,
+    setSearchInput,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: users,
+    loading,
+    error,
+    meta,
+    refresh,
+  } = useListQuery<User>("/api/users/list", {
+    accessToken,
+    initialFilters: { category: "all" },
+    fixedParams: { with: "company,customer,groups" },
+    onError: (message) => addToast(message, "error"),
+  });
+
+  const categoryFilter = filters.category || "all";
+  const activeFilter = filters.is_active || "all";
+  const hasExtraFilters =
+    searchInput || categoryFilter !== "all" || activeFilter !== "all";
 
   // Create / edit state
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -102,65 +126,6 @@ const UsersTable: React.FC = () => {
   >([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
   const [savingGroups, setSavingGroups] = useState(false);
-
-  const [reloadKey, setReloadKey] = useState(0);
-
-  const perPage = 15;
-
-  // Fetch users
-  useEffect(() => {
-    if (!accessToken) {
-      setLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    const fetchUsers = async () => {
-      setLoading(true);
-      try {
-        const url = new URL(`/api/users/list`, window.location.origin);
-        url.searchParams.append("page", String(currentPage));
-        url.searchParams.append("per_page", String(perPage));
-        // Ask backend to include related groups
-        url.searchParams.append("with", "company,customer,groups");
-
-        const resp = await fetch(url.toString(), {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          signal: controller.signal,
-        });
-
-        if (controller.signal.aborted) return;
-
-        const data: PaginationData<User> = await resp.json();
-        if (!resp.ok) {
-          addToast("Failed to load users", "error");
-          setUsers([]);
-          return;
-        }
-
-        const list = data.data || (Array.isArray(data) ? (data as any) : []);
-        setUsers(list as User[]);
-        setTotalPages(data.last_page || 1);
-        setTotalCount(data.total || list.length || 0);
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        // eslint-disable-next-line no-console
-        console.error("Error fetching users", err);
-        addToast("Error loading users. Please refresh.", "error");
-        setUsers([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsers();
-
-    return () => controller.abort();
-  }, [accessToken, currentPage, perPage, addToast, reloadKey]);
 
   // Fetch companies & customers for dropdowns (once we have a token)
   useEffect(() => {
@@ -203,12 +168,6 @@ const UsersTable: React.FC = () => {
     loadLookups();
     return () => controller.abort();
   }, [accessToken]);
-
-  const handlePageClick = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
 
   const resetUserForm = () => {
     setEditingUser(null);
@@ -316,9 +275,8 @@ const UsersTable: React.FC = () => {
         "success"
       );
 
-      // Refresh list by going back to first page and bumping reload key
-      setCurrentPage(1);
-      setReloadKey((key) => key + 1);
+      // Refetch on the current page (list is server-paginated)
+      refresh();
       resetUserForm();
       setUserModalOpen(false);
     } catch (err) {
@@ -369,9 +327,8 @@ const UsersTable: React.FC = () => {
 
       addToast("User deleted successfully", "success");
       closeDeleteModal();
-      // Optimistic refresh
-      setUsers((prev) => prev.filter((u) => u.id !== deleteUserId));
-      setTotalCount((prev) => Math.max(prev - 1, 0));
+      // Refetch on the current page (list is server-paginated)
+      refresh();
     } catch (err: any) {
       // eslint-disable-next-line no-console
       console.error("Error deleting user", err);
@@ -489,17 +446,8 @@ const UsersTable: React.FC = () => {
 
       addToast("User groups updated", "success");
 
-      // Update local users state to reflect new groups
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === groupModalUser.id
-            ? {
-                ...u,
-                groups: allGroups.filter((g) => selectedGroupIds.includes(g.id)),
-              }
-            : u
-        )
-      );
+      // Refetch on the current page so groups/roles stay accurate
+      refresh();
 
       closeGroupModal();
     } catch (err) {
@@ -510,22 +458,6 @@ const UsersTable: React.FC = () => {
       setSavingGroups(false);
     }
   };
-
-  const filteredUsers = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return users;
-
-    return users.filter((u) => {
-      const fullName = `${u.first_name} ${u.middle_name || ""} ${u.last_name}`
-        .toLowerCase()
-        .trim();
-      return (
-        fullName.includes(term) ||
-        (u.email || "").toLowerCase().includes(term) ||
-        (u.category || "").toLowerCase().includes(term)
-      );
-    });
-  }, [users, searchTerm]);
 
   const renderGroupsAndRoles = (user: User) => {
     const groups = user.groups || [];
@@ -572,9 +504,6 @@ const UsersTable: React.FC = () => {
       </div>
     );
   };
-
-  const indexOfFirst = (currentPage - 1) * perPage + 1;
-  const indexOfLast = Math.min(currentPage * perPage, totalCount);
 
   return (
     <>
@@ -874,19 +803,51 @@ const UsersTable: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setFilter("category", e.target.value)}
+              className="bg-gray-50 dark:bg-[#111827] border border-gray-100 dark:border-[#1f2937] h-[38px] text-xs rounded-md px-2 text-black dark:text-white outline-0"
+            >
+              <option value="all">All types</option>
+              <option value="internal">Internal</option>
+              <option value="company">Company</option>
+              <option value="customer">Customer</option>
+            </select>
+
+            <select
+              value={activeFilter}
+              onChange={(e) => setFilter("is_active", e.target.value)}
+              className="bg-gray-50 dark:bg-[#111827] border border-gray-100 dark:border-[#1f2937] h-[38px] text-xs rounded-md px-2 text-black dark:text-white outline-0"
+            >
+              <option value="all">All statuses</option>
+              <option value="1">Active</option>
+              <option value="0">Inactive</option>
+            </select>
+
+            {hasExtraFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1 h-[38px] px-2 text-xs rounded-md border border-gray-100 dark:border-[#1f2937] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+                title="Clear all filters"
+              >
+                <span className="material-symbols-outlined text-[16px]">
+                  filter_alt_off
+                </span>
+                Clear
+              </button>
+            )}
+
             <div className="relative flex-1 md:flex-none md:w-[260px]">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
                 search
               </span>
               <input
                 type="text"
-                placeholder="Search users..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
+                placeholder="Search users (name, email)..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="bg-gray-50 dark:bg-[#111827] border border-gray-100 dark:border-[#1f2937] h-[38px] rounded-md w-full text-xs text-black dark:text-white pl-9 pr-3 focus:outline-none focus:ring-1 focus:ring-primary-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
@@ -906,15 +867,19 @@ const UsersTable: React.FC = () => {
 
         <div className="trezo-card-body p-5 overflow-x-auto">
           {loading ? (
-            <div className="py-10 text-center text-gray-500 dark:text-gray-400 text-sm">
-              Loading users...
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="py-10 text-center text-gray-500 dark:text-gray-400 text-sm">
-              No users found.
+            <div className="space-y-[10px]">
+              {[...Array(5)].map((_, index) => (
+                <div
+                  key={index}
+                  className="h-[56px] bg-gray-100 dark:bg-gray-700 rounded-md animate-pulse"
+                ></div>
+              ))}
             </div>
           ) : (
             <>
+              {error && (
+                <div className="mb-3 text-sm text-danger-500">{error}</div>
+              )}
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-[#1f2937] text-xs text-gray-500 dark:text-gray-400">
@@ -926,7 +891,19 @@ const UsersTable: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user) => (
+                  {users.length === 0 && !error ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                      >
+                        {hasExtraFilters
+                          ? "No users match your criteria"
+                          : "No users found."}
+                      </td>
+                    </tr>
+                  ) : (
+                    users.map((user) => (
                     <tr
                       key={user.id}
                       className="border-b border-gray-50 dark:border-[#111827] last:border-b-0 hover:bg-gray-50/60 dark:hover:bg-[#111827] transition-colors"
@@ -1003,42 +980,19 @@ const UsersTable: React.FC = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                  )}
                 </tbody>
               </table>
 
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mt-4 text-xs text-gray-500 dark:text-gray-400">
-                <div>
-                  Showing <span className="font-medium text-black dark:text-white">{indexOfFirst}</span>–
-                  <span className="font-medium text-black dark:text-white">{indexOfLast}</span> of
-                  <span className="font-medium text-black dark:text-white"> {totalCount}</span> users
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handlePageClick(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="h-7 w-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-[#1f2937] text-gray-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      chevron_left
-                    </span>
-                  </button>
-                  <span className="px-2">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handlePageClick(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="h-7 w-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-[#1f2937] text-gray-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      chevron_right
-                    </span>
-                  </button>
-                </div>
-              </div>
+              <PaginationFooter
+                meta={meta}
+                page={page}
+                perPage={perPage}
+                loading={loading}
+                onPageChange={setPage}
+                onPerPageChange={changePerPage}
+              />
             </>
           )}
         </div>

@@ -4,7 +4,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
 import { ToastContainer } from "../../common/Toast";
+import PaginationFooter from "../../common/PaginationFooter";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal";
 
 interface SysRole {
@@ -38,13 +40,27 @@ const UserGroupsTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken) as string | null;
   const { toasts, addToast, removeToast } = useToast();
 
-  const [groups, setGroups] = useState<SysGroup[]>([]);
+  // Server-side listing: pagination and debounced search live in useListQuery.
+  const {
+    searchInput,
+    setSearchInput,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: groups,
+    loading,
+    error,
+    meta,
+    refresh,
+  } = useListQuery<SysGroup>("/api/sys-groups/list", {
+    accessToken,
+    fixedParams: { with: "roles" },
+    onError: (message) => addToast(message, "error"),
+  });
+
+  // All roles for the assignment modal (small reference list, loaded once)
   const [roles, setRoles] = useState<SysRole[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
 
   // CRUD state
   const [editingGroup, setEditingGroup] = useState<SysGroup | null>(null);
@@ -71,62 +87,32 @@ const UserGroupsTable: React.FC = () => {
 
   const [roleSearchTerm, setRoleSearchTerm] = useState("");
 
-  const [reloadKey, setReloadKey] = useState(0);
-
-  const perPage = 15;
-
   useEffect(() => {
     if (!accessToken) {
-      setLoading(false);
       return;
     }
 
     const controller = new AbortController();
 
-    const fetchData = async () => {
-      setLoading(true);
+    const loadRoles = async () => {
+      // All roles for assignment UI (small reference list, capped fetch)
       try {
-        // Groups with roles count info
-        const groupUrl = new URL(`/api/sys-groups/list`, window.location.origin);
-        groupUrl.searchParams.append("page", String(currentPage));
-        groupUrl.searchParams.append("per_page", String(perPage));
-        groupUrl.searchParams.append("with", "roles");
-
-        const gResp = await fetch(groupUrl.toString(), {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          signal: controller.signal,
-        });
-        const gData: PaginationData<SysGroup> = await gResp.json();
-        const list = gData.data || [];
-        setGroups(list as SysGroup[]);
-        setTotalPages(gData.last_page || 1);
-        setTotalCount(gData.total || list.length || 0);
-
-        // All roles for assignment UI
         const rResp = await fetch(
           `/api/sys-roles/list?page=1&per_page=500`,
-          { headers: { Authorization: `Bearer ${accessToken}` } }
+          { headers: { Authorization: `Bearer ${accessToken}` }, signal: controller.signal }
         );
         const rData: PaginationData<SysRole> = await rResp.json();
         setRoles((rData.data || []) as SysRole[]);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         // eslint-disable-next-line no-console
-        console.error("Error loading groups/roles", err);
-        addToast("Failed to load groups", "error");
-        setGroups([]);
-      } finally {
-        setLoading(false);
+        console.error("Error loading roles", err);
       }
     };
 
-    fetchData();
+    loadRoles();
     return () => controller.abort();
-  }, [accessToken, currentPage, perPage, addToast, reloadKey]);
-
-  const handlePageClick = (page: number) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
-  };
+  }, [accessToken]);
 
   const resetForm = () => {
     setEditingGroup(null);
@@ -180,7 +166,8 @@ const UserGroupsTable: React.FC = () => {
         "success"
       );
 
-      setCurrentPage(1);
+      // Refetch on the current page (list is server-paginated)
+      refresh();
       resetForm();
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -226,9 +213,9 @@ const UserGroupsTable: React.FC = () => {
       }
 
       addToast("Group deleted", "success");
-      setGroups((prev) => prev.filter((g) => g.id !== deleteGroupId));
-      setTotalCount((prev) => Math.max(prev - 1, 0));
       closeDeleteModal();
+      // Refetch on the current page (list is server-paginated)
+      refresh();
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("Error deleting group", err);
@@ -324,7 +311,7 @@ const UserGroupsTable: React.FC = () => {
 
       addToast("Group roles updated", "success");
       // Refresh groups so roles count stays accurate
-      setReloadKey((key) => key + 1);
+      refresh();
       closeRoleModal();
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -334,17 +321,6 @@ const UserGroupsTable: React.FC = () => {
       setSavingRoles(false);
     }
   };
-
-  const filteredGroups = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return groups;
-    return groups.filter((g) =>
-      `${g.name} ${g.description || ""}`.toLowerCase().includes(term)
-    );
-  }, [groups, searchTerm]);
-
-  const indexOfFirst = (currentPage - 1) * perPage + 1;
-  const indexOfLast = Math.min(currentPage * perPage, totalCount);
 
   const roleCountForGroup = (groupId: number) =>
     groupRoleAssignments.filter((a) => a.group_id === groupId).length;
@@ -485,15 +461,24 @@ const UserGroupsTable: React.FC = () => {
               </span>
               <input
                 type="text"
-                placeholder="Search groups..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
+                placeholder="Search groups (name, description)..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="bg-gray-50 dark:bg-[#111827] border border-gray-100 dark:border-[#1f2937] h-[36px] rounded-md w-full text-xs text-black dark:text-white pl-9 pr-3 focus:outline-none focus:ring-1 focus:ring-primary-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => setSearchInput("")}
+                className="h-[36px] px-2 text-xs rounded-md border border-gray-100 dark:border-[#1f2937] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+                title="Clear search"
+              >
+                <span className="material-symbols-outlined text-[16px]">
+                  filter_alt_off
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -556,15 +541,19 @@ const UserGroupsTable: React.FC = () => {
           </div>
 
           {loading ? (
-            <div className="py-8 text-center text-xs text-gray-500 dark:text-gray-400">
-              Loading groups...
-            </div>
-          ) : filteredGroups.length === 0 ? (
-            <div className="py-8 text-center text-xs text-gray-500 dark:text-gray-400">
-              No groups defined yet.
+            <div className="space-y-[10px]">
+              {[...Array(5)].map((_, index) => (
+                <div
+                  key={index}
+                  className="h-[52px] bg-gray-100 dark:bg-gray-700 rounded-md animate-pulse"
+                ></div>
+              ))}
             </div>
           ) : (
             <>
+              {error && (
+                <div className="mb-3 text-sm text-danger-500">{error}</div>
+              )}
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-[#1f2937] text-xs text-gray-500 dark:text-gray-400">
@@ -575,7 +564,19 @@ const UserGroupsTable: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredGroups.map((group) => (
+                  {groups.length === 0 && !error ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                      >
+                        {searchInput
+                          ? "No groups match your search."
+                          : "No groups defined yet."}
+                      </td>
+                    </tr>
+                  ) : (
+                    groups.map((group) => (
                     <tr
                       key={group.id}
                       className="border-b border-gray-50 dark:border-[#111827] last:border-b-0 hover:bg-gray-50/60 dark:hover:bg-[#111827] transition-colors"
@@ -633,42 +634,19 @@ const UserGroupsTable: React.FC = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                  )}
                 </tbody>
               </table>
 
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mt-4 text-xs text-gray-500 dark:text-gray-400">
-                <div>
-                  Showing <span className="font-medium text-black dark:text-white">{indexOfFirst}</span>–
-                  <span className="font-medium text-black dark:text-white">{indexOfLast}</span> of
-                  <span className="font-medium text-black dark:text-white"> {totalCount}</span> groups
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handlePageClick(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="h-7 w-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-[#1f2937] text-gray-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      chevron_left
-                    </span>
-                  </button>
-                  <span className="px-2">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handlePageClick(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="h-7 w-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-[#1f2937] text-gray-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      chevron_right
-                    </span>
-                  </button>
-                </div>
-              </div>
+              <PaginationFooter
+                meta={meta}
+                page={page}
+                perPage={perPage}
+                loading={loading}
+                onPageChange={setPage}
+                onPerPageChange={changePerPage}
+              />
             </>
           )}
         </div>

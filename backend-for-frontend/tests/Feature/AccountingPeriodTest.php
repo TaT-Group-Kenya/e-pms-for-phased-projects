@@ -522,6 +522,72 @@ class AccountingPeriodTest extends TestCase
         $this->assertSame('November quote renamed', $quote->refresh()->title);
     }
 
+    /**
+     * A PAST month that has never been closed must keep accepting record
+     * modifications: create, edit, date-move and logical delete. The lock
+     * comes only from closing the month, not from the month being in the
+     * past.
+     */
+    public function test_past_but_open_month_allows_all_record_modifications(): void
+    {
+        $this->createQuotationsTable();
+        $service = $this->service();
+
+        $past = \Illuminate\Support\Carbon::now()->subMonths(2);
+        $this->assertSame('open', $service->ensureForDate($past->format('Y-m-15'))->status);
+
+        // Create dated in the past-open month
+        $quote = Quotation::create([
+            'title' => 'Past open quote',
+            'valid_until_date' => $past->format('Y-m-25'),
+            'created_at' => $past->format('Y-m-10 10:00:00'),
+        ]);
+        $this->assertNotNull($quote->id);
+
+        // Edit it
+        $quote->update(['title' => 'Past open quote (edited)']);
+        $this->assertSame('Past open quote (edited)', $quote->refresh()->title);
+
+        // Move its date within the same past-open month
+        $quote->update(['created_at' => $past->format('Y-m-20 10:00:00')]);
+        $this->assertTrue($quote->refresh()->created_at->isSameMonth($past));
+
+        // Logical delete
+        $quote->softDelete();
+        $this->assertTrue((bool) $quote->refresh()->is_deleted);
+    }
+
+    /**
+     * The moment that past month is closed, the same edits must be blocked.
+     */
+    public function test_closing_the_past_month_locks_record_modifications(): void
+    {
+        $this->createQuotationsTable();
+        $service = $this->service();
+
+        $past = \Illuminate\Support\Carbon::now()->subMonths(2);
+        \Illuminate\Support\Carbon::setTestNow($past->copy()->endOfMonth()->addDay());
+
+        try {
+            $period = $service->ensureForDate($past->format('Y-m-15'));
+            $service->closeMonth($period, 128, 1);
+
+            $quote = null;
+            PeriodLock::withoutChecking(function () use (&$quote, $past) {
+                $quote = Quotation::create([
+                    'title' => 'Past closed quote',
+                    'valid_until_date' => $past->format('Y-m-25'),
+                    'created_at' => $past->format('Y-m-10 10:00:00'),
+                ]);
+            });
+
+            $this->expectException(\App\Exceptions\PeriodLockedException::class);
+            $quote->update(['title' => 'should fail']);
+        } finally {
+            \Illuminate\Support\Carbon::setTestNow();
+        }
+    }
+
     // ---------------------------------------------------------------
     // Ancestor sync
     // ---------------------------------------------------------------
@@ -667,6 +733,48 @@ class AccountingPeriodTest extends TestCase
 
         $this->assertCount(12, $months);
         $this->assertSame(17, AccountingPeriod::count()); // full grid
+    }
+
+    public function test_next_year_grid_bootstraps_when_fetching_during_december(): void
+    {
+        $service = $this->service();
+        $year = (int) now()->year;
+
+        AccountingPeriod::query()->delete();
+
+        // Travel to Dec 15 of the current year: fetching periods must
+        // materialise both the current and the NEXT year's 12 months.
+        \Carbon\Carbon::setTestNow(\Carbon\Carbon::create($year, 12, 15, 12, 0, 0));
+        try {
+            $service->monthStatuses($year);
+
+            $this->assertSame(17, AccountingPeriod::where('fiscal_year', $year)->count());
+            $this->assertSame(17, AccountingPeriod::where('fiscal_year', $year + 1)->count());
+            $this->assertTrue(
+                AccountingPeriod::where('period_type', 'month')
+                    ->where('fiscal_year', $year + 1)
+                    ->where('month', 1)
+                    ->exists()
+            );
+        } finally {
+            \Carbon\Carbon::setTestNow();
+        }
+    }
+
+    public function test_closing_next_year_january_still_blocked_in_december(): void
+    {
+        $service = $this->service();
+        $year = (int) now()->year;
+
+        \Carbon\Carbon::setTestNow(\Carbon\Carbon::create($year, 12, 15, 12, 0, 0));
+        try {
+            $period = $service->ensureForDate(($year + 1).'-01-15');
+
+            $this->expectException(\App\Exceptions\PeriodCloseNotAllowedException::class);
+            $service->closeMonth($period, 128, 1);
+        } finally {
+            \Carbon\Carbon::setTestNow();
+        }
     }
 
     private function futureYear(): int

@@ -315,6 +315,55 @@ class AccountingPeriodApiTest extends TestCase
         $this->assertSame('open', $period->fresh()->status);
     }
 
+    public function test_close_rejects_current_month(): void
+    {
+        $this->actingAs($this->userWithRoles(['ROLE_CLOSE_ACCOUNTING_PERIOD', 'ROLE_VIEW_ACCOUNTING_PERIOD']), 'sanctum');
+
+        $now = \Carbon\Carbon::now();
+        $period = $this->periodFor($now->format('Y-m-15'));
+
+        $response = $this->postJson("/e-pms/api/v1/accounting-periods/{$period->id}/close", ['forex_rate' => 128]);
+        $response->assertStatus(422);
+        $this->assertSame('PeriodNotCloseable', $response->json('error'));
+        $this->assertSame('open', $period->fresh()->status);
+    }
+
+    public function test_close_rejects_future_month(): void
+    {
+        $this->actingAs($this->userWithRoles(['ROLE_CLOSE_ACCOUNTING_PERIOD', 'ROLE_VIEW_ACCOUNTING_PERIOD']), 'sanctum');
+
+        $now = \Carbon\Carbon::now();
+        $future = $now->copy()->addMonth()->startOfMonth();
+        $period = $this->periodFor($future->format('Y-m-15'));
+
+        $response = $this->postJson("/e-pms/api/v1/accounting-periods/{$period->id}/close", ['forex_rate' => 128]);
+        $response->assertStatus(422);
+        $this->assertSame('open', $period->fresh()->status);
+    }
+
+    public function test_index_auto_creates_current_year_grid(): void
+    {
+        $this->actingAs($this->userWithRoles(['ROLE_VIEW_ACCOUNTING_PERIOD']), 'sanctum');
+
+        // The test schema may hold only the single period created in setUp
+        // helpers; the index endpoint for the current year must materialise
+        // all 12 months.
+        $response = $this->getJson('/e-pms/api/v1/accounting-periods?fiscal_year=' . now()->year);
+        $response->assertOk();
+        $this->assertCount(12, $response->json('months'));
+
+        // Future months are flaggable: the current month is never closable.
+        $months = $response->json('months');
+        $currentMonth = collect($months)->firstWhere('month', (int) now()->format('n'));
+        $this->assertNotNull($currentMonth);
+        $this->assertFalse($currentMonth['closable']);
+
+        $pastMonth = collect($months)->firstWhere('month', 1);
+        if ($pastMonth && (int) now()->format('n') > 1) {
+            $this->assertTrue($pastMonth['closable']);
+        }
+    }
+
     public function test_close_creates_snapshot_and_logs(): void
     {
         $this->actingAs($this->userWithRoles(['ROLE_CLOSE_ACCOUNTING_PERIOD', 'ROLE_VIEW_ACCOUNTING_PERIOD']), 'sanctum');

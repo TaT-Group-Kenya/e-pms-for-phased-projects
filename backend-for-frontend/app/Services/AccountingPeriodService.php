@@ -14,12 +14,20 @@ use Illuminate\Support\Facades\DB;
 class AccountingPeriodService
 {
     /**
-     * Future months are auto-created on period fetch (see ensureCurrentYear),
-     * so closing always operates on a complete year grid.
+     * Bootstrap period rows around year boundaries, without a cron:
+     *  - always materialises the current year's 12-month grid;
+     *  - in December (year nears end) also pre-creates the next year's grid
+     *    so January postings land in a ready-made period.
      */
     public function ensureCurrentYear(?int $userId = null): void
     {
-        $this->ensureYear(now()->year, $userId);
+        $now = now();
+
+        $this->ensureYear($now->year, $userId);
+
+        if ((int) $now->month === 12) {
+            $this->ensureYear($now->year + 1, $userId);
+        }
     }
 
     /**
@@ -450,7 +458,11 @@ class AccountingPeriodService
             return;
         }
 
-        $allClosed = $children->isNotEmpty() && $children->every(fn ($c) => $c->isClosed());
+        // Rollups only close when EVERY child month exists and is closed —
+        // a sparse grid (fewer months created) must never close its year.
+        $expected = $key['period_type'] === AccountingPeriod::TYPE_YEAR ? 12 : 3;
+        $allClosed = $children->count() === $expected && $children->every(fn ($c) => $c->isClosed());
+
         $next = $allClosed ? AccountingPeriod::STATUS_CLOSED : AccountingPeriod::STATUS_OPEN;
 
         if ($ancestor->status !== $next) {

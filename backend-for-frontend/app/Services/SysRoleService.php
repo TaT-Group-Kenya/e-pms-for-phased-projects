@@ -3,9 +3,23 @@
 namespace App\Services;
 
 use App\Models\SysRole;
+use App\Services\Concerns\ListQuery;
 
 class SysRoleService
 {
+    use ListQuery;
+
+    /** Columns matched by the free-text `search` parameter. */
+    protected array $listSearchable = [
+        'name',
+        'description',
+    ];
+
+    /** Columns the request may filter on with equality. */
+    protected array $listFilterable = [
+        'name',
+    ];
+
     public function index(
         array $filters = [],
         int $perPage = 15,
@@ -13,31 +27,15 @@ class SysRoleService
         int $offset = 0,
         array $with = []
     ) {
-        // optimized query: apply eager loading and simple filters
         $query = SysRole::query();
         if (! empty($with)) {
             $query->with($with);
         }
-        // Handle soft-delete visibility flags
-        $withDeleted = filter_var($filters['with_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
-        $onlyDeleted = filter_var($filters['only_deleted'] ?? null, FILTER_VALIDATE_BOOLEAN);
 
-        unset($filters['with_deleted'], $filters['only_deleted']);
+        // Logical-deletion visibility flags
+        $query = $this->applyLogicalDeletion($query, $filters);
 
-        if ($onlyDeleted) {
-            $query->onlyDeleted();
-        } elseif ($withDeleted) {
-            $query->withDeleted();
-        }
-        foreach ($filters as $key => $value) {
-            $query->where($key, $value);
-        }
-        $query->orderByDesc('id');
-
-        // Calculate offset if page is provided, otherwise use explicit offset
-        $calculatedOffset = $page > 1 ? ($page - 1) * $perPage + $offset : $offset;
-
-        return $query->paginate($perPage, ['*'], 'page', $page);
+        return $this->paginateList($query, $filters, $perPage, $page, 'name');
     }
 
     public function find(int $id, array $with = [])
