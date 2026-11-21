@@ -110,17 +110,8 @@ class OrderToCustInvoiceService
 
             $invoice->save();
 
-            // Open the invoice's full tax position (DR) in the tax ledger.
-            \App\Services\TaxTransactionService::openDocumentTax(
-                'cust_invoice',
-                (int) $invoice->id,
-                (float) $invoice->tax_amount,
-                $invoice->currency,
-                (float) $forexRate,
-                auth()->id(),
-                'Full tax opened on invoice '.$invoiceNumber,
-                \App\Services\TaxTransactionService::DIRECTION_COLLECTED
-            );
+            // The tax ledger entry (VAT_OUT) is written when the invoice is
+            // marked sent — the position is declared, not at draft creation.
 
             // Create corresponding customer ledger debit entry for the invoice
             $transactionNumber = $invoiceNumber; // align ledger entry number with invoice number

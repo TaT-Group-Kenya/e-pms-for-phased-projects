@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Project;
 use App\Models\Quotation;
+use App\Models\ShipContainer;
 use App\Services\Concerns\ListQuery;
 
 class QuotationService
@@ -84,7 +85,21 @@ class QuotationService
             }
         }
 
+        $previousContainerId = $model->ship_container_id;
+
         $model->update($data);
+
+        // A container that left the quotation is quoteable again unless
+        // another active quotation still holds it.
+        if ($previousContainerId && (int) $previousContainerId !== (int) ($model->ship_container_id ?? 0)) {
+            ShipContainer::where('id', $previousContainerId)
+                ->where('quoted', true)
+                ->whereDoesntHave('quotation', function ($query) {
+                    $query->where('is_deleted', false);
+                })
+                ->update(['quoted' => false]);
+        }
+
         if (! empty($model->ship_container_id)) {
             $model->shipContainer()->update(['quoted' => true]);
         }
@@ -96,6 +111,19 @@ class QuotationService
     {
         $model = Quotation::findOrFail($id);
 
-        return $model->softDelete($deletedBy);
+        $result = $model->softDelete($deletedBy);
+
+        // Deleting a quotation frees its container for new quotations unless
+        // another active quotation still holds it.
+        if ($model->ship_container_id && $result) {
+            ShipContainer::where('id', (int) $model->ship_container_id)
+                ->where('quoted', true)
+                ->whereDoesntHave('quotation', function ($query) {
+                    $query->where('is_deleted', false);
+                })
+                ->update(['quoted' => false]);
+        }
+
+        return $result;
     }
 }

@@ -2,20 +2,21 @@
 
 namespace App\Services;
 
+use App\Models\Account;
 use App\Models\CustDebitNote;
 use App\Models\CustDebitNotePayment;
 use App\Models\CustInvoice;
-use App\Models\CustPayment;
-use App\Models\Account;
 use App\Models\CustomerTransactionsLedger;
+use App\Models\CustPayment;
 use App\Models\PdcReceivedCustomer;
-use Illuminate\Support\Facades\DB;
+use App\Services\Concerns\ListQuery;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CustDebitNoteService
 {
-    use \App\Services\Concerns\ListQuery;
+    use ListQuery;
 
     /** Columns matched by the free-text `search` parameter. */
     protected array $listSearchable = [
@@ -113,6 +114,12 @@ class CustDebitNoteService
 
             if ($targetStatus === 'raised') {
                 $this->postToLedger($note, $updatedBy);
+
+                // Raised notes declare their output VAT.
+                TaxTransactionService::syncDebitNotePosition($note);
+            } elseif ($targetStatus === 'draft') {
+                // Falling back to draft withdraws the declared VAT.
+                TaxTransactionService::syncDebitNotePosition($note);
             }
 
             return $note->fresh(['invoice.customer', 'invoice.project', 'items', 'documents']);
@@ -122,12 +129,17 @@ class CustDebitNoteService
     public function delete(int $id, ?int $deletedBy = null): bool
     {
         return DB::transaction(function () use ($id, $deletedBy) {
-            $note = CustDebitNote::whereKey($id)->lockForUpdate()->firstOrFail();
+            $note = CustDebitNote::withDeleted()->whereKey($id)->lockForUpdate()->firstOrFail();
             if ($note->status === 'raised') {
                 throw ValidationException::withMessages(['status' => 'Raised debit notes cannot be deleted.']);
             }
 
-            return $note->softDelete($deletedBy);
+            $result = $note->softDelete($deletedBy);
+
+            // Any tax position (e.g. previously raised) must be withdrawn.
+            TaxTransactionService::syncDebitNotePosition($note);
+
+            return $result;
         });
     }
 

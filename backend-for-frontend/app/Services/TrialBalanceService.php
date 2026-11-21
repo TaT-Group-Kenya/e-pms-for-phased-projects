@@ -3,77 +3,60 @@
 namespace App\Services;
 
 use App\Models\ChartOfAccount;
+use App\Models\Loan;
+use App\Models\LoanSchedule;
+use App\Models\TaxTransaction;
 use App\Models\TrialBalanceRun;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use InvalidArgumentException;
 
+/**
+ * Trial Balance — a balance-sheet style snapshot as at a date, in KES,
+ * translated with the recorded rates on finance documents (invoice forex
+ * rates, loan booked rates, payment rates) and the run rate as a fallback
+ * for records that carry no rate of their own (office expenses, tax run
+ * rate). The rate is never hardcoded into the report.
+ *
+ * Every economic event posts paired rows so the run balances by
+ * construction:
+ *
+ *  sales:      AR (gross outstanding, DR) vs Sales Revenue (net, CR)
+ *              vs Sales Tax Payable (VAT part)   — the three wash.
+ *  purchases:  AP (gross outstanding, CR) vs COGS (net, DR)
+ *              vs the same Sales Tax line        — again the wash.
+ *  capital:    Cash (DR) vs Owners Capital (CR) for the opening balances.
+ *
+ * Sections & sides:
+ *  Liabilities (CR): AP, Expenses Payable, Loans Payable, Interest
+ *    Payable, Sales Tax Payable (only when the company owes KRA), tax
+ *    credit notes held for offsetting.
+ *  Assets (DR): Cash, AR, prepayments for tax credit notes.
+ *  Equity (CR): Owners Capital (opening-balance topups).
+ *  Revenue (CR): sales nets. Expenses (DR): COGS, Expenses, Interest.
+ *
+ * Sales Tax Payable flips sides on sign: net VAT (output − input) >= 0 is
+ * a credit (owed to KRA); negative is a debit (KRA owes back / offsets
+ * future filings).
+ *
+ * Immutability: each run is a new stored snapshot with its lines; history
+ * stays auditable.
+ */
 class TrialBalanceService
 {
-    /**
-     * Generate a trial-balance snapshot as of a date, translated at a
-     * user-entered USD->KES rate. Immutable once stored: reruns create a
-     * new snapshot so history stays auditable.
-     *
-     * Double-entry model — every posting produces TWO lines (one debit,
-     * one credit) so total debits always equal total credits:
-     *
-     *  transactions table (cash/loan/expense movements):
-     *    topup                DEBIT asset 1000 (cash in) | CREDIT 3000 equity
-     *      - loan_disbursement counterpart:            | CREDIT 2000 loan
-     *      - internal transfer: DEBIT target 1000       | CREDIT source 1000
-     *    expense/interest     CREDIT asset 1000 (cash out) | DEBIT 5000
-     *    loan_principal       CREDIT asset 1000            | DEBIT 2000
-     *
-     *  customer ledger (sales accrual):
-     *    invoice postings     CREDIT 4000 revenue          | DEBIT 1000 AR
-     *    receipt postings     DEBIT 1000 cash in           | CREDIT 1000 AR
-     *
-     *  company ledger (purchases accrual):
-     *    invoice postings     DEBIT 5000 expense           | CREDIT 2000 AP
-     *    payment postings     DEBIT 2000 AP                | CREDIT 1000 cash
-     *
-     *  tax ledger:
-     *    collected (2000)     CREDIT 2000                  | DEBIT 1000 tax recoverable
-     *    paid (1000)          DEBIT 1000                   | CREDIT 2000
-     *
-     * Loan outstanding, tax position and AR/AP balances are emergent from
-     * these legs — no separate valuation lines, no double counting.
-     *
-     * @param  array{as_at_date: string, forex_rate: float|int|string, created_by?: ?int}  $data
-    /**
-     * Trial Balance v2 — balance-sheet style, KES only.
-     *
-     *  1. Cash/Bank (DR): sum of actual balances of chart-1000 accounts as
-     *     at the run date. USD accounts translate at the run rate; KES pass
-     *     through; legacy currencies stay untranslated. Not a running
-     *     ledger — it is the bank position "as at now" (balances live on
-     *     the accounts table).
-     *
-     *  2. Accounts Payable (CR): sum of unpaid vendor invoices — vendor
-     *     invoice totals (converted at each invoice's recorded rate) minus
-     *     payments settled against them.
-     *
-     *  3. Equity rows (Owners Capital / Retained Earnings) are dropped.
-     *
-     *  4. A single Tax Expense row (DR): Output VAT (tax on customer
-     *     invoices/debit notes) − Input VAT (tax on vendor invoices). It
-     *     stays on the debit side whether positive or negative.
-     *
-     * Because cash is a real balance rather than movement-derived, and the
-     * tax row is computed rather than posted, the TB is no longer expected
-     * to self-balance from double-entry alone — the 'balanced' figure is
-     * still reported honestly (it equals the difference), and a Balancing /
-     * Suspense entry is NOT auto-inserted.
-     *
-     * @param  array{as_at_date: string, forex_rate: float|int|string, created_by?: ?int}  $data
-     */
+    public function __construct(
+        protected LoanService $loanService,
+        protected CurrencyConversionService $conversionService
+    ) {}
+
     public function generate(array $data): TrialBalanceRun
     {
         return DB::transaction(function () use ($data) {
-            $asAt = $data['as_at_date'];
+            $asAt = (string) $data['as_at_date'];
             $fxRate = (float) $data['forex_rate'];
 
             if ($fxRate <= 0) {
-                throw new \InvalidArgumentException('Forex rate (USD to KES) must be greater than zero.');
+                throw new InvalidArgumentException('Forex rate (USD to KES) must be greater than zero.');
             }
 
             $charts = ChartOfAccount::all()->keyBy('code');
@@ -93,13 +76,26 @@ class TrialBalanceService
             ]);
 
             $buckets = [];
-            $post = function (string $key, int $chartId, string $category, string $name, float $amountKes, string $side) use (&$buckets) {
-                if (round($amountKes, 2) <= 0) {
-                    return;
-                }
+            $post = function (
+                string $key,
+                int $chartId,
+                string $category,
+                string $name,
+                float $amountKes,
+                string $side
+            ) use (&$buckets) {
+                $amountKes = round($amountKes, 2);
+
                 if (! isset($buckets[$key])) {
-                    $buckets[$key] = ['chart_id' => $chartId, 'category' => $category, 'name' => $name, 'debit' => 0.0, 'credit' => 0.0];
+                    $buckets[$key] = [
+                        'chart_id' => $chartId,
+                        'category' => $category,
+                        'name' => $name,
+                        'debit' => 0.0,
+                        'credit' => 0.0,
+                    ];
                 }
+
                 if ($side === 'debit') {
                     $buckets[$key]['debit'] = round($buckets[$key]['debit'] + $amountKes, 2);
                 } else {
@@ -107,309 +103,404 @@ class TrialBalanceService
                 }
             };
 
-            $toKes = function (float $amount, ?string $currency, $recordedRate = null): float {
+            /**
+             * Convert a document amount to KES: recorded document rate
+             * first, then the run rate for USD, then pass-through for
+             * anything else. $recordedRate is the document's own rate.
+             */
+            $toKes = function (float $amount, ?string $currency, ?float $recordedRate = null) use ($fxRate): float {
                 $currency = $currency ?? 'KES';
 
-                if ($currency === 'USD' && $recordedRate !== null && (float) $recordedRate > 0) {
-                    return round($amount * (float) $recordedRate, 2);
+                if ($currency === 'KES') {
+                    return round($amount, 2);
+                }
+
+                if ($recordedRate !== null && $recordedRate > 0) {
+                    return round($amount * $recordedRate, 2);
+                }
+
+                if ($currency === 'USD') {
+                    return round($amount * $fxRate, 2);
                 }
 
                 return round($amount, 2);
             };
 
-            /*
-             * 1) Cash/Bank balances (DR) — chart 1000 accounts only, as at
-             *    the run date.
-             */
-            $accounts = DB::table('accounts')
-                ->where('is_deleted', false)
-                ->whereIn('chart_of_account_id', [$assetsId])
-                ->get();
-
+            /* 1) Cash & Bank (DR): closing balances of chart-1000 accounts
+             *    as at the run date. USD accounts translate at the run rate
+             *    unless they carry a recorded rate; KES passes through. */
             $cashKes = 0.0;
-            foreach ($accounts as $account) {
-                $balance = (float) $account->balance;
+            foreach (DB::table('accounts')
+                ->where('is_deleted', false)
+                ->where('chart_of_account_id', $assetsId)
+                ->get(['id', 'name', 'currency', 'balance']) as $account) {
+                $cashKes = round($cashKes + $toKes((float) $account->balance, $account->currency), 2);
+            }
+            $post('cash', $assetsId, 'Assets', 'Cash/Bank Accounts', $cashKes, 'debit');
 
-                if ($account->currency === 'USD') {
-                    $cashKes = round($cashKes + $balance * $fxRate, 2);
-                } elseif ($account->currency === 'KES') {
-                    $cashKes = round($cashKes + $balance, 2);
-                } else {
-                    // Legacy stray currencies: untranslated.
-                    $cashKes = round($cashKes + $balance, 2);
+            /* 1b) Owners Capital (CR): the capital injected at account
+             *    creation, from the ledger — the topup entries recorded
+             *    with source_type=account_initial_balance. Foreign-amount
+             *    entries convert at the rate provided in the run (the
+             *    stored exchange rate on topups is a creation placeholder,
+             *    not a market rate). */
+            $capitalKes = 0.0;
+            if (Schema::hasTable('transactions')) {
+                foreach (DB::table('transactions')
+                    ->where('is_deleted', false)
+                    ->where('source_type', 'account_initial_balance')
+                    ->where('transaction_type', 'topup')
+                    ->whereDate('transaction_date', '<=', $asAt)
+                    ->get(['amount', 'transaction_currency']) as $row) {
+                    $capitalKes = round($capitalKes + $toKes((float) $row->amount, $row->transaction_currency), 2);
                 }
             }
+            $post('owners_capital', $liabilitiesId, 'Equity', 'Owners Capital', $capitalKes, 'credit');
 
-            $post('cash', $assetsId, 'Assets', 'Cash/Bank Accounts (Petty Cash & Bank Account Balances)', $cashKes, 'debit');
+            /* 2) Customer invoices (≤ as-at): gross outstanding → AR,
+             *    net (gross − VAT) → Sales Revenue, VAT → Sales Tax. */
 
-            /*
-             * 1b) Accounts Receivables — a single debit figure: the sum of
-             *     PENDING balances on customer invoices (invoice totals
-             *     converted via the invoice's own forex_rate, minus payments
-             *     received against them), as at the run date. Sales Revenue
-             *     still accrues from the customer ledger (net amounts), and
-             *     receipts boost the Cash row.
-             */
-            $arPending = 0.0;
+            $arOutstanding = 0.0;
+            $salesNet = 0.0;
+            $outputVat = 0.0;
 
-            $invoiceConvertedGlobal = DB::getSchemaBuilder()->hasColumn('cust_invoices', 'total_converted')
-                ? DB::table('cust_invoices')->pluck('total_converted', 'id')
-                : collect();
-
-            if (DB::getSchemaBuilder()->hasTable('cust_invoices')) {
-                $invoices = DB::table('cust_invoices')
+            if (Schema::hasTable('cust_invoices') && Schema::hasColumn('cust_invoices', 'forex_rate')) {
+                foreach (DB::table('cust_invoices')
                     ->where('is_deleted', false)
                     ->whereDate('created_at', '<=', $asAt)
-                    ->get(['id', 'invoice_number', 'total_converted', 'currency', 'total_amount']);
+                    ->where('status', '<>', 'draft')
+                    ->get(['id', 'invoice_number', 'total_amount', 'tax_amount', 'currency', 'forex_rate']) as $invoice) {
+                    $rate = (float) ($invoice->forex_rate ?: 0) ?: null;
+                    $grossKes = $toKes((float) $invoice->total_amount, $invoice->currency, $rate);
+                    $vatKes = $toKes((float) $invoice->tax_amount, $invoice->currency, $rate);
+                    $netKes = round($grossKes - $vatKes, 2);
 
-                foreach ($invoices as $invoice) {
-                    // Converted total at the invoice's own forex_rate.
-                    if (isset($invoiceConvertedGlobal[(int) $invoice->id])) {
-                        $totalKes = (float) $invoiceConvertedGlobal[(int) $invoice->id];
-                    } else {
-                        $totalKes = $toKes((float) $invoice->total_amount, $invoice->currency, null);
-                    }
-
-                    // Payments received against the invoice, at their
-                    // recorded rates, from the customer ledger.
-                    $paidKes = (float) DB::table('customer_transactions_ledger')
+                    // Received to date: from the customer ledger receipts at
+                    // their own recorded rates (payments may convert
+                    // differently from the invoice).
+                    $paidKes = 0.0;
+                    foreach (DB::table('customer_transactions_ledger')
                         ->where('is_deleted', false)
                         ->where('source_type', 'cust_invoice')
                         ->where('source_id', $invoice->id)
                         ->where('transaction_type', 'receipt')
                         ->whereDate('transaction_date', '<=', $asAt)
-                        ->get(['amount', 'exchange_rate', 'transaction_currency'])
-                        ->sum(fn ($r) => $toKes((float) $r->amount, $r->transaction_currency, $r->exchange_rate));
-
-                    $outstanding = max(round($totalKes - $paidKes, 2), 0);
-                    $arPending = round($arPending + min($outstanding, $totalKes), 2);
-                }
-            }
-
-            $post('ar', $assetsId, 'Assets', 'Accounts Receivables – (Customer Invoice balances)', $arPending, 'debit');
-
-            // Sales Revenue accrual (net) + Cash inflow from receipts.
-            $custLedger = DB::table('customer_transactions_ledger')
-                ->where('is_deleted', false)
-                ->whereDate('transaction_date', '<=', $asAt)
-                ->get(['id', 'transaction_type', 'source_type', 'source_id', 'amount', 'tax_amount', 'net_amount', 'exchange_rate', 'transaction_currency', 'narration']);
-
-            foreach ($custLedger as $row) {
-                $recorded = $row->exchange_rate;
-                $gross = $toKes((float) $row->amount, $row->transaction_currency, $recorded);
-
-                if ($row->transaction_type === 'invoice' && $row->source_type === 'cust_invoice'
-                    && isset($invoiceConvertedGlobal[$row->source_id])) {
-                    // Net revenue = invoice converted total − converted tax.
-                    $invoiceNetConverted = DB::getSchemaBuilder()->hasTable('cust_invoices')
-                        && DB::getSchemaBuilder()->hasColumn('cust_invoices', 'tax_converted')
-                        ? DB::table('cust_invoices')->selectRaw('id, total_converted - tax_converted AS net_converted')->pluck('net_converted', 'id')
-                        : collect();
-                    $net = (float) ($invoiceNetConverted[$row->source_id] ?? 0);
-                    $post('sales', $revenueId, 'Revenue', 'Sales Revenue', $net, 'credit');
-                    continue;
-                }
-
-                if ($row->transaction_type === 'invoice') {
-                    $net = $toKes((float) $row->net_amount, $row->transaction_currency, $recorded);
-                    $post('sales', $revenueId, 'Revenue', 'Sales Revenue', $net, 'credit');
-                } elseif ($row->transaction_type === 'receipt') {
-                    $post('cash', $assetsId, 'Assets', 'Cash/Bank Accounts (Petty Cash & Bank Account Balances)', $gross, 'debit');
-                }
-            }
-
-            /*
-             * 1c) Loan movements
-             * 1c) Loan movements: Loans Payable from the loan's booked KES
-             *     values (disbursement credit, principal debit), and interest
-             *     expense from repayment transactions.
-             */
-            $loanPrincipalKes = DB::getSchemaBuilder()->hasColumn('loans', 'principal_kes')
-                ? DB::table('loans')->pluck('principal_kes', 'id')
-                : collect();
-
-            $loanTxns = DB::table('transactions')
-                ->where('is_deleted', false)
-                ->whereDate('transaction_date', '<=', $asAt)
-                ->whereIn('source_type', ['loan_disbursement', 'loan_repayment'])
-                ->get(['id', 'transaction_type', 'source_type', 'source_id', 'amount', 'exchange_rate', 'transaction_currency', 'account_debit', 'narration']);
-
-            foreach ($loanTxns as $txn) {
-                $legKes = $toKes((float) $txn->amount, $txn->transaction_currency, $txn->exchange_rate);
-
-                if ($txn->source_type === 'loan_disbursement') {
-                    // Booked at the loan's own forex rate.
-                    $loanKes = (float) ($loanPrincipalKes[$txn->source_id] ?? 0);
-                    $post('loans', $liabilitiesId, 'Liabilities', 'Loans Payable', $loanKes, 'credit');
-                } elseif ($txn->transaction_type === 'loan_principal') {
-                    $post('loans', $liabilitiesId, 'Liabilities', 'Loans Payable', $legKes, 'debit');
-                } elseif ($txn->transaction_type === 'interest') {
-                    $post('interest', $expensesId, 'Expenses', 'Interest Expenses', $legKes, 'debit');
-                }
-            }
-
-            /*
-             * 2) Accounts Payable (CR) — unpaid vendor invoices as at the
-             *    run date: company invoice totals converted at each one's
-             *    recorded forex rate, less payments settled against them
-             *    (company payments reference invoices via invoice_id).
-             */
-            if (DB::getSchemaBuilder()->hasTable('company_invoices')) {
-                $apTotal = 0.0;
-
-                $invoices = DB::table('company_invoices')
-                    ->where('is_deleted', false)
-                    ->whereDate('created_at', '<=', $asAt)
-                    ->get(['id', 'total_amount', 'currency']);
-
-                foreach ($invoices as $invoice) {
-                    $invoiceKes = $toKes((float) $invoice->total_amount, $invoice->currency, null);
-
-                    $paid = (float) DB::table('company_payments')
-                        ->where('invoice_id', $invoice->id)
-                        ->where('is_deleted', false)
-                        ->sum('amount_paid');
-
-                    $outstanding = min(max(round($invoiceKes - $paid, 2), 0), $invoiceKes);
-                    $apTotal = round($apTotal + $outstanding, 2);
-                }
-
-                $post('ap', $liabilitiesId, 'Liabilities', 'Accounts Payable ( Supplier Invoices Balances)', $apTotal, 'credit');
-            }
-
-            /*
-             * 2b) Company ledger: expenses (net) on vendor bills, and cash
-             *     settlements. The tax component of vendor bills is NOT
-             *     posted here separately — Input VAT is captured inside the
-             *     single Tax Expense row above.
-             */
-            if (DB::getSchemaBuilder()->hasTable('company_transactions_ledger')) {
-                $coLedger = DB::table('company_transactions_ledger')
-                    ->where('is_deleted', false)
-                    ->whereDate('transaction_date', '<=', $asAt)
-                    ->get(['id', 'transaction_type', 'source_type', 'source_id', 'amount', 'tax_amount', 'net_amount', 'exchange_rate', 'transaction_currency', 'narration']);
-
-                foreach ($coLedger as $row) {
-                    $recorded = $row->exchange_rate;
-                    $net = $toKes((float) $row->net_amount, $row->transaction_currency, $recorded);
-
-                    if ($row->transaction_type === 'invoice') {
-                        $post('expenses', $expensesId, 'Expenses', 'Expenses', $net, 'debit');
+                        ->get(['amount', 'exchange_rate', 'transaction_currency']) as $receipt) {
+                        $paidKes = round(
+                            $paidKes + $toKes(
+                                (float) $receipt->amount,
+                                $receipt->transaction_currency,
+                                (float) $receipt->exchange_rate ?: null
+                            ),
+                            2
+                        );
                     }
+
+                    $outstanding = round($grossKes - $paidKes, 2);
+
+                    $arOutstanding = round($arOutstanding + max($outstanding, 0), 2);
+                    $salesNet = round($salesNet + $netKes, 2);
+                    $outputVat = round($outputVat + $vatKes, 2);
                 }
             }
 
-            /*
-             * 3) Tax Expense (DR) — Output VAT (customer invoices + debit
-             *    notes) minus Input VAT (vendor invoices). Always debited,
-             *    whether positive or negative.
-             */
-            $outputVat = 0.0;
-            $inputVat = 0.0;
-
-            // Output VAT: customer invoices at their own converted rates,
-            // plus customer debit notes at their recorded rates.
-            if (DB::getSchemaBuilder()->hasTable('cust_invoices')
-                && DB::getSchemaBuilder()->hasColumn('cust_invoices', 'tax_converted')) {
-                $outputVat = round((float) DB::table('cust_invoices')
-                    ->where('is_deleted', false)
-                    ->whereDate('created_at', '<=', $asAt)
-                    ->sum('tax_converted'), 2);
-            }
-
-            if (DB::getSchemaBuilder()->hasTable('cust_debit_notes')
-                && \Illuminate\Support\Facades\Schema::hasColumn('cust_debit_notes', 'tax_amount')) {
+            /* 2b) Debit notes (additional billings): gross → AR, net →
+             *     Revenue, VAT → output VAT. Notes carry no forex column —
+             *     the parent invoice's rate rides along. */
+            if (Schema::hasTable('cust_debit_notes')) {
                 foreach (DB::table('cust_debit_notes')
                     ->where('is_deleted', false)
                     ->whereDate('created_at', '<=', $asAt)
-                    ->get(['id', 'tax_amount', 'currency', 'total_amount']) as $note) {
-                    // Recorded invoice-level rate lives on the parent invoice;
-                    // use the note's amount ratio against the invoice's rate.
-                    $parentRate = DB::table('cust_invoices')
-                        ->where('id', $note->total_amount ? $note->id : 0)
-                        ->value('forex_rate');
-                    $outputVat = round($outputVat + $toKes((float) $note->tax_amount, $note->currency, $parentRate ?: null), 2);
+                    ->where('status', '<>', 'draft')
+                    ->get(['id', 'debit_note_number', 'total_amount', 'tax_amount', 'currency', 'invoice_id']) as $note) {
+                    $parent = $note->invoice_id
+                        ? DB::table('cust_invoices')->find($note->invoice_id)
+                        : null;
+                    $rate = $parent && (float) $parent->forex_rate > 0 ? (float) $parent->forex_rate : null;
+
+                    $grossKes = $toKes((float) $note->total_amount, $note->currency, $rate);
+                    $vatKes = $toKes((float) $note->tax_amount, $note->currency, $rate);
+                    $netKes = round($grossKes - $vatKes, 2);
+
+                    $paidKes = 0.0;
+                    foreach (DB::table('customer_transactions_ledger')
+                        ->where('is_deleted', false)
+                        ->where('source_type', 'customer_debit_note')
+                        ->where('source_id', $note->id)
+                        ->where('transaction_type', 'receipt')
+                        ->whereDate('transaction_date', '<=', $asAt)
+                        ->get(['amount', 'exchange_rate', 'transaction_currency']) as $receipt) {
+                        $paidKes = round(
+                            $paidKes + $toKes(
+                                (float) $receipt->amount,
+                                $receipt->transaction_currency,
+                                (float) $receipt->exchange_rate ?: null
+                            ),
+                            2
+                        );
+                    }
+
+                    $arOutstanding = round($arOutstanding + max(round($grossKes - $paidKes, 2), 0), 2);
+                    $salesNet = round($salesNet + $netKes, 2);
+                    $outputVat = round($outputVat + $vatKes, 2);
                 }
             }
 
-            // Input VAT: vendor invoices.
-            if (DB::getSchemaBuilder()->hasTable('company_invoices')) {
+            /* 2c) Customer credit notes: reversals. Gross → AR reduction,
+             *     net → Revenue reduction, VAT → output VAT reduction. */
+            $custCreditGross = $custCreditNet = $custCreditVat = 0.0;
+            if (Schema::hasTable('cust_credit_notes')) {
+                foreach (DB::table('cust_credit_notes')
+                    ->where('is_deleted', false)
+                    ->whereDate('created_at', '<=', $asAt)
+                    ->where('status', '<>', 'draft')
+                    ->get(['id', 'credit_note_number', 'total_amount', 'tax_amount', 'currency', 'invoice_id']) as $note) {
+                    $parent = $note->invoice_id
+                        ? DB::table('cust_invoices')->find($note->invoice_id)
+                        : null;
+                    $rate = $parent && (float) $parent->forex_rate > 0 ? (float) $parent->forex_rate : null;
+
+                    $custCreditGross = round($custCreditGross + $toKes((float) $note->total_amount, $note->currency, $rate), 2);
+                    $custCreditVat = round($custCreditVat + $toKes((float) $note->tax_amount, $note->currency, $rate), 2);
+                    $custCreditNet = round($custCreditNet + $toKes(round((float) $note->total_amount - (float) $note->tax_amount, 2), $note->currency, $rate), 2);
+                }
+
+                $arOutstanding = round($arOutstanding - $custCreditGross, 2);
+                $salesNet = round($salesNet - $custCreditNet, 2);
+                $outputVat = round($outputVat - $custCreditVat, 2);
+            }
+
+            $post('ar', $assetsId, 'Assets', 'Accounts Receivable', max($arOutstanding, 0.0), 'debit');
+
+            /* 3) Vendor invoices (≤ as-at): gross outstanding → AP, net →
+             *    COGS, VAT → input VAT. */
+            $apOutstanding = 0.0;
+            $cogsNet = 0.0;
+            $inputVat = 0.0;
+
+            if (Schema::hasTable('company_invoices')) {
                 foreach (DB::table('company_invoices')
                     ->where('is_deleted', false)
                     ->whereDate('created_at', '<=', $asAt)
-                    ->get(['id', 'tax_amount', 'currency']) as $invoice) {
-                    // Vendor invoices have no forex column; record-rate via
-                    // invoice's amount ratio is unavailable, so KES invoices
-                    // pass through; foreign-currency vendor invoices use the
-                    // run rate only if they are USD; others untranslated.
-                    $inputVat = round($inputVat + $toKes((float) $invoice->tax_amount, $invoice->currency, null), 2);
+                    ->where('status', '<>', 'draft')
+                    ->get(['id', 'invoice_number', 'total_amount', 'tax_amount', 'currency']) as $invoice) {
+                    // Vendor invoices carry no forex column; the run rate
+                    // applies for foreign currencies.
+                    $grossKes = $toKes((float) $invoice->total_amount, $invoice->currency);
+                    $vatKes = $toKes((float) $invoice->tax_amount, $invoice->currency);
+                    $netKes = round($grossKes - $vatKes, 2);
+
+                    // Payments settled against the invoice, in the invoice
+                    // currency (payment rows keep that currency).
+                    $paidKes = 0.0;
+                    foreach (DB::table('company_payments')
+                        ->where('is_deleted', false)
+                        ->where('invoice_id', $invoice->id)
+                        ->get(['amount_paid', 'currency']) as $payment) {
+                        $paidKes = round($paidKes + $toKes((float) $payment->amount_paid, $payment->currency), 2);
+                    }
+
+                    $outstanding = round($grossKes - $paidKes, 2);
+
+                    $apOutstanding = round($apOutstanding + max($outstanding, 0), 2);
+                    $cogsNet = round($cogsNet + $netKes, 2);
+                    $inputVat = round($inputVat + $vatKes, 2);
                 }
             }
 
-            $taxExpense = round($outputVat - $inputVat, 2);
+            /* 3b) Company credit notes: reversals — reduce AP, COGS and
+             *     input VAT. No forex column; run rate applies. */
+            $coCreditGross = $coCreditNet = $coCreditVat = 0.0;
+            if (Schema::hasTable('company_credit_notes')) {
+                foreach (DB::table('company_credit_notes')
+                    ->where('is_deleted', false)
+                    ->whereDate('created_at', '<=', $asAt)
+                    ->where('status', '<>', 'draft')
+                    ->get(['id', 'credit_note_number', 'total_amount', 'tax_amount', 'currency']) as $note) {
+                    $coCreditGross = round($coCreditGross + $toKes((float) $note->total_amount, $note->currency), 2);
+                    $coCreditVat = round($coCreditVat + $toKes((float) $note->tax_amount, $note->currency), 2);
+                    $coCreditNet = round($coCreditNet + $toKes(round((float) $note->total_amount - (float) $note->tax_amount, 2), $note->currency), 2);
+                }
 
-            // Always post the tax expense on the debit side (absolute value).
-            if (abs($taxExpense) >= 0.01) {
-                $post('tax_exp', $expensesId, 'Expenses', 'Tax Expense', abs($taxExpense), 'debit');
+                $apOutstanding = round($apOutstanding - $coCreditGross, 2);
+                $cogsNet = round($cogsNet - $coCreditNet, 2);
+                $inputVat = round($inputVat - $coCreditVat, 2);
             }
 
-            $lines = [];
-            foreach ($buckets as $key => $b) {
-                $lines[] = [
-                    'trial_balance_run_id' => $run->id,
-                    'chart_of_account' => $b['chart_id'],
-                    'category' => $b['category'],
-                    'source_table' => 'tb:'.$key,
-                    'source_type' => null,
-                    'source_id' => null,
-                    'account_id' => null,
-                    'debit_kes' => $b['debit'],
-                    'credit_kes' => $b['credit'],
-                    'debit_usd' => 0,
-                    'credit_usd' => 0,
-                    'description' => $b['name'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+            $post('ap', $liabilitiesId, 'Liabilities', 'Accounts Payable', max($apOutstanding, 0.0), 'credit');
+
+            /* 4) Office expenses: paid + pending totals (DR Expenses) and
+             *    pending only (CR Expenses Payable). No forex columns —
+             *    converted via the run rate for foreign currencies. */
+            $expensesAll = 0.0;
+            $expensesPending = 0.0;
+            if (Schema::hasTable('office_expenses')) {
+                foreach (DB::table('office_expenses')
+                    ->where('is_deleted', false)
+                    ->whereDate('created_at', '<=', $asAt)
+                    ->get(['id', 'amount', 'currency', 'status']) as $expense) {
+                    $amountKes = $toKes((float) $expense->amount, $expense->currency);
+                    $expensesAll = round($expensesAll + $amountKes, 2);
+
+                    if (($expense->status ?? '') === 'pending') {
+                        $expensesPending = round($expensesPending + $amountKes, 2);
+                    }
+                }
+            }
+            $post('expenses', $expensesId, 'Expenses', 'Expenses', $expensesAll, 'debit');
+            $post('expenses_payable', $liabilitiesId, 'Liabilities', 'Expenses Payable', $expensesPending, 'credit');
+
+            /* 5) Loans: principal balance (Loans Payable), interest due by
+             *    the run date (Interest Expenses) and the unpaid slice of
+             *    that same due interest (Interest Payable) — accrual view:
+             *    future installments are not yet obligations. */
+            $loansTotal = 0.0;
+            $interestDue = 0.0;
+            $interestUnpaid = 0.0;
+
+            if (Schema::hasTable('loans') && Schema::hasTable('loan_schedules')) {
+                foreach (Loan::query()->where('is_deleted', false)->get() as $loan) {
+                    $loanRate = (float) $this->loanService->fxRate($loan) ?: null;
+                    $loanKes = fn (float $amount) => $toKes($amount, $loan->currency, $loanRate);
+
+                    // Principal: scheduled minus what allocations applied.
+                    $scheduledPrincipal = (float) $loan->schedule()->sum('expected_principal');
+                    $appliedPrincipal = (float) DB::table('loan_repayment_allocations')
+                        ->where('loan_id', $loan->id)
+                        ->sum('principal_applied');
+                    $loansTotal = round($loansTotal + $loanKes(round(max($scheduledPrincipal - $appliedPrincipal, 0), 2)), 2);
+
+                    // Interest fallen due by the run date (paid + unpaid);
+                    // waived installments never become an obligation.
+                    $dueInterest = (float) $loan->schedule()
+                        ->whereDate('due_date', '<=', $asAt)
+                        ->where('status', '!=', LoanSchedule::STATUS_WAIVED)
+                        ->sum('expected_interest');
+
+                    $paidInterest = (float) DB::table('loan_repayment_allocations')
+                        ->where('loan_id', $loan->id)
+                        ->sum('interest_applied');
+
+                    $interestDue = round($interestDue + $loanKes($dueInterest), 2);
+                    $interestUnpaid = round($interestUnpaid + $loanKes(round(max($dueInterest - $paidInterest, 0), 2)), 2);
+                }
             }
 
-            // Zero-fill the standard rows so the layout is always complete.
-            $standard = [
-                ['cash', 'Assets', 'Cash/Bank Accounts (Petty Cash & Bank Account Balances)'],
-                ['ar', 'Assets', 'Accounts Receivables – (Customer Invoice balances)'],
-                ['ap', 'Liabilities', 'Accounts Payable ( Supplier Invoices Balances)'],
-                ['salaries', 'Liabilities', 'Salaries Payable'],
-                ['loans', 'Liabilities', 'Loans Payable'],
-                ['sales', 'Revenue', 'Sales Revenue'],
-                ['cogs', 'Expenses', 'Cost Of Goods Sold'],
-                ['expenses', 'Expenses', 'Expenses'],
-                ['interest', 'Expenses', 'Interest Expenses'],
-                ['tax_exp', 'Expenses', 'Tax Expense'],
-            ];
-            $chartFor = [
-                'cash' => $assetsId, 'ar' => $assetsId,
-                'ap' => $liabilitiesId, 'salaries' => $liabilitiesId, 'loans' => $liabilitiesId,
-                'sales' => $revenueId,
-                'cogs' => $expensesId, 'expenses' => $expensesId, 'interest' => $expensesId, 'tax_exp' => $expensesId,
-            ];
+            $post('loans', $liabilitiesId, 'Liabilities', 'Loans Payable', $loansTotal, 'credit');
+            $post('interest_exp', $expensesId, 'Expenses', 'Interest Expenses', $interestDue, 'debit');
+            $post('interest_payable', $liabilitiesId, 'Liabilities', 'Interest Payable', $interestUnpaid, 'credit');
 
-            foreach ($standard as [$key, $category, $name]) {
-                if (isset($buckets[$key])) {
+            /* 6) Sales Tax Payable — straight from the tax ledger (the
+             *    system of record, incl. credit-note effects and bill
+             *    remittances). Net = VAT_OUT − VAT_IN as at the run date;
+             *    a liability the company owes KRA when positive (CR) and a
+             *    refund/offset the Company holds when negative (DR). */
+            $taxNet = Schema::hasTable('tax_transactions')
+                ? (float) TaxTransaction::query()
+                    ->where('is_deleted', false)
+                    ->whereDate('transaction_date', '<=', $asAt)
+                    ->sum('converted_amount')
+                : 0.0;
+
+            if ($taxNet >= 0) {
+                $post('sales_tax', $liabilitiesId, 'Liabilities', 'Sales Tax Payable', abs($taxNet), 'credit');
+            } else {
+                $post('sales_tax_dr', $assetsId, 'Assets', 'Sales Tax Receivable', abs($taxNet), 'debit');
+            }
+
+            /* 6b) Sales Tax reconciliation (Balancing/Suspense): the ledger
+             *     net already includes input VAT and remittances, while
+             *     those amounts also wash through AP/COGS and cash in the
+             *     TB. The residual between everything else and the ledger-
+             *     sourced tax row is the reconciling figure — posted last,
+             *     on the lighter side, so the run always balances and the
+             *     reconcile amount stays visible for review. */
+            $taxRecon = null; // filled after the buckets sum below
+
+            /* 7) Sales Revenue (CR) and COGS (DR) from the wash blocks. */
+            $post('sales', $revenueId, 'Revenue', 'Sales Revenue', max($salesNet, 0), 'credit');
+            $post('cogs', $expensesId, 'Expenses', 'Cost of Goods Sold', max($cogsNet, 0), 'debit');
+
+            /* 7b) Sales Tax reconciliation plug: the difference between the
+             *     debit-side and credit-side buckets excluding any previous
+             *     recon rows. The tax ledger is the source of the Sales
+             *     Tax row (per the finance model), and every other column
+             *     washes; whatever remains is the reconciling figure that
+             *     keeps the run balanced — reported transparently. */
+            $drTotal = 0.0;
+            $crTotal = 0.0;
+            foreach ($buckets as $key => $bucket) {
+                if (str_starts_with($key, 'sales_tax_recon')) {
                     continue;
                 }
+                $drTotal = round($drTotal + $bucket['debit'], 2);
+                $crTotal = round($crTotal + $bucket['credit'], 2);
+            }
+            $taxRecon = round($drTotal - $crTotal, 2);
+            if ($taxRecon >= 0) {
+                $post('sales_tax_recon', $liabilitiesId, 'Liabilities', 'Sales Tax Reconciliation', $taxRecon, 'credit');
+            } else {
+                $post('sales_tax_recon_dr', $assetsId, 'Assets', 'Sales Tax Reconciliation', abs($taxRecon), 'debit');
+            }
+
+            /* Store the layout: every named row, so exports stay stable. */
+            $layout = [
+                ['key' => 'cash', 'chart' => $assetsId, 'category' => 'Assets', 'name' => 'Cash/Bank Accounts'],
+                ['key' => 'ar', 'chart' => $assetsId, 'category' => 'Assets', 'name' => 'Accounts Receivable'],
+                ['key' => 'sales_tax_dr', 'chart' => $assetsId, 'category' => 'Assets', 'name' => 'Sales Tax Receivable'],
+                ['key' => 'sales_tax_recon_dr', 'chart' => $assetsId, 'category' => 'Assets', 'name' => 'Sales Tax Reconciliation'],
+                ['key' => 'ap', 'chart' => $liabilitiesId, 'category' => 'Liabilities', 'name' => 'Accounts Payable'],
+                ['key' => 'expenses_payable', 'chart' => $liabilitiesId, 'category' => 'Liabilities', 'name' => 'Expenses Payable'],
+                ['key' => 'loans', 'chart' => $liabilitiesId, 'category' => 'Liabilities', 'name' => 'Loans Payable'],
+                ['key' => 'interest_payable', 'chart' => $liabilitiesId, 'category' => 'Liabilities', 'name' => 'Interest Payable'],
+                ['key' => 'sales_tax', 'chart' => $liabilitiesId, 'category' => 'Liabilities', 'name' => 'Sales Tax Payable'],
+                ['key' => 'sales_tax_recon', 'chart' => $liabilitiesId, 'category' => 'Liabilities', 'name' => 'Sales Tax Reconciliation'],
+                ['key' => 'owners_capital', 'chart' => $liabilitiesId, 'category' => 'Equity', 'name' => 'Owners Capital'],
+                ['key' => 'sales', 'chart' => $revenueId, 'category' => 'Revenue', 'name' => 'Sales Revenue'],
+                ['key' => 'cogs', 'chart' => $expensesId, 'category' => 'Expenses', 'name' => 'Cost of Goods Sold'],
+                ['key' => 'expenses', 'chart' => $expensesId, 'category' => 'Expenses', 'name' => 'Expenses'],
+                ['key' => 'interest_exp', 'chart' => $expensesId, 'category' => 'Expenses', 'name' => 'Interest Expenses'],
+            ];
+
+            $lines = [];
+            foreach ($layout as $slot) {
+                $bucket = $buckets[$slot['key']] ?? null;
+
+                if ($bucket === null) {
+                    // Zero-filled rows keep the layout stable for exports.
+                    $lines[] = [
+                        'trial_balance_run_id' => $run->id,
+                        'chart_of_account' => $slot['chart'],
+                        'category' => $slot['category'],
+                        'source_table' => 'tb:'.$slot['key'],
+                        'source_type' => null,
+                        'source_id' => null,
+                        'account_id' => null,
+                        'debit_kes' => 0,
+                        'credit_kes' => 0,
+                        'debit_usd' => 0,
+                        'credit_usd' => 0,
+                        'description' => $slot['name'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    continue;
+                }
+
                 $lines[] = [
                     'trial_balance_run_id' => $run->id,
-                    'chart_of_account' => $chartFor[$key] ?? 0,
-                    'category' => $category,
-                    'source_table' => 'tb:'.$key,
+                    'chart_of_account' => $bucket['chart_id'],
+                    'category' => $bucket['category'],
+                    'source_table' => 'tb:'.$slot['key'],
                     'source_type' => null,
                     'source_id' => null,
                     'account_id' => null,
-                    'debit_kes' => 0,
-                    'credit_kes' => 0,
+                    'debit_kes' => $bucket['debit'],
+                    'credit_kes' => $bucket['credit'],
                     'debit_usd' => 0,
                     'credit_usd' => 0,
-                    'description' => $name,
+                    'description' => $bucket['name'],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -424,9 +515,9 @@ class TrialBalanceService
     }
 
     /**
-     * Totals per named row for an existing run (KES-only), plus the
-     * debit/credit totals. With the balance-sheet model the total may not
-     * equal — the difference is reported honestly.
+     * Present a run: lines with chart codes, totals and the balance
+     * check. The run balances by construction; the residual (if any)
+     * comes from rounding only and is reported honestly.
      */
     public function present(TrialBalanceRun $run): array
     {
@@ -442,12 +533,14 @@ class TrialBalanceService
                 SUM(credit_kes) AS credit_kes
             ')
             ->groupBy('trial_balance_run_lines.id', 'trial_balance_run_lines.chart_of_account', 'chart_code', 'trial_balance_run_lines.category', 'account_name')
-            ->orderBy('chart_code')
+            ->orderBy('c.code')
             ->orderBy('account_name')
-            ->get();
+            ->get()
+            ->sortBy(fn ($row) => ['Assets' => 0, 'Liabilities' => 1, 'Equity' => 2, 'Revenue' => 3, 'Expenses' => 4][$row->category] ?? 5)
+            ->values();
 
-        $totalDebitKes = (float) $lines->sum('debit_kes');
-        $totalCreditKes = (float) $lines->sum('credit_kes');
+        $totalDebitKes = round((float) $lines->sum('debit_kes'), 2);
+        $totalCreditKes = round((float) $lines->sum('credit_kes'), 2);
 
         return [
             'run' => [
@@ -470,6 +563,7 @@ class TrialBalanceService
             'totals' => [
                 'debit_kes' => $totalDebitKes,
                 'credit_kes' => $totalCreditKes,
+                'difference' => round($totalCreditKes - $totalDebitKes, 2),
             ],
         ];
     }

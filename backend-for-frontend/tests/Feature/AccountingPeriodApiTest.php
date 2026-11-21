@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\AccountingPeriod;
+use App\Models\AccountingPeriodLog;
 use App\Models\ChartOfAccount;
+use App\Models\TrialBalanceRun;
 use App\Models\User;
 use App\Services\AccountingPeriodService;
 use App\Services\Concerns\PeriodLock;
-use Illuminate\Support\Facades\Gate;
+use Carbon\Carbon;
 use Tests\TestCase;
 
 /**
@@ -319,7 +321,7 @@ class AccountingPeriodApiTest extends TestCase
     {
         $this->actingAs($this->userWithRoles(['ROLE_CLOSE_ACCOUNTING_PERIOD', 'ROLE_VIEW_ACCOUNTING_PERIOD']), 'sanctum');
 
-        $now = \Carbon\Carbon::now();
+        $now = Carbon::now();
         $period = $this->periodFor($now->format('Y-m-15'));
 
         $response = $this->postJson("/e-pms/api/v1/accounting-periods/{$period->id}/close", ['forex_rate' => 128]);
@@ -332,7 +334,7 @@ class AccountingPeriodApiTest extends TestCase
     {
         $this->actingAs($this->userWithRoles(['ROLE_CLOSE_ACCOUNTING_PERIOD', 'ROLE_VIEW_ACCOUNTING_PERIOD']), 'sanctum');
 
-        $now = \Carbon\Carbon::now();
+        $now = Carbon::now();
         $future = $now->copy()->addMonth()->startOfMonth();
         $period = $this->periodFor($future->format('Y-m-15'));
 
@@ -348,7 +350,7 @@ class AccountingPeriodApiTest extends TestCase
         // The test schema may hold only the single period created in setUp
         // helpers; the index endpoint for the current year must materialise
         // all 12 months.
-        $response = $this->getJson('/e-pms/api/v1/accounting-periods?fiscal_year=' . now()->year);
+        $response = $this->getJson('/e-pms/api/v1/accounting-periods?fiscal_year='.now()->year);
         $response->assertOk();
         $this->assertCount(12, $response->json('months'));
 
@@ -373,13 +375,14 @@ class AccountingPeriodApiTest extends TestCase
         $response->assertOk();
         $this->assertSame('closed', $response->json('data.status'));
 
-        $run = \App\Models\TrialBalanceRun::where('trigger', 'period_close')->first();
+        $run = TrialBalanceRun::where('trigger', 'period_close')->first();
         $this->assertNotNull($run);
         $this->assertEquals('2026-10-31', $run->as_at_date->toDateString());
-        $this->assertSame(10, $run->lines()->count());
+        // Layout rows are zero-filled for stable exports (15 named lines).
+        $this->assertSame(15, $run->lines()->count());
         $this->assertSame('128.45', (string) $run->forex_rate);
 
-        $log = \App\Models\AccountingPeriodLog::where('action', 'closed')->first();
+        $log = AccountingPeriodLog::where('action', 'closed')->first();
         $this->assertNotNull($log);
         $this->assertSame($run->id, $log->snapshot_run_id);
     }
@@ -423,7 +426,7 @@ class AccountingPeriodApiTest extends TestCase
         $response->assertOk();
         $this->assertSame('open', $response->json('data.status'));
 
-        $log = \App\Models\AccountingPeriodLog::where('action', 'reopened')->first();
+        $log = AccountingPeriodLog::where('action', 'reopened')->first();
         $this->assertNotNull($log);
         $this->assertSame('Correction: late invoice', $log->reason);
     }

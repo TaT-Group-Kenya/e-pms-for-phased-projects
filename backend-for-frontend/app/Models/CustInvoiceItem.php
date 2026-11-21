@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Traits\HasLogicalDeletion;
+use App\Services\TaxTransactionService;
 use Illuminate\Database\Eloquent\Model;
 
 class CustInvoiceItem extends Model
@@ -86,6 +87,10 @@ class CustInvoiceItem extends Model
             $invoice->total_amount = $subtotal + $taxAmount - $discountAmount;
 
             $invoice->save();
+
+            // Line items drive the declared VAT: restate the ledger position
+            // whenever the invoice's tax total changes.
+            TaxTransactionService::syncInvoicePosition($invoice->fresh());
         };
 
         static::saved($recalculateInvoiceTotals);

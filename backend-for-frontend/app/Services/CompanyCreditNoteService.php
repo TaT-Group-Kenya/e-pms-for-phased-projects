@@ -3,10 +3,11 @@
 namespace App\Services;
 
 use App\Models\CompanyCreditNote;
+use App\Services\Concerns\ListQuery;
 
 class CompanyCreditNoteService
 {
-    use \App\Services\Concerns\ListQuery;
+    use ListQuery;
 
     /** Columns matched by the free-text `search` parameter. */
     protected array $listSearchable = [
@@ -54,7 +55,12 @@ class CompanyCreditNoteService
     public function create(array $data)
     {
         // Save all validated fields, including amounts
-        return CompanyCreditNote::create($data);
+        $model = CompanyCreditNote::create($data);
+
+        // A raised company credit note reverses recoverable VAT (VAT_OUT).
+        TaxTransactionService::syncCompanyCreditNotePosition($model);
+
+        return $model;
     }
 
     public function update(int $id, array $data)
@@ -65,6 +71,8 @@ class CompanyCreditNoteService
         $model = CompanyCreditNote::findOrFail($id);
         $model->update($data);
 
+        TaxTransactionService::syncCompanyCreditNotePosition($model);
+
         return $model;
     }
 
@@ -72,6 +80,11 @@ class CompanyCreditNoteService
     {
         $model = CompanyCreditNote::findOrFail($id);
 
-        return $model->softDelete($deletedBy);
+        $result = $model->softDelete($deletedBy);
+
+        // Deleting a raised credit note withdraws its VAT_OUT position.
+        TaxTransactionService::syncCompanyCreditNotePosition($model);
+
+        return $result;
     }
 }

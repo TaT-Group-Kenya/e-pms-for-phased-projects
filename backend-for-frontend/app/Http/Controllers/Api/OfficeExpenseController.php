@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OfficeExpenseStoreRequest;
 use App\Http\Requests\OfficeExpenseUpdateRequest;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 
 class OfficeExpenseController extends Controller
 {
-    use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+    use EnsuresOpenPeriod;
 
     protected $service;
 
@@ -63,7 +64,7 @@ class OfficeExpenseController extends Controller
                     });
             });
         }
-        $service = app(\App\Services\OfficeExpenseService::class);
+        $service = app(OfficeExpenseService::class);
         $data = $service->paginateList($query, $filters, $perPage, $page);
 
         return OfficeExpenseResource::collection($data);
@@ -243,25 +244,6 @@ class OfficeExpenseController extends Controller
             // Link payment to transaction
             $payment->transaction_id = $ledger->id;
             $payment->save();
-
-            // Tax paid on the office expense settlement is VAT receivable —
-            // recoverable from the revenue authority (chart 1000).
-            $expenseTaxPortion = (float) ($ledger->tax_amount ?? 0);
-
-            if ($expenseTaxPortion > 0) {
-                \App\Services\TaxTransactionService::record([
-                    'direction' => 'paid',
-                    'source_type' => 'office_expense',
-                    'source_id' => $expense->id,
-                    'payment_id' => $payment->id,
-                    'amount' => $expenseTaxPortion,
-                    'transaction_currency' => $expense->currency,
-                    'exchange_rate' => 1,
-                    'transaction_date' => $validated['date'],
-                    'narration' => 'Tax paid on office expense settlement '.$expense->id,
-                    'created_by' => $userId,
-                ]);
-            }
 
             // Update expense status to paid
             $expense->status = 'paid';

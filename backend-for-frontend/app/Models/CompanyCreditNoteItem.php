@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Traits\HasLogicalDeletion;
+use App\Services\TaxTransactionService;
 use Illuminate\Database\Eloquent\Model;
 
 class CompanyCreditNoteItem extends Model
@@ -89,6 +90,9 @@ class CompanyCreditNoteItem extends Model
             $note->total_amount = $subtotal + $taxAmount;
 
             $note->save();
+
+            // Item amounts drive the declared position of raised notes.
+            TaxTransactionService::syncCompanyCreditNotePosition($note->fresh());
         };
 
         static::saved($recalculateTotals);

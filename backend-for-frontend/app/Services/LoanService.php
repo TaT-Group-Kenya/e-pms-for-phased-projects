@@ -477,11 +477,17 @@ class LoanService
      * installments whose due date has arrived (or which already received
      * payments) minus interest already collected. Future interest is not
      * yet receivable and must not swallow principal.
+     *
+     * The cutoff defaults to today; trial-balance runs pass their as-at
+     * date so historical snapshots accrue only to that point.
      */
-    public function accruedInterest(Loan $loan): float
+    public function accruedInterest(Loan $loan, ?string $asAt = null): float
     {
+        $cutoff = $asAt ?? now()->toDateString();
+
         $dueInterest = (float) $loan->schedule()
-            ->whereDate('due_date', '<=', now()->toDateString())
+            ->whereDate('due_date', '<=', $cutoff)
+            ->where('status', '!=', LoanSchedule::STATUS_WAIVED)
             ->sum('expected_interest');
 
         // Loans whose schedule starts in the future: nothing accrued yet.
@@ -795,6 +801,7 @@ class LoanService
             DB::table('loan_repayment_allocations')->insert($allocations);
         }
     }
+
     private function paidFor(LoanSchedule $installment, string $component): float
     {
         return round(

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\TaxTransactionService;
 use Illuminate\Database\Eloquent\Model;
 
 class CompanyInvoiceItem extends Model
@@ -97,6 +98,9 @@ class CompanyInvoiceItem extends Model
             // Keep the ledger row, payment-based status, phase billed flags and
             // the cached PDF consistent with the new totals.
             $invoice->syncDerivedAmounts();
+
+            // Item changes restated the recoverable VAT position.
+            TaxTransactionService::syncCompanyInvoicePosition($invoice->fresh());
         };
 
         static::saved($recalculateInvoiceTotals);

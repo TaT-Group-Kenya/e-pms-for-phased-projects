@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CompanyInvoiceStoreRequest;
 use App\Http\Requests\CompanyInvoiceUpdateRequest;
@@ -18,6 +19,7 @@ use App\Models\ProjectPhase;
 use App\Models\SysConfig;
 use App\Services\CommonService;
 use App\Services\CompanyInvoiceService;
+use App\Services\TaxTransactionService;
 use App\Services\TransactionCostManagerService;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
@@ -32,7 +34,7 @@ use Illuminate\Validation\ValidationException;
 
 class CompanyInvoiceController extends Controller
 {
-    use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+    use EnsuresOpenPeriod;
 
     protected $service;
 
@@ -491,23 +493,8 @@ class CompanyInvoiceController extends Controller
             $payment->transaction_id = $trxn->id;
             $payment->save();
 
-            // Tax paid on the company invoice payment is VAT receivable — an
-            // asset recoverable from the revenue authority (chart 1000).
-            if ($taxPortion > 0) {
-                \App\Services\TaxTransactionService::record([
-                    'direction' => 'paid',
-                    'source_type' => 'company_invoice',
-                    'source_id' => $invoice->id,
-                    'payment_id' => $payment->id,
-                    'amount' => $taxPortion,
-                    'transaction_currency' => $invoiceCurrencyCode,
-                    'exchange_rate' => $exchangeRate,
-                    'transaction_date' => $validated['payment_date'],
-                    'company_id' => $invoice->company_id,
-                    'narration' => 'Tax paid on payment for company invoice '.$invoice->invoice_number,
-                    'created_by' => $userId,
-                ]);
-            }
+            // The tax ledger records the invoice's declared position only —
+            // movements on settlement are intentionally not tracked.
 
             // Update accounts account balance: debit decreases balance
             $balanceAfterThis = $currentBalance - $amountToDebitAccount;
@@ -930,6 +917,9 @@ class CompanyInvoiceController extends Controller
                 return $updatedInvoice;
             });
 
+            // A sent company invoice holds recoverable (input) VAT.
+            TaxTransactionService::syncCompanyInvoicePosition($updated);
+
             return new CompanyInvoiceResource($updated);
         }
 
@@ -952,6 +942,10 @@ class CompanyInvoiceController extends Controller
         if ($response = $this->ensureModelPeriodOpen($companyInvoice)) {
             return $response;
         }
+
+        // Draft invoices hold no declared VAT, but withdraw any residual
+        // position defensively (restates to zero via a Balancing entry).
+        TaxTransactionService::syncCompanyInvoicePosition(CompanyInvoice::withDeleted()->findOrFail($companyInvoice->id));
 
         $this->service->delete($companyInvoice->id);
 

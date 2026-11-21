@@ -147,6 +147,14 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('tax-transactions', App\Http\Controllers\Api\TaxTransactionController::class)
 			->parameter('tax-transactions', 'tax_transaction')->only(['index', 'show']);
 		Route::get('tax-transactions-summary', [App\Http\Controllers\Api\TaxTransactionController::class, 'summary']);
+		// Monthly tax bills: run, view, settle, export.
+		Route::get('tax-bills', [App\Http\Controllers\Api\TaxBillController::class, 'index']);
+		Route::post('tax-bills/run', [App\Http\Controllers\Api\TaxBillController::class, 'run']);
+		Route::get('tax-bills/reconciliation', [App\Http\Controllers\Api\TaxBillController::class, 'reconciliation']);
+		Route::post('tax-bills/run', [App\Http\Controllers\Api\TaxBillController::class, 'run']);
+		Route::get('tax-bills/{taxBill}', [App\Http\Controllers\Api\TaxBillController::class, 'show'])->whereNumber('taxBill');
+		Route::post('tax-bills/{taxBill}/pay', [App\Http\Controllers\Api\TaxBillController::class, 'pay'])->whereNumber('taxBill');
+		Route::get('tax-bills/{taxBill}/export-pdf', [App\Http\Controllers\Api\TaxBillController::class, 'exportPdf'])->whereNumber('taxBill');
 		Route::apiResource('trial-balance', App\Http\Controllers\Api\TrialBalanceController::class)
 			->parameter('trial-balance', 'trial_balance_run');
 		Route::get('trial-balance/{trial_balance_run}/export-csv', [App\Http\Controllers\Api\TrialBalanceController::class, 'exportCsv']);
