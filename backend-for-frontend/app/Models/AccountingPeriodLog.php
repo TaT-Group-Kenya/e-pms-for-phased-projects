@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AccountingPeriodLog extends Model
 {
@@ -35,5 +36,12 @@ class AccountingPeriodLog extends Model
     public function snapshot(): BelongsTo
     {
         return $this->belongsTo(TrialBalanceRun::class, 'snapshot_run_id');
+    }
+
+    /** The maker/checker request this audit entry executed (when any). */
+    public function request(): HasOne
+    {
+        // Reverse lookup: accounting_period_requests.executed_log_id = id
+        return $this->hasOne(AccountingPeriodRequest::class, 'executed_log_id');
     }
 }

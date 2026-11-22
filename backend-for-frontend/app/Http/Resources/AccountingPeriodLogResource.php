@@ -18,6 +18,10 @@ class AccountingPeriodLogResource extends JsonResource
             'reason' => $this->reason,
             'snapshot_run_id' => $this->snapshot_run_id,
             'snapshot' => $this->whenLoaded('snapshot', fn () => new TrialBalanceRunResource($this->snapshot)),
+            // Maker/checker linkage: the request this entry executed.
+            'request_id' => $this->whenLoaded('request', fn () => $this->request?->id),
+            'request_maker' => $this->whenLoaded('request', fn () => $this->request?->requested_by),
+            'request_check_note' => $this->whenLoaded('request', fn () => $this->request?->review_note),
         ];
     }
 }

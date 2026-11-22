@@ -6,6 +6,7 @@ use App\Exceptions\PeriodCloseNotAllowedException;
 use App\Exceptions\PeriodLockedException;
 use App\Models\AccountingPeriod;
 use App\Models\AccountingPeriodLog;
+use App\Models\AccountingPeriodRequest;
 use App\Models\TrialBalanceRun;
 use App\Services\Concerns\PeriodLock;
 use Illuminate\Support\Carbon;
@@ -608,5 +609,231 @@ class AccountingPeriodService
     private static function nameForMonth(int $year, int $month): array
     {
         return ['name' => Carbon::create($year, $month, 1)->format('M Y')];
+    }
+
+    // =====================================================================
+    // Maker/checker (four-eyes) workflow
+    // =====================================================================
+
+    /**
+     * Makers: submit a close/reopen request. The request sits in "pending"
+     * until a checker (a different user) approves or rejects it. Only one
+     * pending request may exist per period+action.
+     *
+     * @param  array{reason?: ?string, forex_rate?: ?float}  $payload
+     */
+    public function submitRequest(
+        AccountingPeriod $period,
+        string $action,
+        int $makerId,
+        array $payload = [],
+    ): AccountingPeriodRequest {
+        $action = strtolower(trim($action));
+        if (! in_array($action, [AccountingPeriodRequest::ACTION_CLOSE, AccountingPeriodRequest::ACTION_REOPEN], true)) {
+            throw new PeriodLockedException('Unknown period request action.');
+        }
+
+        if ($action === AccountingPeriodRequest::ACTION_CLOSE && $this->isCurrentOrFutureMonth($period)) {
+            throw new PeriodCloseNotAllowedException(
+                sprintf('Only past months can be closed. %s has not fully ended yet.', $period->name),
+            );
+        }
+
+        if ($action === AccountingPeriodRequest::ACTION_REOPEN && ! $period->isClosed()) {
+            throw new PeriodLockedException('Only closed periods can be reopened.');
+        }
+
+        if ($action === AccountingPeriodRequest::ACTION_CLOSE && $period->isClosed()) {
+            throw new PeriodLockedException('This period is already closed.');
+        }
+
+        $reason = trim((string) ($payload['reason'] ?? ''));
+        if ($action === AccountingPeriodRequest::ACTION_REOPEN && $reason === '') {
+            throw new PeriodLockedException('A reason is required to request reopening a closed accounting period.');
+        }
+
+        $forexRate = $payload['forex_rate'] ?? null;
+        if ($action === AccountingPeriodRequest::ACTION_CLOSE) {
+            if ($forexRate === null || (float) $forexRate <= 0) {
+                throw new PeriodLockedException('A forex rate greater than zero is required to request a period close.');
+            }
+            $forexRate = (float) $forexRate;
+        }
+
+        $hasPending = AccountingPeriodRequest::query()
+            ->where('accounting_period_id', $period->id)
+            ->where('action', $action)
+            ->where('status', AccountingPeriodRequest::STATUS_PENDING)
+            ->exists();
+
+        if ($hasPending) {
+            throw new PeriodLockedException(
+                'A '.($action === AccountingPeriodRequest::ACTION_CLOSE ? 'close' : 'reopen').
+                ' request for '.($period->name).' is already pending checker approval.',
+            );
+        }
+
+        // Capture the stranded-drafts snapshot at submission time so the
+        // checker sees what the maker reviewed.
+        $checklistSummary = null;
+        if ($action === AccountingPeriodRequest::ACTION_CLOSE) {
+            $groups = $this->strandedDrafts($period);
+            $checklistSummary = collect($groups)
+                ->map(fn ($g) => $g['label'].': '.$g['count'])
+                ->implode(', ');
+
+            if ($checklistSummary === '') {
+                $checklistSummary = 'No stranded drafts';
+            }
+        }
+
+        return DB::transaction(function () use ($period, $action, $makerId, $reason, $forexRate, $checklistSummary) {
+            return AccountingPeriodRequest::create([
+                'accounting_period_id' => $period->id,
+                'action' => $action,
+                'status' => AccountingPeriodRequest::STATUS_PENDING,
+                'requested_by' => $makerId,
+                'requested_at' => now(),
+                'reason' => $reason !== '' ? $reason : null,
+                'forex_rate' => $forexRate,
+                'checklist_summary' => $checklistSummary,
+                'created_by' => $makerId,
+                'updated_by' => $makerId,
+            ]);
+        });
+    }
+
+    /**
+     * Checker: approve a pending request. The approval executes the close
+     * (with snapshot) or reopen atomically and records the audit trail; the
+     * checker must differ from the maker (four-eyes invariant).
+     */
+    public function approveRequest(AccountingPeriodRequest $request, int $checkerId, ?string $reviewNote = null): AccountingPeriodRequest
+    {
+        return DB::transaction(function () use ($request, $checkerId, $reviewNote) {
+            // Lock the row so two checkers cannot approve concurrently.
+            $request = AccountingPeriodRequest::query()
+                ->whereKey($request->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($request->status !== AccountingPeriodRequest::STATUS_PENDING) {
+                throw new PeriodLockedException('This request has already been '.($request->status).'.');
+            }
+
+            if ((int) $request->requested_by === $checkerId) {
+                throw new PeriodLockedException(
+                    ' Maker and checker must be different users: you cannot approve your own request.',
+                );
+            }
+
+            $period = $request->period;
+            $now = now();
+
+            try {
+                if ($request->action === AccountingPeriodRequest::ACTION_CLOSE) {
+                    $this->closeMonth($period, (float) $request->forex_rate, $checkerId);
+                } else {
+                    $this->reopen($period, (string) ($request->reason ?? ''), $checkerId);
+                }
+            } catch (\App\Exceptions\PeriodLockedException $e) {
+                throw $e;
+            } catch (\App\Exceptions\PeriodCloseNotAllowedException $e) {
+                throw $e;
+            }
+
+            // The close/reopen above wrote the newest audit entry for this
+            // period; link it so the audit trail can show who executed what.
+            $log = AccountingPeriodLog::query()
+                ->where('accounting_period_id', $period->id)
+                ->where('action', $request->action === AccountingPeriodRequest::ACTION_CLOSE
+                    ? AccountingPeriodLog::ACTION_CLOSED
+                    : AccountingPeriodLog::ACTION_REOPENED)
+                ->orderByDesc('id')
+                ->first();
+
+            $request->forceFill([
+                'status' => AccountingPeriodRequest::STATUS_APPROVED,
+                'reviewed_by' => $checkerId,
+                'reviewed_at' => $now,
+                'review_note' => $reviewNote !== null && trim($reviewNote) !== '' ? trim($reviewNote) : null,
+                'executed_log_id' => $log?->id,
+                'updated_by' => $checkerId,
+            ])->save();
+
+            return $request;
+        });
+    }
+
+    /**
+     * Checker: reject a pending request with a mandatory review note.
+     */
+    public function rejectRequest(AccountingPeriodRequest $request, int $checkerId, ?string $reviewNote = null): AccountingPeriodRequest
+    {
+        $note = trim((string) ($reviewNote ?? ''));
+        if ($note === '') {
+            throw new PeriodLockedException('A review note is required when rejecting a period request.');
+        }
+
+        return DB::transaction(function () use ($request, $checkerId, $note) {
+            $request = AccountingPeriodRequest::query()
+                ->whereKey($request->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($request->status !== AccountingPeriodRequest::STATUS_PENDING) {
+                throw new PeriodLockedException('This request has already been '.($request->status).'.');
+            }
+
+            if ((int) $request->requested_by === $checkerId) {
+                throw new PeriodLockedException(
+                    ' Maker and checker must be different users: you cannot reject your own request.',
+                );
+            }
+
+            $request->forceFill([
+                'status' => AccountingPeriodRequest::STATUS_REJECTED,
+                'reviewed_by' => $checkerId,
+                'reviewed_at' => now(),
+                'review_note' => $note,
+                'updated_by' => $checkerId,
+            ])->save();
+
+            return $request;
+        });
+    }
+
+    /**
+     * Maker: cancel their own still-pending request.
+     */
+    public function cancelRequest(AccountingPeriodRequest $request, int $makerId): AccountingPeriodRequest
+    {
+        if ($request->status !== AccountingPeriodRequest::STATUS_PENDING) {
+            throw new PeriodLockedException('Only pending requests can be cancelled.');
+        }
+
+        if ((int) $request->requested_by !== $makerId) {
+            throw new PeriodLockedException('Only the maker who submitted this request can cancel it.');
+        }
+
+        $request->forceFill([
+            'status' => AccountingPeriodRequest::STATUS_CANCELLED,
+            'reviewed_at' => now(),
+            'updated_by' => $makerId,
+        ])->save();
+
+        return $request;
+    }
+
+    /**
+     * Pending requests list (checker queue), oldest first.
+     */
+    public function pendingRequests(): \Illuminate\Support\Collection
+    {
+        return AccountingPeriodRequest::query()
+            ->where('status', AccountingPeriodRequest::STATUS_PENDING)
+            ->with('period')
+            ->orderBy('requested_at')
+            ->get();
     }
 }

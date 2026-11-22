@@ -9,7 +9,7 @@ import { z } from "zod";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../common/Toast";
-import { formatApiError } from "../../../utils/errorHandler";
+import { formatApiError, requireOk } from "../../../utils/errorHandler";
 import { fetchActivePaymentReceivingMethods } from "../../../utils/paymentReceivingMethods";
 
 const quotationSchema = z.object({
@@ -196,6 +196,9 @@ const CreateQuotationForm: React.FC = () => {
 
         if (controller.signal.aborted) return;
 
+        await requireOk(customersRes, "Customers");
+        await requireOk(currenciesRes, "Currencies");
+
         const customersData = await customersRes.json();
         const currenciesData = await currenciesRes.json();
 
@@ -209,7 +212,10 @@ const CreateQuotationForm: React.FC = () => {
           return;
         }
         console.error("Error fetching data:", err);
-        addToast("Error loading form data. Please refresh the page.", "error");
+        addToast(
+          err instanceof Error ? err.message : "Error loading form data. Please refresh the page.",
+          "error"
+        );
       } finally {
         setLoadingData(false);
       }

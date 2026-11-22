@@ -162,7 +162,13 @@ Route::prefix('/')->group(function () {
 		Route::get('trial-balance/{trial_balance_run}/lines', [App\Http\Controllers\Api\TrialBalanceController::class, 'lines']);
 
 		// Accounting periods (year / quarter / month period locking)
+		// Maker/checker (four-eyes): close/reopen create pending requests;
+		// a checker approves (executes) or rejects them.
 		Route::get('accounting-periods', [App\Http\Controllers\Api\AccountingPeriodController::class, 'index']);
+		Route::get('accounting-periods/requests', [App\Http\Controllers\Api\AccountingPeriodController::class, 'requests']);
+		Route::post('accounting-period-requests/{accountingPeriodRequest}/approve', [App\Http\Controllers\Api\AccountingPeriodController::class, 'approve']);
+		Route::post('accounting-period-requests/{accountingPeriodRequest}/reject', [App\Http\Controllers\Api\AccountingPeriodController::class, 'reject']);
+		Route::post('accounting-period-requests/{accountingPeriodRequest}/cancel', [App\Http\Controllers\Api\AccountingPeriodController::class, 'cancel']);
 		Route::get('accounting-periods/{accounting_period}/checklist', [App\Http\Controllers\Api\AccountingPeriodController::class, 'checklist']);
 		Route::get('accounting-periods/{accounting_period}/logs', [App\Http\Controllers\Api\AccountingPeriodController::class, 'logs']);
 		Route::post('accounting-periods/{accounting_period}/close', [App\Http\Controllers\Api\AccountingPeriodController::class, 'close']);

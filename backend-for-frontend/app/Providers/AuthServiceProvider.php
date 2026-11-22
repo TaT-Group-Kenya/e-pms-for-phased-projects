@@ -136,6 +136,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\PdcIssuedCompany::class => PdcIssuedCompanyPolicy::class,
         \App\Models\ShipContainer::class => ShipContainerPolicy::class,
         \App\Models\AccountingPeriod::class => AccountingPeriodPolicy::class,
+        \App\Models\AccountingPeriodRequest::class => AccountingPeriodPolicy::class,
     ];
 
     public function register(): void

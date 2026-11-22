@@ -79,6 +79,30 @@ interface FetchResult<T = any> {
   details?: Record<string, string[]>;
 }
 
+/**
+ * Turns a non-OK Response into a thrown Error whose message names the
+ * failing resource and carries the backend detail (e.g. the ROLE_* permission
+ * a 403 mentions) so pages making several parallel API calls tell the user
+ * which resource caused the failure.
+ */
+export async function requireOk(response: Response, resourceLabel: string): Promise<Response> {
+  if (response.ok) return response;
+
+  let detail = "";
+  try {
+    const body = await response.clone().json();
+    if (typeof body?.message === "string" && body.message.trim() !== "") {
+      detail = body.message.trim();
+    }
+  } catch {
+    // Non-JSON body: fall through to the generic detail below.
+  }
+
+  throw new Error(
+    `${resourceLabel}: ${detail || `request failed (HTTP ${response.status})`}`
+  );
+}
+
 export const fetchWithErrorHandlingSafe = async <T = any>(
   url: string,
   options?: RequestInit
