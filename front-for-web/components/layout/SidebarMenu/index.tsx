@@ -250,6 +250,12 @@ const SECTIONS: SidebarSection[] = [
         requiredRoles: ["ROLE_VIEW_ACCOUNT"],
       },
       {
+        label: "Lenders",
+        href: "/finance/lenders/",
+        matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_LOAN"],
+      },
+      {
         label: "Loans",
         href: "/finance/loans/",
         matchStrategy: "startsWith",
@@ -309,6 +315,12 @@ const SECTIONS: SidebarSection[] = [
         matchStrategy: "startsWith",
         requiredRoles: ["ROLE_VIEW_TRANSACTION"],
       },
+      {
+        label: "Accounting Periods",
+        href: "/finance/accounting-periods/",
+        matchStrategy: "startsWith",
+        requiredRoles: ["ROLE_VIEW_ACCOUNTING_PERIOD"],
+      },
     ],
   },
   {
@@ -317,6 +329,12 @@ const SECTIONS: SidebarSection[] = [
     icon: "bar_chart",
     group: "main",
     items: [
+      {
+        label: "Loans Report",
+        href: "/reports/loans-report",
+        matchStrategy: "exact",
+        requiredRoles: ["ROLE_VIEW_LOAN"],
+      },
       {
         label: "Orders Summary",
         href: "/reports/orders-summary",
@@ -675,7 +693,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
           <div className="accordion-item rounded-md text-black dark:text-white mb-[3px] whitespace-nowrap">
             <Link
               href="/dashboard"
-              className={`accordion-button flex items-center transition-all py-[9px] pl-[14px] pr-[30px] rounded-md font-medium w-full relative text-left hover:bg-gray-50 dark:hover:bg-[#15203c]
+              className={`accordion-button flex items-center transition-all py-[3px] pl-[14px] pr-[30px] rounded-md font-medium w-full relative text-left hover:bg-gray-50 dark:hover:bg-[#15203c]
                 ${
                   isDashboardActive
                     ? "text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-[#15203c] border-l-4 border-primary-500 shadow-sm"
@@ -728,7 +746,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                   >
                     {section.icon}
                   </i>
-                  <span className="title leading-none flex-1 truncate">{section.label}</span>
+                  <span className="title leading-none font-medium flex-1 truncate">{section.label}</span>
                 </button>
 
                 <div className={`accordion-collapse ${isOpen ? "block" : "hidden"}`}>
@@ -746,7 +764,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                             <Link
                               href={item.href}
                               onClick={() => setShouldScrollToActive(true)}
-                              className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium py-[9px] pl-[38px] pr-[30px] w-full text-left
+                              className={`sidemenu-link rounded-md flex items-center relative transition-all font-small py-[3px] pl-[38px] pr-[30px] w-full text-left
                                 ${
                                   isItemActive
                                     ? "text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-[#15203c]"
@@ -824,7 +842,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                             <Link
                               href={item.href}
                               onClick={() => setShouldScrollToActive(true)}
-                              className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium py-[9px] pl-[38px] pr-[30px] w-full text-left
+                              className={`sidemenu-link rounded-md flex items-center relative transition-all font-medium py-[3px] pl-[38px] pr-[30px] w-full text-left
                                 ${
                                   isItemActive
                                     ? "text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-[#15203c]"
@@ -851,7 +869,7 @@ const SidebarMenu: React.FC<SidebarMenuProps> = ({ toggleActive }) => {
                 e.preventDefault();
                 handleLogout();
               }}
-              className={`accordion-button flex items-center transition-all py-[9px] pl-[14px] pr-[30px] rounded-md font-medium w-full relative text-left hover:bg-gray-50 dark:hover:bg-[#15203c]
+              className={`accordion-button flex items-center transition-all py-[3px] pl-[14px] pr-[30px] rounded-md font-medium w-full relative text-left hover:bg-gray-50 dark:hover:bg-[#15203c]
                 ${
                   isLogoutActive
                     ? "text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-[#15203c]"

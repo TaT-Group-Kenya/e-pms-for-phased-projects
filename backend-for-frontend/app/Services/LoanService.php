@@ -257,14 +257,21 @@ class LoanService
         // A repayment may cover any number of installments, or settle the
         // loan early. The hard ceiling is everything still owed: remaining
         // principal plus interest that has fallen due but is uncollected.
-        $outstanding = $this->outstandingBalance($loan);
+        // (Future interest is deliberately NOT part of this ceiling — the
+        // schedule accrues it as time passes; the repayable-minus-paid
+        // outstandingBalance() already includes it for the trial balance.)
+        $remainingPrincipal = round(
+            (float) $loan->schedule()->sum('expected_principal')
+            - (float) DB::table('loan_repayment_allocations')->where('loan_id', $loan->id)->sum('principal_applied'),
+            2
+        );
         $accruedAtEntry = $this->accruedInterest($loan);
-        $totalDue = round($outstanding + $accruedAtEntry, 2);
+        $totalDue = round($remainingPrincipal + $accruedAtEntry, 2);
 
         if ($amount > $totalDue) {
             throw new InvalidArgumentException(
                 'Repayment amount exceeds the total due of '.number_format($totalDue, 2).' '.$loan->currency
-                    .' (outstanding '.number_format($outstanding, 2).' + fallen-due interest '
+                    .' (outstanding '.number_format($remainingPrincipal, 2).' + fallen-due interest '
                     .number_format($accruedAtEntry, 2).').'
             );
         }
@@ -401,7 +408,13 @@ class LoanService
             $repayment->balance_after = $this->outstandingBalance($loan->fresh());
             $repayment->save();
 
-            if ($this->outstandingBalance($loan->fresh()) <= 0
+            $finalRemainingPrincipal = round(
+                (float) $loan->schedule()->sum('expected_principal')
+                - (float) DB::table('loan_repayment_allocations')->where('loan_id', $loan->id)->sum('principal_applied'),
+                2
+            );
+
+            if ($finalRemainingPrincipal <= 0
                 && round($this->accruedInterest($loan->fresh()), 2) <= 0) {
                 // Early (or full) settlement: nothing remains owed — pending,
                 // overdue and any partially paid installments are closed out.
@@ -431,6 +444,11 @@ class LoanService
      * Principal still owed on THIS loan specifically: scheduled principal
      * minus what allocations have applied — never any account-level state.
      */
+    /**
+     * Outstanding balance = principal still owed (schedule − applied).
+     * KES-only bookkeeping; the trial balance/report use
+     * repayablePaidBalance() for the repayable−repaid figure.
+     */
     public function outstandingBalance(Loan $loan): float
     {
         $scheduled = (float) $loan->schedule()->sum('expected_principal');
@@ -443,15 +461,33 @@ class LoanService
     }
 
     /**
+     * Repayable-basis balance = Total Repayable − Total Repaid. Used by the
+     * Loans report and Trial Balance display so a loan's remaining
+     * obligation (incl. future interest) reads as one figure.
+     */
+    public function repayablePaidBalance(Loan $loan): float
+    {
+        $summary = $this->summary($loan);
+
+        return round(max($summary['total_repayable'] - $summary['total_repaid'], 0), 2);
+    }
+
+    /**
      * Uncollected interest that has fallen due: interest scheduled on
      * installments whose due date has arrived (or which already received
      * payments) minus interest already collected. Future interest is not
      * yet receivable and must not swallow principal.
+     *
+     * The cutoff defaults to today; trial-balance runs pass their as-at
+     * date so historical snapshots accrue only to that point.
      */
-    public function accruedInterest(Loan $loan): float
+    public function accruedInterest(Loan $loan, ?string $asAt = null): float
     {
+        $cutoff = $asAt ?? now()->toDateString();
+
         $dueInterest = (float) $loan->schedule()
-            ->whereDate('due_date', '<=', now()->toDateString())
+            ->whereDate('due_date', '<=', $cutoff)
+            ->where('status', '!=', LoanSchedule::STATUS_WAIVED)
             ->sum('expected_interest');
 
         // Loans whose schedule starts in the future: nothing accrued yet.
@@ -488,7 +524,12 @@ class LoanService
 
         return [
             'principal' => (float) $loan->principal,
-            'loan_balance' => $this->outstandingBalance($loan),
+            'loan_balance' => round(max((float) $totalRepayable - (float) $totalRepaid, 0), 2),
+            'outstanding_balance' => round(
+                max((float) $loan->schedule->sum('expected_principal')
+                    - (float) DB::table('loan_repayment_allocations')->where('loan_id', $loan->id)->sum('principal_applied'), 0),
+                2
+            ),
             'total_repaid' => $totalRepaid,
             'principal_repaid' => $principalRepaid,
             'interest_repaid' => $interestRepaid,
@@ -760,6 +801,7 @@ class LoanService
             DB::table('loan_repayment_allocations')->insert($allocations);
         }
     }
+
     private function paidFor(LoanSchedule $installment, string $component): float
     {
         return round(

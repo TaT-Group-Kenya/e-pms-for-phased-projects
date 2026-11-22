@@ -34,6 +34,8 @@ use App\Policies\{
     DownloadPolicy,
     GroupRolePolicy,
     LanguagePolicy,
+    LenderPolicy,
+    LoanPolicy,
     OfficeExpenseDocumentPolicy,
     OfficeExpensePolicy,
     OfficeExpenseCategoryPolicy,
@@ -64,6 +66,7 @@ use App\Policies\{
     PdcReceivedCustomerPolicy,
     PdcIssuedCompanyPolicy,
     ShipContainerPolicy,
+    AccountingPeriodPolicy,
 };
 
 class AuthServiceProvider extends ServiceProvider
@@ -103,6 +106,8 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Download::class => DownloadPolicy::class,
         \App\Models\GroupRole::class => GroupRolePolicy::class,
         \App\Models\Language::class => LanguagePolicy::class,
+        \App\Models\Lender::class => LenderPolicy::class,
+        \App\Models\Loan::class => LoanPolicy::class,
         \App\Models\OfficeExpenseDocument::class => OfficeExpenseDocumentPolicy::class,
         \App\Models\Order::class => OrderPolicy::class,
         \App\Models\OrderDocument::class => OrderDocumentPolicy::class,
@@ -130,6 +135,8 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\PdcReceivedCustomer::class => PdcReceivedCustomerPolicy::class,
         \App\Models\PdcIssuedCompany::class => PdcIssuedCompanyPolicy::class,
         \App\Models\ShipContainer::class => ShipContainerPolicy::class,
+        \App\Models\AccountingPeriod::class => AccountingPeriodPolicy::class,
+        \App\Models\AccountingPeriodRequest::class => AccountingPeriodPolicy::class,
     ];
 
     public function register(): void

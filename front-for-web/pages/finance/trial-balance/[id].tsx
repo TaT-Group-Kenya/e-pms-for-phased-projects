@@ -6,7 +6,6 @@ import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
 import { ToastContainer } from "../../../components/common/Toast";
 import AuthenticatedLayout from "../../../components/authenticated/AuthenticatedLayout";
-import { formatApiError } from "../../../utils/errorHandler";
 
 interface RunMeta {
   id: number
@@ -145,6 +144,7 @@ const TrialBalanceDetail: React.FC = () => {
     ])
     const totals = [
       'TOTAL',
+      '',
       detail.totals.debit_kes,
       detail.totals.credit_kes,
     ]

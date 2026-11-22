@@ -18,6 +18,17 @@ class LoanResource extends BaseResource
                     'balance' => $this->destination->balance,
                 ] : null;
             }),
+            'lender_id' => $this->lender_id,
+            'lender' => $this->whenLoaded('lender', function () {
+                return $this->lender ? [
+                    'id' => $this->lender->id,
+                    'name' => $this->lender->name,
+                    'address' => $this->lender->address,
+                    'email' => $this->lender->email,
+                    'phone' => $this->lender->phone,
+                    'kra_pin' => $this->lender->kra_pin,
+                ] : null;
+            }),
             'chart_of_account' => $this->chart_of_account,
             'chart_of_account_data' => $this->whenLoaded('chartOfAccount', function () {
                 return $this->chartOfAccount ? [

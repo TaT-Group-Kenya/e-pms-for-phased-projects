@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CompanyInvoiceStoreRequest;
 use App\Http\Requests\CompanyInvoiceUpdateRequest;
@@ -18,6 +19,7 @@ use App\Models\ProjectPhase;
 use App\Models\SysConfig;
 use App\Services\CommonService;
 use App\Services\CompanyInvoiceService;
+use App\Services\TaxTransactionService;
 use App\Services\TransactionCostManagerService;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
@@ -32,6 +34,8 @@ use Illuminate\Validation\ValidationException;
 
 class CompanyInvoiceController extends Controller
 {
+    use EnsuresOpenPeriod;
+
     protected $service;
 
     protected $transactionCostManager;
@@ -245,6 +249,11 @@ class CompanyInvoiceController extends Controller
             'transaction_cost' => ['nullable', 'numeric', 'min:0'],
             'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
+
+        // The payment is a posting dated payment_date: its month must be open.
+        if ($response = $this->ensurePeriodOpenForDate($validated['payment_date'], 'payment_date')) {
+            return $response;
+        }
 
         // Ensure payment_date is not older than invoice creation date
         $paymentDate = Carbon::parse($validated['payment_date'])->toDateString();
@@ -484,23 +493,8 @@ class CompanyInvoiceController extends Controller
             $payment->transaction_id = $trxn->id;
             $payment->save();
 
-            // Tax paid on the company invoice payment is VAT receivable — an
-            // asset recoverable from the revenue authority (chart 1000).
-            if ($taxPortion > 0) {
-                \App\Services\TaxTransactionService::record([
-                    'direction' => 'paid',
-                    'source_type' => 'company_invoice',
-                    'source_id' => $invoice->id,
-                    'payment_id' => $payment->id,
-                    'amount' => $taxPortion,
-                    'transaction_currency' => $invoiceCurrencyCode,
-                    'exchange_rate' => $exchangeRate,
-                    'transaction_date' => $validated['payment_date'],
-                    'company_id' => $invoice->company_id,
-                    'narration' => 'Tax paid on payment for company invoice '.$invoice->invoice_number,
-                    'created_by' => $userId,
-                ]);
-            }
+            // The tax ledger records the invoice's declared position only —
+            // movements on settlement are intentionally not tracked.
 
             // Update accounts account balance: debit decreases balance
             $balanceAfterThis = $currentBalance - $amountToDebitAccount;
@@ -597,6 +591,11 @@ class CompanyInvoiceController extends Controller
                     'payment_id' => ['Reverse the reconciliation before deleting this payment.'],
                 ],
             ], 422);
+        }
+
+        // Deleting the payment changes the closed month's balances.
+        if ($response = $this->ensurePeriodOpenForDate($companyPayment->payment_date, 'payment_date')) {
+            return $response;
         }
 
         $invoice = $companyInvoice;
@@ -731,6 +730,11 @@ class CompanyInvoiceController extends Controller
             ], 422);
         }
 
+        // Editing (even metadata) of a closed month's payment is locked.
+        if ($response = $this->ensurePeriodOpenForDate($companyPayment->payment_date, 'payment_date')) {
+            return $response;
+        }
+
         $invoice = $companyInvoice;
 
         $invoice = DB::transaction(function () use ($invoice, $companyPayment, $validated) {
@@ -807,6 +811,14 @@ class CompanyInvoiceController extends Controller
         $hasStatusInPayload = array_key_exists('status', $validated);
 
         $userId = Auth::id();
+
+        // Period locks: stored invoice date and requested date must be open.
+        if ($response = $this->ensureModelPeriodOpen($companyInvoice)) {
+            return $response;
+        }
+        if ($response = $this->ensurePeriodOpenForDate($validated['created_at'], 'created_at')) {
+            return $response;
+        }
 
         // Prevent marking an invoice as draft if it already has any ledger entries
         if ($hasStatusInPayload && $validated['status'] === 'draft') {
@@ -905,6 +917,9 @@ class CompanyInvoiceController extends Controller
                 return $updatedInvoice;
             });
 
+            // A sent company invoice holds recoverable (input) VAT.
+            TaxTransactionService::syncCompanyInvoicePosition($updated);
+
             return new CompanyInvoiceResource($updated);
         }
 
@@ -923,6 +938,14 @@ class CompanyInvoiceController extends Controller
                 'message' => 'Only draft company invoices can be deleted.',
             ], 422);
         }
+
+        if ($response = $this->ensureModelPeriodOpen($companyInvoice)) {
+            return $response;
+        }
+
+        // Draft invoices hold no declared VAT, but withdraw any residual
+        // position defensively (restates to zero via a Balancing entry).
+        TaxTransactionService::syncCompanyInvoicePosition(CompanyInvoice::withDeleted()->findOrFail($companyInvoice->id));
 
         $this->service->delete($companyInvoice->id);
 

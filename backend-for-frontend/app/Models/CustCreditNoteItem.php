@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Traits\HasLogicalDeletion;
+use App\Services\TaxTransactionService;
 use Illuminate\Database\Eloquent\Model;
 
 class CustCreditNoteItem extends Model
@@ -87,6 +88,11 @@ class CustCreditNoteItem extends Model
             $note->total_amount = $subtotal + $taxAmount;
 
             $note->save();
+
+            // Raised credit notes already hold a VAT_IN position; item edits
+            // to such notes are blocked upstream, so this restate is a no-op
+            // unless the note was raised before an amount-affecting edge.
+            TaxTransactionService::syncCreditNotePosition($note->fresh());
         };
 
         static::saved($recalculateTotals);

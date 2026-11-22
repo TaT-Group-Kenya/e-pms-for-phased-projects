@@ -43,6 +43,22 @@ class Handler extends ExceptionHandler
         $this->renderable(function (AccessDeniedHttpException $e, $request) {
             return $this->handleAuthorizationException($request, $e);
         });
+
+        // Accounting period locks: 423 Locked with a structured payload so
+        // the UI can explain which month is closed.
+        $this->renderable(function (\App\Exceptions\PeriodLockedException $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'error' => 'PeriodLocked',
+                    'period' => [
+                        'date' => $e->date,
+                        'id' => $e->periodId,
+                        'name' => $e->periodName,
+                    ],
+                ], 423);
+            }
+        });
     }
 
     /**

@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { requireOk } from "../../../utils/errorHandler";
 
 interface ProjectDetailsData {
   id: number;
@@ -153,6 +154,12 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
 
         if (controller.signal.aborted) return;
 
+        await requireOk(customersRes, "Customers");
+        await requireOk(categoriesRes, "Project categories");
+        await requireOk(sourcesRes, "Project source origins");
+        await requireOk(locationsRes, "Project locations");
+        await requireOk(currenciesRes, "Currencies");
+
         const customersData = await customersRes.json();
         const categoriesData = await categoriesRes.json();
         const sourcesData = await sourcesRes.json();
@@ -175,6 +182,10 @@ const ProjectEditComponent: React.FC<ProjectEditComponentProps> = ({
           return;
         }
         console.error("Error fetching data:", err);
+        addToast(
+          err instanceof Error ? err.message : "Error loading form data.",
+          "error"
+        );
       } finally {
         setLoadingData(false);
       }

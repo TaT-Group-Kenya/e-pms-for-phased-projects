@@ -8,14 +8,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!base) return res.status(500).json({ message: 'EPMS_API_BASE not configured' })
 
   try {
-    const { page = 1, per_page = 15, with: withParam, ...rest } = req.query as Record<string, any>
+    const { with: withParam, ...rest } = req.query as Record<string, any>
 
     const url = new URL(`${base}/sys-roles`)
-    url.searchParams.append('page', String(page))
-    url.searchParams.append('per_page', String(per_page))
-
     if (withParam) url.searchParams.append('with', String(withParam))
 
+    // Pass through page, per_page, search and any whitelisted filter params
     Object.entries(rest).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         url.searchParams.append(key, String(value))

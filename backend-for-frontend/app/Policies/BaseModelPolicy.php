@@ -64,12 +64,12 @@ class BaseModelPolicy
         return $this->check($user, 'ADD', $model);
     }
 
-    public function update(User $user, $model)
+    public function update(User $user, $model = null)
     {
         return $this->check($user, 'EDIT', $model);
     }
 
-    public function delete(User $user, $model)
+    public function delete(User $user, $model = null)
     {
         return $this->check($user, 'DELETE', $model);
     }
@@ -78,7 +78,15 @@ class BaseModelPolicy
     {
         $base = $this->roleBase($model);
         $roleName = "ROLE_{$action}_{$base}";
-        return $this->userHasRole($user, $roleName);
+        if ($this->userHasRole($user, $roleName)) {
+            return $this->allow();
+        }
+        // A deny Response with a message names the exact permission to
+        // request; the Gate surfaces it verbatim in the 403 instead of the
+        // generic "This action is unauthorized."
+        return $this->deny(
+            "Access denied. You need the permission '{$roleName}' to do this. Request it from an administrator."
+        );
     }
 
     protected function userHasRole(User $user, string $roleName): bool

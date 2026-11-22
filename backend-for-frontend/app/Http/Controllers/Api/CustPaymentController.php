@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Storage;
 
 class CustPaymentController extends Controller
 {
+    use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     protected CustPaymentService $service;
 
     public function __construct(CustPaymentService $service)
@@ -49,6 +51,11 @@ class CustPaymentController extends Controller
         $this->authorize('create', CustPayment::class);
 
         $validated = $request->validated();
+
+        if ($response = $this->ensurePeriodOpenForDate($validated['payment_date'] ?? null, 'payment_date')) {
+            return $response;
+        }
+
         $validated['created_by'] = Auth::id();
 
         $model = $this->service->create($validated);
@@ -70,6 +77,15 @@ class CustPaymentController extends Controller
         $this->authorize('update', $custPayment);
 
         $validated = $request->validated();
+
+        // Stored date governs edits; a changed payment_date must be open too.
+        if ($response = $this->ensureModelPeriodOpen($custPayment)) {
+            return $response;
+        }
+        if ($response = $this->ensurePeriodOpenForDate($validated['payment_date'] ?? null, 'payment_date')) {
+            return $response;
+        }
+
         $validated['updated_by'] = Auth::id();
 
         $updated = $this->service->update($custPayment->id, $validated);
@@ -80,6 +96,10 @@ class CustPaymentController extends Controller
     public function destroy(CustPayment $custPayment)
     {
         $this->authorize('delete', $custPayment);
+
+        if ($response = $this->ensureModelPeriodOpen($custPayment)) {
+            return $response;
+        }
 
         $this->service->delete($custPayment->id, Auth::id());
 

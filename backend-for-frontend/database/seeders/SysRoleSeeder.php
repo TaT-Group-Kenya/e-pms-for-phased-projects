@@ -230,6 +230,10 @@ class SysRoleSeeder extends Seeder
             'ROLE_EDIT_PDC_ISSUED_COMPANY',
             'ROLE_DELETE_PDC_ISSUED_COMPANY',
             'ROLE_VIEW_PDC_ISSUED_COMPANY',
+            'ROLE_ADD_LOAN',
+            'ROLE_EDIT_LOAN',
+            'ROLE_DELETE_LOAN',
+            'ROLE_VIEW_LOAN',
         ];
 
         foreach ($roles as $role) {

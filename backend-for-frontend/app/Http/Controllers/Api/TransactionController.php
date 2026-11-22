@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Storage;
 
 class TransactionController extends Controller
 {
+    use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
     protected $service;
 
     public function __construct(TransactionService $service)
@@ -41,6 +42,11 @@ class TransactionController extends Controller
         $this->authorize('create', Transaction::class);
 
         $validated = $request->validated();
+
+        if ($response = $this->ensurePeriodOpenForDate($validated['transaction_date'] ?? null, 'transaction_date')) {
+            return $response;
+        }
+
         $validated['created_by'] = Auth::id();
         $model = $this->service->create($validated);
 
@@ -59,6 +65,14 @@ class TransactionController extends Controller
         $this->authorize('update', $transaction);
 
         $validated = $request->validated();
+
+        if ($response = $this->ensureModelPeriodOpen($transaction)) {
+            return $response;
+        }
+        if ($response = $this->ensurePeriodOpenForDate($validated['transaction_date'] ?? null, 'transaction_date')) {
+            return $response;
+        }
+
         $validated['updated_by'] = Auth::id();
         $updated = $this->service->update($transaction->id, $validated);
 
@@ -68,6 +82,10 @@ class TransactionController extends Controller
     public function destroy(Transaction $transaction)
     {
         $this->authorize('delete', $transaction);
+
+        if ($response = $this->ensureModelPeriodOpen($transaction)) {
+            return $response;
+        }
 
         $this->service->delete($transaction->id, Auth::id());
 

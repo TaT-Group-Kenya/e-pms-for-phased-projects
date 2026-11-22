@@ -151,7 +151,7 @@ class TrialBalanceController extends Controller
                     $line->credit_kes,
                 ], escape: '\\');
             }
-            fputcsv($out, ['TOTAL', '',
+            fputcsv($out, ['TOTAL',
                 $lines->sum('debit_kes'), $lines->sum('credit_kes'),
             ], escape: '\\');
             fclose($out);

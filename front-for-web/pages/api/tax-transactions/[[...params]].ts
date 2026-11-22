@@ -3,9 +3,10 @@ import { JSON_HEADERS } from '../../../constants/headers'
 
 /**
  * BFF proxy for the tax transactions ledger:
- *   GET /api/tax-transactions            -> paginated ledger rows (filters)
- *   GET /api/tax-transactions/:id        -> single row detail
- *   GET /api/tax-transactions/summary    -> totals grouped by direction/chart
+ *   GET /api/tax-transactions            -> ordered ledger rows with running balances (filters)
+ *   GET /api/tax-transactions/:id        -> single row detail (+ source document)
+ *   GET /api/tax-transactions/summary    -> VAT position cards
+ * Date range, entry type, side and party filters are forwarded as-is.
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' })

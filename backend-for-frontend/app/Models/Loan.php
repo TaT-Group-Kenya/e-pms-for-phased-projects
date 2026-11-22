@@ -30,6 +30,7 @@ class Loan extends Model
 
     protected $fillable = [
         'destination_account_id',
+        'lender_id',
         'lender_name',
         'principal',
         'principal_kes',
@@ -81,6 +82,12 @@ class Loan extends Model
     public function destination(): BelongsTo
     {
         return $this->belongsTo(Account::class, 'destination_account_id');
+    }
+
+    // The lender (person or corporate) this loan was borrowed from.
+    public function lender(): BelongsTo
+    {
+        return $this->belongsTo(Lender::class, 'lender_id');
     }
 
     // The chart the loan is classified under; defaults to the Liabilities

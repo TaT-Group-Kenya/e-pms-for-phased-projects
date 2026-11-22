@@ -21,6 +21,8 @@ use Illuminate\Validation\Rule;
 
 class LoanController extends Controller
 {
+use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     protected $service;
 
     public function __construct(LoanService $service)
@@ -30,11 +32,11 @@ class LoanController extends Controller
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', Account::class);
+        $this->authorize('viewAny', Loan::class);
         $perPage = (int) ($request->get('per_page', 15));
         $page = (int) ($request->get('page', 1));
 
-        $query = Loan::query()->with(['destination', 'chartOfAccount', 'repayments', 'schedule']);
+        $query = Loan::query()->with(['destination', 'chartOfAccount', 'lender', 'repayments', 'schedule']);
 
         if ($request->filled('destination_account_id')) {
             $query->where('destination_account_id', $request->get('destination_account_id'));
@@ -61,7 +63,7 @@ class LoanController extends Controller
 
     public function store(LoanStoreRequest $request)
     {
-        $this->authorize('create', Account::class);
+        $this->authorize('create', Loan::class);
 
         $validated = $request->validated();
         $validated['interest_rate'] = $validated['interest_type'] === 'none'
@@ -72,22 +74,22 @@ class LoanController extends Controller
 
         return response()->json([
             'message' => 'Loan created successfully.',
-            'data' => new LoanResource($loan->loadMissing(['destination', 'chartOfAccount', 'repayments', 'schedule'])),
+            'data' => new LoanResource($loan->loadMissing(['destination', 'chartOfAccount', 'lender', 'repayments', 'schedule'])),
         ], 201);
     }
 
     public function show(Loan $loan)
     {
         // Loans are managed within the Accounts permission set.
-        $this->authorize('viewAny', Account::class);
+        $this->authorize('viewAny', Loan::class);
 
-        return new LoanResource($loan->loadMissing(['destination', 'chartOfAccount', 'repayments.paidFromAccount', 'schedule']));
+        return new LoanResource($loan->loadMissing(['destination', 'chartOfAccount', 'lender', 'repayments.paidFromAccount', 'schedule']));
     }
 
     public function repay(Request $request, Loan $loan, LoanService $loanService)
     {
         // Loans are managed within the Accounts permission set.
-        $this->authorize('viewAny', Account::class);
+        $this->authorize('viewAny', Loan::class);
 
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
@@ -95,7 +97,7 @@ class LoanController extends Controller
                 'required',
                 'integer',
                 'exists:accounts,id',
-                Rule::exists('accounts', 'id')->where(function ($query) {
+                Rule::exists('accounts', 'id')->where(function ($query) use ($loan) {
                     $query->whereIn('chart_of_account_id', ChartOfAccount::where('code', '1000')->select('id'))
                         ->where('currency', $loan->currency);
                 }),
@@ -105,6 +107,11 @@ class LoanController extends Controller
             'payment_reference' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        // The repayment posts on payment_date (or today): that month must be open.
+        if ($response = $this->ensurePeriodOpenForDate($data['payment_date'] ?? now()->toDateString(), 'payment_date')) {
+            return $response;
+        }
 
         try {
             $loanService->repay($loan, $data, (int) Auth::id());
@@ -118,9 +125,9 @@ class LoanController extends Controller
     public function statementPdf(Request $request, Loan $loan, LoanService $loanService)
     {
         // Loans are managed within the Accounts permission set.
-        $this->authorize('viewAny', Account::class);
+        $this->authorize('viewAny', Loan::class);
 
-        $loan->loadMissing(['destination', 'chartOfAccount', 'repayments.paidFromAccount', 'schedule']);
+        $loan->loadMissing(['destination', 'chartOfAccount', 'lender', 'repayments.paidFromAccount', 'schedule']);
 
         $pdf = $this->buildLoanStatementPdf(
             $loan,

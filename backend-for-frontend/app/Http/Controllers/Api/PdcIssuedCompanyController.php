@@ -22,6 +22,8 @@ use Illuminate\Validation\ValidationException;
 
 class PdcIssuedCompanyController extends Controller
 {
+use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     protected $service;
 
     public function __construct(PdcIssuedCompanyService $service)
@@ -186,6 +188,11 @@ class PdcIssuedCompanyController extends Controller
         $clearDate = now()->toDateString();
         if ($pdcModel->cheque_date && $pdcModel->cheque_date > $clearDate) {
             return response()->json(['message' => 'Cheque has not matured yet.'], 422);
+        }
+
+        // Posting to the ledger on the clearing date: that month must be open.
+        if ($response = $this->ensurePeriodOpenForDate($clearDate, 'clear_date')) {
+            return $response;
         }
 
         $invoice = $pdcModel->invoice_id ? CompanyInvoice::with('project')->find($pdcModel->invoice_id) : null;

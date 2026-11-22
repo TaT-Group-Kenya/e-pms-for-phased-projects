@@ -16,7 +16,8 @@ class LoanStoreRequest extends FormRequest
     {
         return [
             'destination_account_id' => ['required', 'integer', 'exists:accounts,id'],
-            'lender_name' => ['required', 'string', 'max:255'],
+            'lender_id' => ['required_without:lender_name', 'nullable', 'integer', 'exists:lenders,id'],
+            'lender_name' => ['prohibited_unless:lender_id,null', 'nullable', 'string', 'max:255'],
             'principal' => ['required', 'numeric', 'min:0.01'],
             'currency' => ['required', 'string', 'max:10', 'exists:currencies,code'],
             'forex_rate' => ['nullable', 'numeric', 'min:0.000001'],

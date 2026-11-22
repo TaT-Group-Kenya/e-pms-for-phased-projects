@@ -4,11 +4,12 @@ namespace App\Services;
 
 use App\Models\CustCreditNote;
 use App\Models\CustomerTransactionsLedger;
+use App\Services\Concerns\ListQuery;
 use Illuminate\Validation\ValidationException;
 
 class CustCreditNoteService
 {
-    use \App\Services\Concerns\ListQuery;
+    use ListQuery;
 
     /** Columns matched by the free-text `search` parameter. */
     protected array $listSearchable = [
@@ -65,7 +66,12 @@ class CustCreditNoteService
         $creditNoteNumber = $commonService->getNextCustCreditNoteNumber();
         $data['credit_note_number'] = $creditNoteNumber;
 
-        return CustCreditNote::create($data);
+        $model = CustCreditNote::create($data);
+
+        // A raised credit note immediately reduces output VAT (VAT_IN).
+        TaxTransactionService::syncCreditNotePosition($model);
+
+        return $model;
     }
 
     public function update(int $id, array $data)
@@ -105,7 +111,15 @@ class CustCreditNoteService
             }
         }
 
+        $previousStatus = $model->status;
         $model->update($data);
+
+        // Raised or reverting statuses move the declared VAT position.
+        if (in_array($model->status, ['raised', 'draft', 'refunded'], true)
+            && in_array($previousStatus, ['draft', 'raised'], true)
+        ) {
+            TaxTransactionService::syncCreditNotePosition($model);
+        }
 
         return $model;
     }
@@ -114,6 +128,11 @@ class CustCreditNoteService
     {
         $model = CustCreditNote::findOrFail($id);
 
-        return $model->softDelete($deletedBy);
+        $result = $model->softDelete($deletedBy);
+
+        // A deleted raised credit note withdraws its VAT_IN position.
+        TaxTransactionService::syncCreditNotePosition($model);
+
+        return $result;
     }
 }

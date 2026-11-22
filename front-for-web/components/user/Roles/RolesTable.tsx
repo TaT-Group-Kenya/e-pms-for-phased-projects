@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { selectAccessToken } from "../../../store/auth/selectors";
 import { useToast } from "../../../hooks/useToast";
+import { useListQuery } from "../../../hooks/useListQuery";
 import { ToastContainer } from "../../common/Toast";
+import PaginationFooter from "../../common/PaginationFooter";
 import DeleteConfirmationModal from "../../common/DeleteConfirmationModal";
 
 interface SysRole {
@@ -13,24 +15,27 @@ interface SysRole {
   description?: string | null;
 }
 
-interface PaginationData<T> {
-  data: T[];
-  current_page: number;
-  per_page: number;
-  total: number;
-  last_page: number;
-}
-
 const RolesTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken) as string | null;
   const { toasts, addToast, removeToast } = useToast();
 
-  const [roles, setRoles] = useState<SysRole[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  // Server-side listing: pagination and debounced search live in useListQuery.
+  const {
+    searchInput,
+    setSearchInput,
+    page,
+    setPage,
+    perPage,
+    changePerPage,
+    rows: roles,
+    loading,
+    error,
+    meta,
+    refresh,
+  } = useListQuery<SysRole>("/api/sys-roles/list", {
+    accessToken,
+    onError: (message) => addToast(message, "error"),
+  });
 
   const [editingRole, setEditingRole] = useState<SysRole | null>(null);
   const [form, setForm] = useState<{ name: string; description: string }>(
@@ -44,54 +49,6 @@ const RolesTable: React.FC = () => {
   const [deleteRoleName, setDeleteRoleName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  const [reloadKey, setReloadKey] = useState(0);
-
-  const perPage = 15;
-
-  useEffect(() => {
-    if (!accessToken) {
-      setLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    const fetchRoles = async () => {
-      setLoading(true);
-      try {
-        const url = new URL(`/api/sys-roles/list`, window.location.origin);
-        url.searchParams.append("page", String(currentPage));
-        url.searchParams.append("per_page", String(perPage));
-
-        const resp = await fetch(url.toString(), {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          signal: controller.signal,
-        });
-
-        const data: PaginationData<SysRole> = await resp.json();
-        const list = data.data || [];
-        setRoles(list as SysRole[]);
-        setTotalPages(data.last_page || 1);
-        setTotalCount(data.total || list.length || 0);
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        // eslint-disable-next-line no-console
-        console.error("Error loading roles", err);
-        addToast("Failed to load roles", "error");
-        setRoles([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRoles();
-    return () => controller.abort();
-  }, [accessToken, currentPage, perPage, addToast, reloadKey]);
-
-  const handlePageClick = (page: number) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
-  };
 
   const resetForm = () => {
     setEditingRole(null);
@@ -144,8 +101,7 @@ const RolesTable: React.FC = () => {
         editingRole ? "Role updated successfully" : "Role created successfully",
         "success"
       );
-      setCurrentPage(1);
-      setReloadKey((key) => key + 1);
+      refresh();
       resetForm();
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -191,9 +147,9 @@ const RolesTable: React.FC = () => {
       }
 
       addToast("Role deleted", "success");
-      setRoles((prev) => prev.filter((r) => r.id !== deleteRoleId));
-      setTotalCount((prev) => Math.max(prev - 1, 0));
       closeDeleteModal();
+      // Refetch on the current page (list is server-paginated)
+      refresh();
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("Error deleting role", err);
@@ -204,17 +160,6 @@ const RolesTable: React.FC = () => {
       setIsDeleting(false);
     }
   };
-
-  const filteredRoles = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return roles;
-    return roles.filter((r) =>
-      `${r.name} ${r.description || ""}`.toLowerCase().includes(term)
-    );
-  }, [roles, searchTerm]);
-
-  const indexOfFirst = (currentPage - 1) * perPage + 1;
-  const indexOfLast = Math.min(currentPage * perPage, totalCount);
 
   return (
     <>
@@ -247,15 +192,24 @@ const RolesTable: React.FC = () => {
               </span>
               <input
                 type="text"
-                placeholder="Search roles..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
+                placeholder="Search roles (name, description)..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="bg-gray-50 dark:bg-[#111827] border border-gray-100 dark:border-[#1f2937] h-[36px] rounded-md w-full text-xs text-black dark:text-white pl-9 pr-3 focus:outline-none focus:ring-1 focus:ring-primary-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => setSearchInput("")}
+                className="h-[36px] px-2 text-xs rounded-md border border-gray-100 dark:border-[#1f2937] text-gray-500 dark:text-gray-400 hover:text-primary-500 hover:border-primary-500 whitespace-nowrap"
+                title="Clear search"
+              >
+                <span className="material-symbols-outlined text-[16px]">
+                  filter_alt_off
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -318,15 +272,19 @@ const RolesTable: React.FC = () => {
           </div>
 
           {loading ? (
-            <div className="py-8 text-center text-xs text-gray-500 dark:text-gray-400">
-              Loading roles...
-            </div>
-          ) : filteredRoles.length === 0 ? (
-            <div className="py-8 text-center text-xs text-gray-500 dark:text-gray-400">
-              No roles defined yet.
+            <div className="space-y-[10px]">
+              {[...Array(5)].map((_, index) => (
+                <div
+                  key={index}
+                  className="h-[52px] bg-gray-100 dark:bg-gray-700 rounded-md animate-pulse"
+                ></div>
+              ))}
             </div>
           ) : (
             <>
+              {error && (
+                <div className="mb-3 text-sm text-danger-500">{error}</div>
+              )}
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-[#1f2937] text-xs text-gray-500 dark:text-gray-400">
@@ -336,7 +294,19 @@ const RolesTable: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRoles.map((role) => (
+                  {roles.length === 0 && !error ? (
+                    <tr>
+                      <td
+                        colSpan={3}
+                        className="py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                      >
+                        {searchInput
+                          ? "No roles match your search."
+                          : "No roles defined yet."}
+                      </td>
+                    </tr>
+                  ) : (
+                    roles.map((role) => (
                     <tr
                       key={role.id}
                       className="border-b border-gray-50 dark:border-[#111827] last:border-b-0 hover:bg-gray-50/60 dark:hover:bg-[#111827] transition-colors"
@@ -376,42 +346,19 @@ const RolesTable: React.FC = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                  )}
                 </tbody>
               </table>
 
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mt-4 text-xs text-gray-500 dark:text-gray-400">
-                <div>
-                  Showing <span className="font-medium text-black dark:text-white">{indexOfFirst}</span>–
-                  <span className="font-medium text-black dark:text-white">{indexOfLast}</span> of
-                  <span className="font-medium text-black dark:text-white"> {totalCount}</span> roles
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handlePageClick(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="h-7 w-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-[#1f2937] text-gray-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      chevron_left
-                    </span>
-                  </button>
-                  <span className="px-2">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handlePageClick(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="h-7 w-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-[#1f2937] text-gray-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      chevron_right
-                    </span>
-                  </button>
-                </div>
-              </div>
+              <PaginationFooter
+                meta={meta}
+                page={page}
+                perPage={perPage}
+                loading={loading}
+                onPageChange={setPage}
+                onPerPageChange={changePerPage}
+              />
             </>
           )}
         </div>

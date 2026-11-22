@@ -15,6 +15,53 @@ class ReportingController extends Controller
         $this->reportingService = $reportingService;
     }
 
+    // Loans Report
+    public function loansReport(Request $request)
+    {
+        try {
+            $filters = $request->all();
+
+            // Currency filter is mandatory to run the report.
+            if (! \Illuminate\Support\Facades\Auth::user()) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+            if (empty($filters['currency_code'])) {
+                return response()->json([
+                    'error' => 'Please select a currency to run the loans report.',
+                ], 422);
+            }
+
+            $rows = $this->reportingService->loansReport($filters);
+            if (isset($rows['error'])) {
+                return response()->json(['error' => $rows['error']], 400);
+            }
+
+            // Policy check per loan (same pattern as ordersSummary).
+            $authorized = $rows->filter(function ($row) {
+                return \Gate::allows('view', $row->loan);
+            });
+
+            // Totals row.
+            $totals = [
+                'amount_loaned' => round((float) $authorized->sum('principal'), 2),
+                'total_interest' => round((float) $authorized->sum('total_interest'), 2),
+                'total_due' => round((float) $authorized->sum('total_due'), 2),
+                'total_paid' => round((float) $authorized->sum('total_paid'), 2),
+                'balance' => round((float) $authorized->sum('balance'), 2),
+                'currency' => $filters['currency_code'],
+            ];
+
+            return response()->json([
+                'data' => \App\Http\Resources\Reporting\LoansReportResource::collection($authorized),
+                'totals' => $totals,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Loans Report Error: '.$e->getMessage());
+
+            return response()->json(['error' => 'Internal server error.'], 500);
+        }
+    }
+
     // Orders Summary
     public function ordersSummary(Request $request)
     {

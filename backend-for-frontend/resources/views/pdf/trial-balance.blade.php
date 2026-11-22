@@ -73,7 +73,6 @@
         <tr>
             <th class="r">#</th>
             <th>Type</th>
-            <th>Code</th>
             <th>Account</th>
             <th class="r">Debit (KES)</th>
             <th class="r">Credit (KES)</th>
@@ -95,7 +94,6 @@
     <tfoot>
         <tr class="totals-row">
             <td colspan="3">TOTAL</td>
-            <td></td>
             <td class="r">{{ number_format($totals['debit_kes'], 2) }}</td>
             <td class="r">{{ number_format($totals['credit_kes'], 2) }}</td>
         </tr>

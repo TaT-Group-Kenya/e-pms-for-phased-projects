@@ -18,6 +18,19 @@ export const DEFAULT_PER_PAGE = 15
 
 const SEARCH_DEBOUNCE_MS = 350
 
+/** e.g. `/api/project-phases/list` -> `Project Phases`; falls back to the raw path. */
+function labelFromEndpoint(endpoint: string): string {
+  try {
+    const path = new URL(endpoint, "http://localhost").pathname
+    const parts = path.split("/").filter(Boolean).filter((p) => p !== "api" && p !== "list")
+    const raw = parts[parts.length - 1] ?? endpoint
+    const spaced = raw.replace(/-/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2")
+    return spaced.replace(/\b\w/g, (c) => c.toUpperCase())
+  } catch {
+    return endpoint
+  }
+}
+
 /**
  * Owns everything a server-paginated listing needs: page, per-page, debounced
  * search and arbitrary filters, plus the fetch lifecycle (abort on change,
@@ -41,6 +54,14 @@ export function useListQuery<T>(
   } = {}
 ) {
   const { accessToken, initialFilters = {}, fixedParams } = options
+
+  // Inline-literal fixedParams get a new identity each render; serialize them
+  // so the fetch key (and memo deps below) stay stable across renders.
+  const fixedParamsKey = fixedParams ? JSON.stringify(fixedParams) : ""
+  const fixedParamsRef = useRef<Record<string, string> | undefined>(fixedParams)
+  useEffect(() => {
+    fixedParamsRef.current = fixedParams
+  }, [fixedParamsKey])
 
   const [searchInput, setSearchInput] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
@@ -106,7 +127,7 @@ export function useListQuery<T>(
         params.append("per_page", String(perPage))
         if (searchTerm) params.append("search", searchTerm)
         Object.entries(activeFilters).forEach(([key, value]) => params.append(key, value))
-        Object.entries(fixedParams || {}).forEach(([key, value]) => params.append(key, value))
+        Object.entries(fixedParamsRef.current || {}).forEach(([key, value]) => params.append(key, value))
 
         const resp = await fetch(`${endpoint}?${params.toString()}`, {
           method: "GET",
@@ -118,7 +139,12 @@ export function useListQuery<T>(
         if (requestId !== requestSequence.current) return
 
         const json = await resp.json().catch(() => null)
-        if (!resp.ok) throw new Error(json?.message || "Failed to load data")
+        if (!resp.ok) {
+          const detail = json && typeof json.message === "string" && json.message.trim()
+            ? json.message.trim()
+            : `Failed to load data`
+          throw new Error(`${labelFromEndpoint(endpoint)}: ${detail}`)
+        }
 
         // Resource::collection returns `{ data: [...], meta }` at the top
         // level; some proxies wrap it as `{ data: { data: [...], ...meta } }`.
@@ -149,7 +175,7 @@ export function useListQuery<T>(
         if (requestId === requestSequence.current) setLoading(false)
       }
     },
-    [accessToken, endpoint, page, perPage, searchTerm, activeFiltersKey, fixedParams]
+    [accessToken, endpoint, page, perPage, searchTerm, activeFiltersKey, fixedParamsKey]
   )
 
   useEffect(() => {

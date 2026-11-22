@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CustInvoiceStoreRequest;
 use App\Http\Requests\CustInvoiceUpdateRequest;
@@ -19,6 +20,7 @@ use App\Services\CommonService;
 use App\Services\CurrencyConversionService;
 use App\Services\CustInvoiceService;
 use App\Services\OrderToCustInvoiceService;
+use App\Services\TaxTransactionService;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -32,6 +34,8 @@ use Illuminate\Validation\ValidationException;
 
 class CustInvoiceController extends Controller
 {
+    use EnsuresOpenPeriod;
+
     protected $service;
 
     protected $orderToCustInvoiceService;
@@ -70,6 +74,11 @@ class CustInvoiceController extends Controller
                     'status' => ['Order must be approved before creating an invoice.'],
                 ],
             ], 422);
+        }
+
+        // The invoice inherits the order's date: both documents' periods matter.
+        if ($response = $this->ensureModelPeriodOpen($order)) {
+            return $response;
         }
 
         if ($order->custInvoices()->exists()) {
@@ -142,6 +151,15 @@ class CustInvoiceController extends Controller
         $validated['created_at'] = $validated['created_at'] ?? $custInvoice->created_at;
         $validated['updated_by'] = Auth::id();
 
+        // Period locks: stored invoice date (can't edit a closed month's
+        // document) and the requested date (can't re-date into a closed month).
+        if ($response = $this->ensureModelPeriodOpen($custInvoice)) {
+            return $response;
+        }
+        if ($response = $this->ensurePeriodOpenForDate($validated['created_at'], 'created_at')) {
+            return $response;
+        }
+
         // A provided forex rate recomputes the converted amounts (USD to
         // KES); KES invoices stay at rate 1.
         $providedRate = $validated['forex_rate'] ?? null;
@@ -161,6 +179,9 @@ class CustInvoiceController extends Controller
             $updated->updated_by = Auth::id();
             $updated->save();
         }
+
+        // Amounts or rate may have changed: restate the declared VAT.
+        TaxTransactionService::syncInvoicePosition($updated);
 
         $updated = $updated->refresh();
         $updated->loadMissing([
@@ -182,6 +203,11 @@ class CustInvoiceController extends Controller
         $this->authorize('delete', $custInvoice);
 
         $this->service->delete($custInvoice->id);
+
+        // Deleting the document reverses its declared VAT through a signed
+        // Balancing entry; the original VAT_OUT row stays for audit.
+        $custInvoice = CustInvoice::withDeleted()->findOrFail($custInvoice->id);
+        TaxTransactionService::syncInvoicePosition($custInvoice);
 
         return response()->noContent();
     }
@@ -221,6 +247,11 @@ class CustInvoiceController extends Controller
             ], 422);
         }
 
+        // Status changes on a closed month's document alter postings.
+        if ($response = $this->ensureModelPeriodOpen($custInvoice)) {
+            return $response;
+        }
+
         // A forex rate must be in place before the invoice leaves draft:
         // non-KES invoices require an explicit USD→KES rate; KES invoices
         // are fixed at 1.
@@ -247,6 +278,10 @@ class CustInvoiceController extends Controller
         $custInvoice->status = 'sent';
         $custInvoice->updated_by = Auth::id();
         $custInvoice->save();
+
+        // Declaring the output VAT: the invoice's whole tax is written to
+        // the tax ledger (VAT_OUT, credit) at the invoice's own forex rate.
+        TaxTransactionService::syncInvoicePosition($custInvoice);
 
         $custInvoice->refresh();
         $custInvoice->loadMissing([
@@ -303,6 +338,11 @@ class CustInvoiceController extends Controller
             'receipt_number' => ['nullable', 'string', 'max:255'],
             'account_id' => ['required', 'integer', 'exists:accounts,id,is_deleted,0'],
         ]);
+
+        // The payment is a posting dated payment_date: its month must be open.
+        if ($response = $this->ensurePeriodOpenForDate($validated['payment_date'], 'payment_date')) {
+            return $response;
+        }
 
         // Ensure payment_date is not older than invoice creation date
         $paymentDate = Carbon::parse($validated['payment_date'])->toDateString();
@@ -535,25 +575,8 @@ class CustInvoiceController extends Controller
             $payment->transaction_id = $trxn->id;
             $payment->save();
 
-            // Tax collected on the receipt is VAT payable — a liability owed
-            // to the revenue authority (chart 2000) in the tax ledger.
-            // CR movement against the invoice's opened tax (the DR was
-            // logged at invoice generation) — the TB splits this collected
-            // portion from the uncollected remainder.
-            \App\Services\TaxTransactionService::record([
-                'side' => \App\Services\TaxTransactionService::SIDE_CR,
-                'direction' => 'collected',
-                'source_type' => 'cust_invoice',
-                'source_id' => $invoice->id,
-                'payment_id' => $payment->id,
-                'amount' => $taxPortion,
-                'transaction_currency' => $invoiceCurrencyCode,
-                'exchange_rate' => $exchangeRate,
-                'transaction_date' => $validated['payment_date'],
-                'customer_id' => $invoice->customer_id,
-                'narration' => 'Tax collected on payment for invoice '.$invoice->invoice_number,
-                'created_by' => Auth::id(),
-            ]);
+            // The tax ledger records the invoice's declared position only —
+            // movements on settlement are intentionally not tracked.
 
             // Update benefiting account balance: credit increases balance
             $currentBalance = (float) $account->balance;
@@ -634,6 +657,11 @@ class CustInvoiceController extends Controller
                     'payment_id' => ['Reverse the reconciliation before deleting this payment.'],
                 ],
             ], 422);
+        }
+
+        // Deleting the payment changes the closed month's balances.
+        if ($response = $this->ensurePeriodOpenForDate($custPayment->payment_date, 'payment_date')) {
+            return $response;
         }
 
         $invoice = $custInvoice;
@@ -792,6 +820,11 @@ class CustInvoiceController extends Controller
             return response()->json([
                 'message' => 'No editable fields were provided.',
             ], 422);
+        }
+
+        // Editing (even metadata) of a closed month's payment is locked.
+        if ($response = $this->ensurePeriodOpenForDate($custPayment->payment_date, 'payment_date')) {
+            return $response;
         }
 
         $invoice = $custInvoice;

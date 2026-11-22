@@ -118,6 +118,7 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('order-items', App\Http\Controllers\Api\OrderItemController::class);
 		Route::post('payment-receiving-methods/{id}/restore', [App\Http\Controllers\Api\PaymentReceivingMethodController::class, 'restore']);
 		Route::apiResource('payment-receiving-methods', App\Http\Controllers\Api\PaymentReceivingMethodController::class);
+		Route::apiResource('lenders', App\Http\Controllers\Api\LenderController::class);
 		Route::post('payment-methods/{id}/restore', [App\Http\Controllers\Api\PaymentMethodController::class, 'restore']);
 		Route::apiResource('payment-methods', App\Http\Controllers\Api\PaymentMethodController::class);
 		Route::apiResource('projects', App\Http\Controllers\Api\ProjectController::class);
@@ -146,11 +147,33 @@ Route::prefix('/')->group(function () {
 		Route::apiResource('tax-transactions', App\Http\Controllers\Api\TaxTransactionController::class)
 			->parameter('tax-transactions', 'tax_transaction')->only(['index', 'show']);
 		Route::get('tax-transactions-summary', [App\Http\Controllers\Api\TaxTransactionController::class, 'summary']);
+		// Monthly tax bills: run, view, settle, export.
+		Route::get('tax-bills', [App\Http\Controllers\Api\TaxBillController::class, 'index']);
+		Route::post('tax-bills/run', [App\Http\Controllers\Api\TaxBillController::class, 'run']);
+		Route::get('tax-bills/reconciliation', [App\Http\Controllers\Api\TaxBillController::class, 'reconciliation']);
+		Route::post('tax-bills/run', [App\Http\Controllers\Api\TaxBillController::class, 'run']);
+		Route::get('tax-bills/{taxBill}', [App\Http\Controllers\Api\TaxBillController::class, 'show'])->whereNumber('taxBill');
+		Route::post('tax-bills/{taxBill}/pay', [App\Http\Controllers\Api\TaxBillController::class, 'pay'])->whereNumber('taxBill');
+		Route::get('tax-bills/{taxBill}/export-pdf', [App\Http\Controllers\Api\TaxBillController::class, 'exportPdf'])->whereNumber('taxBill');
 		Route::apiResource('trial-balance', App\Http\Controllers\Api\TrialBalanceController::class)
 			->parameter('trial-balance', 'trial_balance_run');
 		Route::get('trial-balance/{trial_balance_run}/export-csv', [App\Http\Controllers\Api\TrialBalanceController::class, 'exportCsv']);
 		Route::get('trial-balance/{trial_balance_run}/export-pdf', [App\Http\Controllers\Api\TrialBalanceController::class, 'exportPdf']);
 		Route::get('trial-balance/{trial_balance_run}/lines', [App\Http\Controllers\Api\TrialBalanceController::class, 'lines']);
+
+		// Accounting periods (year / quarter / month period locking)
+		// Maker/checker (four-eyes): close/reopen create pending requests;
+		// a checker approves (executes) or rejects them.
+		Route::get('accounting-periods', [App\Http\Controllers\Api\AccountingPeriodController::class, 'index']);
+		Route::get('accounting-periods/requests', [App\Http\Controllers\Api\AccountingPeriodController::class, 'requests']);
+		Route::post('accounting-period-requests/{accountingPeriodRequest}/approve', [App\Http\Controllers\Api\AccountingPeriodController::class, 'approve']);
+		Route::post('accounting-period-requests/{accountingPeriodRequest}/reject', [App\Http\Controllers\Api\AccountingPeriodController::class, 'reject']);
+		Route::post('accounting-period-requests/{accountingPeriodRequest}/cancel', [App\Http\Controllers\Api\AccountingPeriodController::class, 'cancel']);
+		Route::get('accounting-periods/{accounting_period}/checklist', [App\Http\Controllers\Api\AccountingPeriodController::class, 'checklist']);
+		Route::get('accounting-periods/{accounting_period}/logs', [App\Http\Controllers\Api\AccountingPeriodController::class, 'logs']);
+		Route::post('accounting-periods/{accounting_period}/close', [App\Http\Controllers\Api\AccountingPeriodController::class, 'close']);
+		Route::post('accounting-periods/{accounting_period}/reopen', [App\Http\Controllers\Api\AccountingPeriodController::class, 'reopen']);
+		Route::get('accounting-periods/{accounting_period}', [App\Http\Controllers\Api\AccountingPeriodController::class, 'show']);
 		Route::get('transactions/{transaction}/download-pdf', [App\Http\Controllers\Api\TransactionController::class, 'downloadPdf']);
 		Route::get('company-payments/{companyPayment}/download-pdf', [App\Http\Controllers\Api\CompanyPaymentController::class, 'downloadPdf']);
 		Route::get('cust-payments/{custPayment}/download-pdf', [App\Http\Controllers\Api\CustPaymentController::class, 'downloadPdf']);
@@ -182,6 +205,7 @@ Route::prefix('/')->group(function () {
 		// Reporting Endpoints
 		Route::prefix('reports')->group(function () {
 			Route::get('orders-summary', [App\Http\Controllers\ReportingController::class, 'ordersSummary']);
+			Route::get('loans-report', [App\Http\Controllers\ReportingController::class, 'loansReport']);
 			Route::get('projects-summary', [App\Http\Controllers\ReportingController::class, 'projectsSummary']);
 			Route::get('customer-history', [App\Http\Controllers\ReportingController::class, 'customerHistory']);
 			Route::get('revenue', [App\Http\Controllers\ReportingController::class, 'revenueSnapshot']);

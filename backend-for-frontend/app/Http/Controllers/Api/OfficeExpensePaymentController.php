@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 
 class OfficeExpensePaymentController extends Controller
 {
+use \App\Http\Controllers\Api\Concerns\EnsuresOpenPeriod;
+
     protected $service;
 
     public function __construct(OfficeExpensePaymentService $service)
@@ -34,6 +36,11 @@ class OfficeExpensePaymentController extends Controller
     {
         $this->authorize('create', OfficeExpensePayment::class);
         $data = $request->validated();
+
+        if ($response = $this->ensurePeriodOpenForDate($data['payment_date'] ?? null, 'payment_date')) {
+            return $response;
+        }
+
         $data['created_by'] = auth()->id();
         $payment = $this->service->create($data);
 
@@ -53,6 +60,15 @@ class OfficeExpensePaymentController extends Controller
         $payment = $this->service->find($id);
         $this->authorize('update', $payment);
         $data = $request->validated();
+
+        // Stored payment date governs edits; a moved date must be open too.
+        if ($response = $this->ensurePeriodOpenForDate($payment->payment_date, 'payment_date')) {
+            return $response;
+        }
+        if ($response = $this->ensurePeriodOpenForDate($data['payment_date'] ?? null, 'payment_date')) {
+            return $response;
+        }
+
         $data['updated_by'] = auth()->id();
         $payment = $this->service->update($id, $data);
 

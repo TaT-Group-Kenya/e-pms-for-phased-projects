@@ -1,41 +1,52 @@
 "use client"
 
-import React, { useCallback, useEffect, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { useSelector } from "react-redux"
 import { selectAccessToken } from "../../../store/auth/selectors"
 import { useToast } from "../../../hooks/useToast"
 import { ToastContainer } from "../../../components/common/Toast"
 
+interface SourceDocument {
+  type?: string | null
+  id?: number | null
+  number?: string | null
+  status?: string | null
+  tax_amount?: number | null
+  total_amount?: number | null
+  currency?: string | null
+  party_type?: string | null
+  party_name?: string | null
+  kra_pin?: string | null
+  is_deleted?: boolean
+}
+
 interface TaxLedgerRow {
   id: number
   transaction_number: string
   side: string
-  direction: string
-  chart_code?: string
-  chart_name?: string
-  amount: number
+  entry_type: string
   converted_amount: number
+  running_balance: number | null
   transaction_currency?: string | null
   transaction_date?: string
+  supplier_or_customer_type?: string | null
+  supplier_or_customer_name?: string | null
+  kra_pin?: string | null
   source_type?: string | null
   source_id?: number | null
+  source_document?: SourceDocument | null
   narration?: string | null
-  tax?: { id: number; code: string; name: string; rate: number } | null
+  amount_exclusive: number
+  vat_in_dr: number | null
+  vat_out_cr: number | null
+  particulars: string
 }
 
-interface PaginationMeta {
-  current_page: number
-  last_page: number
-  per_page: number
-  total: number
-}
-
-interface SummaryRow {
-  direction: string
-  chart_of_account: number
-  chart?: { id: number; code: string; name: string } | null
-  total: number
-  entries: number
+interface ReportTotals {
+  amount_exclusive: number
+  vat_in_dr: number
+  vat_out_cr: number
+  vat_liability: number
 }
 
 const fmt = new Intl.NumberFormat(undefined, {
@@ -43,218 +54,199 @@ const fmt = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 2,
 })
 
-const chip = (kind: string) => {
-  if (kind === "collected")
-    return "bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300"
-  if (kind === "paid")
-    return "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-300"
-  if (kind === "opened")
-    return "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
-  if (kind === "uncollected")
-    return "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-300"
-  return "bg-gray-100 text-gray-700 dark:bg-[#111827] dark:text-gray-300"
+const day = (iso?: string | null) => {
+  if (!iso) return ""
+  const value = new Date(iso)
+  if (Number.isNaN(value.getTime())) return iso
+  const dd = String(value.getDate()).padStart(2, "0")
+  const mm = String(value.getMonth() + 1).padStart(2, "0")
+  return `${dd}/${mm}/${value.getFullYear()}`
+}
+
+// Previous calendar month: first day through last day, ISO strings for the API.
+const previousMonthRange = () => {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const end = new Date(now.getFullYear(), now.getMonth(), 0)
+  const iso = (value: Date) =>
+    `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`
+  return { from: iso(start), to: iso(end) }
 }
 
 const TaxLedgerTable: React.FC = () => {
   const accessToken = useSelector(selectAccessToken)
   const { toasts, addToast, removeToast } = useToast()
 
+  const defaults = useMemo(() => previousMonthRange(), [])
   const [rows, setRows] = useState<TaxLedgerRow[]>([])
-  const [meta, setMeta] = useState<PaginationMeta | null>(null)
-  const [summary, setSummary] = useState<SummaryRow[]>([])
-  const [page, setPage] = useState(1)
-  const [direction, setDirection] = useState("")
+  const [totals, setTotals] = useState<ReportTotals | null>(null)
+  const [from, setFrom] = useState(defaults.from)
+  const [to, setTo] = useState(defaults.to)
   const [loading, setLoading] = useState(true)
 
-  const fetchPage = useCallback(
-    async (targetPage = 1) => {
-      if (!accessToken) {
+  const query = useMemo(() => {
+    const params = new URLSearchParams()
+    if (from) params.set("from", from)
+    if (to) params.set("to", to)
+    return params.toString()
+  }, [from, to])
+
+  const fetchRows = useCallback(async () => {
+    if (!accessToken) {
+      setRows([])
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    try {
+      const resp = await fetch(`/api/tax-transactions?${query}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+      const data: any = await resp.json().catch(() => null)
+
+      if (!resp.ok) {
+        addToast(data?.message || "Failed to load tax ledger", "error")
         setRows([])
-        setLoading(false)
-        return
-      }
-      setLoading(true)
-      try {
-        const params = new URLSearchParams({ page: String(targetPage), per_page: "15" })
-        if (direction) params.set("direction", direction)
-
-        const [rowsResp, summaryResp] = await Promise.all([
-          fetch(`/api/tax-transactions?${params.toString()}`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }),
-          fetch(`/api/tax-transactions/summary`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }),
-        ])
-
-        const rowsData: any = await rowsResp.json().catch(() => null)
-        const summaryData: any = await summaryResp.json().catch(() => null)
-
-        if (!rowsResp.ok) {
-          addToast(rowsData?.message || "Failed to load tax ledger", "error")
-          setRows([])
-        } else {
-          setRows(Array.isArray(rowsData?.data) ? rowsData.data : [])
-          setMeta(rowsData?.meta ?? null)
+      } else {
+        setRows(Array.isArray(data?.data) ? data.data : [])
+        if (data?.totals) {
+          setTotals(data.totals)
         }
-        setSummary(Array.isArray(summaryData?.data) ? summaryData.data : [])
-      } catch {
-        addToast("Error loading tax ledger.", "error")
-        setRows([])
-      } finally {
-        setLoading(false)
       }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [accessToken, direction, page],
-  )
+    } catch {
+      addToast("Error loading tax ledger.", "error")
+      setRows([])
+    } finally {
+      setLoading(false)
+    }
+  }, [accessToken, query])
 
   useEffect(() => {
-    fetchPage(page)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, direction])
+    fetchRows()
+  }, [fetchRows])
 
   return (
     <>
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
-      {/* Position summary */}
-      <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[20px] md:mb-[25px] p-5 rounded-md">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[15px]">
-          {(summary.length > 0
-            ? summary
-            : [
-                { label: "collected", chart: { code: "2000", name: "Liabilities" }, total: 0, entries: 0 },
-                { label: "uncollected", chart: { code: "2000", name: "Liabilities" }, total: 0, entries: 0 },
-                { label: "paid", chart: { code: "1000", name: "Assets" }, total: 0, entries: 0 },
-              ]
-          ).map((row: any) => (
-            <div
-              key={row.label}
-              className="flex items-center justify-between px-3 py-2 rounded-md bg-gray-50 dark:bg-[#081328]"
-            >
-              <div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                  Tax {row.label} ({row.chart?.code ?? "-"} {row.chart?.name ?? ""})
-                </div>
-                <div className="text-sm font-semibold text-black dark:text-white">
-                  KES {fmt.format(Number(row.total ?? 0))}
-                </div>
-              </div>
-              <span className={`inline-flex items-center px-2 py-[3px] rounded-full text-[11px] font-medium ${chip(row.label)}`}>
-                {row.label}
-              </span>
-            </div>
-          ))}
-        </div>
-        <p className="mt-[10px] text-[11px] text-gray-500 dark:text-gray-400">
-          Net VAT position = collected (payable) − paid (recoverable).
-        </p>
-      </div>
-
       {/* Filters */}
       <div className="trezo-card bg-white dark:bg-[#0c1427] mb-[20px] p-5 rounded-md">
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="block text-xs font-medium mb-[5px]">Direction</label>
-            <select
-              value={direction}
-              onChange={(e) => {
-                setDirection(e.target.value)
-                setPage(1)
-              }}
+            <label className="block text-xs font-medium mb-[5px]">From</label>
+            <input
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
               className="px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm"
-            >
-              <option value="">All</option>
-              <option value="collected">Collected</option>
-              <option value="paid">Paid</option>
-              <option value="adjusted">Adjusted</option>
-            </select>
+            />
           </div>
+          <div>
+            <label className="block text-xs font-medium mb-[5px]">To</label>
+            <input
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="px-[10px] py-[8px] border border-gray-200 dark:border-[#172036] rounded-md bg-transparent text-sm"
+            />
+          </div>
+          {(from !== defaults.from || to !== defaults.to) && (
+            <button
+              type="button"
+              onClick={() => {
+                setFrom(defaults.from)
+                setTo(defaults.to)
+              }}
+              className="px-[12px] py-[8px] rounded-md border border-gray-200 dark:border-[#172036] text-sm"
+            >
+              Reset to last month
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Rows table */}
+      {/* Report */}
       <div className="trezo-card bg-white dark:bg-[#0c1427] rounded-md overflow-hidden">
         <div className="table-responsive overflow-x-auto">
           <table className="w-full">
             <thead className="text-black dark:text-white">
               <tr>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Txn #</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">#</th>
                 <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Date</th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Direction</th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Chart</th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Tax</th>
-                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Source</th>
-                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Amount (KES)</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Bill No.</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Particulars</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Supplier/Customer Name</th>
+                <th className="font-medium ltr:text-left rtl:text-right px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">KRA Pin</th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">Amount Exclusive</th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">VAT IN (DR)</th>
+                <th className="font-medium ltr:text-right rtl:text-left px-[10px] py-[8px] bg-gray-50 dark:bg-[#15203c]">VAT OUT (CR)</th>
               </tr>
             </thead>
             <tbody className="text-black dark:text-white">
               {loading && (
                 <tr>
-                  <td colSpan={7} className="text-center text-sm px-[10px] py-[10px]">Loading...</td>
+                  <td colSpan={9} className="text-center text-sm px-[10px] py-[10px]">Loading...</td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center text-sm px-[10px] py-[16px] text-gray-500">
-                    No tax ledger entries yet.
+                  <td colSpan={9} className="text-center text-sm px-[10px] py-[16px] text-gray-500">
+                    No tax ledger entries in the selected period.
                   </td>
                 </tr>
               )}
               {!loading &&
-                rows.map((row) => (
-                  <tr key={row.id} className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c]">
-                    <td className="text-sm px-[10px] py-[6px] font-medium">{row.transaction_number}</td>
-                    <td className="text-sm px-[10px] py-[6px]">{row.transaction_date ?? "-"}</td>
-                    <td className="text-sm px-[10px] py-[6px]">
-                      <span className={`inline-flex items-center px-2 py-[3px] rounded-full text-[11px] font-medium ${chip(row.side === "dr" ? "opened" : row.direction)}`}>
-                        {row.side === "dr" ? "opened" : row.direction}
-                      </span>
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px]">
-                      {row.chart_code && row.chart_name ? `${row.chart_code} - ${row.chart_name}` : "-"}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px]">
-                      {row.tax ? `${row.tax.code} (${row.tax.rate}%)` : "—"}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px]">
-                      {row.source_type ?? "—"}
-                      {row.source_id ? ` #${row.source_id}` : ""}
-                    </td>
-                    <td className="text-sm px-[10px] py-[6px] text-right font-medium">
-                      {fmt.format(Number(row.converted_amount ?? 0))}
-                    </td>
-                  </tr>
-                ))}
+                rows.map((row, index) => {
+                  const doc = row.source_document
+                  const billNo = doc?.number ?? row.transaction_number
+                  const party = row.supplier_or_customer_name ?? doc?.party_name ?? "—"
+                  const pin = row.kra_pin ?? doc?.kra_pin ?? "—"
+                  return (
+                    <tr key={row.id} className="border-b border-gray-100 dark:border-[#172036] hover:bg-gray-50 dark:hover:bg-[#15203c]">
+                      <td className="text-sm px-[10px] py-[6px] font-medium">{index + 1}</td>
+                      <td className="text-sm px-[10px] py-[6px]">{day(row.transaction_date)}</td>
+                      <td className="text-sm px-[10px] py-[6px] font-medium">
+                        {billNo}
+                        {doc?.is_deleted ? " (deleted)" : ""}
+                      </td>
+                      <td className="text-sm px-[10px] py-[6px]">{row.particulars}</td>
+                      <td className="text-sm px-[10px] py-[6px]">{party}</td>
+                      <td className="text-sm px-[10px] py-[6px]">{pin}</td>
+                      <td className="text-sm px-[10px] py-[6px] text-right">{fmt.format(Number(row.amount_exclusive ?? 0))}</td>
+                      <td className="text-sm px-[10px] py-[6px] text-right">
+                        {row.vat_in_dr !== null && row.vat_in_dr !== undefined ? fmt.format(Number(row.vat_in_dr)) : ""}
+                      </td>
+                      <td className="text-sm px-[10px] py-[6px] text-right">
+                        {row.vat_out_cr !== null && row.vat_out_cr !== undefined ? fmt.format(Number(row.vat_out_cr)) : ""}
+                      </td>
+                    </tr>
+                  )
+                })}
+              {!loading && rows.length > 0 && (
+                <tr className="border-b-2 border-gray-200 dark:border-[#172036] font-semibold">
+                  <td className="text-sm px-[10px] py-[8px]" colSpan={6}>TOTAL</td>
+                  <td className="text-sm px-[10px] py-[8px] text-right">
+                    {totals ? fmt.format(Number(totals.amount_exclusive)) : ""}
+                  </td>
+                  <td className="text-sm px-[10px] py-[8px] text-right">
+                    {totals ? fmt.format(Number(totals.vat_in_dr)) : ""}
+                  </td>
+                  <td className="text-sm px-[10px] py-[8px] text-right">
+                    {totals ? fmt.format(Number(totals.vat_out_cr)) : ""}
+                  </td>
+                </tr>
+              )}
+              {!loading && rows.length > 0 && totals && (
+                <tr className="font-semibold">
+                  <td className="text-sm px-[10px] py-[8px]" colSpan={7}>VAT Liability (CR − DR)</td>
+                  <td className="text-sm px-[10px] py-[8px] text-right" colSpan={2}>
+                    {fmt.format(Number(totals.vat_liability))}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
-        {meta && (
-          <div className="flex items-center justify-between px-[10px] py-[10px] text-sm">
-            <span className="text-gray-500">
-              Page {meta.current_page} of {meta.last_page} · {meta.total} entries
-            </span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={meta.current_page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="px-[10px] py-[4px] rounded-md border border-gray-200 dark:border-[#172036] disabled:opacity-40"
-              >
-                Prev
-              </button>
-              <button
-                type="button"
-                disabled={meta.current_page >= meta.last_page}
-                onClick={() => setPage((p) => p + 1)}
-                className="px-[10px] py-[4px] rounded-md border border-gray-200 dark:border-[#172036] disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </>
   )
